@@ -1,4 +1,38 @@
 // Activity tracking and heatmap functions
+
+// Helper function to fetch all posts for activity tracking
+async function fetchAllPostsForActivity(categoryId) {
+    let allPosts = [];
+    let offset = 0;
+    const limit = 100; // Fetch in batches
+    let hasMore = true;
+
+    while (hasMore) {
+        try {
+            const response = await fetchPosts(categoryId, limit, offset, true);
+            const posts = response.posts || response;
+
+            if (posts.length === 0) {
+                hasMore = false;
+            } else {
+                allPosts = [...allPosts, ...posts];
+                offset += posts.length;
+
+                // Check if we have more posts
+                if (response.has_more !== undefined) {
+                    hasMore = response.has_more;
+                } else {
+                    hasMore = posts.length === limit;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching posts for activity:', error);
+            break;
+        }
+    }
+
+    return allPosts;
+}
 async function generateActivityHeatmap() {
     if (!currentCategory) {
         document.getElementById('activity-container').style.display = 'none';
@@ -8,28 +42,31 @@ async function generateActivityHeatmap() {
     document.getElementById('activity-container').style.display = 'block';
 
     try {
-        const posts = await fetchPosts(currentCategory.id, 1000, 0);
+        // Fetch all posts for activity tracking - we need all posts for the heatmap
+        const allPosts = await fetchAllPostsForActivity(currentCategory.id);
 
-        if (posts.length === 0) {
+        if (allPosts.length === 0) {
             document.getElementById('activity-heatmap').innerHTML = '<p class="text-xs text-gray-500">No posts in this category</p>';
+            // Clear the activity summary for empty categories
+            document.getElementById('activity-summary').textContent = '';
+            // Reset navigation buttons
+            document.getElementById('activity-next').disabled = true;
+            document.getElementById('activity-prev').disabled = true;
             return;
         }
 
         // Find the earliest post date
-        const earliestPost = new Date(Math.min(...posts.map(post => new Date(post.created))));
+        const earliestPost = new Date(Math.min(...allPosts.map(post => new Date(post.created))));
         const today = new Date();
 
         // Calculate how many 6-month periods we need to go back to include the earliest post
         const monthsDiff = (today.getFullYear() - earliestPost.getFullYear()) * 12 + (today.getMonth() - earliestPost.getMonth());
         const maxPeriods = Math.ceil(monthsDiff / 6);
 
-        // If this is the first time viewing, start from the period that contains posts
-        if (currentActivityPeriod === 0 && maxPeriods > 0) {
-            currentActivityPeriod = -Math.max(0, maxPeriods - 1);
-        }
+        // Always start at current period (0) by default - don't change currentActivityPeriod on first load
 
         const activityMap = {};
-        posts.forEach(post => {
+        allPosts.forEach(post => {
             const date = new Date(post.created);
             const dateKey = date.toISOString().split('T')[0];
             activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
@@ -44,19 +81,43 @@ async function generateActivityHeatmap() {
 
 function generateHeatmapForPeriod(activityMap, maxPeriods) {
     const today = new Date();
-    const periodStart = new Date(today);
-    periodStart.setMonth(today.getMonth() + (6 * currentActivityPeriod));
-    periodStart.setDate(1);
+    let periodStart, periodEnd;
 
-    const periodEnd = new Date(periodStart);
-    periodEnd.setMonth(periodStart.getMonth() + 6);
+    // Calculate period dates
+    if (currentActivityPeriod === 0) {
+        // For current period, show last 6 months up to today
+        periodEnd = new Date(today);
+        periodEnd.setDate(periodEnd.getDate() + 1); // Include today
+
+        periodStart = new Date(today);
+        periodStart.setMonth(today.getMonth() - 5); // 6 months total (current + 5 back)
+        periodStart.setDate(1);
+    } else {
+        // For historical periods, calculate continuous 6-month windows going backwards
+        // currentActivityPeriod = -1 should be the 6 months before the current period
+
+        // Current period ends today, starts 6 months back
+        const currentPeriodStart = new Date(today);
+        currentPeriodStart.setMonth(today.getMonth() - 5);
+        currentPeriodStart.setDate(1);
+
+        // Each previous period is 6 months before the previous one
+        periodStart = new Date(currentPeriodStart);
+        periodStart.setMonth(currentPeriodStart.getMonth() + (6 * currentActivityPeriod));
+        periodStart.setDate(1);
+
+        periodEnd = new Date(periodStart);
+        periodEnd.setMonth(periodStart.getMonth() + 6);
+    }
 
     // Update period label
     const startMonth = periodStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const endMonth = new Date(periodEnd.getTime() - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const endMonth = currentActivityPeriod === 0
+        ? today.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : new Date(periodEnd.getTime() - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     document.getElementById('activity-period').textContent = `${startMonth} - ${endMonth}`;
 
-    // Generate all days in the 6-month period
+    // Generate all days in the period
     const days = [];
     const currentDate = new Date(periodStart);
 

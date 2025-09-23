@@ -59,6 +59,7 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
+	withMeta := r.URL.Query().Get("with_meta") == "true"
 
 	limit := 20 // default
 	if limitStr != "" {
@@ -80,8 +81,27 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(posts)
+	if withMeta {
+		totalCount, err := h.db.GetPostCountByCategory(categoryID)
+		if err != nil {
+			http.Error(w, "Failed to get post count", http.StatusInternalServerError)
+			return
+		}
+
+		response := map[string]interface{}{
+			"posts":       posts,
+			"total_count": totalCount,
+			"offset":      offset,
+			"limit":       limit,
+			"has_more":    offset+len(posts) < totalCount,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(posts)
+	}
 }
 
 func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {

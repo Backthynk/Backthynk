@@ -10,9 +10,18 @@ type Category struct {
 	Created  time.Time `json:"created" db:"created"`
 }
 
+type CategoryStats struct {
+	PostCount    int        `json:"post_count"`
+	FileCount    int        `json:"file_count"`
+	TotalSize    int64      `json:"total_size"`
+	LastPostTime *time.Time `json:"last_post_time,omitempty"`
+}
+
 type CategoryWithStats struct {
 	Category
 	PostCount    int        `json:"post_count"`
+	FileCount    int        `json:"file_count"`
+	TotalSize    int64      `json:"total_size"`
 	LastPostTime *time.Time `json:"last_post_time,omitempty"`
 }
 

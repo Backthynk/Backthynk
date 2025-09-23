@@ -25,13 +25,17 @@ func main() {
 	// Setup router
 	r := mux.NewRouter()
 
-	// API routes
+	// CORS middleware first
+	r.Use(corsMiddleware)
+
+	// API routes - highest priority
 	api := r.PathPrefix("/api").Subrouter()
 
 	// Categories
 	api.HandleFunc("/categories", categoryHandler.GetCategories).Methods("GET")
 	api.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
 	api.HandleFunc("/categories/by-parent", categoryHandler.GetCategoriesByParent).Methods("GET")
+	api.HandleFunc("/category-stats/{id}", categoryHandler.GetCategoryStats).Methods("GET")
 	api.HandleFunc("/categories/{id}", categoryHandler.GetCategory).Methods("GET")
 	api.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
@@ -48,12 +52,9 @@ func main() {
 	// Static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 
-	// Serve main page
+	// Serve main page - lowest priority
 	r.HandleFunc("/", serveIndex).Methods("GET")
 	r.HandleFunc("/{path:.*}", serveIndex).Methods("GET") // SPA fallback
-
-	// CORS middleware
-	r.Use(corsMiddleware)
 
 	log.Println("Server starting on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

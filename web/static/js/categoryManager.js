@@ -114,14 +114,7 @@ async function selectCategory(category) {
     currentActivityPeriod = 0;
 
     const stats = await fetchCategoryStats(category.id);
-    const statsText = `${stats.posts} posts • ${stats.files} files • ${formatFileSize(stats.size)}`;
-
-    document.getElementById('timeline-title').innerHTML = `
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">${category.name}</h2>
-            <p class="text-sm text-gray-500">${statsText}</p>
-        </div>
-    `;
+    updateCategoryStatsDisplay(stats);
     document.getElementById('new-post-btn').style.display = 'block';
 
     generateActivityHeatmap();
@@ -129,7 +122,8 @@ async function selectCategory(category) {
 
 async function deleteCategory(category) {
     const subcategories = categories.filter(cat => cat.parent_id === category.id);
-    const totalPosts = await getTotalPostsInCategory(category.id);
+    const stats = await fetchCategoryStats(category.id);
+    const totalPosts = stats.post_count;
 
     let message = `Are you sure you want to delete "${category.name}"?`;
 

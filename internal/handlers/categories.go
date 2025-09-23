@@ -108,6 +108,12 @@ func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(category)
 }
 
+func (h *CategoryHandler) GetCategoryStats(w http.ResponseWriter, r *http.Request) {
+	// Simple text response to test if handler is called
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte("Stats handler called"))
+}
+
 func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])

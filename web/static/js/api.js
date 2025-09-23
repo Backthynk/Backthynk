@@ -56,12 +56,63 @@ async function createCategory(name, parentId) {
     }
 }
 
-async function fetchPosts(categoryId, limit = 20, offset = 0) {
+async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false) {
     try {
-        return await apiRequest(`/categories/${categoryId}/posts?limit=${limit}&offset=${offset}`);
+        const params = new URLSearchParams({
+            limit: limit.toString(),
+            offset: offset.toString()
+        });
+
+        if (withMeta) {
+            params.set('with_meta', 'true');
+        }
+
+        return await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
     } catch (error) {
         console.error('Failed to fetch posts:', error);
         throw error;
+    }
+}
+
+async function fetchCategoryStats(categoryId) {
+    try {
+        // First get post count from metadata
+        const metaResponse = await apiRequest(`/categories/${categoryId}/posts?limit=1&with_meta=true`);
+        const postCount = metaResponse.total_count || 0;
+
+        // Then get all posts to calculate file stats
+        let fileCount = 0;
+        let totalSize = 0;
+        let offset = 0;
+        const limit = 100; // Process in batches
+
+        while (true) {
+            const response = await apiRequest(`/categories/${categoryId}/posts?limit=${limit}&offset=${offset}`);
+            const posts = response.posts || response;
+
+            if (posts.length === 0) break;
+
+            posts.forEach(post => {
+                if (post.attachments && post.attachments.length > 0) {
+                    fileCount += post.attachments.length;
+                    post.attachments.forEach(attachment => {
+                        totalSize += attachment.file_size || 0;
+                    });
+                }
+            });
+
+            if (posts.length < limit) break; // Last batch
+            offset += limit;
+        }
+
+        return {
+            post_count: postCount,
+            file_count: fileCount,
+            total_size: totalSize
+        };
+    } catch (error) {
+        console.error('Failed to fetch category stats:', error);
+        return { post_count: 0, file_count: 0, total_size: 0 };
     }
 }
 
@@ -121,56 +172,26 @@ async function uploadFile(postId, file) {
     }
 }
 
-async function fetchCategoryStats(categoryId) {
-    try {
-        const posts = await fetchPosts(categoryId, 1000, 0); // Get all posts
-        let totalFiles = 0;
-        let totalSize = 0;
-
-        posts.forEach(post => {
-            if (post.attachments) {
-                totalFiles += post.attachments.length;
-                post.attachments.forEach(att => {
-                    totalSize += att.file_size;
-                });
-            }
-        });
-
-        categoryStats[categoryId] = {
-            posts: posts.length,
-            files: totalFiles,
-            size: totalSize
-        };
-
-        return categoryStats[categoryId];
-    } catch (error) {
-        console.error('Failed to fetch category stats:', error);
-        return { posts: 0, files: 0, size: 0 };
-    }
-}
-
 async function fetchGlobalStats() {
     try {
+        const categories = await apiRequest('/categories');
+
         globalStats = { totalPosts: 0, totalFiles: 0, totalSize: 0 };
 
+        // Get stats for each category using the posts endpoint
         for (const category of categories) {
-            const stats = await fetchCategoryStats(category.id);
-            globalStats.totalPosts += stats.posts;
-            globalStats.totalFiles += stats.files;
-            globalStats.totalSize += stats.size;
+            try {
+                const stats = await fetchCategoryStats(category.id);
+                globalStats.totalPosts += stats.post_count;
+                globalStats.totalFiles += stats.file_count;
+                globalStats.totalSize += stats.total_size;
+            } catch (error) {
+                console.error(`Failed to get stats for category ${category.id}:`, error);
+            }
         }
 
         updateGlobalStatsDisplay();
     } catch (error) {
         console.error('Failed to fetch global stats:', error);
-    }
-}
-
-async function getTotalPostsInCategory(categoryId) {
-    try {
-        const posts = await fetchPosts(categoryId, 1000, 0);
-        return posts.length;
-    } catch (error) {
-        return 0;
     }
 }

@@ -1,37 +1,174 @@
 // Post management functions
-async function loadPosts(categoryId) {
+let currentPosts = [];
+let currentOffset = 0;
+let hasMorePosts = true;
+let isLoadingPosts = false;
+let virtualScroller = null;
+const VIRTUAL_SCROLL_THRESHOLD = 50; // Use virtual scrolling when more than 50 posts
+
+async function loadPosts(categoryId, reset = true) {
+    if (isLoadingPosts) return;
+
     try {
-        const posts = await fetchPosts(categoryId);
-        renderPosts(posts);
+        isLoadingPosts = true;
+
+        if (reset) {
+            currentPosts = [];
+            currentOffset = 0;
+            hasMorePosts = true;
+        }
+
+        const response = await fetchPosts(categoryId, 20, currentOffset, true);
+        const posts = response.posts || response; // Handle both new and old API response formats
+
+        if (reset) {
+            currentPosts = posts;
+        } else {
+            currentPosts = [...currentPosts, ...posts];
+        }
+
+        if (response.has_more !== undefined) {
+            hasMorePosts = response.has_more;
+        } else {
+            // Fallback for old API format
+            hasMorePosts = posts.length === 20;
+        }
+
+        currentOffset += posts.length;
+        renderPosts(currentPosts, reset);
+
+        // Setup infinite scroll if this is a fresh load
+        if (reset) {
+            setupInfiniteScroll(categoryId);
+        }
+
     } catch (error) {
         console.error('Failed to fetch posts:', error);
-        renderPosts([]);
+        if (reset) {
+            renderPosts([]);
+        }
+    } finally {
+        isLoadingPosts = false;
     }
 }
 
-function renderPosts(posts) {
-    const container = document.getElementById('posts-container');
-    container.innerHTML = '';
+async function loadMorePosts(categoryId) {
+    if (!hasMorePosts || isLoadingPosts) return;
 
-    if (posts.length === 0) {
-        container.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
-                <i class="fas fa-inbox text-4xl mb-4"></i>
-                <p>No posts yet. Create your first post!</p>
-            </div>
-        `;
-        return;
+    await loadPosts(categoryId, false);
+}
+
+function setupInfiniteScroll(categoryId) {
+    const container = document.getElementById('posts-container');
+
+    // Remove existing scroll listener
+    window.removeEventListener('scroll', window.infiniteScrollHandler);
+
+    // Add new scroll listener
+    window.infiniteScrollHandler = () => {
+        if (!hasMorePosts || isLoadingPosts) return;
+
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.documentElement.offsetHeight - 1000; // Load more when 1000px from bottom
+
+        if (scrollPosition >= threshold) {
+            loadMorePosts(categoryId);
+        }
+    };
+
+    window.addEventListener('scroll', window.infiniteScrollHandler);
+}
+
+function renderPosts(posts, reset = true) {
+    const container = document.getElementById('posts-container');
+
+    if (reset) {
+        // Clean up existing virtual scroller
+        if (virtualScroller) {
+            virtualScroller.destroy();
+            virtualScroller = null;
+        }
+
+        if (posts.length === 0) {
+            container.innerHTML = `
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                    <p>No posts yet. Create your first post!</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Decide whether to use virtual scrolling
+        if (posts.length > VIRTUAL_SCROLL_THRESHOLD) {
+            if (!virtualScroller) {
+                virtualScroller = new PostVirtualScroller(container);
+            }
+            virtualScroller.setItems(posts);
+            return;
+        } else {
+            // Use regular DOM rendering
+            container.innerHTML = '';
+        }
     }
 
-    posts.forEach(post => {
-        const element = createPostElement(post);
-        container.appendChild(element);
-    });
+    // Regular DOM rendering for smaller lists or appending
+    if (virtualScroller && posts.length > VIRTUAL_SCROLL_THRESHOLD) {
+        if (reset) {
+            virtualScroller.setItems(posts);
+        } else {
+            const newPosts = posts.slice(currentPosts.length - (posts.length - currentPosts.length));
+            virtualScroller.addItems(newPosts);
+        }
+    } else {
+        // Regular DOM rendering
+        if (!reset) {
+            // If not reset, only add new posts (ones that aren't already in the DOM)
+            const existingPostIds = new Set(Array.from(container.querySelectorAll('[data-post-id]')).map(el => parseInt(el.dataset.postId)));
+
+            posts.forEach(post => {
+                if (!existingPostIds.has(post.id)) {
+                    const element = createPostElement(post);
+                    container.appendChild(element);
+                }
+            });
+        } else {
+            posts.forEach(post => {
+                const element = createPostElement(post);
+                container.appendChild(element);
+            });
+        }
+
+        // Add loading indicator if there are more posts and not using virtual scroll
+        if (hasMorePosts && !isLoadingPosts && !virtualScroller) {
+            addLoadingIndicator(container);
+        }
+    }
+}
+
+function addLoadingIndicator(container) {
+    const existingIndicator = container.querySelector('.loading-indicator');
+    if (existingIndicator) {
+        existingIndicator.remove();
+    }
+
+    if (hasMorePosts) {
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading-indicator text-center py-4';
+        loadingDiv.innerHTML = `
+            <div class="text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                Loading more posts...
+            </div>
+        `;
+        container.appendChild(loadingDiv);
+    }
 }
 
 function createPostElement(post) {
     const div = document.createElement('div');
     div.className = 'bg-white rounded-lg shadow-sm border p-6 mb-6 hover:shadow-md transition-shadow group max-w-full';
+    div.setAttribute('data-post-id', post.id);
 
     const images = post.attachments ? post.attachments.filter(att => att.file_type.startsWith('image/')) : [];
     const otherFiles = post.attachments ? post.attachments.filter(att => !att.file_type.startsWith('image/')) : [];
@@ -129,19 +266,33 @@ async function confirmDeletePost(postId) {
     if (confirm('Are you sure you want to delete this post?\n\nThis will also delete all attached files.\n\nThis action cannot be undone.')) {
         try {
             await deletePost(postId);
-            // Add these lines after deletePost:
+
+            // Update stats and refresh display
             const stats = await fetchCategoryStats(currentCategory.id);
-            const statsText = `${stats.posts} posts • ${stats.files} files • ${formatFileSize(stats.size)}`;
-            document.getElementById('timeline-title').innerHTML = `
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
-                    <p class="text-sm text-gray-500">${statsText}</p>
-                </div>
-            `;
+            updateCategoryStatsDisplay(stats);
             await fetchGlobalStats();
-            loadPosts(currentCategory.id);
+
+            // Remove the post from current posts array and re-render
+            currentPosts = currentPosts.filter(post => post.id !== postId);
+
+            if (virtualScroller) {
+                virtualScroller.removeItem(postId);
+            } else {
+                renderPosts(currentPosts, true);
+            }
+
         } catch (error) {
             showError('Failed to delete post: ' + error.message);
         }
     }
+}
+
+function updateCategoryStatsDisplay(stats) {
+    const statsText = `${stats.post_count} posts • ${stats.file_count} files • ${formatFileSize(stats.total_size)}`;
+    document.getElementById('timeline-title').innerHTML = `
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
+            <p class="text-sm text-gray-500">${statsText}</p>
+        </div>
+    `;
 }
