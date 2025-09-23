@@ -19,7 +19,12 @@ async function loadPosts(categoryId, reset = true) {
         }
 
         const response = await fetchPosts(categoryId, 20, currentOffset, true);
-        const posts = response.posts || response; // Handle both new and old API response formats
+        let posts = response.posts || response; // Handle both new and old API response formats
+
+        // Ensure posts is an array
+        if (!posts || !Array.isArray(posts)) {
+            posts = [];
+        }
 
         if (reset) {
             currentPosts = posts;
@@ -27,7 +32,7 @@ async function loadPosts(categoryId, reset = true) {
             currentPosts = [...currentPosts, ...posts];
         }
 
-        if (response.has_more !== undefined) {
+        if (response && response.has_more !== undefined) {
             hasMorePosts = response.has_more;
         } else {
             // Fallback for old API format
@@ -81,6 +86,11 @@ function setupInfiniteScroll(categoryId) {
 
 function renderPosts(posts, reset = true) {
     const container = document.getElementById('posts-container');
+
+    // Ensure posts is an array
+    if (!posts || !Array.isArray(posts)) {
+        posts = [];
+    }
 
     if (reset) {
         // Clean up existing virtual scroller

@@ -13,12 +13,21 @@ async function apiRequest(endpoint, options = {}) {
         throw new Error(error);
     }
 
-    return response.json().catch(() => ({}));
+    try {
+        const data = await response.json();
+        return data || null;
+    } catch (error) {
+        console.error('Failed to parse JSON response:', error);
+        return null;
+    }
 }
 
 async function fetchCategories() {
     try {
         categories = await apiRequest('/categories');
+        if (!categories || !Array.isArray(categories)) {
+            categories = [];
+        }
         renderCategories();
         populateCategorySelect();
 
@@ -67,10 +76,11 @@ async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false) 
             params.set('with_meta', 'true');
         }
 
-        return await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
+        const response = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
+        return response || { posts: [], has_more: false };
     } catch (error) {
         console.error('Failed to fetch posts:', error);
-        throw error;
+        return { posts: [], has_more: false };
     }
 }
 
@@ -88,9 +98,10 @@ async function fetchCategoryStats(categoryId) {
 
         while (true) {
             const response = await apiRequest(`/categories/${categoryId}/posts?limit=${limit}&offset=${offset}`);
-            const posts = response.posts || response;
+            if (!response) break;
 
-            if (posts.length === 0) break;
+            const posts = response.posts || response;
+            if (!posts || !Array.isArray(posts) || posts.length === 0) break;
 
             posts.forEach(post => {
                 if (post.attachments && post.attachments.length > 0) {

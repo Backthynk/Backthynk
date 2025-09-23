@@ -10,9 +10,13 @@ async function fetchAllPostsForActivity(categoryId) {
     while (hasMore) {
         try {
             const response = await fetchPosts(categoryId, limit, offset, true);
-            const posts = response.posts || response;
+            if (!response) {
+                hasMore = false;
+                continue;
+            }
 
-            if (posts.length === 0) {
+            const posts = response.posts || response;
+            if (!posts || !Array.isArray(posts) || posts.length === 0) {
                 hasMore = false;
             } else {
                 allPosts = [...allPosts, ...posts];
