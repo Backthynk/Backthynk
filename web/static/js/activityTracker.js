@@ -46,12 +46,8 @@ async function generateActivityHeatmap() {
         const allPosts = await fetchAllPostsForActivity(currentCategory.id);
 
         if (allPosts.length === 0) {
-            document.getElementById('activity-heatmap').innerHTML = '<p class="text-xs text-gray-500">No posts in this category</p>';
-            // Clear the activity summary for empty categories
-            document.getElementById('activity-summary').textContent = '';
-            // Reset navigation buttons
-            document.getElementById('activity-next').disabled = true;
-            document.getElementById('activity-prev').disabled = true;
+            // Hide the entire activity container for empty categories
+            document.getElementById('activity-container').style.display = 'none';
             return;
         }
 
