@@ -41,7 +41,18 @@ type Attachment struct {
 	FileSize int64  `json:"file_size" db:"file_size"`
 }
 
+type LinkPreview struct {
+	ID          int    `json:"id" db:"id"`
+	PostID      int    `json:"post_id" db:"post_id"`
+	URL         string `json:"url" db:"url"`
+	Title       string `json:"title" db:"title"`
+	Description string `json:"description" db:"description"`
+	ImageURL    string `json:"image_url" db:"image_url"`
+	SiteName    string `json:"site_name" db:"site_name"`
+}
+
 type PostWithAttachments struct {
 	Post
-	Attachments []Attachment `json:"attachments"`
+	Attachments  []Attachment  `json:"attachments"`
+	LinkPreviews []LinkPreview `json:"link_previews"`
 }

@@ -37,3 +37,42 @@ function formatRelativeDate(dateString) {
 function showError(message) {
     alert(message);
 }
+
+// URL formatting utilities - add these to utils.js
+
+function shortenUrl(url, maxLength = 30) {
+    try {
+        const urlObj = new URL(url);
+        let shortened = urlObj.hostname;
+        
+        // Add path if there's room
+        if (urlObj.pathname !== '/' && shortened.length < maxLength - 5) {
+            const pathPart = urlObj.pathname.substring(0, maxLength - shortened.length - 3);
+            shortened += pathPart;
+            if (urlObj.pathname.length > pathPart.length) {
+                shortened += '...';
+            }
+        }
+        
+        // If still too long, truncate hostname
+        if (shortened.length > maxLength) {
+            shortened = shortened.substring(0, maxLength - 3) + '...';
+        }
+        
+        return shortened;
+    } catch (e) {
+        // If URL parsing fails, just truncate the original
+        return url.length > maxLength ? url.substring(0, maxLength - 3) + '...' : url;
+    }
+}
+
+function formatTextWithUrls(text) {
+    // URL regex - same as used in link preview
+    const urlRegex = /https?:\/\/[^\s\)]+/g;
+    
+    // Replace URLs with formatted links
+    return text.replace(urlRegex, (url) => {
+        const shortUrl = shortenUrl(url);
+        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors">${escapeHtml(shortUrl)}</a>`;
+    });
+}

@@ -8,6 +8,11 @@ function showCreatePost() {
     document.getElementById('create-post-section').style.display = 'block';
     document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('post-content').focus();
+    
+    // Initialize link preview after showing the form
+    setTimeout(() => {
+        setupSimpleLinkPreview();
+    }, 100);
 }
 
 function hideCreatePost() {
@@ -18,6 +23,9 @@ function hideCreatePost() {
     window.pastedFiles = [];
     updatePastedFilesDisplay();
     document.getElementById('new-post-btn').style.display = 'block';
+    
+    // Reset link previews when hiding form
+    resetLinkPreviews();
 }
 
 function showCategoryModal() {

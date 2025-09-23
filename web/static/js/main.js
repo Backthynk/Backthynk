@@ -81,7 +81,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         try {
-            const post = await createPost(currentCategory.id, content);
+            // Include link previews in the post creation
+            const postData = {
+                category_id: currentCategory.id,
+                content: content,
+                link_previews: getCurrentLinkPreviews()
+            };
+
+            const post = await apiRequest('/posts', {
+                method: 'POST',
+                body: JSON.stringify(postData)
+            });
 
             // Upload selected files
             for (let [fileId, file] of selectedFiles) {
@@ -100,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadPosts(currentCategory.id);
             // Refresh category stats
             const stats = await fetchCategoryStats(currentCategory.id);
-            const statsText = `${stats.posts} posts • ${stats.files} files • ${formatFileSize(stats.size)}`;
+            const statsText = `${stats.post_count} posts • ${stats.file_count} files • ${formatFileSize(stats.total_size)}`;
             document.getElementById('timeline-title').innerHTML = `
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
@@ -178,6 +188,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target === this) {
             closeImageViewer();
         }
+    };
+
+    // Initialize link preview system when creating post
+    const showCreatePostOriginal = window.showCreatePost;
+    window.showCreatePost = function() {
+        showCreatePostOriginal();
+        // Initialize link preview after showing the form
+        setTimeout(() => {
+            setupSimpleLinkPreview();
+        }, 100);
+    };
+
+    const hideCreatePostOriginal = window.hideCreatePost;
+    window.hideCreatePost = function() {
+        hideCreatePostOriginal();
+        // Reset link previews when hiding form
+        resetLinkPreviews();
     };
 });
 

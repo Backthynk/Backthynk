@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/models"
 	"backthynk/internal/storage"
 	"encoding/json"
 	"net/http"
@@ -19,8 +20,9 @@ func NewPostHandler(db *storage.DB) *PostHandler {
 
 func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		CategoryID int    `json:"category_id"`
-		Content    string `json:"content"`
+		CategoryID   int                        `json:"category_id"`
+		Content      string                     `json:"content"`
+		LinkPreviews []LinkPreviewResponse     `json:"link_previews,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -42,6 +44,42 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Extract and save link previews from content
+	var linkPreviewsToSave []LinkPreviewResponse
+	
+	// If link previews were provided in the request, use those
+	if len(req.LinkPreviews) > 0 {
+		linkPreviewsToSave = req.LinkPreviews
+	} else {
+		// Otherwise, extract URLs from content and fetch previews
+		urls := ExtractURLsFromText(req.Content)
+		linkPreviewHandler := NewLinkPreviewHandler(h.db)
+		
+		for _, url := range urls {
+			preview, err := linkPreviewHandler.extractMetadata(url)
+			if err == nil {
+				linkPreviewsToSave = append(linkPreviewsToSave, *preview)
+			}
+		}
+	}
+
+	// Save link previews to database
+	for _, preview := range linkPreviewsToSave {
+		linkPreview := &models.LinkPreview{
+			PostID:      post.ID,
+			URL:         preview.URL,
+			Title:       preview.Title,
+			Description: preview.Description,
+			ImageURL:    preview.ImageURL,
+			SiteName:    preview.SiteName,
+		}
+		
+		if err := h.db.CreateLinkPreview(linkPreview); err != nil {
+			// Log error but don't fail the post creation
+			// Could add logging here
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

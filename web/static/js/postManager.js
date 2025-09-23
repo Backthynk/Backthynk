@@ -173,6 +173,7 @@ function createPostElement(post) {
     const images = post.attachments ? post.attachments.filter(att => att.file_type.startsWith('image/')) : [];
     const otherFiles = post.attachments ? post.attachments.filter(att => !att.file_type.startsWith('image/')) : [];
     const totalAttachments = images.length + otherFiles.length;
+    const linkPreviews = post.link_previews || [];
 
     // Simple header
     const headerHtml = `
@@ -184,6 +185,11 @@ function createPostElement(post) {
                         ${totalAttachments} file${totalAttachments > 1 ? 's' : ''}
                     </span>
                 ` : ''}
+                ${linkPreviews.length > 0 ? `
+                    <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
+                        ${linkPreviews.length} link${linkPreviews.length > 1 ? 's' : ''}
+                    </span>
+                ` : ''}
             </div>
             <button onclick="confirmDeletePost(${post.id})" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all">
                 <i class="fas fa-trash-alt text-sm"></i>
@@ -191,12 +197,22 @@ function createPostElement(post) {
         </div>
     `;
 
-    // Content
+    // Content with formatted URLs
     const contentHtml = `
-        <div class="mb-4">
-            <p class="text-gray-900 leading-relaxed whitespace-pre-wrap">${escapeHtml(post.content)}</p>
+        <div class="mb-4 post-content">
+            <div class="text-gray-900 leading-relaxed whitespace-pre-wrap">${formatTextWithUrls(post.content)}</div>
         </div>
     `;
+
+    // Link previews
+    let linkPreviewsHtml = '';
+    if (linkPreviews.length > 0) {
+        linkPreviewsHtml = `
+            <div class="mb-4 space-y-3">
+                ${linkPreviews.map(preview => createPostLinkPreviewElement(preview)).join('')}
+            </div>
+        `;
+    }
 
     // Simple attachments
     let attachmentsHtml = '';
@@ -258,7 +274,7 @@ function createPostElement(post) {
         attachmentsHtml += '</div>';
     }
 
-    div.innerHTML = headerHtml + contentHtml + attachmentsHtml;
+    div.innerHTML = headerHtml + contentHtml + linkPreviewsHtml + attachmentsHtml;
     return div;
 }
 

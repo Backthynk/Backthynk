@@ -21,6 +21,7 @@ func main() {
 	categoryHandler := handlers.NewCategoryHandler(db)
 	postHandler := handlers.NewPostHandler(db)
 	uploadHandler := handlers.NewUploadHandler(db, "storage/uploads")
+	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
 
 	// Setup router
 	r := mux.NewRouter()
@@ -44,6 +45,10 @@ func main() {
 	api.HandleFunc("/posts/{id}", postHandler.GetPost).Methods("GET")
 	api.HandleFunc("/posts/{id}", postHandler.DeletePost).Methods("DELETE")
 	api.HandleFunc("/categories/{id}/posts", postHandler.GetPostsByCategory).Methods("GET")
+
+	// Link previews
+	api.HandleFunc("/link-preview", linkPreviewHandler.FetchLinkPreview).Methods("POST")
+	api.HandleFunc("/posts/{id}/link-previews", linkPreviewHandler.GetLinkPreviewsByPost).Methods("GET")
 
 	// File upload and serving
 	api.HandleFunc("/upload", uploadHandler.UploadFile).Methods("POST")
