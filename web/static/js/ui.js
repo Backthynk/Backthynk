@@ -11,7 +11,7 @@ function showCreatePost() {
     
     // Initialize link preview after showing the form
     setTimeout(() => {
-        setupSimpleLinkPreview();
+        initializeLinkPreview();
     }, 100);
 }
 

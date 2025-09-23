@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showCreatePostOriginal();
         // Initialize link preview after showing the form
         setTimeout(() => {
-            setupSimpleLinkPreview();
+            initializeLinkPreview();
         }, 100);
     };
 
