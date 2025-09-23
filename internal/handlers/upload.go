@@ -1,0 +1,141 @@
+package handlers
+
+import (
+	"backthynk/internal/storage"
+	"encoding/json"
+	"fmt"
+	"io"
+	"mime"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strconv"
+	"time"
+
+	"github.com/gorilla/mux"
+)
+
+type UploadHandler struct {
+	db         *storage.DB
+	uploadPath string
+}
+
+func NewUploadHandler(db *storage.DB, uploadPath string) *UploadHandler {
+	return &UploadHandler{db: db, uploadPath: uploadPath}
+}
+
+func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(32 << 20); err != nil { // 32MB limit
+		http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	postIDStr := r.FormValue("post_id")
+	if postIDStr == "" {
+		http.Error(w, "post_id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID, err := strconv.Atoi(postIDStr)
+	if err != nil {
+		http.Error(w, "Invalid post_id", http.StatusBadRequest)
+		return
+	}
+
+	// Verify post exists
+	_, err = h.db.GetPost(postID)
+	if err != nil {
+		http.Error(w, "Post not found", http.StatusNotFound)
+		return
+	}
+
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "Failed to get file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	// Create unique filename
+	timestamp := time.Now().Unix()
+	filename := fmt.Sprintf("%d_%s", timestamp, fileHeader.Filename)
+	filePath := filepath.Join(h.uploadPath, filename)
+
+	// Ensure upload directory exists
+	if err := os.MkdirAll(h.uploadPath, 0755); err != nil {
+		http.Error(w, "Failed to create upload directory", http.StatusInternalServerError)
+		return
+	}
+
+	// Save file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		http.Error(w, "Failed to create file", http.StatusInternalServerError)
+		return
+	}
+	defer dst.Close()
+
+	size, err := io.Copy(dst, file)
+	if err != nil {
+		os.Remove(filePath) // cleanup on error
+		http.Error(w, "Failed to save file", http.StatusInternalServerError)
+		return
+	}
+
+	// Detect file type
+	fileType := mime.TypeByExtension(filepath.Ext(fileHeader.Filename))
+	if fileType == "" {
+		fileType = "application/octet-stream"
+	}
+
+	// Save to database
+	attachment, err := h.db.CreateAttachment(postID, fileHeader.Filename, filename, fileType, size)
+	if err != nil {
+		os.Remove(filePath) // cleanup on error
+		http.Error(w, "Failed to save attachment info", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(attachment)
+}
+
+func (h *UploadHandler) ServeFile(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	filename := vars["filename"]
+
+	filePath := filepath.Join(h.uploadPath, filename)
+
+	// Security check - ensure file is within upload directory
+	absUploadPath, err := filepath.Abs(h.uploadPath)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	absFilePath, err := filepath.Abs(filePath)
+	if err != nil {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	if !filepath.HasPrefix(absFilePath, absUploadPath) {
+		http.Error(w, "Access denied", http.StatusForbidden)
+		return
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		http.Error(w, "File not found", http.StatusNotFound)
+		return
+	}
+
+	// Set appropriate headers
+	fileType := mime.TypeByExtension(filepath.Ext(filename))
+	if fileType != "" {
+		w.Header().Set("Content-Type", fileType)
+	}
+
+	http.ServeFile(w, r, filePath)
+}
