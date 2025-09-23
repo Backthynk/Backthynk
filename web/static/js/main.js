@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load initial data
     fetchCategories();
 
+    initializeStickyHeader();
+    
     // Category modal events
     document.getElementById('add-category-btn').onclick = showCategoryModal;
     document.getElementById('cancel-category').onclick = hideCategoryModal;

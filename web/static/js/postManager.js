@@ -316,9 +316,7 @@ async function confirmDeletePost(postId) {
 function updateCategoryStatsDisplay(stats) {
     const statsText = `${stats.post_count} posts • ${stats.file_count} files • ${formatFileSize(stats.total_size)}`;
     document.getElementById('timeline-title').innerHTML = `
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
-            <p class="text-sm text-gray-500">${statsText}</p>
-        </div>
+        <h2 class="text-xl font-bold text-gray-900">${currentCategory.name}</h2>
+        <p class="text-xs text-gray-500 mt-0.5">${statsText}</p>
     `;
 }

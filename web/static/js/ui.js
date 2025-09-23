@@ -7,6 +7,7 @@ function showCreatePost() {
 
     document.getElementById('create-post-section').style.display = 'block';
     document.getElementById('new-post-btn').style.display = 'none';
+    document.getElementById('new-post-btn-sticky').style.display = 'none'; // Add this line
     document.getElementById('post-content').focus();
     
     // Initialize link preview after showing the form
@@ -23,6 +24,7 @@ function hideCreatePost() {
     window.pastedFiles = [];
     updatePastedFilesDisplay();
     document.getElementById('new-post-btn').style.display = 'block';
+        document.getElementById('new-post-btn-sticky').style.display = 'block'; // Add this line
     
     // Reset link previews when hiding form
     resetLinkPreviews();

@@ -111,23 +111,42 @@
     .post-content a:hover {
         text-decoration: underline;
     }
+    /* Ensure the container background matches */
+    .container {
+        background-color: rgb(249, 250, 251);
+    }
+
+   #timeline-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border-radius: 0;
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+    }
+
+    #timeline-header.scrolled {
+        background: rgba(249, 250, 251, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .timeline-content {
+        max-width: 80rem;
+        margin: 0 auto;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
 </style>
 </head>
 
 
 <body class="bg-gray-50 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <!-- Header -->
-        <header class="mb-8 flex items-start justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 mb-2">Backthynk</h1>
-                <p class="text-gray-600">Your personal micro-blogging space</p>
-            </div>
-            <div id="global-stats-header" class="text-right text-sm text-gray-500">
-                <!-- Global stats will appear here -->
-            </div>
-        </header>
-
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Sidebar - Categories -->
             <div class="lg:col-span-1">
@@ -231,18 +250,20 @@
                     </form>
                 </div>
 
-                <!-- Timeline -->
                 <div id="timeline-section">
-                    <div class="flex items-start justify-between mb-6">
-                        <div id="timeline-title" class="flex-1">
-                            <h2 class="text-2xl font-bold text-gray-900">Select a category to view posts</h2>
-                        </div>
-                        <div class="flex flex-col items-end">
-                            <button id="new-post-btn" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md" style="display: none;">
-                                <i class="fas fa-plus mr-2"></i>New Post
-                            </button>
+                    <div id="timeline-header" class="py-4 mb-6">
+                        <div class="timeline-content">
+                            <div class="flex items-center justify-between">
+                                <div id="timeline-title" class="flex-1 min-w-0">
+                                    <h2 class="text-xl font-bold text-gray-900">Select a category to view posts</h2>
+                                </div>
+                                <button id="new-post-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
+                                    <i class="fas fa-plus mr-2"></i>New Post
+                                </button>
+                            </div>
                         </div>
                     </div>
+                    
                     <div id="posts-container" class="space-y-6">
                         <!-- Posts will be loaded here -->
                     </div>
@@ -316,6 +337,7 @@
     <script src="/static/js/imageViewer.js"></script>
     <script src="/static/js/linkPreview.js"></script>
     <script src="/static/js/activityTracker.js"></script>
+    <script src="/static/js/stickyHeader.js"></script>
     <script src="/static/js/main.js"></script>
 </body>
 </html>
