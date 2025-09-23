@@ -38,8 +38,7 @@ async function generateActivityHeatmap() {
         generateHeatmapForPeriod(activityMap, maxPeriods);
 
     } catch (error) {
-        console.error('Failed to generate activity heatmap:', error);
-        document.getElementById('activity-heatmap').innerHTML = '<p class="text-xs text-red-500">Failed to load activity</p>';
+        generateHeatmapForPeriod({}, 0);
     }
 }
 

@@ -129,6 +129,16 @@ async function confirmDeletePost(postId) {
     if (confirm('Are you sure you want to delete this post?\n\nThis will also delete all attached files.\n\nThis action cannot be undone.')) {
         try {
             await deletePost(postId);
+            // Add these lines after deletePost:
+            const stats = await fetchCategoryStats(currentCategory.id);
+            const statsText = `${stats.posts} posts • ${stats.files} files • ${formatFileSize(stats.size)}`;
+            document.getElementById('timeline-title').innerHTML = `
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
+                    <p class="text-sm text-gray-500">${statsText}</p>
+                </div>
+            `;
+            await fetchGlobalStats();
             loadPosts(currentCategory.id);
         } catch (error) {
             showError('Failed to delete post: ' + error.message);

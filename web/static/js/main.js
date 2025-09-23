@@ -98,6 +98,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
             hideCreatePost();
             loadPosts(currentCategory.id);
+            // Refresh category stats
+            const stats = await fetchCategoryStats(currentCategory.id);
+            const statsText = `${stats.posts} posts • ${stats.files} files • ${formatFileSize(stats.size)}`;
+            document.getElementById('timeline-title').innerHTML = `
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
+                    <p class="text-sm text-gray-500">${statsText}</p>
+                </div>
+            `;
+
+            // Refresh global stats
+            await fetchGlobalStats();
         } catch (error) {
             showError(error.message);
         }

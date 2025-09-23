@@ -6,6 +6,7 @@ function showCreatePost() {
     }
 
     document.getElementById('create-post-section').style.display = 'block';
+    document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('post-content').focus();
 }
 
@@ -16,6 +17,7 @@ function hideCreatePost() {
     updateFilePreview();
     window.pastedFiles = [];
     updatePastedFilesDisplay();
+    document.getElementById('new-post-btn').style.display = 'block';
 }
 
 function showCategoryModal() {
