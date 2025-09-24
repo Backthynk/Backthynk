@@ -13,8 +13,9 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-function formatRelativeDate(dateString) {
-    const date = new Date(dateString);
+function formatRelativeDate(timestamp) {
+    // timestamp is expected to be Unix timestamp in milliseconds
+    const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now - date;
     const diffDays = Math.floor(diffMs / window.AppConstants.UI_CONFIG.daysInMs);

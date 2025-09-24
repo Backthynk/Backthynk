@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 func (db *DB) CreateCategory(name string, parentID *int) (*models.Category, error) {
@@ -27,8 +28,8 @@ func (db *DB) CreateCategory(name string, parentID *int) (*models.Category, erro
 	}
 
 	result, err := db.Exec(
-		"INSERT INTO categories (name, parent_id, depth) VALUES (?, ?, ?)",
-		name, parentID, depth,
+		"INSERT INTO categories (name, parent_id, depth, created) VALUES (?, ?, ?, ?)",
+		name, parentID, depth, time.Now().UnixMilli(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create category: %w", err)
@@ -81,54 +82,6 @@ func (db *DB) GetCategories() ([]models.Category, error) {
 	return categories, nil
 }
 
-func (db *DB) GetCategoriesWithStats() ([]models.CategoryWithStats, error) {
-	// Get basic categories first
-	basicCategories, err := db.GetCategories()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get basic categories: %w", err)
-	}
-
-	var categories []models.CategoryWithStats
-	for _, cat := range basicCategories {
-		stats, err := db.GetCategoryStats(cat.ID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get stats for category %d: %w", cat.ID, err)
-		}
-
-		categoryWithStats := models.CategoryWithStats{
-			Category:     cat,
-			PostCount:    stats.PostCount,
-			FileCount:    stats.FileCount,
-			TotalSize:    stats.TotalSize,
-			LastPostTime: stats.LastPostTime,
-		}
-
-		categories = append(categories, categoryWithStats)
-	}
-
-	return categories, nil
-}
-
-func (db *DB) GetCategoryStats(categoryID int) (*models.CategoryStats, error) {
-	return db.GetCategoryStatsRecursive(categoryID, false)
-}
-
-func (db *DB) GetCategoryStatsRecursive(categoryID int, recursive bool) (*models.CategoryStats, error) {
-	stats := &models.CategoryStats{}
-
-	// Get post count using the recursive function from posts.go
-	postCount, err := db.GetPostCountByCategoryRecursive(categoryID, recursive)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get post count for category %d: %w", categoryID, err)
-	}
-	stats.PostCount = postCount
-
-	// Set hardcoded values for testing
-	stats.FileCount = 0
-	stats.TotalSize = 0
-
-	return stats, nil
-}
 
 func (db *DB) GetCategoriesByParent(parentID *int) ([]models.Category, error) {
 	var rows *sql.Rows

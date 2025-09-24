@@ -5,7 +5,8 @@ const DEFAULT_SETTINGS = {
     maxFileSizeMB: 100,
     maxContentLength: 15000,
     maxFilesPerPost: 20,
-    storagePath: '.storage'
+    storagePath: '.storage',
+    activityEnabled: true
 };
 
 // Validation Limits

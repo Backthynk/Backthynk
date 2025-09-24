@@ -119,63 +119,22 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
 
 async function fetchCategoryStats(categoryId, recursive = false) {
     try {
-        // Build URL with parameters
+        // Use efficient cached API that returns all statistics in one request
         const params = new URLSearchParams({
-            limit: '1',
-            with_meta: 'true'
+            recursive: recursive.toString()
         });
 
-        if (recursive) {
-            params.set('recursive', 'true');
-        }
-
-        // First get post count from metadata
-        const metaResponse = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
-        const postCount = metaResponse.total_count || 0;
-
-        // Then get all posts to calculate file stats
-        let fileCount = 0;
-        let totalSize = 0;
-        let offset = 0;
-        const limit = window.AppConstants.UI_CONFIG.batchProcessLimit; // Process in batches
-
-        while (true) {
-            const batchParams = new URLSearchParams({
-                limit: limit.toString(),
-                offset: offset.toString()
-            });
-
-            if (recursive) {
-                batchParams.set('recursive', 'true');
-            }
-
-            const response = await apiRequest(`/categories/${categoryId}/posts?${batchParams.toString()}`);
-            if (!response) break;
-
-            const posts = response.posts || response;
-            if (!posts || !Array.isArray(posts) || posts.length === 0) break;
-
-            posts.forEach(post => {
-                if (post.attachments && post.attachments.length > 0) {
-                    fileCount += post.attachments.length;
-                    post.attachments.forEach(attachment => {
-                        totalSize += attachment.file_size || 0;
-                    });
-                }
-            });
-
-            if (posts.length < limit) break; // Last batch
-            offset += limit;
-        }
+        const response = await apiRequest(`/category-stats/${categoryId}?${params.toString()}`);
 
         return {
-            post_count: postCount,
-            file_count: fileCount,
-            total_size: totalSize
+            post_count: response.post_count || 0,
+            file_count: response.file_count || 0,
+            total_size: response.total_size || 0,
+            last_updated: response.last_updated || 0
         };
     } catch (error) {
         console.error('Failed to fetch category stats:', error);
-        return { post_count: 0, file_count: 0, total_size: 0 };
+        return { post_count: 0, file_count: 0, total_size: 0, last_updated: 0 };
     }
 }
 

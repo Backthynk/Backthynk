@@ -66,6 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load saved state
     loadExpandedCategories();
 
+    // Check activity system status
+    checkActivityEnabled();
+
     // Load initial data
     fetchCategories();
 

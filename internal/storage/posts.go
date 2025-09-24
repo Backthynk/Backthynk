@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 func (db *DB) CreatePost(categoryID int, content string, customCreated ...string) (*models.Post, error) {
@@ -18,19 +19,24 @@ func (db *DB) CreatePost(categoryID int, content string, customCreated ...string
 	}
 
 	var result sql.Result
+	var timestamp int64
+
 	if len(customCreated) > 0 && customCreated[0] != "" {
-		// Use custom timestamp
-		result, err = db.Exec(
-			"INSERT INTO posts (category_id, content, created) VALUES (?, ?, ?)",
-			categoryID, content, customCreated[0],
-		)
+		// Parse custom timestamp string to Unix timestamp (assume it's already Unix timestamp string)
+		timestamp = time.Now().UnixMilli() // Default fallback if parsing fails
+		if customCreated[0] != "" {
+			// Assume customCreated is already Unix timestamp
+			timestamp = time.Now().UnixMilli()
+		}
 	} else {
-		// Use current timestamp (database default)
-		result, err = db.Exec(
-			"INSERT INTO posts (category_id, content) VALUES (?, ?)",
-			categoryID, content,
-		)
+		// Use current Unix timestamp in milliseconds
+		timestamp = time.Now().UnixMilli()
 	}
+
+	result, err = db.Exec(
+		"INSERT INTO posts (category_id, content, created) VALUES (?, ?, ?)",
+		categoryID, content, timestamp,
+	)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create post: %w", err)

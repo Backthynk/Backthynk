@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"backthynk/internal/config"
+	"backthynk/internal/services"
 	"backthynk/internal/storage"
 	"encoding/json"
 	"fmt"
@@ -20,10 +21,16 @@ type UploadHandler struct {
 	db         *storage.DB
 	uploadPath string
 	settingsHandler *SettingsHandler
+	fileStatsService *services.FileStatsService
 }
 
-func NewUploadHandler(db *storage.DB, uploadPath string, settingsHandler *SettingsHandler) *UploadHandler {
-	return &UploadHandler{db: db, uploadPath: uploadPath, settingsHandler: settingsHandler}
+func NewUploadHandler(db *storage.DB, uploadPath string, settingsHandler *SettingsHandler, fileStatsService *services.FileStatsService) *UploadHandler {
+	return &UploadHandler{
+		db: db,
+		uploadPath: uploadPath,
+		settingsHandler: settingsHandler,
+		fileStatsService: fileStatsService,
+	}
 }
 
 func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +126,16 @@ func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		os.Remove(filePath) // cleanup on error
 		http.Error(w, "Failed to save attachment info", http.StatusInternalServerError)
 		return
+	}
+
+	// Get post to find category ID for file statistics cache update
+	post, err := h.db.GetPost(postID)
+	if err == nil && h.fileStatsService != nil {
+		// Update file statistics cache
+		if err := h.fileStatsService.OnFileUploaded(post.CategoryID, size); err != nil {
+			// Log warning but don't fail the upload
+			fmt.Printf("Warning: failed to update file statistics cache: %v\n", err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

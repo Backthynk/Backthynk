@@ -59,13 +59,15 @@ function populateSettingsForm() {
     document.getElementById('maxContentLength').value = currentSettings.maxContentLength || window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
     document.getElementById('maxFilesPerPost').value = currentSettings.maxFilesPerPost || window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
     document.getElementById('storagePath').value = currentSettings.storagePath || window.AppConstants.DEFAULT_SETTINGS.storagePath;
+    document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
 }
 
 function getSettingsFromForm() {
     return {
         maxFileSizeMB: parseInt(document.getElementById('maxFileSizeMB').value),
         maxContentLength: parseInt(document.getElementById('maxContentLength').value),
-        maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value)
+        maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
+        activityEnabled: document.getElementById('activityEnabled').checked
     };
 }
 
@@ -119,6 +121,11 @@ async function saveSettings() {
         // Clear settings cache and refresh UI components
         clearSettingsCache();
         refreshUIWithNewSettings();
+
+        // Check activity status in case it changed
+        if (typeof checkActivityEnabled === 'function') {
+            await checkActivityEnabled();
+        }
 
         showSettingsStatus('Settings saved successfully!', 'success');
 

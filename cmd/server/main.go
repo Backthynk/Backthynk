@@ -3,7 +3,9 @@ package main
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/handlers"
+	"backthynk/internal/services"
 	"backthynk/internal/storage"
+	"encoding/json"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -26,11 +28,36 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize activity service and cache (if enabled)
+	var activityService *services.ActivityService
+	if options.ActivityEnabled {
+		activityService = services.NewActivityService(db)
+		if err := activityService.InitializeCache(); err != nil {
+			log.Printf("Warning: Failed to initialize activity cache: %v", err)
+		}
+		log.Println("Activity system enabled")
+	} else {
+		log.Println("Activity system disabled")
+	}
+
+	// Initialize file statistics service and cache
+	fileStatsService := services.NewFileStatsService(db)
+	if err := fileStatsService.InitializeCache(); err != nil {
+		log.Printf("Warning: Failed to initialize file statistics cache: %v", err)
+	}
+
 	// Initialize handlers
 	categoryHandler := handlers.NewCategoryHandler(db)
-	postHandler := handlers.NewPostHandler(db, settingsHandler)
-	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler)
+	postHandler := handlers.NewPostHandler(db, settingsHandler, activityService, fileStatsService)
+	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
+	categoryStatsHandler := handlers.NewCategoryStatsHandler(activityService, fileStatsService)
+
+	// Activity handler (only if activity is enabled)
+	var activityHandler *handlers.ActivityHandler
+	if activityService != nil {
+		activityHandler = handlers.NewActivityHandler(activityService)
+	}
 
 	// Setup router
 	r := mux.NewRouter()
@@ -45,7 +72,7 @@ func main() {
 	api.HandleFunc("/categories", categoryHandler.GetCategories).Methods("GET")
 	api.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
 	api.HandleFunc("/categories/by-parent", categoryHandler.GetCategoriesByParent).Methods("GET")
-	api.HandleFunc("/category-stats/{id}", categoryHandler.GetCategoryStats).Methods("GET")
+	api.HandleFunc("/category-stats/{id}", categoryStatsHandler.GetCategoryStats).Methods("GET")
 	api.HandleFunc("/categories/{id}", categoryHandler.GetCategory).Methods("GET")
 	api.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
@@ -59,6 +86,11 @@ func main() {
 	api.HandleFunc("/link-preview", linkPreviewHandler.FetchLinkPreview).Methods("POST")
 	api.HandleFunc("/posts/{id}/link-previews", linkPreviewHandler.GetLinkPreviewsByPost).Methods("GET")
 
+	// Activity (only if enabled)
+	if activityHandler != nil {
+		api.HandleFunc("/activity/{id}", activityHandler.GetActivityPeriod).Methods("GET")
+	}
+
 	// File upload and serving
 	api.HandleFunc("/upload", uploadHandler.UploadFile).Methods("POST")
 	r.HandleFunc("/uploads/{filename}", uploadHandler.ServeFile).Methods("GET")
@@ -66,6 +98,12 @@ func main() {
 	// Settings
 	api.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET")
 	api.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT")
+
+	// Activity status endpoint
+	api.HandleFunc("/activity-enabled", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]bool{"enabled": options.ActivityEnabled})
+	}).Methods("GET")
 
 	// Static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))

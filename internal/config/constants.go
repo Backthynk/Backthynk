@@ -17,6 +17,7 @@ const (
 	DefaultMaxContentLength = 15000
 	DefaultMaxFilesPerPost  = 20
 	DefaultStoragePath      = ".storage"
+	DefaultActivityEnabled  = true
 
 	// Validation Limits
 	MinFileSizeMB    = 1

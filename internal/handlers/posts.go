@@ -3,6 +3,7 @@ package handlers
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/models"
+	"backthynk/internal/services"
 	"backthynk/internal/storage"
 	"encoding/json"
 	"fmt"
@@ -15,10 +16,17 @@ import (
 type PostHandler struct {
 	db              *storage.DB
 	settingsHandler *SettingsHandler
+	activityService *services.ActivityService
+	fileStatsService *services.FileStatsService
 }
 
-func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler) *PostHandler {
-	return &PostHandler{db: db, settingsHandler: settingsHandler}
+func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *PostHandler {
+	return &PostHandler{
+		db:              db,
+		settingsHandler: settingsHandler,
+		activityService: activityService,
+		fileStatsService: fileStatsService,
+	}
 }
 
 func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +66,14 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Update activity cache
+	if h.activityService != nil {
+		if err := h.activityService.OnPostCreated(post.CategoryID, post.Created); err != nil {
+			// Log error but don't fail the request
+			fmt.Printf("Warning: failed to update activity cache: %v\n", err)
+		}
 	}
 
 	// Extract and save link previews from content
@@ -183,10 +199,44 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get post details before deletion for cache updates
+	var categoryID int
+	var created int64
+	var attachments []models.Attachment
+
+	post, err := h.db.GetPost(id)
+	if err == nil {
+		categoryID = post.CategoryID
+		created = post.Created
+
+		// Get attachments for file statistics cache update
+		if h.fileStatsService != nil {
+			attachments, _ = h.db.GetAttachmentsByPost(id)
+		}
+	}
+
 	err = h.db.DeletePost(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
+	}
+
+	// Update activity cache
+	if h.activityService != nil && categoryID > 0 {
+		if err := h.activityService.OnPostDeleted(categoryID, created); err != nil {
+			// Log error but don't fail the request
+			fmt.Printf("Warning: failed to update activity cache: %v\n", err)
+		}
+	}
+
+	// Update file statistics cache for deleted attachments
+	if h.fileStatsService != nil && categoryID > 0 {
+		for _, attachment := range attachments {
+			if err := h.fileStatsService.OnFileDeleted(categoryID, attachment.FileSize); err != nil {
+				// Log error but don't fail the request
+				fmt.Printf("Warning: failed to update file statistics cache: %v\n", err)
+			}
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

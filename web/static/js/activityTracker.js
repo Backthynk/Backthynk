@@ -1,128 +1,117 @@
-// Activity tracking and heatmap functions
+// Modern, efficient activity tracking using cached backend data
+// Replaces the old system that fetched all posts on every request
 
-// Helper function to fetch all posts for activity tracking
-async function fetchAllPostsForActivity(categoryId, recursive = false) {
-    let allPosts = [];
-    let offset = 0;
-    const limit = window.AppConstants.UI_CONFIG.batchProcessLimit; // Fetch in batches
-    let hasMore = true;
+let currentActivityCache = null;
+// currentActivityPeriod is defined in state.js
 
-    while (hasMore) {
-        try {
-            const response = await fetchPosts(categoryId, limit, offset, true, recursive);
-            if (!response) {
-                hasMore = false;
-                continue;
-            }
-
-            const posts = response.posts || response;
-            if (!posts || !Array.isArray(posts) || posts.length === 0) {
-                hasMore = false;
-            } else {
-                allPosts = [...allPosts, ...posts];
-                offset += posts.length;
-
-                // Check if we have more posts
-                if (response.has_more !== undefined) {
-                    hasMore = response.has_more;
-                } else {
-                    hasMore = posts.length === limit;
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching posts for activity:', error);
-            break;
-        }
-    }
-
-    return allPosts;
-}
+// Initialize activity tracking with cached data
 async function generateActivityHeatmap() {
-    if (!currentCategory) {
+    // Check if activity system is enabled
+    if (!activityEnabled || !currentCategory) {
         document.getElementById('activity-container').style.display = 'none';
         return;
     }
 
-    document.getElementById('activity-container').style.display = 'block';
+    // Let CSS handle responsive visibility (hidden on mobile, visible on desktop)
+    document.getElementById('activity-container').style.display = '';
 
     try {
-        // Fetch all posts for activity tracking - we need all posts for the heatmap
-        const allPosts = await fetchAllPostsForActivity(currentCategory.id, currentCategory.recursiveMode || false);
+        // Use efficient API that returns only non-zero activity days
+        const response = await fetchActivityPeriod(
+            currentCategory.id,
+            currentCategory.recursiveMode || false,
+            currentActivityPeriod
+        );
 
-        if (allPosts.length === 0) {
-            // Hide the entire activity container for empty categories
+        if (!response || response.days.length === 0) {
+            // Hide activity container for empty categories
             document.getElementById('activity-container').style.display = 'none';
             return;
         }
 
-        // Find the earliest post date
-        const earliestPost = new Date(Math.min(...allPosts.map(post => new Date(post.created))));
-        const today = new Date();
+        // Cache the response for fast period navigation
+        currentActivityCache = response;
 
-        // Calculate how many 6-month periods we need to go back to include the earliest post
-        const monthsDiff = (today.getFullYear() - earliestPost.getFullYear()) * 12 + (today.getMonth() - earliestPost.getMonth());
-        const maxPeriods = Math.ceil(monthsDiff / 6);
-
-        // Always start at current period (0) by default - don't change currentActivityPeriod on first load
-
-        const activityMap = {};
-        allPosts.forEach(post => {
-            const date = new Date(post.created);
-            const dateKey = date.toISOString().split('T')[0];
-            activityMap[dateKey] = (activityMap[dateKey] || 0) + 1;
-        });
-
-        generateHeatmapForPeriod(activityMap, maxPeriods);
+        // Generate heatmap from compact data
+        generateHeatmapFromCache(response);
 
     } catch (error) {
-        generateHeatmapForPeriod({}, 0);
+        console.error('Failed to generate activity heatmap:', error);
+        // Fallback to empty heatmap
+        generateHeatmapFromCache({
+            days: [],
+            stats: { total_posts: 0, active_days: 0, max_day_activity: 0 },
+            max_periods: 0
+        });
     }
 }
 
-function generateHeatmapForPeriod(activityMap, maxPeriods) {
-    const today = new Date();
-    let periodStart, periodEnd;
+// Fetch activity data from efficient backend API
+async function fetchActivityPeriod(categoryId, recursive = false, period = 0, periodMonths = 6) {
+    const params = new URLSearchParams({
+        recursive: recursive.toString(),
+        period: period.toString(),
+        period_months: periodMonths.toString()
+    });
 
-    // Calculate period dates
-    if (currentActivityPeriod === 0) {
-        // For current period, show last 6 months up to today
-        periodEnd = new Date(today);
-        periodEnd.setDate(periodEnd.getDate() + 1); // Include today
+    const response = await fetch(`/api/activity/${categoryId}?${params}`, {
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
 
-        periodStart = new Date(today);
-        periodStart.setMonth(today.getMonth() - 5); // 6 months total (current + 5 back)
-        periodStart.setDate(1);
-    } else {
-        // For historical periods, calculate continuous 6-month windows going backwards
-        // currentActivityPeriod = -1 should be the 6 months before the current period
-
-        // Current period ends today, starts 6 months back
-        const currentPeriodStart = new Date(today);
-        currentPeriodStart.setMonth(today.getMonth() - 5);
-        currentPeriodStart.setDate(1);
-
-        // Each previous period is 6 months before the previous one
-        periodStart = new Date(currentPeriodStart);
-        periodStart.setMonth(currentPeriodStart.getMonth() + (6 * currentActivityPeriod));
-        periodStart.setDate(1);
-
-        periodEnd = new Date(periodStart);
-        periodEnd.setMonth(periodStart.getMonth() + 6);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    return await response.json();
+}
+
+// Generate heatmap from cached activity data
+function generateHeatmapFromCache(activityData) {
+    // Convert activity days array to map for O(1) lookups
+    const activityMap = {};
+    activityData.days.forEach(day => {
+        activityMap[day.date] = day.count;
+    });
+
     // Update period label
-    const startMonth = periodStart.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    const endMonth = currentActivityPeriod === 0
-        ? today.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        : new Date(periodEnd.getTime() - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-    document.getElementById('activity-period').textContent = `${startMonth} - ${endMonth}`;
+    const periodLabel = currentActivityPeriod === 0
+        ? `${activityData.start_date} - ${activityData.end_date}`
+        : `${activityData.start_date} - ${activityData.end_date}`;
 
-    // Generate all days in the period
+    document.getElementById('activity-period').textContent = formatPeriodLabel(
+        activityData.start_date,
+        activityData.end_date,
+        currentActivityPeriod
+    );
+
+    // Generate calendar grid efficiently
+    const days = generateCalendarDays(activityData.start_date, activityData.end_date, activityMap);
+
+    // Render heatmap
+    renderHeatmapGrid(days);
+
+    // Update summary with pre-calculated stats
+    document.getElementById('activity-summary').textContent =
+        `${activityData.stats.total_posts} posts on ${activityData.stats.active_days} days`;
+
+    // Update navigation buttons
+    document.getElementById('activity-next').disabled = currentActivityPeriod >= 0;
+    document.getElementById('activity-prev').disabled = currentActivityPeriod <= -activityData.max_periods;
+
+    // Add tooltips
+    addHeatmapTooltips();
+}
+
+// Generate calendar days efficiently without fetching all data
+function generateCalendarDays(startDate, endDate, activityMap) {
     const days = [];
-    const currentDate = new Date(periodStart);
+    const current = new Date(startDate + 'T00:00:00Z'); // Ensure UTC
+    const end = new Date(endDate + 'T00:00:00Z');
 
-    while (currentDate < periodEnd) {
-        const dateKey = currentDate.toISOString().split('T')[0];
+    while (current <= end) {
+        const dateKey = current.toISOString().split('T')[0];
         const count = activityMap[dateKey] || 0;
         const intensity = getIntensityLevel(count);
 
@@ -130,15 +119,19 @@ function generateHeatmapForPeriod(activityMap, maxPeriods) {
             date: dateKey,
             count: count,
             intensity: intensity,
-            month: currentDate.getMonth(),
-            day: currentDate.getDate()
+            month: current.getUTCMonth(),
+            day: current.getUTCDate()
         });
 
-        currentDate.setDate(currentDate.getDate() + 1);
+        current.setUTCDate(current.getUTCDate() + 1);
     }
 
-    // Calculate dynamic squares per row
-    const squaresPerRow = 12; // Fixed number that works well for sidebar
+    return days;
+}
+
+// Render heatmap grid with optimized layout
+function renderHeatmapGrid(days) {
+    const squaresPerRow = window.AppConstants.UI_CONFIG.heatmapSquaresPerRow;
     const rows = Math.ceil(days.length / squaresPerRow);
 
     let html = '<div class="space-y-1">';
@@ -148,33 +141,40 @@ function generateHeatmapForPeriod(activityMap, maxPeriods) {
         const startIndex = row * squaresPerRow;
         const endIndex = Math.min(startIndex + squaresPerRow, days.length);
 
-        // Get the first day of this row to determine month label
+        // Get first day of row for month label
         const firstDay = days[startIndex];
         const currentMonth = firstDay ? firstDay.month : -1;
 
         // Only show month label when it changes
         let monthLabel = '';
         if (currentMonth !== lastMonthShown) {
-            monthLabel = new Date(firstDay.date).toLocaleDateString('en-US', { month: 'short' });
+            monthLabel = new Date(firstDay.date + 'T00:00:00Z').toLocaleDateString('en-US', {
+                month: 'short',
+                timeZone: 'UTC'
+            });
             lastMonthShown = currentMonth;
         }
 
         html += '<div class="flex items-center">';
-
-        // Month label aligned to the left (no margin-right)
         html += `<div class="w-8 text-xs text-gray-400 flex-shrink-0">${monthLabel}</div>`;
-
-        // Squares row starting right after month label
         html += '<div class="flex gap-1">';
 
         for (let i = startIndex; i < endIndex; i++) {
             if (i < days.length) {
                 const day = days[i];
                 const colorClass = getColorClass(day.intensity);
+                const dayName = new Date(day.date + 'T00:00:00Z').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                    timeZone: 'UTC'
+                });
+
                 html += `<div class="w-3 h-3 ${colorClass} rounded-sm cursor-pointer heatmap-cell hover:ring-1 hover:ring-gray-300 transition-all flex-shrink-0"
                              data-date="${day.date}"
                              data-count="${day.count}"
-                             data-day="${new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}">
+                             data-day="${dayName}">
                          </div>`;
             }
         }
@@ -184,43 +184,51 @@ function generateHeatmapForPeriod(activityMap, maxPeriods) {
 
     html += '</div>';
     document.getElementById('activity-heatmap').innerHTML = html;
-
-    // Update summary
-    const totalPosts = days.reduce((sum, day) => sum + day.count, 0);
-    const activeDays = days.filter(day => day.count > 0).length;
-    document.getElementById('activity-summary').textContent = `${totalPosts} posts on ${activeDays} days`;
-
-    // Update navigation buttons
-    document.getElementById('activity-next').disabled = currentActivityPeriod >= 0;
-    document.getElementById('activity-prev').disabled = currentActivityPeriod <= -maxPeriods;
-
-    addHeatmapTooltips();
 }
 
-function changeActivityPeriod(direction) {
-    currentActivityPeriod += direction;
-    generateActivityHeatmap();
+// Format period label
+function formatPeriodLabel(startDate, endDate, period) {
+    const start = new Date(startDate + 'T00:00:00Z');
+    const end = new Date(endDate + 'T00:00:00Z');
+
+    const startMonth = start.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const endMonth = end.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+    return `${startMonth} - ${endMonth}`;
 }
 
+// Navigate activity periods efficiently
+async function changeActivityPeriod(direction) {
+    const newPeriod = currentActivityPeriod + direction;
+
+    // Check bounds
+    if (currentActivityCache) {
+        if (newPeriod > 0 || newPeriod < -currentActivityCache.max_periods) {
+            return; // Out of bounds
+        }
+    }
+
+    currentActivityPeriod = newPeriod;
+
+    // Generate new heatmap (will fetch new data if needed)
+    await generateActivityHeatmap();
+}
+
+// Get activity intensity level (same as before but using constants)
 function getIntensityLevel(count) {
-    if (count === 0) return 0;
-    if (count === 1) return 1;
-    if (count <= 3) return 2;
-    if (count <= 5) return 3;
-    return 4;
+    if (count === 0) return window.AppConstants.ACTIVITY_LEVELS.none;
+    if (count === window.AppConstants.ACTIVITY_THRESHOLDS.low) return window.AppConstants.ACTIVITY_LEVELS.low;
+    if (count <= window.AppConstants.ACTIVITY_THRESHOLDS.medium) return window.AppConstants.ACTIVITY_LEVELS.medium;
+    if (count <= window.AppConstants.ACTIVITY_THRESHOLDS.high) return window.AppConstants.ACTIVITY_LEVELS.high;
+    return window.AppConstants.ACTIVITY_LEVELS.veryHigh;
 }
 
+// Get color class for activity level (using constants)
 function getColorClass(intensity) {
-    const colors = [
-        'bg-gray-100',      // 0 posts
-        'bg-green-200',     // 1 post
-        'bg-green-400',     // 2-3 posts
-        'bg-green-600',     // 4-5 posts
-        'bg-green-800'      // 6+ posts
-    ];
-    return colors[intensity] || colors[0];
+    return window.AppConstants.ACTIVITY_CLASSES[intensity] || window.AppConstants.ACTIVITY_CLASSES[0];
 }
 
+// Add tooltips (same as before)
 function addHeatmapTooltips() {
     const cells = document.querySelectorAll('.heatmap-cell');
     let tooltip = null;
@@ -242,7 +250,7 @@ function addHeatmapTooltips() {
             const rect = e.target.getBoundingClientRect();
             const tooltipRect = tooltip.getBoundingClientRect();
 
-            // Position tooltip to the right, or left if no space
+            // Position tooltip
             let left = rect.right + 10;
             if (left + tooltipRect.width > window.innerWidth) {
                 left = rect.left - tooltipRect.width - 10;
@@ -260,3 +268,4 @@ function addHeatmapTooltips() {
         });
     });
 }
+

@@ -44,7 +44,7 @@ func (db *DB) createTables() error {
 			name TEXT NOT NULL,
 			parent_id INTEGER,
 			depth INTEGER NOT NULL DEFAULT 0,
-			created DATETIME DEFAULT CURRENT_TIMESTAMP,
+			created INTEGER NOT NULL,
 			FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE,
 			CHECK (depth >= 0 AND depth <= %d)
 		)`, config.MaxCategoryDepth),
@@ -52,7 +52,7 @@ func (db *DB) createTables() error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			category_id INTEGER NOT NULL,
 			content TEXT NOT NULL,
-			created DATETIME DEFAULT CURRENT_TIMESTAMP,
+			created INTEGER NOT NULL,
 			FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS attachments (

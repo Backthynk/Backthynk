@@ -18,26 +18,13 @@ func NewCategoryHandler(db *storage.DB) *CategoryHandler {
 }
 
 func (h *CategoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
-	// Check if stats are requested
-	withStats := r.URL.Query().Get("with_stats") == "true"
-
-	if withStats {
-		categories, err := h.db.GetCategoriesWithStats()
-		if err != nil {
-			http.Error(w, "Failed to get categories with stats", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(categories)
-	} else {
-		categories, err := h.db.GetCategories()
-		if err != nil {
-			http.Error(w, "Failed to get categories", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(categories)
+	categories, err := h.db.GetCategories()
+	if err != nil {
+		http.Error(w, "Failed to get categories", http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(categories)
 }
 
 func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.Request) {
@@ -108,11 +95,6 @@ func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(category)
 }
 
-func (h *CategoryHandler) GetCategoryStats(w http.ResponseWriter, r *http.Request) {
-	// Simple text response to test if handler is called
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("Stats handler called"))
-}
 
 func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
