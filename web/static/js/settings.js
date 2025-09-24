@@ -60,6 +60,7 @@ function populateSettingsForm() {
     document.getElementById('maxFilesPerPost').value = currentSettings.maxFilesPerPost || window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
     document.getElementById('storagePath').value = currentSettings.storagePath || window.AppConstants.DEFAULT_SETTINGS.storagePath;
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
+    document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
 }
 
 function getSettingsFromForm() {
@@ -67,7 +68,8 @@ function getSettingsFromForm() {
         maxFileSizeMB: parseInt(document.getElementById('maxFileSizeMB').value),
         maxContentLength: parseInt(document.getElementById('maxContentLength').value),
         maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
-        activityEnabled: document.getElementById('activityEnabled').checked
+        activityEnabled: document.getElementById('activityEnabled').checked,
+        fileStatsEnabled: document.getElementById('fileStatsEnabled').checked
     };
 }
 
@@ -122,9 +124,12 @@ async function saveSettings() {
         clearSettingsCache();
         refreshUIWithNewSettings();
 
-        // Check activity status in case it changed
+        // Check activity and file stats status in case they changed
         if (typeof checkActivityEnabled === 'function') {
             await checkActivityEnabled();
+        }
+        if (typeof checkFileStatsEnabled === 'function') {
+            await checkFileStatsEnabled();
         }
 
         showSettingsStatus('Settings saved successfully!', 'success');

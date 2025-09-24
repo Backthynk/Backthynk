@@ -69,6 +69,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check activity system status
     checkActivityEnabled();
 
+    // Check file statistics system status
+    checkFileStatsEnabled();
+
     // Load initial data
     fetchCategories();
 

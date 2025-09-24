@@ -18,6 +18,7 @@ const (
 	DefaultMaxFilesPerPost  = 20
 	DefaultStoragePath      = ".storage"
 	DefaultActivityEnabled  = true
+	DefaultFileStatsEnabled = true
 
 	// Validation Limits
 	MinFileSizeMB    = 1

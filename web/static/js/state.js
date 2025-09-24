@@ -11,6 +11,7 @@ let globalStats = { totalPosts: 0, totalFiles: 0, totalSize: 0 };
 let categoryActivity = {};
 let currentActivityPeriod = window.AppConstants.UI_CONFIG.currentActivityPeriod; // 0 = current 6 months, -1 = previous 6 months, etc.
 let activityEnabled = true; // Global activity system state
+let fileStatsEnabled = true; // Global file statistics system state
 
 // Local storage for last selected category
 function saveLastCategory(categoryId) {
@@ -35,14 +36,8 @@ function loadExpandedCategories() {
 // Activity system management
 async function checkActivityEnabled() {
     try {
-        const response = await fetch('/api/activity-enabled');
-        if (response.ok) {
-            const data = await response.json();
-            activityEnabled = data.enabled;
-        } else {
-            // Fallback to default if API fails
-            activityEnabled = window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
-        }
+        const settings = await loadAppSettings();
+        activityEnabled = settings.activityEnabled !== undefined ? settings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     } catch (error) {
         console.warn('Failed to check activity status, using default:', error);
         activityEnabled = window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
@@ -50,6 +45,17 @@ async function checkActivityEnabled() {
 
     // Update UI visibility
     updateActivityVisibility();
+}
+
+// File statistics system management
+async function checkFileStatsEnabled() {
+    try {
+        const settings = await loadAppSettings();
+        fileStatsEnabled = settings.fileStatsEnabled !== undefined ? settings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
+    } catch (error) {
+        console.warn('Failed to check file stats status, using default:', error);
+        fileStatsEnabled = window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
+    }
 }
 
 function updateActivityVisibility() {

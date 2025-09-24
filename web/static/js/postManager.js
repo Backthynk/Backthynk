@@ -367,8 +367,8 @@ function updateCategoryStatsDisplay(stats) {
 
     let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
 
-    // Only show files and size if there are files
-    if (stats.file_count > 0) {
+    // Only show files and size if file stats are enabled and there are files
+    if (fileStatsEnabled && stats.file_count > 0) {
         statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
     }
 

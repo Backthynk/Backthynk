@@ -5,7 +5,6 @@ import (
 	"backthynk/internal/handlers"
 	"backthynk/internal/services"
 	"backthynk/internal/storage"
-	"encoding/json"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -40,10 +39,16 @@ func main() {
 		log.Println("Activity system disabled")
 	}
 
-	// Initialize file statistics service and cache
-	fileStatsService := services.NewFileStatsService(db)
-	if err := fileStatsService.InitializeCache(); err != nil {
-		log.Printf("Warning: Failed to initialize file statistics cache: %v", err)
+	// Initialize file statistics service and cache (if enabled)
+	var fileStatsService *services.FileStatsService
+	if options.FileStatsEnabled {
+		fileStatsService = services.NewFileStatsService(db)
+		if err := fileStatsService.InitializeCache(); err != nil {
+			log.Printf("Warning: Failed to initialize file statistics cache: %v", err)
+		}
+		log.Println("File statistics system enabled")
+	} else {
+		log.Println("File statistics system disabled")
 	}
 
 	// Initialize handlers
@@ -98,12 +103,6 @@ func main() {
 	// Settings
 	api.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET")
 	api.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT")
-
-	// Activity status endpoint
-	api.HandleFunc("/activity-enabled", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]bool{"enabled": options.ActivityEnabled})
-	}).Methods("GET")
 
 	// Static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))

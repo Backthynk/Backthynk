@@ -77,6 +77,7 @@ func (h *SettingsHandler) LoadOptions() (models.Options, error) {
 				MaxFilesPerPost:  config.DefaultMaxFilesPerPost,
 				StoragePath:      config.DefaultStoragePath,
 				ActivityEnabled:  config.DefaultActivityEnabled,
+				FileStatsEnabled: config.DefaultFileStatsEnabled,
 			}, nil
 		}
 		return options, err

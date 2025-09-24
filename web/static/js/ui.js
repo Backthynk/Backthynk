@@ -59,10 +59,12 @@ function populateCategorySelect() {
 }
 
 function updateGlobalStatsDisplay() {
-    const statsHtml = `
-        <div>Total: ${globalStats.totalPosts} posts</div>
-        <div>${globalStats.totalFiles} files • ${formatFileSize(globalStats.totalSize)}</div>
-    `;
+    let statsHtml = `<div>Total: ${globalStats.totalPosts} posts</div>`;
+
+    // Only show file stats if enabled
+    if (fileStatsEnabled) {
+        statsHtml += `<div>${globalStats.totalFiles} files • ${formatFileSize(globalStats.totalSize)}</div>`;
+    }
 
     // Update header stats
     const headerStats = document.getElementById('global-stats-header');

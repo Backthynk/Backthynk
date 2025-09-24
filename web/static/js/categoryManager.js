@@ -299,7 +299,7 @@ async function deleteCategory(category) {
 
     if (totalPosts > 0) {
         message += ` and **${totalPosts}** post(s)`;
-        if (totalFiles > 0) {
+        if (fileStatsEnabled && totalFiles > 0) {
             message += ` with **${totalFiles}** file(s)`;
         }
         message += '.';
@@ -337,7 +337,7 @@ async function deleteCategory(category) {
         }
     });
 
-    if (allFiles.length > 0) {
+    if (fileStatsEnabled && allFiles.length > 0) {
         detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Files to be deleted:</h4>';
         detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-40 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
 

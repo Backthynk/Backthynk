@@ -47,4 +47,5 @@ type Options struct {
 	MaxFilesPerPost  int    `json:"maxFilesPerPost"`
 	StoragePath      string `json:"storagePath"`
 	ActivityEnabled  bool   `json:"activityEnabled"`
+	FileStatsEnabled bool   `json:"fileStatsEnabled"`
 }
