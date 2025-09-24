@@ -6,7 +6,7 @@ let isLoadingPosts = false;
 let virtualScroller = null;
 const VIRTUAL_SCROLL_THRESHOLD = 50; // Use virtual scrolling when more than 50 posts
 
-async function loadPosts(categoryId, reset = true) {
+async function loadPosts(categoryId, recursive = false, reset = true) {
     if (isLoadingPosts) return;
 
     try {
@@ -18,7 +18,7 @@ async function loadPosts(categoryId, reset = true) {
             hasMorePosts = true;
         }
 
-        const response = await fetchPosts(categoryId, 20, currentOffset, true);
+        const response = await fetchPosts(categoryId, 20, currentOffset, true, recursive);
         let posts = response.posts || response; // Handle both new and old API response formats
 
         // Ensure posts is an array
@@ -44,7 +44,7 @@ async function loadPosts(categoryId, reset = true) {
 
         // Setup infinite scroll if this is a fresh load
         if (reset) {
-            setupInfiniteScroll(categoryId);
+            setupInfiniteScroll(categoryId, recursive);
         }
 
     } catch (error) {
@@ -57,13 +57,13 @@ async function loadPosts(categoryId, reset = true) {
     }
 }
 
-async function loadMorePosts(categoryId) {
+async function loadMorePosts(categoryId, recursive = false) {
     if (!hasMorePosts || isLoadingPosts) return;
 
-    await loadPosts(categoryId, false);
+    await loadPosts(categoryId, recursive, false);
 }
 
-function setupInfiniteScroll(categoryId) {
+function setupInfiniteScroll(categoryId, recursive = false) {
     const container = document.getElementById('posts-container');
 
     // Remove existing scroll listener
@@ -77,7 +77,7 @@ function setupInfiniteScroll(categoryId) {
         const threshold = document.documentElement.offsetHeight - 1000; // Load more when 1000px from bottom
 
         if (scrollPosition >= threshold) {
-            loadMorePosts(categoryId);
+            loadMorePosts(categoryId, recursive);
         }
     };
 
@@ -185,10 +185,20 @@ function createPostElement(post) {
     const totalAttachments = images.length + otherFiles.length;
     const linkPreviews = post.link_previews || [];
 
+    // Check if we're in recursive mode and should show category breadcrumb
+    const showCategoryBreadcrumb = currentCategory && currentCategory.recursiveMode && post.category_id !== currentCategory.id;
+    const categoryBreadcrumb = showCategoryBreadcrumb ? getCategoryBreadcrumb(post.category_id) : '';
+
+    // Make category breadcrumb clickable if we're showing it
+    const clickableCategoryBreadcrumb = showCategoryBreadcrumb ?
+        `<span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors" onclick="navigateToCategoryFromPost(${post.category_id})">${categoryBreadcrumb}</span>` :
+        '';
+
     // Simple header
     const headerHtml = `
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
+                ${clickableCategoryBreadcrumb}
                 <span class="text-sm text-gray-500">${formatRelativeDate(post.created)}</span>
                 ${totalAttachments > 0 ? `
                     <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
@@ -294,7 +304,7 @@ async function confirmDeletePost(postId) {
             await deletePost(postId);
 
             // Update stats and refresh display
-            const stats = await fetchCategoryStats(currentCategory.id);
+            const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
             updateCategoryStatsDisplay(stats);
             await fetchGlobalStats();
 
@@ -314,6 +324,17 @@ async function confirmDeletePost(postId) {
 }
 
 function updateCategoryStatsDisplay(stats) {
+    if (!currentCategory) return;
+
+    // Ensure currentCategory has all properties by finding it in categories array
+    const fullCategory = categories.find(cat => cat.id === currentCategory.id);
+    if (fullCategory) {
+        // Preserve recursiveMode if it was set
+        const recursiveMode = currentCategory.recursiveMode;
+        currentCategory = { ...fullCategory };
+        currentCategory.recursiveMode = recursiveMode;
+    }
+
     let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
 
     // Only show files and size if there are files
@@ -321,8 +342,64 @@ function updateCategoryStatsDisplay(stats) {
         statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
     }
 
+    // Get the interactive breadcrumb path for the current category
+    const categoryBreadcrumb = getInteractiveCategoryBreadcrumb(currentCategory.id);
+
+    // Format the creation date
+    const creationDate = currentCategory.created ?
+        new Date(currentCategory.created).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) :
+        'Date unavailable';
+
     document.getElementById('timeline-title').innerHTML = `
-        <h2 class="text-xl font-bold text-gray-900">${currentCategory.name}</h2>
-        <p class="text-xs text-gray-500 mt-0.5">${statsText}</p>
+        <div class="group">
+            <h2 class="text-xl font-bold text-gray-900">${categoryBreadcrumb}</h2>
+            <p class="text-xs text-gray-500 mt-0.5 relative">
+                <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
+                <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
+            </p>
+        </div>
     `;
+
+    // Update button visibility and states
+    updateHeaderButtons();
+}
+
+// Function to update header button visibility and states
+function updateHeaderButtons() {
+    if (!currentCategory) {
+        document.getElementById('recursive-toggle-btn').style.display = 'none';
+        document.getElementById('delete-category-btn').style.display = 'none';
+        return;
+    }
+
+    // Check if current category has subcategories to show recursive toggle
+    const hasSubcategories = categories.some(cat => cat.parent_id === currentCategory.id);
+    const recursiveToggleBtn = document.getElementById('recursive-toggle-btn');
+
+    if (hasSubcategories) {
+        recursiveToggleBtn.style.display = 'block';
+        // Update button styling based on state
+        if (currentCategory.recursiveMode) {
+            recursiveToggleBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors';
+        } else {
+            recursiveToggleBtn.className = 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
+        }
+    } else {
+        recursiveToggleBtn.style.display = 'none';
+    }
+
+    // Always show delete button when a category is selected
+    document.getElementById('delete-category-btn').style.display = 'block';
+}
+
+// Function to navigate to a category when clicked from a post
+function navigateToCategoryFromPost(categoryId) {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+        selectCategory(category);
+    }
 }

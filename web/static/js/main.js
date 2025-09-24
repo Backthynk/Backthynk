@@ -99,6 +99,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('new-post-btn').onclick = showCreatePost;
     document.getElementById('cancel-post').onclick = hideCreatePost;
 
+    // Header button events
+    document.getElementById('recursive-toggle-btn').addEventListener('click', () => {
+        if (currentCategory) {
+            toggleRecursiveMode(currentCategory);
+        }
+    });
+
+    document.getElementById('delete-category-btn').addEventListener('click', () => {
+        if (currentCategory) {
+            deleteCategory(currentCategory);
+        }
+    });
+
     // File input handling
     const fileInput = document.getElementById('post-files');
     fileInput.addEventListener('change', async function(e) {
@@ -179,21 +192,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             hideCreatePost();
-            loadPosts(currentCategory.id);
-            // Refresh category stats
-            const stats = await fetchCategoryStats(currentCategory.id);
-            let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
+            loadPosts(currentCategory.id, currentCategory.recursiveMode);
 
-            // Only show files and size if there are files
-            if (stats.file_count > 0) {
-                statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
-            }
-            document.getElementById('timeline-title').innerHTML = `
-                <div>
-                    <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
-                    <p class="text-sm text-gray-500">${statsText}</p>
-                </div>
-            `;
+            // Refresh category stats using the proper function
+            const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
+            updateCategoryStatsDisplay(stats);
 
             // Refresh global stats
             await fetchGlobalStats();

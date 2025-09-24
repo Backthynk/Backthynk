@@ -20,7 +20,7 @@ function createCategoryElement(category, level = 0) {
     const shouldShowChildren = isExpanded; // Remove the level === 0 condition
 
     const mainDiv = document.createElement('div');
-    mainDiv.className = 'flex items-center group hover:bg-gray-50 rounded-lg transition-colors';
+    mainDiv.className = 'flex items-center hover:bg-gray-50 rounded-lg transition-colors';
 
     // Expand/collapse button (separate from main button)
     let expandButton = '';
@@ -41,25 +41,14 @@ function createCategoryElement(category, level = 0) {
     }`;
 
     categoryButton.innerHTML = `
-        <div class="flex items-center justify-between min-w-0">
-            <div class="flex items-center min-w-0">
-                <i class="fas fa-folder${currentCategory?.id === category.id ? '-open' : ''} mr-2 flex-shrink-0"></i>
-                <span class="font-medium truncate" title="${category.name}">${category.name}</span>
-            </div>
-            <div class="text-xs text-gray-400 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                ${formatRelativeDate(category.created)}
-            </div>
+        <div class="flex items-center min-w-0">
+            <i class="fas fa-folder${currentCategory?.id === category.id ? '-open' : ''} mr-2 flex-shrink-0"></i>
+            <span class="font-medium truncate" title="${category.name}">${category.name}</span>
         </div>
     `;
 
-    // Delete button
-    const deleteButton = document.createElement('button');
-    deleteButton.className = 'delete-btn flex-shrink-0 w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors opacity-0 group-hover:opacity-100 ml-1';
-    deleteButton.innerHTML = '<i class="fas fa-trash-alt text-xs"></i>';
-
     mainDiv.innerHTML = expandButton;
     mainDiv.appendChild(categoryButton);
-    mainDiv.appendChild(deleteButton);
 
     div.appendChild(mainDiv);
 
@@ -75,11 +64,6 @@ function createCategoryElement(category, level = 0) {
     categoryButton.addEventListener('click', (e) => {
         e.stopPropagation();
         selectCategory(category);
-    });
-
-    deleteButton.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteCategory(category);
     });
 
     // Add subcategories only if expanded
@@ -106,9 +90,12 @@ function toggleCategory(categoryId) {
 
 async function selectCategory(category) {
     currentCategory = category;
+    // Load saved recursive mode state for this category
+    currentCategory.recursiveMode = loadRecursiveToggleState(category.id);
+
     saveLastCategory(category.id);
     renderCategories();
-    loadPosts(category.id);
+    loadPosts(category.id, currentCategory.recursiveMode);
 
     // Reset activity period when switching categories
     currentActivityPeriod = 0;
@@ -116,12 +103,124 @@ async function selectCategory(category) {
     // Reset scroll position to top
     window.scrollTo(0, 0);
 
-    const stats = await fetchCategoryStats(category.id);
+    const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
     updateCategoryStatsDisplay(stats);
     document.getElementById('new-post-btn').style.display = 'block';
     document.getElementById('settings-btn').style.display = 'block';
 
     generateActivityHeatmap();
+}
+
+async function toggleRecursiveMode(category) {
+    if (!currentCategory || currentCategory.id !== category.id) return;
+
+    currentCategory.recursiveMode = !currentCategory.recursiveMode;
+
+    // Save the new state
+    saveRecursiveToggleState(category.id, currentCategory.recursiveMode);
+
+    // Scroll to top when toggling
+    window.scrollTo(0, 0);
+
+    renderCategories();
+    loadPosts(category.id, currentCategory.recursiveMode);
+
+    const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
+    updateCategoryStatsDisplay(stats);
+
+    generateActivityHeatmap();
+}
+
+// Functions to manage recursive toggle state per category
+function saveRecursiveToggleState(categoryId, recursiveMode) {
+    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    recursiveStates[categoryId] = recursiveMode;
+    localStorage.setItem('recursiveToggleStates', JSON.stringify(recursiveStates));
+}
+
+function loadRecursiveToggleState(categoryId) {
+    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    return recursiveStates[categoryId] || false;
+}
+
+function removeRecursiveToggleState(categoryId) {
+    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    delete recursiveStates[categoryId];
+    localStorage.setItem('recursiveToggleStates', JSON.stringify(recursiveStates));
+}
+
+function cleanupRecursiveToggleStates() {
+    // Clean up states for categories that no longer exist
+    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    const existingCategoryIds = new Set(categories.map(cat => cat.id.toString()));
+
+    const cleanedStates = {};
+    for (const [categoryId, state] of Object.entries(recursiveStates)) {
+        if (existingCategoryIds.has(categoryId)) {
+            cleanedStates[categoryId] = state;
+        }
+    }
+
+    localStorage.setItem('recursiveToggleStates', JSON.stringify(cleanedStates));
+}
+
+// Helper function to build category breadcrumb path
+function getCategoryBreadcrumb(categoryId) {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return '';
+
+    const path = [];
+    let current = category;
+
+    while (current) {
+        path.unshift(current.name);
+        if (current.parent_id) {
+            current = categories.find(cat => cat.id === current.parent_id);
+        } else {
+            current = null;
+        }
+    }
+
+    return path.join(' > ');
+}
+
+// Helper function to build interactive breadcrumb with clickable links
+function getInteractiveCategoryBreadcrumb(categoryId) {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return '';
+
+    const pathElements = [];
+    let current = category;
+
+    while (current) {
+        pathElements.unshift({
+            id: current.id,
+            name: current.name
+        });
+        if (current.parent_id) {
+            current = categories.find(cat => cat.id === current.parent_id);
+        } else {
+            current = null;
+        }
+    }
+
+    return pathElements.map((element, index) => {
+        if (index === pathElements.length - 1) {
+            // Last element (current category) - not clickable
+            return `<span class="text-gray-900">${element.name}</span>`;
+        } else {
+            // Parent elements - clickable
+            return `<span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors" onclick="navigateToCategory(${element.id})">${element.name}</span>`;
+        }
+    }).join(' <span class="text-gray-400">></span> ');
+}
+
+// Function to navigate to a category when breadcrumb is clicked
+function navigateToCategory(categoryId) {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+        selectCategory(category);
+    }
 }
 
 async function deleteCategory(category) {
@@ -144,13 +243,23 @@ async function deleteCategory(category) {
     if (confirm(message)) {
         try {
             await deleteCategoryApi(category.id);
+
+            // Remove recursive toggle state for this category
+            removeRecursiveToggleState(category.id);
+
             await fetchCategories();
+
+            // Cleanup any orphaned toggle states
+            cleanupRecursiveToggleStates();
+
             if (currentCategory && currentCategory.id === category.id) {
                 currentCategory = null;
                 localStorage.removeItem('lastSelectedCategory');
                 document.getElementById('timeline-title').textContent = 'Select a category';
                 document.getElementById('new-post-btn').style.display = 'none';
                 document.getElementById('settings-btn').style.display = 'none';
+                document.getElementById('recursive-toggle-btn').style.display = 'none';
+                document.getElementById('delete-category-btn').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';
             }
         } catch (error) {

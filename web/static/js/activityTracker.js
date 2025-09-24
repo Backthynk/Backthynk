@@ -1,7 +1,7 @@
 // Activity tracking and heatmap functions
 
 // Helper function to fetch all posts for activity tracking
-async function fetchAllPostsForActivity(categoryId) {
+async function fetchAllPostsForActivity(categoryId, recursive = false) {
     let allPosts = [];
     let offset = 0;
     const limit = 100; // Fetch in batches
@@ -9,7 +9,7 @@ async function fetchAllPostsForActivity(categoryId) {
 
     while (hasMore) {
         try {
-            const response = await fetchPosts(categoryId, limit, offset, true);
+            const response = await fetchPosts(categoryId, limit, offset, true, recursive);
             if (!response) {
                 hasMore = false;
                 continue;
@@ -47,7 +47,7 @@ async function generateActivityHeatmap() {
 
     try {
         // Fetch all posts for activity tracking - we need all posts for the heatmap
-        const allPosts = await fetchAllPostsForActivity(currentCategory.id);
+        const allPosts = await fetchAllPostsForActivity(currentCategory.id, currentCategory.recursiveMode || false);
 
         if (allPosts.length === 0) {
             // Hide the entire activity container for empty categories

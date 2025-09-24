@@ -63,6 +63,10 @@ async function fetchCategories() {
         if (!categories || !Array.isArray(categories)) {
             categories = [];
         }
+
+        // Clean up any orphaned recursive toggle states
+        cleanupRecursiveToggleStates();
+
         renderCategories();
         populateCategorySelect();
 
@@ -100,7 +104,7 @@ async function createCategory(name, parentId) {
     }
 }
 
-async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false) {
+async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false, recursive = false) {
     try {
         const params = new URLSearchParams({
             limit: limit.toString(),
@@ -111,6 +115,10 @@ async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false) 
             params.set('with_meta', 'true');
         }
 
+        if (recursive) {
+            params.set('recursive', 'true');
+        }
+
         const response = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
         return response || { posts: [], has_more: false };
     } catch (error) {
@@ -119,10 +127,20 @@ async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false) 
     }
 }
 
-async function fetchCategoryStats(categoryId) {
+async function fetchCategoryStats(categoryId, recursive = false) {
     try {
+        // Build URL with parameters
+        const params = new URLSearchParams({
+            limit: '1',
+            with_meta: 'true'
+        });
+
+        if (recursive) {
+            params.set('recursive', 'true');
+        }
+
         // First get post count from metadata
-        const metaResponse = await apiRequest(`/categories/${categoryId}/posts?limit=1&with_meta=true`);
+        const metaResponse = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
         const postCount = metaResponse.total_count || 0;
 
         // Then get all posts to calculate file stats
@@ -132,7 +150,16 @@ async function fetchCategoryStats(categoryId) {
         const limit = 100; // Process in batches
 
         while (true) {
-            const response = await apiRequest(`/categories/${categoryId}/posts?limit=${limit}&offset=${offset}`);
+            const batchParams = new URLSearchParams({
+                limit: limit.toString(),
+                offset: offset.toString()
+            });
+
+            if (recursive) {
+                batchParams.set('recursive', 'true');
+            }
+
+            const response = await apiRequest(`/categories/${categoryId}/posts?${batchParams.toString()}`);
             if (!response) break;
 
             const posts = response.posts || response;

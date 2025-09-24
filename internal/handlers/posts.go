@@ -111,6 +111,7 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 	withMeta := r.URL.Query().Get("with_meta") == "true"
+	recursive := r.URL.Query().Get("recursive") == "true"
 
 	limit := 20 // default
 	if limitStr != "" {
@@ -126,14 +127,14 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	posts, err := h.db.GetPostsByCategory(categoryID, limit, offset)
+	posts, err := h.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset)
 	if err != nil {
 		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
 		return
 	}
 
 	if withMeta {
-		totalCount, err := h.db.GetPostCountByCategory(categoryID)
+		totalCount, err := h.db.GetPostCountByCategoryRecursive(categoryID, recursive)
 		if err != nil {
 			http.Error(w, "Failed to get post count", http.StatusInternalServerError)
 			return
