@@ -9,7 +9,7 @@ function handleStickyHeaderScroll() {
     if (!header) return;
 
     const scrollY = window.scrollY;
-    const shouldBeScrolled = scrollY > 50;
+    const shouldBeScrolled = scrollY > window.AppConstants.UI_CONFIG.scrollThreshold;
 
     if (shouldBeScrolled && !header.classList.contains('scrolled')) {
         header.classList.add('scrolled');

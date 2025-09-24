@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/storage"
 	"encoding/json"
 	"fmt"
@@ -78,7 +79,7 @@ func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join(h.uploadPath, filename)
 
 	// Ensure upload directory exists
-	if err := os.MkdirAll(h.uploadPath, 0755); err != nil {
+	if err := os.MkdirAll(h.uploadPath, config.DirectoryPermissions); err != nil {
 		http.Error(w, "Failed to create upload directory", http.StatusInternalServerError)
 		return
 	}

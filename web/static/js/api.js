@@ -11,21 +11,11 @@ async function loadAppSettings(forceRefresh = false) {
             appSettings = await response.json();
         } else {
             // Use defaults if settings can't be loaded
-            appSettings = {
-                maxFileSizeMB: 100,
-                maxContentLength: 15000,
-                maxFilesPerPost: 20,
-                storagePath: 'storage'
-            };
+            appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
         }
     } catch (error) {
         console.error('Failed to load settings, using defaults:', error);
-        appSettings = {
-            maxFileSizeMB: 100,
-            maxContentLength: 15000,
-            maxFilesPerPost: 20,
-            storagePath: 'storage'
-        };
+        appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
     }
     return appSettings;
 }
@@ -104,7 +94,7 @@ async function createCategory(name, parentId) {
     }
 }
 
-async function fetchPosts(categoryId, limit = 20, offset = 0, withMeta = false, recursive = false) {
+async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defaultPostLimit, offset = window.AppConstants.UI_CONFIG.defaultOffset, withMeta = false, recursive = false) {
     try {
         const params = new URLSearchParams({
             limit: limit.toString(),
@@ -147,7 +137,7 @@ async function fetchCategoryStats(categoryId, recursive = false) {
         let fileCount = 0;
         let totalSize = 0;
         let offset = 0;
-        const limit = 100; // Process in batches
+        const limit = window.AppConstants.UI_CONFIG.batchProcessLimit; // Process in batches
 
         while (true) {
             const batchParams = new URLSearchParams({

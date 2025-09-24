@@ -4,7 +4,7 @@
 async function fetchAllPostsForActivity(categoryId, recursive = false) {
     let allPosts = [];
     let offset = 0;
-    const limit = 100; // Fetch in batches
+    const limit = window.AppConstants.UI_CONFIG.batchProcessLimit; // Fetch in batches
     let hasMore = true;
 
     while (hasMore) {

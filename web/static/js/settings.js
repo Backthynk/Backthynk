@@ -55,10 +55,10 @@ async function loadSettings() {
 }
 
 function populateSettingsForm() {
-    document.getElementById('maxFileSizeMB').value = currentSettings.maxFileSizeMB || 100;
-    document.getElementById('maxContentLength').value = currentSettings.maxContentLength || 15000;
-    document.getElementById('maxFilesPerPost').value = currentSettings.maxFilesPerPost || 20;
-    document.getElementById('storagePath').value = currentSettings.storagePath || 'storage';
+    document.getElementById('maxFileSizeMB').value = currentSettings.maxFileSizeMB || window.AppConstants.DEFAULT_SETTINGS.maxFileSizeMB;
+    document.getElementById('maxContentLength').value = currentSettings.maxContentLength || window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
+    document.getElementById('maxFilesPerPost').value = currentSettings.maxFilesPerPost || window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
+    document.getElementById('storagePath').value = currentSettings.storagePath || window.AppConstants.DEFAULT_SETTINGS.storagePath;
 }
 
 function getSettingsFromForm() {
@@ -72,16 +72,16 @@ function getSettingsFromForm() {
 function validateSettings(settings) {
     const errors = [];
 
-    if (settings.maxFileSizeMB < 1 || settings.maxFileSizeMB > 10240) {
-        errors.push('Maximum file size must be between 1MB and 10,240MB (10GB)');
+    if (settings.maxFileSizeMB < window.AppConstants.VALIDATION_LIMITS.minFileSizeMB || settings.maxFileSizeMB > window.AppConstants.VALIDATION_LIMITS.maxFileSizeMB) {
+        errors.push(window.AppConstants.ERROR_MESSAGES.fileSizeValidation);
     }
 
-    if (settings.maxContentLength < 100 || settings.maxContentLength > 50000) {
-        errors.push('Maximum content length must be between 100 and 50,000 characters');
+    if (settings.maxContentLength < window.AppConstants.VALIDATION_LIMITS.minContentLength || settings.maxContentLength > window.AppConstants.VALIDATION_LIMITS.maxContentLength) {
+        errors.push(window.AppConstants.ERROR_MESSAGES.contentLengthValidation);
     }
 
-    if (settings.maxFilesPerPost < 1 || settings.maxFilesPerPost > 50) {
-        errors.push('Maximum files per post must be between 1 and 50');
+    if (settings.maxFilesPerPost < window.AppConstants.VALIDATION_LIMITS.minFilesPerPost || settings.maxFilesPerPost > window.AppConstants.VALIDATION_LIMITS.maxFilesPerPost) {
+        errors.push(window.AppConstants.ERROR_MESSAGES.filesPerPostValidation);
     }
 
     return errors;
@@ -128,7 +128,7 @@ async function saveSettings() {
             } else {
                 hideSettingsPage();
             }
-        }, 1500);
+        }, window.AppConstants.UI_CONFIG.successMessageDelay);
 
     } catch (error) {
         console.error('Error saving settings:', error);
@@ -149,9 +149,9 @@ function cancelSettings() {
 
 function resetToDefaults() {
     if (confirm('Are you sure you want to reset all settings to their default values?')) {
-        document.getElementById('maxFileSizeMB').value = 100;
-        document.getElementById('maxContentLength').value = 15000;
-        document.getElementById('maxFilesPerPost').value = 20;
+        document.getElementById('maxFileSizeMB').value = window.AppConstants.DEFAULT_SETTINGS.maxFileSizeMB;
+        document.getElementById('maxContentLength').value = window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
+        document.getElementById('maxFilesPerPost').value = window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
         // Storage path is not reset as it's read-only
         showSettingsStatus('Settings reset to defaults (not saved yet). Storage path is not changed as it requires server restart.', 'info');
     }

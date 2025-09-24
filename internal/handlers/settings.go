@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/models"
 	"encoding/json"
 	"fmt"
@@ -71,10 +72,10 @@ func (h *SettingsHandler) LoadOptions() (models.Options, error) {
 		// If file doesn't exist, return defaults
 		if os.IsNotExist(err) {
 			return models.Options{
-				MaxFileSizeMB:    100,
-				MaxContentLength: 15000,
-				MaxFilesPerPost:  20,
-				StoragePath:      "storage",
+				MaxFileSizeMB:    config.DefaultMaxFileSizeMB,
+				MaxContentLength: config.DefaultMaxContentLength,
+				MaxFilesPerPost:  config.DefaultMaxFilesPerPost,
+				StoragePath:      config.DefaultStoragePath,
 			}, nil
 		}
 		return options, err
@@ -96,23 +97,23 @@ func (h *SettingsHandler) saveOptions(options models.Options) error {
 		return err
 	}
 
-	return os.WriteFile(h.configPath, data, 0644)
+	return os.WriteFile(h.configPath, data, config.FilePermissions)
 }
 
 func (h *SettingsHandler) validateOptions(options models.Options) error {
 	// Validate max file size (1MB to 10GB)
-	if options.MaxFileSizeMB < 1 || options.MaxFileSizeMB > 10240 {
-		return fmt.Errorf("maxFileSizeMB must be between 1 and 10240 (10GB)")
+	if options.MaxFileSizeMB < config.MinFileSizeMB || options.MaxFileSizeMB > config.MaxFileSizeMB {
+		return fmt.Errorf(config.ErrFileSizeValidation)
 	}
 
 	// Validate max content length (100 to 50,000)
-	if options.MaxContentLength < 100 || options.MaxContentLength > 50000 {
-		return fmt.Errorf("maxContentLength must be between 100 and 50000")
+	if options.MaxContentLength < config.MinContentLength || options.MaxContentLength > config.MaxContentLength {
+		return fmt.Errorf(config.ErrContentLengthValidation)
 	}
 
 	// Validate max files per post (1 to 50)
-	if options.MaxFilesPerPost < 1 || options.MaxFilesPerPost > 50 {
-		return fmt.Errorf("maxFilesPerPost must be between 1 and 50")
+	if options.MaxFilesPerPost < config.MinFilesPerPost || options.MaxFilesPerPost > config.MaxFilesPerPost {
+		return fmt.Errorf(config.ErrFilesPerPostValidation)
 	}
 
 	return nil

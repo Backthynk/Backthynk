@@ -14,7 +14,7 @@ function showCreatePost() {
     // Initialize link preview after showing the form
     setTimeout(() => {
         initializeLinkPreview();
-    }, 100);
+    }, window.AppConstants.UI_CONFIG.settingsTransitionDelay);
 }
 
 function hideCreatePost() {

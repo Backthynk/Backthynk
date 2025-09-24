@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/models"
 	"backthynk/internal/storage"
 	"encoding/json"
@@ -113,14 +114,14 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 	withMeta := r.URL.Query().Get("with_meta") == "true"
 	recursive := r.URL.Query().Get("recursive") == "true"
 
-	limit := 20 // default
+	limit := config.DefaultPostLimit // default
 	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= config.MaxPostLimit {
 			limit = l
 		}
 	}
 
-	offset := 0 // default
+	offset := config.DefaultOffset // default
 	if offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
 			offset = o

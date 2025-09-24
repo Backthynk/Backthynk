@@ -8,7 +8,7 @@ async function addFileToSelection(file) {
     }
 
     // Check file size
-    const maxFileSizeBytes = settings.maxFileSizeMB * 1024 * 1024;
+    const maxFileSizeBytes = settings.maxFileSizeMB * window.AppConstants.UI_CONFIG.fileSizeUnit * window.AppConstants.UI_CONFIG.fileSizeUnit;
     if (file.size > maxFileSizeBytes) {
         showError(`File "${file.name}" exceeds maximum file size of ${settings.maxFileSizeMB}MB`);
         return false;
@@ -52,7 +52,7 @@ function updateFilePreview() {
             <div class="flex items-center">
                 ${preview}
                 <div>
-                    <p class="text-sm font-medium text-gray-900 truncate" style="max-width: 200px;">${file.name}</p>
+                    <p class="text-sm font-medium text-gray-900 truncate" style="max-width: ${window.AppConstants.UI_CONFIG.maxFilenameDisplay}px;">${file.name}</p>
                     <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
                 </div>
             </div>

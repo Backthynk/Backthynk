@@ -1,17 +1,26 @@
 package main
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/handlers"
 	"backthynk/internal/storage"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 )
 
 func main() {
+	// Load configuration
+	settingsHandler := handlers.NewSettingsHandler(config.ConfigFilename)
+	options, err := settingsHandler.LoadOptions()
+	if err != nil {
+		log.Fatal("Failed to load options:", err)
+	}
+
 	// Initialize database
-	db, err := storage.NewDB("storage")
+	db, err := storage.NewDB(options.StoragePath)
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
@@ -19,9 +28,8 @@ func main() {
 
 	// Initialize handlers
 	categoryHandler := handlers.NewCategoryHandler(db)
-	settingsHandler := handlers.NewSettingsHandler("options.json")
 	postHandler := handlers.NewPostHandler(db, settingsHandler)
-	uploadHandler := handlers.NewUploadHandler(db, "storage/uploads", settingsHandler)
+	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
 
 	// Setup router
@@ -66,8 +74,8 @@ func main() {
 	r.HandleFunc("/", serveIndex).Methods("GET")
 	r.HandleFunc("/{path:.*}", serveIndex).Methods("GET") // SPA fallback
 
-	log.Println("Server starting on :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Println("Server starting on :" + config.DefaultServerPort)
+	log.Fatal(http.ListenAndServe(":" + config.DefaultServerPort, r))
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request) {

@@ -7,7 +7,7 @@ function escapeHtml(text) {
 
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 Bytes';
-    const k = 1024;
+    const k = window.AppConstants.UI_CONFIG.fileSizeUnit;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
@@ -17,14 +17,14 @@ function formatRelativeDate(dateString) {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now - date;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffDays = Math.floor(diffMs / window.AppConstants.UI_CONFIG.daysInMs);
+    const diffHours = Math.floor(diffMs / window.AppConstants.UI_CONFIG.hoursInMs);
+    const diffMinutes = Math.floor(diffMs / window.AppConstants.UI_CONFIG.minutesInMs);
 
     if (diffMinutes < 1) return 'now';
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays < window.AppConstants.UI_CONFIG.weekInDays) return `${diffDays}d ago`;
 
     // More than a week ago
     if (date.getFullYear() === now.getFullYear()) {
@@ -103,7 +103,7 @@ function showConfirmation(title, message, detailsHtml = null) {
 
 // URL formatting utilities - add these to utils.js
 
-function shortenUrl(url, maxLength = 30) {
+function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplayLength) {
     try {
         const urlObj = new URL(url);
         let shortened = urlObj.hostname;

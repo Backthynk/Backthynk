@@ -179,7 +179,7 @@ function initializeLinkPreview() {
         // Debounce for 500ms
         textArea.linkPreviewTimeout = setTimeout(async () => {
             await processTextForLinks(text);
-        }, 500);
+        }, window.AppConstants.UI_CONFIG.debounceDelay);
     };
 
     textArea.addEventListener('input', textArea.linkPreviewInputHandler);

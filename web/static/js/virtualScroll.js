@@ -1,9 +1,9 @@
 // Virtual scrolling implementation for large post lists
 class VirtualScroller {
-    constructor(container, itemHeight = 200) {
+    constructor(container, itemHeight = window.AppConstants.UI_CONFIG.defaultItemHeight) {
         this.container = container;
         this.itemHeight = itemHeight;
-        this.visibleItems = Math.ceil(window.innerHeight / itemHeight) + 5; // Buffer items
+        this.visibleItems = Math.ceil(window.innerHeight / itemHeight) + window.AppConstants.UI_CONFIG.virtualScrollBuffer; // Buffer items
         this.scrollTop = 0;
         this.items = [];
         this.renderedItems = new Map();
@@ -53,7 +53,7 @@ class VirtualScroller {
     }
 
     handleResize() {
-        this.visibleItems = Math.ceil(window.innerHeight / this.itemHeight) + 5;
+        this.visibleItems = Math.ceil(window.innerHeight / this.itemHeight) + window.AppConstants.UI_CONFIG.virtualScrollBuffer;
         this.render();
     }
 
@@ -104,7 +104,7 @@ class VirtualScroller {
 class PostVirtualScroller extends VirtualScroller {
     constructor(container) {
         // Estimate post height - this could be dynamic based on content
-        super(container, 250);
+        super(container, window.AppConstants.UI_CONFIG.postsVirtualScrollHeight);
         this.postHeights = new Map();
     }
 

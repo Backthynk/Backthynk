@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/storage"
 	"encoding/json"
 	"fmt"
@@ -92,7 +93,7 @@ func (h *LinkPreviewHandler) GetLinkPreviewsByPost(w http.ResponseWriter, r *htt
 func (h *LinkPreviewHandler) extractMetadata(urlStr string) (*LinkPreviewResponse, error) {
 	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: config.LinkPreviewTimeout * time.Second,
 	}
 
 	// Create request with user agent
@@ -100,7 +101,7 @@ func (h *LinkPreviewHandler) extractMetadata(urlStr string) (*LinkPreviewRespons
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; LinkPreviewBot/1.0)")
+	req.Header.Set("User-Agent", config.UserAgent)
 
 	// Make request
 	resp, err := client.Do(req)
