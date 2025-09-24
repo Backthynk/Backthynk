@@ -7,10 +7,46 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 )
 
 func (db *DB) CreateCategory(name string, parentID *int) (*models.Category, error) {
+	// Trim whitespace from name
+	name = strings.TrimSpace(name)
+	if len(name) == 0 {
+		return nil, fmt.Errorf("category name cannot be empty")
+	}
+
+	// Validate character restrictions: letters, numbers, and single spaces only
+	validNameRegex := regexp.MustCompile(`^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$`)
+	if !validNameRegex.MatchString(name) {
+		return nil, fmt.Errorf("category name can only contain letters, numbers, and single spaces")
+	}
+
+	// Check for duplicate names at the same level (case-insensitive)
+	var existingID int
+	var query string
+	var args []interface{}
+
+	if parentID == nil {
+		query = "SELECT id FROM categories WHERE LOWER(name) = LOWER(?) AND parent_id IS NULL"
+		args = []interface{}{name}
+	} else {
+		query = "SELECT id FROM categories WHERE LOWER(name) = LOWER(?) AND parent_id = ?"
+		args = []interface{}{name, *parentID}
+	}
+
+	err := db.QueryRow(query, args...).Scan(&existingID)
+	if err == nil {
+		// Found existing category with same name at same level
+		return nil, fmt.Errorf("category '%s' already exists at this level (case-insensitive)", name)
+	} else if err != sql.ErrNoRows {
+		// Actual error occurred
+		return nil, fmt.Errorf("failed to check for duplicate category name: %w", err)
+	}
+
 	depth := config.DefaultDepth
 	if parentID != nil {
 		var parentDepth int

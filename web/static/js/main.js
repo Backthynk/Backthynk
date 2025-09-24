@@ -81,13 +81,43 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('add-category-btn').onclick = showCategoryModal;
     document.getElementById('cancel-category').onclick = hideCategoryModal;
 
+    // Add real-time validation for category name
+    document.getElementById('category-name').addEventListener('input', function(e) {
+        const name = e.target.value.trim();
+        const submitBtn = document.querySelector('#category-form button[type="submit"]');
+
+        // Check if name is valid (letters, numbers, and single spaces only)
+        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
+        const isValid = name.length > 0 && validNameRegex.test(name);
+
+        if (!isValid) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+
     document.getElementById('category-form').onsubmit = async function(e) {
         e.preventDefault();
 
-        const name = document.getElementById('category-name').value;
+        const name = document.getElementById('category-name').value.trim();
+
+        if (name.length === 0) {
+            showError('Category name cannot be empty');
+            return;
+        }
 
         if (name.length > 30) {
             showError('Category name must be 30 characters or less');
+            return;
+        }
+
+        // Validate character restrictions
+        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
+        if (!validNameRegex.test(name)) {
+            showError('Category name can only contain letters, numbers, and single spaces');
             return;
         }
 
