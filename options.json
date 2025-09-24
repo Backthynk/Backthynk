@@ -1,0 +1,6 @@
+{
+  "maxFileSizeMB": 100,
+  "maxContentLength": 20000,
+  "maxFilesPerPost": 20,
+  "storagePath": "storage"
+}

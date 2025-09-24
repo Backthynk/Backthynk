@@ -4,6 +4,7 @@ import (
 	"backthynk/internal/models"
 	"backthynk/internal/storage"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -11,11 +12,12 @@ import (
 )
 
 type PostHandler struct {
-	db *storage.DB
+	db              *storage.DB
+	settingsHandler *SettingsHandler
 }
 
-func NewPostHandler(db *storage.DB) *PostHandler {
-	return &PostHandler{db: db}
+func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler) *PostHandler {
+	return &PostHandler{db: db, settingsHandler: settingsHandler}
 }
 
 func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +40,17 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	if req.CategoryID <= 0 {
 		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
 		return
+	}
+
+	// Load settings and validate content length
+	if h.settingsHandler != nil {
+		options, err := h.settingsHandler.LoadOptions()
+		if err == nil {
+			if len(req.Content) > options.MaxContentLength {
+				http.Error(w, fmt.Sprintf("Content exceeds maximum length of %d characters", options.MaxContentLength), http.StatusBadRequest)
+				return
+			}
+		}
 	}
 
 	post, err := h.db.CreatePost(req.CategoryID, req.Content)

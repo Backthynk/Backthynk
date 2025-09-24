@@ -113,9 +113,13 @@ async function selectCategory(category) {
     // Reset activity period when switching categories
     currentActivityPeriod = 0;
 
+    // Reset scroll position to top
+    window.scrollTo(0, 0);
+
     const stats = await fetchCategoryStats(category.id);
     updateCategoryStatsDisplay(stats);
     document.getElementById('new-post-btn').style.display = 'block';
+    document.getElementById('settings-btn').style.display = 'block';
 
     generateActivityHeatmap();
 }
@@ -146,6 +150,7 @@ async function deleteCategory(category) {
                 localStorage.removeItem('lastSelectedCategory');
                 document.getElementById('timeline-title').textContent = 'Select a category';
                 document.getElementById('new-post-btn').style.display = 'none';
+                document.getElementById('settings-btn').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';
             }
         } catch (error) {

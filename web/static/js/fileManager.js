@@ -1,7 +1,16 @@
 // File Management
-function addFileToSelection(file) {
-    if (selectedFiles.size >= 20) {
-        showError('Maximum 20 files allowed per post');
+async function addFileToSelection(file) {
+    const settings = await loadAppSettings();
+
+    if (selectedFiles.size >= settings.maxFilesPerPost) {
+        showError(`Maximum ${settings.maxFilesPerPost} files allowed per post`);
+        return false;
+    }
+
+    // Check file size
+    const maxFileSizeBytes = settings.maxFileSizeMB * 1024 * 1024;
+    if (file.size > maxFileSizeBytes) {
+        showError(`File "${file.name}" exceeds maximum file size of ${settings.maxFileSizeMB}MB`);
         return false;
     }
 

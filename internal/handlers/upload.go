@@ -18,14 +18,23 @@ import (
 type UploadHandler struct {
 	db         *storage.DB
 	uploadPath string
+	settingsHandler *SettingsHandler
 }
 
-func NewUploadHandler(db *storage.DB, uploadPath string) *UploadHandler {
-	return &UploadHandler{db: db, uploadPath: uploadPath}
+func NewUploadHandler(db *storage.DB, uploadPath string, settingsHandler *SettingsHandler) *UploadHandler {
+	return &UploadHandler{db: db, uploadPath: uploadPath, settingsHandler: settingsHandler}
 }
 
 func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(32 << 20); err != nil { // 32MB limit
+	// Load settings to get max file size
+	options, err := h.settingsHandler.LoadOptions()
+	if err != nil {
+		http.Error(w, "Failed to load settings", http.StatusInternalServerError)
+		return
+	}
+
+	maxFileSizeMB := int64(options.MaxFileSizeMB)
+	if err := r.ParseMultipartForm(maxFileSizeMB << 20); err != nil { // Dynamic limit based on settings
 		http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
 		return
 	}
@@ -46,6 +55,13 @@ func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	_, err = h.db.GetPost(postID)
 	if err != nil {
 		http.Error(w, "Post not found", http.StatusNotFound)
+		return
+	}
+
+	// Check current file count for this post
+	attachments, err := h.db.GetAttachmentsByPost(postID)
+	if err == nil && len(attachments) >= options.MaxFilesPerPost {
+		http.Error(w, fmt.Sprintf("Post already has maximum number of files (%d)", options.MaxFilesPerPost), http.StatusBadRequest)
 		return
 	}
 
@@ -79,6 +95,14 @@ func (h *UploadHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		os.Remove(filePath) // cleanup on error
 		http.Error(w, "Failed to save file", http.StatusInternalServerError)
+		return
+	}
+
+	// Check file size against limit
+	maxFileSize := maxFileSizeMB << 20 // Convert MB to bytes
+	if size > maxFileSize {
+		os.Remove(filePath) // cleanup
+		http.Error(w, fmt.Sprintf("File size exceeds maximum allowed (%dMB)", options.MaxFileSizeMB), http.StatusBadRequest)
 		return
 	}
 

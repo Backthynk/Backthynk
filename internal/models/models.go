@@ -56,3 +56,10 @@ type PostWithAttachments struct {
 	Attachments  []Attachment  `json:"attachments"`
 	LinkPreviews []LinkPreview `json:"link_previews"`
 }
+
+type Options struct {
+	MaxFileSizeMB    int    `json:"maxFileSizeMB"`
+	MaxContentLength int    `json:"maxContentLength"`
+	MaxFilesPerPost  int    `json:"maxFilesPerPost"`
+	StoragePath      string `json:"storagePath"`
+}

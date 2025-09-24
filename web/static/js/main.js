@@ -1,3 +1,66 @@
+// Character counter functionality
+async function initializeCharacterCounter() {
+    const textarea = document.getElementById('post-content');
+    const counter = document.getElementById('char-counter');
+
+    if (!textarea || !counter) return;
+
+    const settings = await loadAppSettings(true); // Force refresh to get latest
+
+    function updateCounter() {
+        const currentSettings = window.currentSettings || settings;
+        const currentLength = textarea.value.length;
+        counter.textContent = `${currentLength} / ${currentSettings.maxContentLength}`;
+
+        // Change color based on usage
+        if (currentLength > currentSettings.maxContentLength * 0.9) {
+            counter.classList.remove('text-gray-500', 'text-yellow-600');
+            counter.classList.add('text-red-600');
+        } else if (currentLength > currentSettings.maxContentLength * 0.7) {
+            counter.classList.remove('text-gray-500', 'text-red-600');
+            counter.classList.add('text-yellow-600');
+        } else {
+            counter.classList.remove('text-yellow-600', 'text-red-600');
+            counter.classList.add('text-gray-500');
+        }
+    }
+
+    // Initialize counter
+    updateCounter();
+
+    // Update counter on input
+    textarea.addEventListener('input', updateCounter);
+
+    // Store settings for later use
+    window.currentSettings = settings;
+}
+
+// Refresh character counter with new settings
+async function refreshCharacterCounter() {
+    const textarea = document.getElementById('post-content');
+    const counter = document.getElementById('char-counter');
+
+    if (!textarea || !counter) return;
+
+    const settings = await loadAppSettings(true);
+    window.currentSettings = settings;
+
+    const currentLength = textarea.value.length;
+    counter.textContent = `${currentLength} / ${settings.maxContentLength}`;
+
+    // Update color
+    if (currentLength > settings.maxContentLength * 0.9) {
+        counter.classList.remove('text-gray-500', 'text-yellow-600');
+        counter.classList.add('text-red-600');
+    } else if (currentLength > settings.maxContentLength * 0.7) {
+        counter.classList.remove('text-gray-500', 'text-red-600');
+        counter.classList.add('text-yellow-600');
+    } else {
+        counter.classList.remove('text-yellow-600', 'text-red-600');
+        counter.classList.add('text-gray-500');
+    }
+}
+
 // Main initialization and event listeners
 document.addEventListener('DOMContentLoaded', function() {
     // Load saved state
@@ -38,9 +101,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // File input handling
     const fileInput = document.getElementById('post-files');
-    fileInput.addEventListener('change', function(e) {
+    fileInput.addEventListener('change', async function(e) {
         for (let file of e.target.files) {
-            addFileToSelection(file);
+            await addFileToSelection(file);
         }
         // Reset input to allow selecting same file again
         e.target.value = '';
@@ -58,12 +121,12 @@ document.addEventListener('DOMContentLoaded', function() {
         dropZone.classList.remove('bg-blue-50', 'border-blue-300');
     });
 
-    dropZone.addEventListener('drop', function(e) {
+    dropZone.addEventListener('drop', async function(e) {
         e.preventDefault();
         dropZone.classList.remove('bg-blue-50', 'border-blue-300');
 
         for (let file of e.dataTransfer.files) {
-            addFileToSelection(file);
+            await addFileToSelection(file);
         }
     });
 
@@ -79,6 +142,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!content.trim()) {
             showError('Content is required');
+            return;
+        }
+
+        // Check content length against settings
+        const settings = await loadAppSettings(true); // Force refresh
+        if (content.length > settings.maxContentLength) {
+            showError(`Content exceeds maximum length of ${settings.maxContentLength} characters`);
             return;
         }
 
@@ -112,7 +182,12 @@ document.addEventListener('DOMContentLoaded', function() {
             loadPosts(currentCategory.id);
             // Refresh category stats
             const stats = await fetchCategoryStats(currentCategory.id);
-            const statsText = `${stats.post_count} posts • ${stats.file_count} files • ${formatFileSize(stats.total_size)}`;
+            let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
+
+            // Only show files and size if there are files
+            if (stats.file_count > 0) {
+                statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
+            }
             document.getElementById('timeline-title').innerHTML = `
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">${currentCategory.name}</h2>
@@ -191,6 +266,9 @@ document.addEventListener('DOMContentLoaded', function() {
             closeImageViewer();
         }
     };
+
+    // Initialize character counter
+    initializeCharacterCounter();
 
     // Initialize link preview system when creating post
     const showCreatePostOriginal = window.showCreatePost;

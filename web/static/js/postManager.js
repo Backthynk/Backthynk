@@ -210,7 +210,7 @@ function createPostElement(post) {
     // Content with formatted URLs
     const contentHtml = `
         <div class="mb-4 post-content">
-            <div class="text-gray-900 leading-relaxed whitespace-pre-wrap">${formatTextWithUrls(post.content)}</div>
+            <div class="text-gray-900 leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">${formatTextWithUrls(post.content)}</div>
         </div>
     `;
 
@@ -314,7 +314,13 @@ async function confirmDeletePost(postId) {
 }
 
 function updateCategoryStatsDisplay(stats) {
-    const statsText = `${stats.post_count} posts • ${stats.file_count} files • ${formatFileSize(stats.total_size)}`;
+    let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
+
+    // Only show files and size if there are files
+    if (stats.file_count > 0) {
+        statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
+    }
+
     document.getElementById('timeline-title').innerHTML = `
         <h2 class="text-xl font-bold text-gray-900">${currentCategory.name}</h2>
         <p class="text-xs text-gray-500 mt-0.5">${statsText}</p>

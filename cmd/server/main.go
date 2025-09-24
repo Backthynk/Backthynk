@@ -19,8 +19,9 @@ func main() {
 
 	// Initialize handlers
 	categoryHandler := handlers.NewCategoryHandler(db)
-	postHandler := handlers.NewPostHandler(db)
-	uploadHandler := handlers.NewUploadHandler(db, "storage/uploads")
+	settingsHandler := handlers.NewSettingsHandler("options.json")
+	postHandler := handlers.NewPostHandler(db, settingsHandler)
+	uploadHandler := handlers.NewUploadHandler(db, "storage/uploads", settingsHandler)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
 
 	// Setup router
@@ -53,6 +54,10 @@ func main() {
 	// File upload and serving
 	api.HandleFunc("/upload", uploadHandler.UploadFile).Methods("POST")
 	r.HandleFunc("/uploads/{filename}", uploadHandler.ServeFile).Methods("GET")
+
+	// Settings
+	api.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET")
+	api.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT")
 
 	// Static files
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))

@@ -1,4 +1,39 @@
 // API functions
+let appSettings = null;
+
+// Load application settings
+async function loadAppSettings(forceRefresh = false) {
+    if (appSettings && !forceRefresh) return appSettings;
+
+    try {
+        const response = await fetch('/api/settings');
+        if (response.ok) {
+            appSettings = await response.json();
+        } else {
+            // Use defaults if settings can't be loaded
+            appSettings = {
+                maxFileSizeMB: 100,
+                maxContentLength: 15000,
+                maxFilesPerPost: 20,
+                storagePath: 'storage'
+            };
+        }
+    } catch (error) {
+        console.error('Failed to load settings, using defaults:', error);
+        appSettings = {
+            maxFileSizeMB: 100,
+            maxContentLength: 15000,
+            maxFilesPerPost: 20,
+            storagePath: 'storage'
+        };
+    }
+    return appSettings;
+}
+
+// Clear settings cache (used when settings are updated)
+function clearSettingsCache() {
+    appSettings = null;
+}
 async function apiRequest(endpoint, options = {}) {
     const response = await fetch(`/api${endpoint}`, {
         headers: {
