@@ -66,6 +66,7 @@ function showConfirmation(title, message, detailsHtml = null) {
 
         // Show modal
         modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
 
         // Handle clicks
         const handleConfirm = () => {
@@ -87,6 +88,7 @@ function showConfirmation(title, message, detailsHtml = null) {
 
         const cleanup = () => {
             modal.classList.add('hidden');
+            document.body.style.overflow = '';
             confirmButton.removeEventListener('click', handleConfirm);
             cancelButton.removeEventListener('click', handleCancel);
             document.removeEventListener('keydown', handleEscape);

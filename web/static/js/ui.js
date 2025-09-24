@@ -34,11 +34,13 @@ function hideCreatePost() {
 
 function showCategoryModal() {
     document.getElementById('category-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
     document.getElementById('category-name').focus();
 }
 
 function hideCategoryModal() {
     document.getElementById('category-modal').classList.add('hidden');
+    document.body.style.overflow = '';
     document.getElementById('category-form').reset();
 }
 
