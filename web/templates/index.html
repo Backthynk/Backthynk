@@ -142,6 +142,20 @@
         margin: 0;
         padding: 0;
     }
+
+    @media (min-width: 1024px) {
+        #timeline-header.scrolled #timeline-title {
+            transform: translateX(calc(-100% / 3 - 1.5rem));
+        }
+
+        .sticky {
+            transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.header-scrolled .sticky {
+            top: 6rem !important;
+        }
+    }
 </style>
 </head>
 
@@ -252,18 +266,18 @@
                 </div>
 
                 <div id="timeline-section">
-                    <div id="timeline-header" class="py-4 mb-6">
-                        <div class="timeline-content">
-                            <div class="flex items-center justify-between">
-                                <div id="timeline-title" class="flex-1 min-w-0">
-                                    <h2 class="text-xl font-bold text-gray-900">Select a category to view posts</h2>
-                                </div>
-                                <button id="new-post-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
-                                    <i class="fas fa-plus mr-2"></i>New Post
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+<div id="timeline-header" class="py-4 mb-6">
+    <div class="timeline-content">
+        <div class="flex items-center justify-between">
+            <div id="timeline-title" class="flex-1 min-w-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]">
+                <h2 class="text-xl font-bold text-gray-900">Select a category to view posts</h2>
+            </div>
+            <button id="new-post-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
+                <i class="fas fa-plus mr-2"></i>New Post
+            </button>
+        </div>
+    </div>
+</div>
                     
                     <div id="posts-container" class="space-y-6">
                         <!-- Posts will be loaded here -->

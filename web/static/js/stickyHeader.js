@@ -13,8 +13,10 @@ function handleStickyHeaderScroll() {
 
     if (shouldBeScrolled && !header.classList.contains('scrolled')) {
         header.classList.add('scrolled');
+        document.body.classList.add('header-scrolled');
     } else if (!shouldBeScrolled && header.classList.contains('scrolled')) {
         header.classList.remove('scrolled');
+        document.body.classList.remove('header-scrolled');
     }
 }
 
