@@ -116,14 +116,14 @@
         background-color: rgb(249, 250, 251);
     }
 
-   #timeline-header {
+    #timeline-header {
         position: sticky;
         top: 0;
         z-index: 40;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         border-radius: 0;
-        margin-left: -1.5rem;
-        margin-right: -1.5rem;
+        margin-left: 0;
+        margin-right: 0;
     }
 
     #timeline-header.scrolled {
@@ -131,17 +131,17 @@
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        margin-left: calc(-50vw + 50%);
-        margin-right: calc(-50vw + 50%);
+        margin-left: calc(-100vw + 100%);
+        margin-right: calc(-100vw + 100%);
+        padding-left: calc(100vw - 100%);
+        padding-right: calc(100vw - 100%);
     }
 
     .timeline-content {
-        max-width: 80rem;
-        margin: 0 auto;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        max-width: none;
+        margin: 0;
+        padding: 0;
     }
-
 </style>
 </head>
 
