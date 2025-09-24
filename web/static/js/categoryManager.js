@@ -223,24 +223,136 @@ function navigateToCategory(categoryId) {
     }
 }
 
+// Function to get all descendant categories recursively
+async function getAllDescendantCategories(parentId) {
+    const descendants = [];
+
+    // Get direct children
+    const directChildren = categories.filter(cat => cat.parent_id === parentId);
+
+    for (const child of directChildren) {
+        descendants.push(child);
+        // Recursively get children of this child
+        const childDescendants = await getAllDescendantCategories(child.id);
+        descendants.push(...childDescendants);
+    }
+
+    return descendants;
+}
+
+// Function to get all posts recursively from a category
+async function getAllPostsRecursively(categoryId) {
+    let allPosts = [];
+    let offset = 0;
+    const limit = 100; // Fetch in batches
+    let hasMore = true;
+
+    while (hasMore) {
+        try {
+            const response = await fetchPosts(categoryId, limit, offset, true, true); // recursive = true
+            if (!response) {
+                hasMore = false;
+                continue;
+            }
+
+            const posts = response.posts || response;
+            if (!posts || !Array.isArray(posts) || posts.length === 0) {
+                hasMore = false;
+            } else {
+                allPosts = [...allPosts, ...posts];
+                offset += posts.length;
+
+                // Check if we have more posts
+                if (response.has_more !== undefined) {
+                    hasMore = response.has_more;
+                } else {
+                    hasMore = posts.length === limit;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching posts for deletion preview:', error);
+            break;
+        }
+    }
+
+    return allPosts;
+}
+
 async function deleteCategory(category) {
-    const subcategories = categories.filter(cat => cat.parent_id === category.id);
-    const stats = await fetchCategoryStats(category.id);
-    const totalPosts = stats.post_count;
+    // Get recursive stats to show the true count including subcategories
+    const recursiveStats = await fetchCategoryStats(category.id, true);
+    const totalPosts = recursiveStats.post_count;
+    const totalFiles = recursiveStats.file_count;
+
+    // Get all descendant categories for accurate count
+    const allDescendants = await getAllDescendantCategories(category.id);
+    const totalSubcategories = allDescendants.length;
+
+    // Get all posts with attachments to build file list
+    const allPosts = await getAllPostsRecursively(category.id);
 
     let message = `Are you sure you want to delete "${category.name}"?`;
 
-    if (subcategories.length > 0) {
-        message += `\n\nThis will also delete ${subcategories.length} subcategory(ies)`;
+    if (totalSubcategories > 0) {
+        message += `\n\nThis will also delete **${totalSubcategories}** subcategory(ies)`;
     }
 
     if (totalPosts > 0) {
-        message += ` and ${totalPosts} post(s) with all their files.`;
+        message += ` and **${totalPosts}** post(s)`;
+        if (totalFiles > 0) {
+            message += ` with **${totalFiles}** file(s)`;
+        }
+        message += '.';
     }
 
     message += '\n\nThis action cannot be undone.';
 
-    if (confirm(message)) {
+    // Build details HTML for lists
+    let detailsHtml = '';
+
+    // Subcategories list
+    if (allDescendants.length > 0) {
+        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Subcategories to be deleted:</h4>';
+        detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
+
+        allDescendants.forEach(subcat => {
+            const breadcrumb = getCategoryBreadcrumb(subcat.id);
+            detailsHtml += `<li>• ${breadcrumb}</li>`;
+        });
+
+        detailsHtml += '</ul></div></div>';
+    }
+
+    // Files list
+    const allFiles = [];
+    allPosts.forEach(post => {
+        if (post.attachments && post.attachments.length > 0) {
+            post.attachments.forEach(attachment => {
+                allFiles.push({
+                    filename: attachment.filename,
+                    size: attachment.file_size,
+                    postId: post.id
+                });
+            });
+        }
+    });
+
+    if (allFiles.length > 0) {
+        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Files to be deleted:</h4>';
+        detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-40 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
+
+        allFiles.forEach(file => {
+            detailsHtml += `<li class="flex justify-between items-center">
+                <span>• ${file.filename}</span>
+                <span class="text-xs text-gray-400">${formatFileSize(file.size)}</span>
+            </li>`;
+        });
+
+        detailsHtml += '</ul></div></div>';
+    }
+
+    const confirmed = await showConfirmation('Delete Category', message, detailsHtml);
+    if (confirmed) {
         try {
             await deleteCategoryApi(category.id);
 

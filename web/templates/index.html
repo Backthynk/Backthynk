@@ -150,7 +150,7 @@
 
     @media (min-width: 1024px) {
         #timeline-header.scrolled #timeline-title {
-            transform: translateX(calc(-100% / 3 - 1.5rem));
+            transform: translateX(calc(-100% / 3 - 4.5rem));
         }
 
         .sticky {
@@ -282,14 +282,14 @@
                 <h2 class="text-xl font-bold text-gray-900">Select a category to view posts</h2>
             </div>
             <div class="flex items-center space-x-3">
-                <button id="recursive-toggle-btn" class="px-3 py-2 rounded-lg text-sm font-medium transition-colors" style="display: none;">
-                    <i class="fas fa-sitemap"></i>
+                <button id="recursive-toggle-btn" class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors" style="display: none;">
+                    <i class="fas fa-sitemap text-sm"></i>
                 </button>
-                <button id="delete-category-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
-                    <i class="fas fa-trash-alt"></i>
+                <button id="delete-category-btn" class="flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors" style="display: none;">
+                    <i class="fas fa-trash-alt text-sm"></i>
                 </button>
-                <button id="settings-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
-                    <i class="fas fa-cog"></i>
+                <button id="settings-btn" class="flex items-center justify-center w-10 h-10 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors" style="display: none;">
+                    <i class="fas fa-cog text-sm"></i>
                 </button>
                 <button id="new-post-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
                     <i class="fas fa-plus mr-2"></i>New Post
@@ -473,6 +473,38 @@
         <div id="viewer-info" class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
             <div id="viewer-filename"></div>
             <div id="viewer-counter" class="text-sm opacity-75"></div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 max-h-[90vh] flex flex-col">
+            <div class="p-6 flex-shrink-0">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-red-100">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 id="confirmation-title" class="text-lg font-medium text-gray-900">Confirm Action</h3>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <p id="confirmation-message" class="text-sm text-gray-500 whitespace-pre-line"></p>
+                </div>
+            </div>
+            <div id="confirmation-details" class="flex-1 overflow-y-auto px-6 pb-4" style="display: none;">
+                <!-- Dynamic content for lists will be inserted here -->
+            </div>
+            <div class="p-6 pt-4 flex-shrink-0 border-t">
+                <div class="flex space-x-3 justify-end">
+                    <button id="confirmation-cancel" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors">
+                        Cancel
+                    </button>
+                    <button id="confirmation-confirm" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
+                        Confirm
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

@@ -299,7 +299,37 @@ function createPostElement(post) {
 }
 
 async function confirmDeletePost(postId) {
-    if (confirm('Are you sure you want to delete this post?\n\nThis will also delete all attached files.\n\nThis action cannot be undone.')) {
+    // Find the post in current posts to get attachment details
+    const post = currentPosts.find(p => p.id === postId);
+    const attachments = (post && post.attachments) ? post.attachments : [];
+
+    let message = 'Are you sure you want to delete this post?';
+
+    if (attachments.length > 0) {
+        message += `\n\nThis will also delete **${attachments.length}** attached file(s).`;
+    }
+
+    message += '\n\nThis action cannot be undone.';
+
+    // Build details HTML for file list
+    let detailsHtml = '';
+
+    if (attachments.length > 0) {
+        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Files to be deleted:</h4>';
+        detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
+
+        attachments.forEach(file => {
+            detailsHtml += `<li class="flex justify-between items-center">
+                <span>• ${file.filename}</span>
+                <span class="text-xs text-gray-400">${formatFileSize(file.file_size)}</span>
+            </li>`;
+        });
+
+        detailsHtml += '</ul></div></div>';
+    }
+
+    const confirmed = await showConfirmation('Delete Post', message, detailsHtml);
+    if (confirmed) {
         try {
             await deletePost(postId);
 
@@ -384,9 +414,9 @@ function updateHeaderButtons() {
         recursiveToggleBtn.style.display = 'block';
         // Update button styling based on state
         if (currentCategory.recursiveMode) {
-            recursiveToggleBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors';
+            recursiveToggleBtn.className = 'flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors';
         } else {
-            recursiveToggleBtn.className = 'bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
+            recursiveToggleBtn.className = 'flex items-center justify-center w-10 h-10 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors';
         }
     } else {
         recursiveToggleBtn.style.display = 'none';

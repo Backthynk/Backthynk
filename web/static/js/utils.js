@@ -35,7 +35,68 @@ function formatRelativeDate(dateString) {
 }
 
 function showError(message) {
+    // For now keep using alert for errors, could be replaced later
     alert(message);
+}
+
+// Custom confirmation dialog
+function showConfirmation(title, message, detailsHtml = null) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmation-modal');
+        const titleElement = document.getElementById('confirmation-title');
+        const messageElement = document.getElementById('confirmation-message');
+        const detailsElement = document.getElementById('confirmation-details');
+        const confirmButton = document.getElementById('confirmation-confirm');
+        const cancelButton = document.getElementById('confirmation-cancel');
+
+        // Set content
+        titleElement.textContent = title;
+        // Parse bold formatting in message
+        const formattedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-black">$1</strong>');
+        messageElement.innerHTML = formattedMessage.replace(/\n/g, '<br>');
+
+        // Handle details section
+        if (detailsHtml) {
+            detailsElement.innerHTML = detailsHtml;
+            detailsElement.style.display = 'block';
+        } else {
+            detailsElement.innerHTML = '';
+            detailsElement.style.display = 'none';
+        }
+
+        // Show modal
+        modal.classList.remove('hidden');
+
+        // Handle clicks
+        const handleConfirm = () => {
+            cleanup();
+            resolve(true);
+        };
+
+        const handleCancel = () => {
+            cleanup();
+            resolve(false);
+        };
+
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                cleanup();
+                resolve(false);
+            }
+        };
+
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            confirmButton.removeEventListener('click', handleConfirm);
+            cancelButton.removeEventListener('click', handleCancel);
+            document.removeEventListener('keydown', handleEscape);
+        };
+
+        // Add event listeners
+        confirmButton.addEventListener('click', handleConfirm);
+        cancelButton.addEventListener('click', handleCancel);
+        document.addEventListener('keydown', handleEscape);
+    });
 }
 
 // URL formatting utilities - add these to utils.js
