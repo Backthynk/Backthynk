@@ -6,9 +6,9 @@ function escapeHtml(text) {
 }
 
 function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return window.AppConstants.UI_TEXT.zeroBytes;
     const k = window.AppConstants.UI_CONFIG.fileSizeUnit;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = [window.AppConstants.UI_TEXT.bytes, window.AppConstants.UI_TEXT.kb, window.AppConstants.UI_TEXT.mb, window.AppConstants.UI_TEXT.gb];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
@@ -22,10 +22,10 @@ function formatRelativeDate(timestamp) {
     const diffHours = Math.floor(diffMs / window.AppConstants.UI_CONFIG.hoursInMs);
     const diffMinutes = Math.floor(diffMs / window.AppConstants.UI_CONFIG.minutesInMs);
 
-    if (diffMinutes < 1) return 'now';
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < window.AppConstants.UI_CONFIG.weekInDays) return `${diffDays}d ago`;
+    if (diffMinutes < 1) return window.AppConstants.UI_TEXT.now;
+    if (diffMinutes < 60) return `${diffMinutes}${window.AppConstants.UI_TEXT.minutesAgo}`;
+    if (diffHours < 24) return `${diffHours}${window.AppConstants.UI_TEXT.hoursAgo}`;
+    if (diffDays < window.AppConstants.UI_CONFIG.weekInDays) return `${diffDays}${window.AppConstants.UI_TEXT.daysAgo}`;
 
     // More than a week ago
     if (date.getFullYear() === now.getFullYear()) {
@@ -126,7 +126,7 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
         return shortened;
     } catch (e) {
         // If URL parsing fails, just truncate the original
-        return url.length > maxLength ? url.substring(0, maxLength - 3) + '...' : url;
+        return url.length > maxLength ? url.substring(0, maxLength - 3) + window.AppConstants.UI_TEXT.ellipsis : url;
     }
 }
 

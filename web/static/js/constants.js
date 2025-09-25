@@ -100,11 +100,60 @@ const ACTIVITY_CLASSES = [
     'bg-green-500'           // Very high activity
 ];
 
-// UI Text Constants (for i18n support)
+// Global UI Text Constants (for i18n support)
 const UI_TEXT = {
+    // Common words
+    post: 'post',
+    posts: 'posts',
+    day: 'day',
+    days: 'days',
+    on: 'on',
+    less: 'Less',
+    more: 'More',
+    all: 'All',
+    categories: 'Categories',
     allCategories: 'All Categories',
-    activityLegendLess: 'Less',
-    activityLegendMore: 'More'
+
+    // Time expressions
+    now: 'now',
+    ago: 'ago',
+    minutesAgo: 'm ago',
+    hoursAgo: 'h ago',
+    daysAgo: 'd ago',
+
+    // File sizes
+    bytes: 'Bytes',
+    kb: 'KB',
+    mb: 'MB',
+    gb: 'GB',
+    zeroBytes: '0 Bytes',
+
+    // Common actions
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    create: 'Create',
+    update: 'Update',
+    loading: 'Loading',
+
+    // Error messages
+    error: 'Error',
+    failed: 'Failed',
+    success: 'Success',
+
+    // Navigation
+    next: 'Next',
+    previous: 'Previous',
+
+    // File operations
+    file: 'file',
+    files: 'files',
+    upload: 'Upload',
+    download: 'Download',
+
+    // Punctuation
+    ellipsis: '...'
 };
 
 // Export all constants

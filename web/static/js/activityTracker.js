@@ -139,8 +139,10 @@ function generateHeatmapFromCache(activityData) {
     renderHeatmapGrid(days);
 
     // Update summary with pre-calculated stats
+    const postsText = activityData.stats.total_posts === 1 ? window.AppConstants.UI_TEXT.post : window.AppConstants.UI_TEXT.posts;
+    const daysText = activityData.stats.active_days === 1 ? window.AppConstants.UI_TEXT.day : window.AppConstants.UI_TEXT.days;
     document.getElementById('activity-summary').textContent =
-        `${activityData.stats.total_posts} posts on ${activityData.stats.active_days} days`;
+        `${activityData.stats.total_posts} ${postsText} ${window.AppConstants.UI_TEXT.on} ${activityData.stats.active_days} ${daysText}`;
 
     // Update navigation buttons
     document.getElementById('activity-next').disabled = currentActivityPeriod >= 0;
@@ -200,14 +202,16 @@ function renderHeatmapGrid(days) {
 
     let html = '<div class="space-y-1">';
 
+    const nRowGap = Math.round(30 / window.AppConstants.UI_CONFIG.heatmapSquaresPerRow);
+
     for (let row = 0; row < rows; row++) {
         const startIndex = row * squaresPerRow;
         const endIndex = Math.min(startIndex + squaresPerRow, days.length);
 
         // Show month every 3 rows using dynamic labels
         let monthLabel = '';
-        if (row % 3 === 0) {
-            const monthIndex = Math.floor(row / 3);
+        if (row % nRowGap === 0) {
+            const monthIndex = Math.floor(row / nRowGap);
             if (monthIndex < monthLabels.length) {
                 monthLabel = monthLabels[monthIndex];
             }
@@ -257,11 +261,11 @@ function updateActivityLegend() {
     legendElement.innerHTML = `
         <div class="flex items-center space-x-2">
             <div class="w-2 h-2 ${minColorClass} rounded-sm"></div>
-            <span class="text-gray-400">${window.AppConstants.UI_TEXT.activityLegendLess}</span>
+            <span class="text-gray-400">${window.AppConstants.UI_TEXT.less}</span>
         </div>
         <div class="flex items-center space-x-2">
             <div class="w-2 h-2 ${maxColorClass} rounded-sm"></div>
-            <span class="text-gray-400">${window.AppConstants.UI_TEXT.activityLegendMore}</span>
+            <span class="text-gray-400">${window.AppConstants.UI_TEXT.more}</span>
         </div>
     `;
 }
@@ -321,8 +325,9 @@ function addHeatmapTooltips() {
 
             tooltip = document.createElement('div');
             tooltip.className = 'absolute bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-lg pointer-events-none z-50 max-w-xs';
+            const postText = count === '1' ? window.AppConstants.UI_TEXT.post : window.AppConstants.UI_TEXT.posts;
             tooltip.innerHTML = `
-                <div class="font-medium">${count} post${count !== '1' ? 's' : ''}</div>
+                <div class="font-medium">${count} ${postText}</div>
                 <div class="text-gray-300">${day}</div>
             `;
 
