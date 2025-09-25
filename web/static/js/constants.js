@@ -100,6 +100,13 @@ const ACTIVITY_CLASSES = [
     'bg-green-500'           // Very high activity
 ];
 
+// UI Text Constants (for i18n support)
+const UI_TEXT = {
+    allCategories: 'All Categories',
+    activityLegendLess: 'Less',
+    activityLegendMore: 'More'
+};
+
 // Export all constants
 window.AppConstants = {
     ALL_CATEGORIES_ID,
@@ -109,5 +116,6 @@ window.AppConstants = {
     UI_CONFIG,
     ACTIVITY_LEVELS,
     ACTIVITY_THRESHOLDS,
-    ACTIVITY_CLASSES
+    ACTIVITY_CLASSES,
+    UI_TEXT
 };

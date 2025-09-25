@@ -79,7 +79,7 @@ function updateActivityCategoryBreadcrumb() {
     if (!breadcrumbElement) return;
 
     if (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        breadcrumbElement.innerHTML = '<span class="text-xs font-semibold text-gray-700">All Categories</span>';
+        breadcrumbElement.innerHTML = `<span class="text-xs font-semibold text-gray-700">${window.AppConstants.UI_TEXT.allCategories}</span>`;
         return;
     }
 
@@ -146,6 +146,9 @@ function generateHeatmapFromCache(activityData) {
     document.getElementById('activity-next').disabled = currentActivityPeriod >= 0;
     document.getElementById('activity-prev').disabled = currentActivityPeriod <= -activityData.max_periods;
 
+    // Update legend with dynamic colors
+    updateActivityLegend();
+
     // Add tooltips
     addHeatmapTooltips();
 }
@@ -180,8 +183,20 @@ function renderHeatmapGrid(days) {
     const squaresPerRow = window.AppConstants.UI_CONFIG.heatmapSquaresPerRow;
     const rows = Math.ceil(days.length / squaresPerRow);
 
-    // Simple: just hardcode the 4 months we want to show
-    const monthLabels = ['Jun', 'Jul', 'Aug', 'Sep'];
+
+    // Generate month labels starting from current date minus 3 months (to include current month)
+    const monthLabels = [];
+    const currentDate = new Date();
+    const startMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - window.AppConstants.UI_CONFIG.activityPeriodMonths + 2, 1);
+
+    for (let i = 0; i < window.AppConstants.UI_CONFIG.activityPeriodMonths; i++) {
+        const monthDate = new Date(startMonth.getFullYear(), startMonth.getMonth() + i, 1);
+        const monthLabel = monthDate.toLocaleDateString('en-US', {
+            month: 'short',
+            timeZone: 'UTC'
+        });
+        monthLabels.push(monthLabel);
+    }
 
     let html = '<div class="space-y-1">';
 
@@ -189,7 +204,7 @@ function renderHeatmapGrid(days) {
         const startIndex = row * squaresPerRow;
         const endIndex = Math.min(startIndex + squaresPerRow, days.length);
 
-        // Show month every 3 rows: row 0=Jun, row 3=Jul, row 6=Aug, row 9=Sep
+        // Show month every 3 rows using dynamic labels
         let monthLabel = '';
         if (row % 3 === 0) {
             const monthIndex = Math.floor(row / 3);
@@ -229,6 +244,26 @@ function renderHeatmapGrid(days) {
 
     html += '</div>';
     document.getElementById('activity-heatmap').innerHTML = html;
+}
+
+// Generate activity legend using constants
+function updateActivityLegend() {
+    const legendElement = document.getElementById('activity-legend');
+    if (!legendElement) return;
+
+    const minColorClass = window.AppConstants.ACTIVITY_CLASSES[1]; // First actual activity level
+    const maxColorClass = window.AppConstants.ACTIVITY_CLASSES[window.AppConstants.ACTIVITY_CLASSES.length - 1]; // Highest activity level
+
+    legendElement.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 ${minColorClass} rounded-sm"></div>
+            <span class="text-gray-400">${window.AppConstants.UI_TEXT.activityLegendLess}</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <div class="w-2 h-2 ${maxColorClass} rounded-sm"></div>
+            <span class="text-gray-400">${window.AppConstants.UI_TEXT.activityLegendMore}</span>
+        </div>
+    `;
 }
 
 // Format period label
