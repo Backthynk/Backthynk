@@ -13,37 +13,40 @@ function renderCategories() {
 
 function createCategoryElement(category, level = 0) {
     const div = document.createElement('div');
-    div.className = 'category-item';
+    div.className = 'category-item mb-1';
 
     const hasChildren = categories.some(cat => cat.parent_id === category.id);
     const isExpanded = expandedCategories.has(category.id);
-    const shouldShowChildren = isExpanded; // Remove the level === 0 condition
+    const shouldShowChildren = isExpanded;
 
     const mainDiv = document.createElement('div');
-    mainDiv.className = 'flex items-center hover:bg-gray-50 rounded-lg transition-colors';
+    mainDiv.className = 'flex items-center group';
 
-    // Expand/collapse button (separate from main button)
+    // Expand/collapse button with modern styling
     let expandButton = '';
     if (hasChildren) {
         expandButton = `
-            <button class="expand-btn flex-shrink-0 w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded transition-colors mr-1" style="margin-left: ${level * 16}px;">
-                <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'} text-xs text-gray-400"></i>
+            <button class="expand-btn flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200 mr-1" style="margin-left: ${level * 14}px;">
+                <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'} text-xs"></i>
             </button>
         `;
     } else {
-        expandButton = `<div class="w-6 h-6 mr-1" style="margin-left: ${level * 16 + (hasChildren ? 0 : 6)}px;"></div>`;
+        expandButton = `<div class="w-5 h-5 mr-1" style="margin-left: ${level * 14 + 5}px;"></div>`;
     }
 
-    // Main category button
+    // Main category button with GitHub-style design
     const categoryButton = document.createElement('button');
-    categoryButton.className = `category-btn flex-1 text-left px-2 py-2 rounded-md transition-colors min-w-0 ${
-        currentCategory?.id === category.id ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+    const isSelected = currentCategory?.id === category.id;
+    categoryButton.className = `category-btn flex-1 text-left px-2 py-1.5 rounded-md transition-all duration-200 min-w-0 group-hover:bg-gray-50 ${
+        isSelected
+            ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-medium'
+            : 'text-gray-700 hover:text-gray-900'
     }`;
 
     categoryButton.innerHTML = `
         <div class="flex items-center min-w-0">
-            <i class="fas fa-folder${currentCategory?.id === category.id ? '-open' : ''} mr-2 flex-shrink-0"></i>
-            <span class="font-medium truncate" title="${category.name}">${category.name}</span>
+            <i class="fas fa-folder${isSelected ? '-open' : ''} mr-2 flex-shrink-0 text-xs ${isSelected ? 'text-blue-500' : 'text-gray-400'}"></i>
+            <span class="text-sm truncate" title="${category.name}">${category.name}</span>
         </div>
     `;
 
