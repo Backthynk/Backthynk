@@ -63,13 +63,19 @@ async function fetchCategories() {
         // Fetch global stats
         await fetchGlobalStats();
 
-        // Auto-select last category if exists
+        // Auto-select last category if exists, otherwise show all categories
         const lastCategoryId = getLastCategory();
         if (lastCategoryId) {
             const lastCategory = categories.find(cat => cat.id == lastCategoryId);
             if (lastCategory) {
                 selectCategory(lastCategory);
+            } else {
+                // Last category no longer exists, show all categories
+                await deselectCategory();
             }
+        } else {
+            // No last category, show all categories
+            await deselectCategory();
         }
     } catch (error) {
         console.error('Failed to fetch categories:', error);
@@ -116,6 +122,7 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
         return { posts: [], has_more: false };
     }
 }
+
 
 async function fetchCategoryStats(categoryId, recursive = false) {
     try {

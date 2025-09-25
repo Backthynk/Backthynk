@@ -31,6 +31,7 @@ const (
 	// Category Configuration
 	MaxCategoryDepth = 2
 	DefaultDepth     = 0
+	ALL_CATEGORIES_ID = 0 // Special category ID representing "all categories" view
 
 	// Post Pagination
 	DefaultPostLimit = 20

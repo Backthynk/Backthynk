@@ -117,6 +117,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(post)
 }
 
+
 func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	categoryID, err := strconv.Atoi(vars["id"])
@@ -144,19 +145,42 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	posts, err := h.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset)
-	if err != nil {
-		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
-		return
-	}
+	var posts []models.PostWithAttachments
+	var totalCount int
 
-	if withMeta {
-		totalCount, err := h.db.GetPostCountByCategoryRecursive(categoryID, recursive)
+	if categoryID == config.ALL_CATEGORIES_ID {
+		// ALL_CATEGORIES_ID means "all categories"
+		posts, err = h.db.GetAllPosts(limit, offset)
 		if err != nil {
-			http.Error(w, "Failed to get post count", http.StatusInternalServerError)
+			http.Error(w, "Failed to get all posts", http.StatusInternalServerError)
 			return
 		}
 
+		if withMeta {
+			totalCount, err = h.db.GetTotalPostCount()
+			if err != nil {
+				http.Error(w, "Failed to get total post count", http.StatusInternalServerError)
+				return
+			}
+		}
+	} else {
+		// Normal category-specific posts
+		posts, err = h.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset)
+		if err != nil {
+			http.Error(w, "Failed to get posts", http.StatusInternalServerError)
+			return
+		}
+
+		if withMeta {
+			totalCount, err = h.db.GetPostCountByCategoryRecursive(categoryID, recursive)
+			if err != nil {
+				http.Error(w, "Failed to get post count", http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+
+	if withMeta {
 		response := map[string]interface{}{
 			"posts":       posts,
 			"total_count": totalCount,

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"backthynk/internal/cache"
+	"backthynk/internal/config"
 	"backthynk/internal/services"
 	"encoding/json"
 	"net/http"
@@ -62,24 +63,36 @@ func (h *ActivityHandler) GetActivityPeriod(w http.ResponseWriter, r *http.Reque
 	startDate := query.Get("start_date")
 	endDate := query.Get("end_date")
 
-	// Create request
-	req := cache.ActivityPeriodRequest{
-		CategoryID:   categoryID,
-		Recursive:    recursive,
-		StartDate:    startDate,
-		EndDate:      endDate,
-		Period:       period,
-		PeriodMonths: periodMonths,
-	}
+	var response *cache.ActivityPeriodResponse
 
-	// Get activity data
-	response, err := h.activityService.GetActivityPeriod(req)
-	if err != nil {
-		http.Error(w, "Failed to get activity data: "+err.Error(), http.StatusInternalServerError)
-		return
+	if categoryID == config.ALL_CATEGORIES_ID {
+		// ALL_CATEGORIES_ID means global activity across all categories
+		response, err = h.activityService.GetGlobalActivityPeriod(period, periodMonths, startDate, endDate)
+		if err != nil {
+			http.Error(w, "Failed to get global activity data: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+		// Create request for specific category
+		req := cache.ActivityPeriodRequest{
+			CategoryID:   categoryID,
+			Recursive:    recursive,
+			StartDate:    startDate,
+			EndDate:      endDate,
+			Period:       period,
+			PeriodMonths: periodMonths,
+		}
+
+		// Get activity data
+		response, err = h.activityService.GetActivityPeriod(req)
+		if err != nil {
+			http.Error(w, "Failed to get activity data: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
+
 

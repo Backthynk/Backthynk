@@ -280,4 +280,106 @@ func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 	return s.cache.RefreshCategory(categoryID, posts)
 }
 
+// GetGlobalActivityPeriod returns aggregated activity data across all categories for a specific time period
+func (s *ActivityService) GetGlobalActivityPeriod(period int, periodMonths int, startDate string, endDate string) (*cache.ActivityPeriodResponse, error) {
+	// Get all categories to aggregate their activity
+	categories, err := s.db.GetCategories()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get categories: %w", err)
+	}
+
+	// Build a map to aggregate activity by day
+	aggregatedActivity := make(map[string]int)
+	totalPosts := 0
+
+	// Process each category
+	for _, category := range categories {
+		req := cache.ActivityPeriodRequest{
+			CategoryID:   category.ID,
+			Recursive:    false, // We'll process each category individually
+			Period:       period,
+			PeriodMonths: periodMonths,
+			StartDate:    startDate,
+			EndDate:      endDate,
+		}
+
+		response, err := s.GetActivityPeriod(req)
+		if err != nil {
+			// Log error but continue with other categories
+			log.Printf("Warning: failed to get activity for category %d: %v", category.ID, err)
+			continue
+		}
+
+		totalPosts += response.Stats.TotalPosts
+
+		// Aggregate the activity days
+		for _, day := range response.Days {
+			aggregatedActivity[day.Date] += day.Count
+		}
+	}
+
+	// Convert aggregated activity back to ActivityDay slice
+	var days []cache.ActivityDay
+	maxDayActivity := 0
+	for date, count := range aggregatedActivity {
+		if count > 0 { // Only include days with activity
+			days = append(days, cache.ActivityDay{
+				Date:  date,
+				Count: count,
+			})
+			if count > maxDayActivity {
+				maxDayActivity = count
+			}
+		}
+	}
+
+	// Calculate period dates using the same logic as individual categories
+	periodStartDate, periodEndDate := s.calculatePeriodDates(period, periodMonths)
+	if startDate != "" {
+		periodStartDate = startDate
+	}
+	if endDate != "" {
+		periodEndDate = endDate
+	}
+
+	// Create stats
+	stats := cache.PeriodStats{
+		TotalPosts:     totalPosts,
+		ActiveDays:     len(days),
+		MaxDayActivity: maxDayActivity,
+	}
+
+	return &cache.ActivityPeriodResponse{
+		CategoryID: -1, // Special ID for global
+		StartDate:  periodStartDate,
+		EndDate:    periodEndDate,
+		Period:     period,
+		Days:       days,
+		Stats:      stats,
+		MaxPeriods: 0,
+	}, nil
+}
+
+// calculatePeriodDates calculates start and end dates for a given period
+// This uses the same logic as the cache layer
+func (s *ActivityService) calculatePeriodDates(period, periodMonths int) (string, string) {
+	now := time.Now().UTC()
+
+	if period == 0 {
+		// Current period: last N months up to today
+		end := now
+		start := now.AddDate(0, -(periodMonths-1), 0)
+		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, time.UTC)
+		return start.Format("2006-01-02"), end.Format("2006-01-02")
+	}
+
+	// Historical periods
+	currentPeriodStart := now.AddDate(0, -(periodMonths-1), 0)
+	currentPeriodStart = time.Date(currentPeriodStart.Year(), currentPeriodStart.Month(), 1, 0, 0, 0, 0, time.UTC)
+	periodStart := currentPeriodStart.AddDate(0, periodMonths*period, 0)
+	periodEnd := periodStart.AddDate(0, periodMonths, -1)
+
+	return periodStart.Format("2006-01-02"), periodEnd.Format("2006-01-02")
+}
+
 

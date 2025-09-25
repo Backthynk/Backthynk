@@ -1,5 +1,8 @@
 // Application Configuration Constants
 
+// Special Category IDs
+const ALL_CATEGORIES_ID = 0; // Category ID 0 represents "all categories"
+
 // Default Application Settings
 const DEFAULT_SETTINGS = {
     maxFileSizeMB: 100,
@@ -99,6 +102,7 @@ const ACTIVITY_CLASSES = [
 
 // Export all constants
 window.AppConstants = {
+    ALL_CATEGORIES_ID,
     DEFAULT_SETTINGS,
     VALIDATION_LIMITS,
     ERROR_MESSAGES,

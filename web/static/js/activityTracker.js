@@ -17,14 +17,21 @@ async function generateActivityHeatmap() {
 
     try {
         // Use efficient API that returns only non-zero activity days
+        // For category ID 0, the backend will return global activity data
         const response = await fetchActivityPeriod(
             currentCategory.id,
             currentCategory.recursiveMode || false,
             currentActivityPeriod
         );
 
-        if (!response || response.days.length === 0) {
-            // Hide activity container for empty categories
+        if (!response) {
+            // Hide activity container for failed requests
+            document.getElementById('activity-container').style.display = 'none';
+            return;
+        }
+
+        if (response.days.length === 0 && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
+            // Hide activity container for empty specific categories, but not for "All categories"
             document.getElementById('activity-container').style.display = 'none';
             return;
         }
@@ -214,6 +221,7 @@ async function changeActivityPeriod(direction) {
     await generateActivityHeatmap();
 }
 
+
 // Get activity intensity level (same as before but using constants)
 function getIntensityLevel(count) {
     if (count === 0) return window.AppConstants.ACTIVITY_LEVELS.none;
@@ -268,4 +276,5 @@ function addHeatmapTooltips() {
         });
     });
 }
+
 

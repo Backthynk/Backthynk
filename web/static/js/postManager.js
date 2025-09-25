@@ -63,6 +63,7 @@ async function loadMorePosts(categoryId, recursive = false) {
     await loadPosts(categoryId, recursive, false);
 }
 
+
 function setupInfiniteScroll(categoryId, recursive = false) {
     const container = document.getElementById('posts-container');
 
@@ -83,6 +84,7 @@ function setupInfiniteScroll(categoryId, recursive = false) {
 
     window.addEventListener('scroll', window.infiniteScrollHandler);
 }
+
 
 function renderPosts(posts, reset = true) {
     const container = document.getElementById('posts-container');
@@ -432,4 +434,44 @@ function navigateToCategoryFromPost(categoryId) {
     if (category) {
         selectCategory(category);
     }
+}
+
+// Function to update display for "All categories" view
+async function updateAllCategoriesDisplay() {
+    // Get global stats using category ID 0
+    const stats = await fetchCategoryStats(0, false);
+
+    // Find the first category created (oldest)
+    const oldestCategory = categories.reduce((oldest, current) => {
+        return (!oldest || current.created < oldest.created) ? current : oldest;
+    }, null);
+
+    const creationDate = oldestCategory ?
+        new Date(oldestCategory.created).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        }) :
+        'Date unavailable';
+
+    let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
+
+    // Only show files and size if file stats are enabled and there are files
+    if (fileStatsEnabled && stats.file_count > 0) {
+        statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
+    }
+
+    document.getElementById('timeline-title').innerHTML = `
+        <div class="group">
+            <h2 class="text-xl font-bold text-gray-900">All categories</h2>
+            <p class="text-xs text-gray-500 mt-0.5 relative">
+                <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
+                <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
+            </p>
+        </div>
+    `;
+
+    // Update button visibility - hide category-specific buttons
+    document.getElementById('recursive-toggle-btn').style.display = 'none';
+    document.getElementById('delete-category-btn').style.display = 'none';
 }

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"backthynk/internal/cache"
+	"backthynk/internal/config"
 	"backthynk/internal/services"
 	"encoding/json"
 	"net/http"
@@ -59,31 +60,52 @@ func (h *CategoryStatsHandler) GetCategoryStats(w http.ResponseWriter, r *http.R
 	}
 
 	var postCount int
-	var lastActivityUpdate int64
-	if h.activityService != nil {
-		activityData, err := h.activityService.GetActivityPeriod(activityReq)
-		if err == nil {
-			postCount = activityData.Stats.TotalPosts
-		}
-
-		lastActivityUpdate = time.Now().UnixMilli() // Use current time as fallback
-	}
-
-	// Get file statistics
-	fileStatsReq := cache.FileStatsRequest{
-		CategoryID: categoryID,
-		Recursive:  recursive,
-	}
-
 	var fileCount int64
 	var totalSize int64
+	var lastActivityUpdate int64
 	var lastFileStatsUpdate int64
-	if h.fileStatsService != nil {
-		fileStats, err := h.fileStatsService.GetFileStats(fileStatsReq)
-		if err == nil {
-			fileCount = fileStats.Stats.FileCount
-			totalSize = fileStats.Stats.TotalSize
-			lastFileStatsUpdate = fileStats.LastUpdate
+
+	if categoryID == config.ALL_CATEGORIES_ID {
+		// ALL_CATEGORIES_ID means global stats across all categories
+		if h.activityService != nil {
+			activityData, err := h.activityService.GetGlobalActivityPeriod(0, 6, "", "")
+			if err == nil {
+				postCount = activityData.Stats.TotalPosts
+			}
+			lastActivityUpdate = time.Now().UnixMilli()
+		}
+
+		if h.fileStatsService != nil {
+			fileStatsData, err := h.fileStatsService.GetGlobalFileStats()
+			if err == nil {
+				fileCount = fileStatsData.FileCount
+				totalSize = fileStatsData.TotalSize
+			}
+			lastFileStatsUpdate = time.Now().UnixMilli()
+		}
+	} else {
+		if h.activityService != nil {
+			activityData, err := h.activityService.GetActivityPeriod(activityReq)
+			if err == nil {
+				postCount = activityData.Stats.TotalPosts
+			}
+
+			lastActivityUpdate = time.Now().UnixMilli() // Use current time as fallback
+		}
+
+		// Get file statistics
+		fileStatsReq := cache.FileStatsRequest{
+			CategoryID: categoryID,
+			Recursive:  recursive,
+		}
+
+		if h.fileStatsService != nil {
+			fileStats, err := h.fileStatsService.GetFileStats(fileStatsReq)
+			if err == nil {
+				fileCount = fileStats.Stats.FileCount
+				totalSize = fileStats.Stats.TotalSize
+				lastFileStatsUpdate = fileStats.LastUpdate
+			}
 		}
 	}
 

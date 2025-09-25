@@ -89,6 +89,12 @@ function toggleCategory(categoryId) {
 }
 
 async function selectCategory(category) {
+    // If clicking on already selected category, deselect it
+    if (currentCategory && currentCategory.id === category.id) {
+        await deselectCategory();
+        return;
+    }
+
     currentCategory = category;
     // Load saved recursive mode state for this category
     currentCategory.recursiveMode = loadRecursiveToggleState(category.id);
@@ -106,6 +112,34 @@ async function selectCategory(category) {
     const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
     updateCategoryStatsDisplay(stats);
     document.getElementById('new-post-btn').style.display = 'block';
+    document.getElementById('settings-btn').style.display = 'block';
+
+    generateActivityHeatmap();
+}
+
+async function deselectCategory() {
+    // Create a special "category" object with ALL_CATEGORIES_ID to represent "all categories"
+    currentCategory = {
+        id: window.AppConstants.ALL_CATEGORIES_ID,
+        name: "All categories",
+        recursiveMode: false
+    };
+
+    localStorage.removeItem('lastSelectedCategory');
+    renderCategories();
+
+    // Load posts for category ID 0 (all posts)
+    loadPosts(0, false);
+
+    // Reset activity period when switching to all categories
+    currentActivityPeriod = 0;
+
+    // Reset scroll position to top
+    window.scrollTo(0, 0);
+
+    // Update UI to show "All categories"
+    await updateAllCategoriesDisplay();
+    document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
 
     generateActivityHeatmap();

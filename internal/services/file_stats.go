@@ -262,4 +262,39 @@ func (s *FileStatsService) RefreshCategoryFileStats(categoryID int) error {
 	return s.cache.RefreshCategory(categoryID, attachments)
 }
 
+// GetGlobalFileStats returns aggregated file statistics across all categories
+func (s *FileStatsService) GetGlobalFileStats() (*cache.FileStatsSummary, error) {
+	// Get all categories to aggregate their file statistics
+	categories, err := s.db.GetCategories()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get categories: %w", err)
+	}
+
+	var totalFiles int64
+	var totalSize int64
+
+	// Process each category
+	for _, category := range categories {
+		req := cache.FileStatsRequest{
+			CategoryID: category.ID,
+			Recursive:  false, // We'll process each category individually
+		}
+
+		response, err := s.GetFileStats(req)
+		if err != nil {
+			// Log error but continue with other categories
+			log.Printf("Warning: failed to get file stats for category %d: %v", category.ID, err)
+			continue
+		}
+
+		totalFiles += response.Stats.FileCount
+		totalSize += response.Stats.TotalSize
+	}
+
+	return &cache.FileStatsSummary{
+		FileCount: totalFiles,
+		TotalSize: totalSize,
+	}, nil
+}
+
 

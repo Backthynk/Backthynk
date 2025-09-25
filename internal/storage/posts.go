@@ -222,3 +222,59 @@ func (db *DB) DeletePost(id int) error {
 
 	return nil
 }
+
+// GetAllPosts gets all posts across all categories with pagination
+func (db *DB) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, error) {
+	query := `
+		SELECT p.id, p.category_id, p.content, p.created
+		FROM posts p
+		ORDER BY p.created DESC
+		LIMIT ? OFFSET ?
+	`
+
+	rows, err := db.Query(query, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query all posts: %w", err)
+	}
+	defer rows.Close()
+
+	var posts []models.PostWithAttachments
+	for rows.Next() {
+		var post models.PostWithAttachments
+		err := rows.Scan(&post.ID, &post.CategoryID, &post.Content, &post.Created)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan post: %w", err)
+		}
+
+		// Load attachments for this post
+		attachments, err := db.GetAttachmentsByPost(post.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get attachments for post %d: %w", post.ID, err)
+		}
+		post.Attachments = attachments
+
+		// Load link previews for this post
+		linkPreviews, err := db.GetLinkPreviewsByPostID(post.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get link previews for post %d: %w", post.ID, err)
+		}
+		post.LinkPreviews = linkPreviews
+
+		posts = append(posts, post)
+	}
+
+	return posts, nil
+}
+
+// GetTotalPostCount gets the total count of all posts across all categories
+func (db *DB) GetTotalPostCount() (int, error) {
+	var count int
+	query := "SELECT COUNT(*) FROM posts"
+
+	err := db.QueryRow(query).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count all posts: %w", err)
+	}
+
+	return count, nil
+}
