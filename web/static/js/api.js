@@ -85,17 +85,32 @@ async function fetchCategories() {
     }
 }
 
-async function createCategory(name, parentId) {
+async function createCategory(name, parentId, description = '') {
     try {
         const parent_id = parentId ? parseInt(parentId) : null;
         const category = await apiRequest('/categories', {
             method: 'POST',
-            body: JSON.stringify({ name, parent_id })
+            body: JSON.stringify({ name, description, parent_id })
         });
         await fetchCategories();
         return category;
     } catch (error) {
         console.error(`${window.AppConstants.UI_TEXT.failedToCreate} category:`, error);
+        throw error;
+    }
+}
+
+async function updateCategory(categoryId, name, description, parentId) {
+    try {
+        const parent_id = parentId ? parseInt(parentId) : null;
+        const category = await apiRequest(`/categories/${categoryId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ name, description, parent_id })
+        });
+        await fetchCategories();
+        return category;
+    } catch (error) {
+        console.error(`${window.AppConstants.UI_TEXT.failedToUpdate} category:`, error);
         throw error;
     }
 }

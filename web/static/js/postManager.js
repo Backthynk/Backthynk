@@ -394,13 +394,23 @@ function updateCategoryStatsDisplay(stats) {
         }) :
         'Date unavailable';
 
+    // Create tooltip content - show description if it exists
+    const tooltipContent = currentCategory.description && currentCategory.description.trim()
+        ? currentCategory.description
+        : `Created ${creationDate}`;
+
     document.getElementById('timeline-title').innerHTML = `
-        <div class="group">
+        <div class="group relative">
             <h2 class="text-xl font-bold text-gray-900">${categoryBreadcrumb}</h2>
             <p class="text-xs text-gray-500 mt-0.5 relative">
                 <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
             </p>
+            ${currentCategory.description && currentCategory.description.trim() ? `
+                <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-xs">
+                    ${currentCategory.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                </div>
+            ` : ''}
         </div>
     `;
 
@@ -413,6 +423,7 @@ function updateHeaderButtons() {
     if (!currentCategory) {
         document.getElementById('recursive-toggle-btn').style.display = 'none';
         document.getElementById('delete-category-btn').style.display = 'none';
+        document.getElementById('edit-category-btn').style.display = 'none';
         return;
     }
 
@@ -432,8 +443,9 @@ function updateHeaderButtons() {
         recursiveToggleBtn.style.display = 'none';
     }
 
-    // Always show delete button when a category is selected
+    // Always show delete and edit buttons when a category is selected
     document.getElementById('delete-category-btn').style.display = 'block';
+    document.getElementById('edit-category-btn').style.display = 'block';
 }
 
 // Function to navigate to a category when clicked from a post

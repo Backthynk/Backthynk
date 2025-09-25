@@ -12,14 +12,16 @@ import (
 )
 
 type CategoryHandler struct {
-	db              *storage.DB
-	activityService *services.ActivityService
+	db                *storage.DB
+	activityService   *services.ActivityService
+	fileStatsService  *services.FileStatsService
 }
 
-func NewCategoryHandler(db *storage.DB, activityService *services.ActivityService) *CategoryHandler {
+func NewCategoryHandler(db *storage.DB, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryHandler {
 	return &CategoryHandler{
-		db:              db,
-		activityService: activityService,
+		db:               db,
+		activityService:  activityService,
+		fileStatsService: fileStatsService,
 	}
 }
 
@@ -58,8 +60,9 @@ func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.R
 
 func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Name     string `json:"name"`
-		ParentID *int   `json:"parent_id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		ParentID    *int   `json:"parent_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -72,7 +75,7 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	category, err := h.db.CreateCategory(req.Name, req.ParentID)
+	category, err := h.db.CreateCategoryWithDescription(req.Name, req.ParentID, req.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -109,6 +112,77 @@ func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(category)
 }
 
+func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		ParentID    *int   `json:"parent_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, "Name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get old category info before updating to know the old parent
+	oldCategory, err := h.db.GetCategory(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	category, err := h.db.UpdateCategory(id, req.Name, req.Description, req.ParentID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Check if parent actually changed
+	parentChanged := false
+	if oldCategory.ParentID == nil && req.ParentID != nil {
+		parentChanged = true
+	} else if oldCategory.ParentID != nil && req.ParentID == nil {
+		parentChanged = true
+	} else if oldCategory.ParentID != nil && req.ParentID != nil && *oldCategory.ParentID != *req.ParentID {
+		parentChanged = true
+	}
+
+	// Only invalidate caches if parent actually changed
+	if parentChanged {
+		fmt.Printf("Category %d parent changed from %v to %v - invalidating caches\n", id, oldCategory.ParentID, req.ParentID)
+
+		// Reinitialize all caches because hierarchy changed
+		if h.activityService != nil {
+			if err := h.activityService.InitializeCache(); err != nil {
+				fmt.Printf("Warning: failed to reinitialize activity cache: %v\n", err)
+			}
+		}
+
+		if h.fileStatsService != nil {
+			if err := h.fileStatsService.InitializeCache(); err != nil {
+				fmt.Printf("Warning: failed to reinitialize file stats cache: %v\n", err)
+			}
+		}
+	} else {
+		// Only name or description changed - no cache invalidation needed
+		fmt.Printf("Category %d name/description updated (parent unchanged) - no cache invalidation needed\n", id)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(category)
+}
 
 func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

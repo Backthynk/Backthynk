@@ -409,6 +409,7 @@ async function deleteCategory(category) {
                 document.getElementById('settings-btn').style.display = 'none';
                 document.getElementById('recursive-toggle-btn').style.display = 'none';
                 document.getElementById('delete-category-btn').style.display = 'none';
+                document.getElementById('edit-category-btn').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';
             }
         } catch (error) {

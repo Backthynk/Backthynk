@@ -63,6 +63,16 @@ async function refreshCharacterCounter() {
 
 // Main initialization and event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Set description max length attributes and counters from constants
+    const maxDescLength = window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength;
+
+    // Update textarea maxlength attributes
+    document.getElementById('category-description').setAttribute('maxlength', maxDescLength);
+    document.getElementById('edit-category-description').setAttribute('maxlength', maxDescLength);
+
+    // Update counter display
+    document.getElementById('description-max-length').textContent = maxDescLength;
+    document.getElementById('edit-description-max-length').textContent = maxDescLength;
     // Load saved state
     loadExpandedCategories();
 
@@ -122,9 +132,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const parentId = document.getElementById('category-parent').value || null;
+        const description = document.getElementById('category-description').value.trim();
 
         try {
-            const newCategory = await createCategory(name, parentId);
+            const newCategory = await createCategory(name, parentId, description);
             hideCategoryModal();
 
             // Auto-select the newly created category
@@ -152,6 +163,85 @@ document.addEventListener('DOMContentLoaded', function() {
             deleteCategory(currentCategory);
         }
     });
+
+    document.getElementById('edit-category-btn').addEventListener('click', () => {
+        if (currentCategory) {
+            showEditCategoryModal();
+        }
+    });
+
+    // Edit category modal events
+    document.getElementById('cancel-edit-category').onclick = hideEditCategoryModal;
+
+    // Add description character counters
+    document.getElementById('category-description').addEventListener('input', function() {
+        updateDescriptionCounter('category-description', 'description-counter');
+    });
+
+    document.getElementById('edit-category-description').addEventListener('input', function() {
+        updateDescriptionCounter('edit-category-description', 'edit-description-counter');
+    });
+
+    // Edit category form validation and submission
+    document.getElementById('edit-category-name').addEventListener('input', function(e) {
+        const name = e.target.value.trim();
+        const submitBtn = document.querySelector('#edit-category-form button[type="submit"]');
+
+        // Check if name is valid (letters, numbers, and single spaces only)
+        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
+        if (name.length === 0 || name.length > 30 || !validNameRegex.test(name)) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+
+    document.getElementById('edit-category-form').onsubmit = async function(e) {
+        e.preventDefault();
+
+        const name = document.getElementById('edit-category-name').value.trim();
+
+        if (name.length === 0) {
+            showError('Category name cannot be empty');
+            return;
+        }
+
+        if (name.length > 30) {
+            showError('Category name must be 30 characters or less');
+            return;
+        }
+
+        // Validate character restrictions
+        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
+        if (!validNameRegex.test(name)) {
+            showError('Category name can only contain letters, numbers, and single spaces');
+            return;
+        }
+
+        const parentId = document.getElementById('edit-category-parent').value || null;
+        const description = document.getElementById('edit-category-description').value.trim();
+
+        if (description.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength) {
+            showError(`Description cannot exceed ${window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength} characters`);
+            return;
+        }
+
+        try {
+            const updatedCategory = await updateCategory(currentCategory.id, name, description, parentId);
+            hideEditCategoryModal();
+
+            // Update current category and refresh display
+            if (updatedCategory) {
+                currentCategory = updatedCategory;
+                await fetchCategories();
+                selectCategory(updatedCategory);
+            }
+        } catch (error) {
+            showError(error.message);
+        }
+    };
 
     // File input handling
     const fileInput = document.getElementById('post-files');

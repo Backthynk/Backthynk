@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// Initialize handlers
-	categoryHandler := handlers.NewCategoryHandler(db, activityService)
+	categoryHandler := handlers.NewCategoryHandler(db, activityService, fileStatsService)
 	postHandler := handlers.NewPostHandler(db, settingsHandler, activityService, fileStatsService)
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
@@ -79,6 +79,7 @@ func main() {
 	api.HandleFunc("/categories/by-parent", categoryHandler.GetCategoriesByParent).Methods("GET")
 	api.HandleFunc("/category-stats/{id}", categoryStatsHandler.GetCategoryStats).Methods("GET")
 	api.HandleFunc("/categories/{id}", categoryHandler.GetCategory).Methods("GET")
+	api.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
 	api.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
 
 	// Posts

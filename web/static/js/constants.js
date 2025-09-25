@@ -20,7 +20,8 @@ const VALIDATION_LIMITS = {
     minContentLength: 100,
     maxContentLength: 50000,
     minFilesPerPost: 1,
-    maxFilesPerPost: 50
+    maxFilesPerPost: 50,
+    maxCategoryDescriptionLength: 280
 };
 
 // Error Messages

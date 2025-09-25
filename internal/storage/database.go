@@ -34,6 +34,10 @@ func NewDB(storagePath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
+	if err := dbWrapper.runMigrations(); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	}
+
 	return dbWrapper, nil
 }
 
@@ -42,6 +46,7 @@ func (db *DB) createTables() error {
 		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS categories (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
+			description TEXT DEFAULT '',
 			parent_id INTEGER,
 			depth INTEGER NOT NULL DEFAULT 0,
 			created INTEGER NOT NULL,
@@ -84,6 +89,42 @@ func (db *DB) createTables() error {
 	for _, query := range queries {
 		if _, err := db.Exec(query); err != nil {
 			return fmt.Errorf("failed to execute query %q: %w", query, err)
+		}
+	}
+
+	return nil
+}
+
+func (db *DB) runMigrations() error {
+	// Check if description column exists in categories table
+	rows, err := db.Query("PRAGMA table_info(categories)")
+	if err != nil {
+		return fmt.Errorf("failed to get table info: %w", err)
+	}
+	defer rows.Close()
+
+	hasDescription := false
+	for rows.Next() {
+		var cid int
+		var name, dataType string
+		var notNull, pk bool
+		var defaultValue sql.NullString
+
+		if err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &pk); err != nil {
+			return fmt.Errorf("failed to scan table info: %w", err)
+		}
+
+		if name == "description" {
+			hasDescription = true
+			break
+		}
+	}
+
+	// Add description column if it doesn't exist
+	if !hasDescription {
+		_, err := db.Exec("ALTER TABLE categories ADD COLUMN description TEXT DEFAULT ''")
+		if err != nil {
+			return fmt.Errorf("failed to add description column: %w", err)
 		}
 	}
 
