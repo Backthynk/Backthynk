@@ -32,6 +32,7 @@ const (
 	MaxCategoryDepth = 2
 	DefaultDepth     = 0
 	ALL_CATEGORIES_ID = 0 // Special category ID representing "all categories" view
+	MaxCategoryNameLength = 30
 	MaxCategoryDescriptionLength = 280
 
 	// Post Pagination

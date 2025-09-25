@@ -12,15 +12,16 @@ import (
 	"time"
 )
 
-func (db *DB) CreateCategory(name string, parentID *int) (*models.Category, error) {
-	return db.CreateCategoryWithDescription(name, parentID, "")
-}
-
-func (db *DB) CreateCategoryWithDescription(name string, parentID *int, description string) (*models.Category, error) {
+func (db *DB) CreateCategory(name string, parentID *int, description string) (*models.Category, error) {
 	// Trim whitespace from name
 	name = strings.TrimSpace(name)
 	if len(name) == 0 {
 		return nil, fmt.Errorf("category name cannot be empty")
+	}
+
+	// Validate name length
+	if len(name) > config.MaxCategoryNameLength {
+		return nil, fmt.Errorf("category name must be %d characters or less", config.MaxCategoryNameLength)
 	}
 
 	// Validate character restrictions: letters, numbers, and single spaces only
@@ -161,6 +162,11 @@ func (db *DB) UpdateCategory(id int, name string, description string, newParentI
 	name = strings.TrimSpace(name)
 	if len(name) == 0 {
 		return nil, fmt.Errorf("category name cannot be empty")
+	}
+
+	// Validate name length
+	if len(name) > config.MaxCategoryNameLength {
+		return nil, fmt.Errorf("category name must be %d characters or less", config.MaxCategoryNameLength)
 	}
 
 	// Validate character restrictions: letters, numbers, and single spaces only

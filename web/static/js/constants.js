@@ -3,6 +3,9 @@
 // Special Category IDs
 const ALL_CATEGORIES_ID = 0; // Category ID 0 represents "all categories"
 
+// Category Configuration
+const MAX_CATEGORY_DEPTH = 2; // Maximum category depth (0, 1, 2)
+
 // Default Application Settings
 const DEFAULT_SETTINGS = {
     maxFileSizeMB: 100,
@@ -21,6 +24,7 @@ const VALIDATION_LIMITS = {
     maxContentLength: 50000,
     minFilesPerPost: 1,
     maxFilesPerPost: 50,
+    maxCategoryNameLength: 30,
     maxCategoryDescriptionLength: 280
 };
 
@@ -194,6 +198,7 @@ const UI_TEXT = {
 // Export all constants
 window.AppConstants = {
     ALL_CATEGORIES_ID,
+    MAX_CATEGORY_DEPTH,
     DEFAULT_SETTINGS,
     VALIDATION_LIMITS,
     ERROR_MESSAGES,

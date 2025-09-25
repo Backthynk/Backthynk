@@ -60,8 +60,6 @@ async function fetchCategories() {
         renderCategories();
         populateCategorySelect();
 
-        // Fetch global stats
-        await fetchGlobalStats();
 
         // Auto-select last category if exists, otherwise show all categories
         const lastCategoryId = getLastCategory();
@@ -216,26 +214,3 @@ async function uploadFile(postId, file) {
     }
 }
 
-async function fetchGlobalStats() {
-    try {
-        const categories = await apiRequest('/categories');
-
-        globalStats = { totalPosts: 0, totalFiles: 0, totalSize: 0 };
-
-        // Get stats for each category using the posts endpoint
-        for (const category of categories) {
-            try {
-                const stats = await fetchCategoryStats(category.id);
-                globalStats.totalPosts += stats.post_count;
-                globalStats.totalFiles += stats.file_count;
-                globalStats.totalSize += stats.total_size;
-            } catch (error) {
-                console.error(`Failed to get stats for category ${category.id}:`, error);
-            }
-        }
-
-        updateGlobalStatsDisplay();
-    } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} global stats:`, error);
-    }
-}

@@ -119,8 +119,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (name.length > 30) {
-            showError('Category name must be 30 characters or less');
+        if (name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength) {
+            showError(`Category name must be ${window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength} characters or less`);
             return;
         }
 
@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Check if name is valid (letters, numbers, and single spaces only)
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
-        if (name.length === 0 || name.length > 30 || !validNameRegex.test(name)) {
+        if (name.length === 0 || name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength || !validNameRegex.test(name)) {
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
         } else {
@@ -208,8 +208,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        if (name.length > 30) {
-            showError('Category name must be 30 characters or less');
+        if (name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength) {
+            showError(`Category name must be ${window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength} characters or less`);
             return;
         }
 
@@ -329,8 +329,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
             updateCategoryStatsDisplay(stats);
 
-            // Refresh global stats
-            await fetchGlobalStats();
 
             // Regenerate activity heatmap to reflect new post
             generateActivityHeatmap();

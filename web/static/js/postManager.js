@@ -343,7 +343,6 @@ async function confirmDeletePost(postId) {
             // Update stats and refresh display
             const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
             updateCategoryStatsDisplay(stats);
-            await fetchGlobalStats();
 
             // Regenerate activity heatmap to reflect deleted post
             generateActivityHeatmap();

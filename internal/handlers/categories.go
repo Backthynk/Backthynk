@@ -75,7 +75,7 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	category, err := h.db.CreateCategoryWithDescription(req.Name, req.ParentID, req.Description)
+	category, err := h.db.CreateCategory(req.Name, req.ParentID, req.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

@@ -44,6 +44,9 @@ function showCategoryModal() {
         parentSelect.value = ''; // None (Root Category)
     }
 
+    // Set dynamic maxlength for category name
+    document.getElementById('category-name').setAttribute('maxlength', window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength);
+
     document.getElementById('category-name').focus();
 }
 
@@ -69,15 +72,64 @@ function showEditCategoryModal() {
     document.getElementById('edit-category-description').value = currentCategory.description || '';
     updateDescriptionCounter('edit-category-description', 'edit-description-counter');
 
-    // Populate parent select and exclude the current category and its descendants
-    populateEditCategorySelect();
+    // Hide parent selector if no valid parents exist
+    const parentSelectDiv = document.querySelector('#edit-category-modal .mb-4:has(#edit-category-parent)');
 
-    // Set current parent if exists
-    if (currentCategory.parent_id) {
-        document.getElementById('edit-category-parent').value = currentCategory.parent_id.toString();
-    } else {
-        document.getElementById('edit-category-parent').value = '';
+    // Calculate depth span to determine if any parents are possible
+    function getDepthSpanBelow(categoryId) {
+        const children = categories.filter(cat => cat.parent_id === categoryId);
+        if (children.length === 0) return 0;
+
+        let maxChildSpan = 0;
+        for (let child of children) {
+            const childSpan = 1 + getDepthSpanBelow(child.id);
+            maxChildSpan = Math.max(maxChildSpan, childSpan);
+        }
+        return maxChildSpan;
     }
+
+    const depthSpanBelow = getDepthSpanBelow(currentCategory.id);
+
+    // Check if any valid parents exist (excluding descendants)
+    const excludedIds = new Set([currentCategory.id]);
+    function addDescendants(parentId) {
+        const children = categories.filter(cat => cat.parent_id === parentId);
+        children.forEach(child => {
+            excludedIds.add(child.id);
+            addDescendants(child.id);
+        });
+    }
+    addDescendants(currentCategory.id);
+
+    const hasValidParents = categories.some(cat => {
+        if (excludedIds.has(cat.id)) return false;
+        const newMaxDepth = cat.depth + 1 + depthSpanBelow;
+        return newMaxDepth <= window.AppConstants.MAX_CATEGORY_DEPTH;
+    });
+
+
+    if (!hasValidParents) {
+        if (parentSelectDiv) {
+            parentSelectDiv.style.display = 'none';
+        }
+    } else {
+        if (parentSelectDiv) {
+            parentSelectDiv.style.display = 'block';
+        }
+
+        // Populate parent select and exclude the current category and its descendants
+        populateEditCategorySelect();
+
+        // Set current parent if exists
+        if (currentCategory.parent_id) {
+            document.getElementById('edit-category-parent').value = currentCategory.parent_id.toString();
+        } else {
+            document.getElementById('edit-category-parent').value = '';
+        }
+    }
+
+    // Set dynamic maxlength for category name
+    document.getElementById('edit-category-name').setAttribute('maxlength', window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength);
 
     document.getElementById('edit-category-name').focus();
 }
@@ -94,7 +146,8 @@ function populateCategorySelect() {
     const select = document.getElementById('category-parent');
     select.innerHTML = '<option value="">None (Root Category)</option>';
 
-    const availableCategories = categories.filter(cat => cat.depth < 2);
+    // Filter categories that can accept children (depth < MAX_CATEGORY_DEPTH)
+    const availableCategories = categories.filter(cat => cat.depth < window.AppConstants.MAX_CATEGORY_DEPTH);
 
     availableCategories.forEach(category => {
         const option = document.createElement('option');
@@ -125,10 +178,35 @@ function populateEditCategorySelect() {
 
     addDescendants(currentCategory.id);
 
-    // Filter available categories (exclude self and descendants, and respect depth limit)
-    const availableCategories = categories.filter(cat =>
-        !excludedIds.has(cat.id) && cat.depth < 2
-    );
+    // Filter available categories (exclude self and descendants, and prevent depth violations)
+    // If a category is selected as parent, the current category would have depth = parent.depth + 1
+
+    // Calculate the depth span of the current category tree (from current category to deepest descendant)
+    function getDepthSpanBelow(categoryId) {
+        const children = categories.filter(cat => cat.parent_id === categoryId);
+        if (children.length === 0) return 0; // No children, span is 0
+
+        let maxChildSpan = 0;
+        for (let child of children) {
+            const childSpan = 1 + getDepthSpanBelow(child.id);
+            maxChildSpan = Math.max(maxChildSpan, childSpan);
+        }
+        return maxChildSpan;
+    }
+
+    const depthSpanBelow = getDepthSpanBelow(currentCategory.id);
+
+    const availableCategories = categories.filter(cat => {
+        if (excludedIds.has(cat.id)) return false;
+
+        // Exclude current parent (no point showing it since it's already the parent)
+        if (currentCategory.parent_id && cat.id === currentCategory.parent_id) return false;
+
+        // If we move currentCategory under cat, currentCategory will have depth = cat.depth + 1
+        // The deepest descendant will have depth = cat.depth + 1 + depthSpanBelow
+        const newMaxDepth = cat.depth + 1 + depthSpanBelow;
+        return newMaxDepth <= window.AppConstants.MAX_CATEGORY_DEPTH;
+    });
 
     availableCategories.forEach(category => {
         const option = document.createElement('option');
@@ -176,17 +254,3 @@ function updateDescriptionCounter(textareaId, counterId) {
     }
 }
 
-function updateGlobalStatsDisplay() {
-    let statsHtml = `<div>Total: ${globalStats.totalPosts} posts</div>`;
-
-    // Only show file stats if enabled
-    if (fileStatsEnabled) {
-        statsHtml += `<div>${globalStats.totalFiles} files • ${formatFileSize(globalStats.totalSize)}</div>`;
-    }
-
-    // Update header stats
-    const headerStats = document.getElementById('global-stats-header');
-    if (headerStats) {
-        headerStats.innerHTML = statsHtml;
-    }
-}
