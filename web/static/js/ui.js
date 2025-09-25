@@ -199,8 +199,7 @@ function populateEditCategorySelect() {
     const availableCategories = categories.filter(cat => {
         if (excludedIds.has(cat.id)) return false;
 
-        // Exclude current parent (no point showing it since it's already the parent)
-        if (currentCategory.parent_id && cat.id === currentCategory.parent_id) return false;
+        // Include current parent so user can keep it selected (no change)
 
         // If we move currentCategory under cat, currentCategory will have depth = cat.depth + 1
         // The deepest descendant will have depth = cat.depth + 1 + depthSpanBelow

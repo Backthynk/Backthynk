@@ -47,7 +47,7 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-async function fetchCategories() {
+async function fetchCategories(skipRender = false) {
     try {
         categories = await apiRequest('/categories');
         if (!categories || !Array.isArray(categories)) {
@@ -57,8 +57,10 @@ async function fetchCategories() {
         // Clean up any orphaned recursive toggle states
         cleanupRecursiveToggleStates();
 
-        renderCategories();
-        populateCategorySelect();
+        if (!skipRender) {
+            renderCategories();
+            populateCategorySelect();
+        }
 
 
         // Auto-select last category if exists, otherwise show all categories
@@ -90,7 +92,7 @@ async function createCategory(name, parentId, description = '') {
             method: 'POST',
             body: JSON.stringify({ name, description, parent_id })
         });
-        await fetchCategories();
+        await fetchCategories(true); // Skip render, we'll do it after selection
         return category;
     } catch (error) {
         console.error(`${window.AppConstants.UI_TEXT.failedToCreate} category:`, error);
@@ -105,7 +107,7 @@ async function updateCategory(categoryId, name, description, parentId) {
             method: 'PUT',
             body: JSON.stringify({ name, description, parent_id })
         });
-        await fetchCategories();
+        await fetchCategories(true); // Skip render, we'll do it after selection
         return category;
     } catch (error) {
         console.error(`${window.AppConstants.UI_TEXT.failedToUpdate} category:`, error);

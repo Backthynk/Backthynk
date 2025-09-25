@@ -140,6 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Auto-select the newly created category
             if (newCategory) {
+                populateCategorySelect(); // Update dropdowns
                 selectCategory(newCategory);
             }
         } catch (error) {
@@ -228,14 +229,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Check if anything has actually changed
+        const currentParentId = currentCategory.parent_id ? currentCategory.parent_id.toString() : null;
+        const newParentId = parentId ? parentId.toString() : null;
+
+        const nameChanged = name !== currentCategory.name;
+        const descriptionChanged = description !== (currentCategory.description || '');
+        const parentChanged = currentParentId !== newParentId;
+
+        if (!nameChanged && !descriptionChanged && !parentChanged) {
+            // Nothing changed, just close modal
+            hideEditCategoryModal();
+            return;
+        }
+
         try {
             const updatedCategory = await updateCategory(currentCategory.id, name, description, parentId);
             hideEditCategoryModal();
 
             // Update current category and refresh display
             if (updatedCategory) {
-                currentCategory = updatedCategory;
-                await fetchCategories();
+                populateCategorySelect(); // Update dropdowns
                 selectCategory(updatedCategory);
             }
         } catch (error) {
