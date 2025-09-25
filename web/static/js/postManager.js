@@ -187,8 +187,13 @@ function createPostElement(post) {
     const totalAttachments = images.length + otherFiles.length;
     const linkPreviews = post.link_previews || [];
 
-    // Check if we're in recursive mode and should show category breadcrumb
-    const showCategoryBreadcrumb = currentCategory && currentCategory.recursiveMode && post.category_id !== currentCategory.id;
+    // Check if we should show category breadcrumb
+    // Show breadcrumb in two cases:
+    // 1. When in recursive mode and post is from a different category
+    // 2. When no category is selected (All categories view)
+    const showCategoryBreadcrumb =
+        (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) || // All categories view
+        (currentCategory && currentCategory.recursiveMode && post.category_id !== currentCategory.id); // Recursive mode
     const categoryBreadcrumb = showCategoryBreadcrumb ? getCategoryBreadcrumb(post.category_id) : '';
 
     // Make category breadcrumb clickable if we're showing it
@@ -339,6 +344,9 @@ async function confirmDeletePost(postId) {
             const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
             updateCategoryStatsDisplay(stats);
             await fetchGlobalStats();
+
+            // Regenerate activity heatmap to reflect deleted post
+            generateActivityHeatmap();
 
             // Remove the post from current posts array and re-render
             currentPosts = currentPosts.filter(post => post.id !== postId);

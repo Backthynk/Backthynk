@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"backthynk/internal/services"
 	"backthynk/internal/storage"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,11 +12,15 @@ import (
 )
 
 type CategoryHandler struct {
-	db *storage.DB
+	db              *storage.DB
+	activityService *services.ActivityService
 }
 
-func NewCategoryHandler(db *storage.DB) *CategoryHandler {
-	return &CategoryHandler{db: db}
+func NewCategoryHandler(db *storage.DB, activityService *services.ActivityService) *CategoryHandler {
+	return &CategoryHandler{
+		db:              db,
+		activityService: activityService,
+	}
 }
 
 func (h *CategoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +76,14 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Initialize activity cache for the new category
+	if h.activityService != nil {
+		if err := h.activityService.RefreshCategoryCache(category.ID); err != nil {
+			// Log error but don't fail the request
+			fmt.Printf("Warning: failed to initialize activity cache for new category %d: %v\n", category.ID, err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

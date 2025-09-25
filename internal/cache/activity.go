@@ -101,6 +101,11 @@ func (ac *ActivityCache) UpdatePostActivity(categoryID int, timestamp int64, del
 		return err
 	}
 
+	// Update the category's own recursive activity (important for recursive mode)
+	if err := ac.updateCategoryRecursiveActivity(categoryID, date, delta); err != nil {
+		return err
+	}
+
 	// Update recursive activity for all parent categories
 	return ac.updateParentActivities(categoryID, date, timestamp, delta)
 }
@@ -156,6 +161,49 @@ func (ac *ActivityCache) updateCategoryActivity(categoryID int, date string, tim
 	return nil
 }
 
+// updateCategoryRecursiveActivity updates the category's own recursive activity
+func (ac *ActivityCache) updateCategoryRecursiveActivity(categoryID int, date string, delta int) error {
+	activity := ac.categories[categoryID]
+	if activity == nil {
+		return nil // Category not in cache yet
+	}
+
+	activity.Mutex.Lock()
+	defer activity.Mutex.Unlock()
+
+	// Initialize recursive map if not present
+	if activity.Recursive == nil {
+		activity.Recursive = make(map[string]int)
+		// Copy existing direct activity to recursive
+		for date, count := range activity.Days {
+			activity.Recursive[date] = count
+		}
+	}
+
+	// Update recursive daily count
+	oldRecursiveCount := activity.Recursive[date]
+	newRecursiveCount := oldRecursiveCount + delta
+
+	if newRecursiveCount <= 0 {
+		delete(activity.Recursive, date)
+	} else {
+		activity.Recursive[date] = newRecursiveCount
+	}
+
+	// Update recursive stats
+	activity.Stats.RecursivePosts += delta
+
+	// Update recursive active days count
+	if oldRecursiveCount == 0 && newRecursiveCount > 0 {
+		activity.Stats.RecursiveActiveDays++
+	} else if oldRecursiveCount > 0 && newRecursiveCount <= 0 {
+		activity.Stats.RecursiveActiveDays--
+	}
+
+	activity.LastUpdate = time.Now().UnixMilli()
+	return nil
+}
+
 // updateParentActivities updates recursive activity for parent categories
 func (ac *ActivityCache) updateParentActivities(categoryID int, date string, timestamp int64, delta int) error {
 	// This would need to be implemented with knowledge of category hierarchy
@@ -170,10 +218,19 @@ func (ac *ActivityCache) GetActivityPeriod(req ActivityPeriodRequest) (*Activity
 
 	activity := ac.categories[req.CategoryID]
 	if activity == nil {
+		// For categories not in cache, still calculate proper period dates
+		startDate, endDate := ac.calculatePeriodDates(req.Period, req.PeriodMonths)
+		if req.StartDate != "" {
+			startDate = req.StartDate
+		}
+		if req.EndDate != "" {
+			endDate = req.EndDate
+		}
+
 		return &ActivityPeriodResponse{
 			CategoryID: req.CategoryID,
-			StartDate:  req.StartDate,
-			EndDate:    req.EndDate,
+			StartDate:  startDate,
+			EndDate:    endDate,
 			Period:     req.Period,
 			Days:       []ActivityDay{},
 			Stats:      PeriodStats{},

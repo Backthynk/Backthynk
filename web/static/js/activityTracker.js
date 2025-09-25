@@ -30,11 +30,10 @@ async function generateActivityHeatmap() {
             return;
         }
 
-        if (response.days.length === 0 && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
-            // Hide activity container for empty specific categories, but not for "All categories"
-            document.getElementById('activity-container').style.display = 'none';
-            return;
-        }
+        // Always show the activity container if we have a valid response (category exists)
+        // The heatmap will show as empty if there's no activity, but it should be visible
+        // so users know the system is working and can see activity when it happens
+        document.getElementById('activity-container').style.display = '';
 
         // Cache the response for fast period navigation
         currentActivityCache = response;

@@ -124,8 +124,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const parentId = document.getElementById('category-parent').value || null;
 
         try {
-            await createCategory(name, parentId);
+            const newCategory = await createCategory(name, parentId);
             hideCategoryModal();
+
+            // Auto-select the newly created category
+            if (newCategory) {
+                selectCategory(newCategory);
+            }
         } catch (error) {
             showError(error.message);
         }
@@ -236,6 +241,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Refresh global stats
             await fetchGlobalStats();
+
+            // Regenerate activity heatmap to reflect new post
+            generateActivityHeatmap();
         } catch (error) {
             showError(error.message);
         }

@@ -35,6 +35,15 @@ function hideCreatePost() {
 function showCategoryModal() {
     document.getElementById('category-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // Set current category as default parent (if any and not "All categories")
+    const parentSelect = document.getElementById('category-parent');
+    if (currentCategory && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
+        parentSelect.value = currentCategory.id.toString();
+    } else {
+        parentSelect.value = ''; // None (Root Category)
+    }
+
     document.getElementById('category-name').focus();
 }
 

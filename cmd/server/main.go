@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// Initialize handlers
-	categoryHandler := handlers.NewCategoryHandler(db)
+	categoryHandler := handlers.NewCategoryHandler(db, activityService)
 	postHandler := handlers.NewPostHandler(db, settingsHandler, activityService, fileStatsService)
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)

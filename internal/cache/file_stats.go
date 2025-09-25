@@ -107,14 +107,33 @@ func (c *FileStatsCache) UpdateFileStats(categoryID int, fileSizeDelta int64, fi
 	// Update direct stats
 	stats.Direct.FileCount += fileCountDelta
 	stats.Direct.TotalSize += fileSizeDelta
+
+	// Update the category's own recursive stats (important for recursive mode)
+	// Initialize recursive stats if they don't exist
+	if stats.Recursive.FileCount == 0 && stats.Recursive.TotalSize == 0 && stats.Direct.FileCount > 0 {
+		// Copy direct stats to recursive for first time initialization
+		stats.Recursive.FileCount = stats.Direct.FileCount
+		stats.Recursive.TotalSize = stats.Direct.TotalSize
+	} else {
+		// Update recursive stats with delta
+		stats.Recursive.FileCount += fileCountDelta
+		stats.Recursive.TotalSize += fileSizeDelta
+	}
+
 	stats.LastUpdate = time.Now().UnixMilli()
 
-	// Ensure non-negative values
+	// Ensure non-negative values for both direct and recursive
 	if stats.Direct.FileCount < 0 {
 		stats.Direct.FileCount = 0
 	}
 	if stats.Direct.TotalSize < 0 {
 		stats.Direct.TotalSize = 0
+	}
+	if stats.Recursive.FileCount < 0 {
+		stats.Recursive.FileCount = 0
+	}
+	if stats.Recursive.TotalSize < 0 {
+		stats.Recursive.TotalSize = 0
 	}
 
 	return nil
