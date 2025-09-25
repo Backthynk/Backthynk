@@ -53,11 +53,11 @@ async function generateActivityHeatmap() {
 }
 
 // Fetch activity data from efficient backend API
-async function fetchActivityPeriod(categoryId, recursive = false, period = 0, periodMonths = 6) {
+async function fetchActivityPeriod(categoryId, recursive = false, period = 0, periodMonths = 4) {
     const params = new URLSearchParams({
         recursive: recursive.toString(),
         period: period.toString(),
-        period_months: periodMonths.toString()
+        period_months: window.AppConstants.UI_CONFIG.activityPeriodMonths.toString()
     });
 
     const response = await fetch(`/api/activity/${categoryId}?${params}`, {
@@ -73,8 +73,48 @@ async function fetchActivityPeriod(categoryId, recursive = false, period = 0, pe
     return await response.json();
 }
 
+// Update category breadcrumb display
+function updateActivityCategoryBreadcrumb() {
+    const breadcrumbElement = document.getElementById('activity-category-breadcrumb');
+    if (!breadcrumbElement) return;
+
+    if (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
+        breadcrumbElement.innerHTML = '<span class="text-xs font-semibold text-gray-700">All Categories</span>';
+        return;
+    }
+
+    // Build breadcrumb path
+    const breadcrumbPath = [];
+    let category = currentCategory;
+
+    // Build path from current category up to root
+    while (category) {
+        breadcrumbPath.unshift(category);
+        if (category.parent_id && categories) {
+            category = categories.find(cat => cat.id === category.parent_id);
+        } else {
+            category = null;
+        }
+    }
+
+    // Generate breadcrumb HTML
+    const breadcrumbHtml = breadcrumbPath.map((cat, index) => {
+        const isLast = index === breadcrumbPath.length - 1;
+        if (isLast) {
+            return `<span class="text-xs font-semibold text-gray-700">${cat.name}</span>`;
+        } else {
+            return `<span class="text-xs font-medium text-gray-600">${cat.name}</span>`;
+        }
+    }).join(' <span class="text-gray-400 mx-1">></span> ');
+
+    breadcrumbElement.innerHTML = breadcrumbHtml;
+}
+
 // Generate heatmap from cached activity data
 function generateHeatmapFromCache(activityData) {
+    // Update category breadcrumb
+    updateActivityCategoryBreadcrumb();
+
     // Convert activity days array to map for O(1) lookups
     const activityMap = {};
     activityData.days.forEach(day => {
@@ -140,29 +180,28 @@ function renderHeatmapGrid(days) {
     const squaresPerRow = window.AppConstants.UI_CONFIG.heatmapSquaresPerRow;
     const rows = Math.ceil(days.length / squaresPerRow);
 
+    // Simple: just hardcode the 4 months we want to show
+    const monthLabels = ['Jun', 'Jul', 'Aug', 'Sep'];
+
     let html = '<div class="space-y-1">';
-    let lastMonthShown = -1;
 
     for (let row = 0; row < rows; row++) {
         const startIndex = row * squaresPerRow;
         const endIndex = Math.min(startIndex + squaresPerRow, days.length);
 
-        // Get first day of row for month label
-        const firstDay = days[startIndex];
-        const currentMonth = firstDay ? firstDay.month : -1;
-
-        // Only show month label when it changes
+        // Show month every 3 rows: row 0=Jun, row 3=Jul, row 6=Aug, row 9=Sep
         let monthLabel = '';
-        if (currentMonth !== lastMonthShown) {
-            monthLabel = new Date(firstDay.date + 'T00:00:00Z').toLocaleDateString('en-US', {
-                month: 'short',
-                timeZone: 'UTC'
-            });
-            lastMonthShown = currentMonth;
+        if (row % 3 === 0) {
+            const monthIndex = Math.floor(row / 3);
+            if (monthIndex < monthLabels.length) {
+                monthLabel = monthLabels[monthIndex];
+            }
         }
 
-        html += '<div class="flex items-center">';
-        html += `<div class="w-8 text-xs text-gray-400 flex-shrink-0">${monthLabel}</div>`;
+        html += '<div class="flex items-center relative">';
+        if (monthLabel) {
+            html += `<div class="absolute -left-10 w-8 text-xs text-gray-400 text-right">${monthLabel}</div>`;
+        }
         html += '<div class="flex gap-1">';
 
         for (let i = startIndex; i < endIndex; i++) {
@@ -177,7 +216,7 @@ function renderHeatmapGrid(days) {
                     timeZone: 'UTC'
                 });
 
-                html += `<div class="w-3 h-3 ${colorClass} rounded-sm cursor-pointer heatmap-cell hover:ring-1 hover:ring-gray-300 transition-all flex-shrink-0"
+                html += `<div class="heatmap-square ${colorClass} rounded-sm cursor-pointer heatmap-cell hover:ring-1 hover:ring-gray-300 transition-all"
                              data-date="${day.date}"
                              data-count="${day.count}"
                              data-day="${dayName}">
@@ -200,7 +239,7 @@ function formatPeriodLabel(startDate, endDate, period) {
     const startMonth = start.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
     const endMonth = end.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
 
-    return `${startMonth} - ${endMonth}`;
+    return `${startMonth} – ${endMonth}`;
 }
 
 // Navigate activity periods efficiently
