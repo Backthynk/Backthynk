@@ -451,7 +451,7 @@ function updateHeaderButtons() {
 function navigateToCategoryFromPost(categoryId) {
     const category = categories.find(cat => cat.id === categoryId);
     if (category) {
-        selectCategory(category);
+        selectCategory(category); // Programmatic selection from post navigation
     }
 }
 

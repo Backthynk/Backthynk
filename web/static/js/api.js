@@ -68,7 +68,7 @@ async function fetchCategories(skipRender = false) {
         if (lastCategoryId) {
             const lastCategory = categories.find(cat => cat.id == lastCategoryId);
             if (lastCategory) {
-                selectCategory(lastCategory);
+                selectCategory(lastCategory); // Programmatic selection of last selected category
             } else {
                 // Last category no longer exists, show all categories
                 await deselectCategory();

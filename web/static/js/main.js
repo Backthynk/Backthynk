@@ -141,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Auto-select the newly created category
             if (newCategory) {
                 populateCategorySelect(); // Update dropdowns
-                selectCategory(newCategory);
+                selectCategory(newCategory); // Programmatic selection after category creation
             }
         } catch (error) {
             showError(error.message);
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update current category and refresh display
             if (updatedCategory) {
                 populateCategorySelect(); // Update dropdowns
-                selectCategory(updatedCategory);
+                selectCategory(updatedCategory); // Programmatic selection after category update
             }
         } catch (error) {
             showError(error.message);

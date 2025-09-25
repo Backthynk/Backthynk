@@ -42,6 +42,7 @@ function createCategoryElement(category, level = 0) {
             ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-medium'
             : 'text-gray-700 hover:text-gray-900'
     }`;
+    categoryButton.dataset.categoryId = category.id; // Add data attribute for easy identification
 
     categoryButton.innerHTML = `
         <div class="flex items-center min-w-0">
@@ -66,7 +67,7 @@ function createCategoryElement(category, level = 0) {
 
     categoryButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        selectCategory(category);
+        selectCategory(category, true); // fromUserClick = true
     });
 
     // Add subcategories only if expanded
@@ -91,9 +92,9 @@ function toggleCategory(categoryId) {
     renderCategories();
 }
 
-async function selectCategory(category) {
-    // If clicking on already selected category, deselect it
-    if (currentCategory && currentCategory.id === category.id) {
+async function selectCategory(category, fromUserClick = false) {
+    // If clicking on already selected category, deselect it (only for user clicks)
+    if (fromUserClick && currentCategory && currentCategory.id === category.id) {
         await deselectCategory();
         return;
     }
@@ -103,7 +104,15 @@ async function selectCategory(category) {
     currentCategory.recursiveMode = loadRecursiveToggleState(category.id);
 
     saveLastCategory(category.id);
+
+    // Ensure all parent categories are expanded to make this category visible
+    expandCategoryPath(category.id);
+
     renderCategories();
+
+    // Scroll to the selected category after rendering
+    scrollToCategoryElement(category.id);
+
     loadPosts(category.id, currentCategory.recursiveMode);
 
     // Reset activity period when switching categories
@@ -118,6 +127,67 @@ async function selectCategory(category) {
     document.getElementById('settings-btn').style.display = 'block';
 
     generateActivityHeatmap();
+}
+
+// Helper function to expand all parent categories of a given category
+function expandCategoryPath(categoryId) {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (!category) return;
+
+    // Recursively expand all parent categories
+    function expandParents(cat) {
+        if (cat.parent_id) {
+            const parent = categories.find(c => c.id === cat.parent_id);
+            if (parent) {
+                expandedCategories.add(parent.id);
+                expandParents(parent);
+            }
+        }
+    }
+
+    expandParents(category);
+    saveExpandedCategories();
+}
+
+// Helper function to scroll the selected category into view
+function scrollToCategoryElement(categoryId) {
+    // Use setTimeout to ensure DOM is fully rendered
+    setTimeout(() => {
+        // Find the category button using the data attribute
+        const targetButton = document.querySelector(`[data-category-id="${categoryId}"]`);
+
+        if (targetButton) {
+            // Get the categories container - check if it has a scrollable parent
+            const container = document.getElementById('categories-tree');
+            const scrollableParent = container?.closest('.overflow-auto, .overflow-y-auto, .overflow-scroll, .overflow-y-scroll') || container?.parentElement;
+
+            if (scrollableParent) {
+                // Get container bounds
+                const containerRect = scrollableParent.getBoundingClientRect();
+                const buttonRect = targetButton.getBoundingClientRect();
+
+                // Check if the button is not fully visible within the scrollable container
+                const isAboveView = buttonRect.top < containerRect.top;
+                const isBelowView = buttonRect.bottom > containerRect.bottom;
+
+                if (isAboveView || isBelowView) {
+                    // Scroll the button into view with smooth behavior
+                    targetButton.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            } else {
+                // If no specific scrollable container, just scroll into view
+                targetButton.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+            }
+        }
+    }, 100); // Small delay to ensure DOM is updated and animations complete
 }
 
 async function deselectCategory() {
@@ -256,7 +326,7 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
 function navigateToCategory(categoryId) {
     const category = categories.find(cat => cat.id === categoryId);
     if (category) {
-        selectCategory(category);
+        selectCategory(category); // Programmatic navigation from breadcrumb or other UI
     }
 }
 
