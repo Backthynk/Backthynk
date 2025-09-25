@@ -278,7 +278,7 @@ async function getAllDescendantCategories(parentId) {
 async function getAllPostsRecursively(categoryId) {
     let allPosts = [];
     let offset = 0;
-    const limit = 100; // Fetch in batches
+    const limit = window.AppConstants.UI_CONFIG.categoryBatchLimit;
     let hasMore = true;
 
     while (hasMore) {

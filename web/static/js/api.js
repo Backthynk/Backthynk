@@ -14,7 +14,7 @@ async function loadAppSettings(forceRefresh = false) {
             appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
         }
     } catch (error) {
-        console.error('Failed to load settings, using defaults:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToLoad} settings, ${window.AppConstants.UI_TEXT.usingDefaults}:`, error);
         appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
     }
     return appSettings;
@@ -42,7 +42,7 @@ async function apiRequest(endpoint, options = {}) {
         const data = await response.json();
         return data || null;
     } catch (error) {
-        console.error('Failed to parse JSON response:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToParse}:`, error);
         return null;
     }
 }
@@ -78,7 +78,7 @@ async function fetchCategories() {
             await deselectCategory();
         }
     } catch (error) {
-        console.error('Failed to fetch categories:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} categories:`, error);
         categories = [];
         renderCategories();
         populateCategorySelect();
@@ -95,7 +95,7 @@ async function createCategory(name, parentId) {
         await fetchCategories();
         return category;
     } catch (error) {
-        console.error('Failed to create category:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToCreate} category:`, error);
         throw error;
     }
 }
@@ -118,7 +118,7 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
         const response = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
         return response || { posts: [], has_more: false };
     } catch (error) {
-        console.error('Failed to fetch posts:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} posts:`, error);
         return { posts: [], has_more: false };
     }
 }
@@ -140,7 +140,7 @@ async function fetchCategoryStats(categoryId, recursive = false) {
             last_updated: response.last_updated || 0
         };
     } catch (error) {
-        console.error('Failed to fetch category stats:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} category stats:`, error);
         return { post_count: 0, file_count: 0, total_size: 0, last_updated: 0 };
     }
 }
@@ -152,7 +152,7 @@ async function createPost(categoryId, content) {
             body: JSON.stringify({ category_id: categoryId, content })
         });
     } catch (error) {
-        console.error('Failed to create post:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToCreate} post:`, error);
         throw error;
     }
 }
@@ -163,7 +163,7 @@ async function deletePost(postId) {
             method: 'DELETE'
         });
     } catch (error) {
-        console.error('Failed to delete post:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToDelete} post:`, error);
         throw error;
     }
 }
@@ -174,7 +174,7 @@ async function deleteCategoryApi(categoryId) {
             method: 'DELETE'
         });
     } catch (error) {
-        console.error('Failed to delete category:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToDelete} category:`, error);
         throw error;
     }
 }
@@ -196,7 +196,7 @@ async function uploadFile(postId, file) {
 
         return response.json();
     } catch (error) {
-        console.error('Failed to upload file:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToLoad} file:`, error);
         throw error;
     }
 }
@@ -221,6 +221,6 @@ async function fetchGlobalStats() {
 
         updateGlobalStatsDisplay();
     } catch (error) {
-        console.error('Failed to fetch global stats:', error);
+        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} global stats:`, error);
     }
 }

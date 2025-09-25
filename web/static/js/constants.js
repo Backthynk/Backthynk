@@ -48,6 +48,12 @@ const UI_CONFIG = {
     heatmapSquaresPerRow: 10,
     currentActivityPeriod: 0,
 
+    // Post loading
+    defaultPostsPerPage: 20,
+    infiniteScrollThreshold: 1000, // px from bottom to load more
+    virtualScrollThreshold: 50, // posts count to enable virtual scrolling
+    categoryBatchLimit: 100,
+
     // File Management
     maxImagePreviewWidth: 12, // w-12 (48px)
     maxImagePreviewHeight: 12, // h-12 (48px)
@@ -113,6 +119,7 @@ const UI_TEXT = {
     all: 'All',
     categories: 'Categories',
     allCategories: 'All Categories',
+    settings: 'Settings',
 
     // Time expressions
     now: 'now',
@@ -142,6 +149,14 @@ const UI_TEXT = {
     failed: 'Failed',
     success: 'Success',
 
+    // Console error messages (for developers, but could be translated)
+    failedToLoad: 'Failed to load',
+    failedToParse: 'Failed to parse JSON response',
+    failedToFetch: 'Failed to fetch',
+    failedToCreate: 'Failed to create',
+    failedToDelete: 'Failed to delete',
+    usingDefaults: 'using defaults',
+
     // Navigation
     next: 'Next',
     previous: 'Previous',
@@ -152,8 +167,27 @@ const UI_TEXT = {
     upload: 'Upload',
     download: 'Download',
 
+    // Form labels (common ones found in HTML)
+    content: 'Content',
+    attachments: 'Attachments',
+    createNewPost: 'Create New Post',
+
+    // Settings categories
+    fileUploadSettings: 'File Upload Settings',
+    contentSettings: 'Content Settings',
+    performanceSettings: 'Performance Settings',
+    activityTracking: 'Activity Tracking',
+    fileStatistics: 'File Statistics',
+
+    // Empty state messages
+    noPostsYet: 'No posts yet. Create your first post!',
+    noFilesSelected: 'No files selected',
+    chooseFiles: 'Choose Files',
+
     // Punctuation
-    ellipsis: '...'
+    ellipsis: '...',
+    colon: ':',
+    dash: '-'
 };
 
 // Export all constants

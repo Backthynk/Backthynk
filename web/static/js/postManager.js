@@ -4,7 +4,7 @@ let currentOffset = 0;
 let hasMorePosts = true;
 let isLoadingPosts = false;
 let virtualScroller = null;
-const VIRTUAL_SCROLL_THRESHOLD = 50; // Use virtual scrolling when more than 50 posts
+const VIRTUAL_SCROLL_THRESHOLD = window.AppConstants.UI_CONFIG.virtualScrollThreshold;
 
 async function loadPosts(categoryId, recursive = false, reset = true) {
     if (isLoadingPosts) return;
@@ -18,7 +18,7 @@ async function loadPosts(categoryId, recursive = false, reset = true) {
             hasMorePosts = true;
         }
 
-        const response = await fetchPosts(categoryId, 20, currentOffset, true, recursive);
+        const response = await fetchPosts(categoryId, window.AppConstants.UI_CONFIG.defaultPostsPerPage, currentOffset, true, recursive);
         let posts = response.posts || response; // Handle both new and old API response formats
 
         // Ensure posts is an array
@@ -36,7 +36,7 @@ async function loadPosts(categoryId, recursive = false, reset = true) {
             hasMorePosts = response.has_more;
         } else {
             // Fallback for old API format
-            hasMorePosts = posts.length === 20;
+            hasMorePosts = posts.length === window.AppConstants.UI_CONFIG.defaultPostsPerPage;
         }
 
         currentOffset += posts.length;
@@ -75,7 +75,7 @@ function setupInfiniteScroll(categoryId, recursive = false) {
         if (!hasMorePosts || isLoadingPosts) return;
 
         const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.documentElement.offsetHeight - 1000; // Load more when 1000px from bottom
+        const threshold = document.documentElement.offsetHeight - window.AppConstants.UI_CONFIG.infiniteScrollThreshold;
 
         if (scrollPosition >= threshold) {
             loadMorePosts(categoryId, recursive);
@@ -105,7 +105,7 @@ function renderPosts(posts, reset = true) {
             container.innerHTML = `
                 <div class="text-center text-gray-500 py-8">
                     <i class="fas fa-inbox text-4xl mb-4"></i>
-                    <p>No posts yet. Create your first post!</p>
+                    <p>${window.AppConstants.UI_TEXT.noPostsYet}</p>
                 </div>
             `;
             return;
