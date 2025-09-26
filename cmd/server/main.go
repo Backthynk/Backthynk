@@ -171,18 +171,45 @@ func createStaticFileHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		path := r.URL.Path
 
+		// Check if client accepts gzip encoding
+		acceptsGzip := strings.Contains(r.Header.Get("Accept-Encoding"), "gzip")
+
 		// In production mode, serve optimized assets
 		if config.IsProduction() {
 			if strings.HasSuffix(path, ".js") {
-				// For JS files, serve the bundled version
+				// For JS files, serve the bundled version (gzipped if available and client accepts)
+				if acceptsGzip {
+					gzipBundlePath := "web/static/js/compressed/bundle.js.gz"
+					if _, err := os.Stat(gzipBundlePath); err == nil {
+						w.Header().Set("Content-Encoding", "gzip")
+						w.Header().Set("Content-Type", "application/javascript")
+						http.ServeFile(w, r, gzipBundlePath)
+						return
+					}
+				}
+				// Fallback to regular minified bundle
 				bundlePath := "web/static/js/compressed/bundle.js"
 				if _, err := os.Stat(bundlePath); err == nil {
+					w.Header().Set("Content-Type", "application/javascript")
 					http.ServeFile(w, r, bundlePath)
 					return
 				}
 			} else if strings.HasSuffix(path, ".css") {
-				minifiedPath := "web/static/css/compressed" + strings.TrimPrefix(path, "/css")
+				// For CSS files, serve gzipped version if available and client accepts
+				cssFileName := filepath.Base(path)
+				if acceptsGzip {
+					gzipCSSPath := "web/static/css/compressed/" + cssFileName + ".gz"
+					if _, err := os.Stat(gzipCSSPath); err == nil {
+						w.Header().Set("Content-Encoding", "gzip")
+						w.Header().Set("Content-Type", "text/css")
+						http.ServeFile(w, r, gzipCSSPath)
+						return
+					}
+				}
+				// Fallback to regular minified CSS
+				minifiedPath := "web/static/css/compressed/" + cssFileName
 				if _, err := os.Stat(minifiedPath); err == nil {
+					w.Header().Set("Content-Type", "text/css")
 					http.ServeFile(w, r, minifiedPath)
 					return
 				}
