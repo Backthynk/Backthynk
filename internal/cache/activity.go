@@ -355,6 +355,14 @@ func (ac *ActivityCache) RefreshCategory(categoryID int, posts []PostData) error
 	// Count active days
 	activity.Stats.TotalActiveDays = len(activity.Days)
 
+	// Initialize recursive data with the same as direct data (will be updated later by buildRecursiveActivity)
+	activity.Recursive = make(map[string]int)
+	for date, count := range activity.Days {
+		activity.Recursive[date] = count
+	}
+	activity.Stats.RecursivePosts = activity.Stats.TotalPosts
+	activity.Stats.RecursiveActiveDays = activity.Stats.TotalActiveDays
+
 	ac.categories[categoryID] = activity
 	return nil
 }

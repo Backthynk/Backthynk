@@ -4,6 +4,7 @@ import (
 	"backthynk/internal/cache"
 	"backthynk/internal/config"
 	"backthynk/internal/services"
+	"backthynk/internal/storage"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -13,12 +14,14 @@ import (
 )
 
 type CategoryStatsHandler struct {
+	db               *storage.DB
 	activityService  *services.ActivityService
 	fileStatsService *services.FileStatsService
 }
 
-func NewCategoryStatsHandler(activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryStatsHandler {
+func NewCategoryStatsHandler(db *storage.DB, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryStatsHandler {
 	return &CategoryStatsHandler{
+		db:               db,
 		activityService:  activityService,
 		fileStatsService: fileStatsService,
 	}
@@ -51,28 +54,16 @@ func (h *CategoryStatsHandler) GetCategoryStats(w http.ResponseWriter, r *http.R
 	query := r.URL.Query()
 	recursive := query.Get("recursive") == "true"
 
-	// Get activity data for post count
-	activityReq := cache.ActivityPeriodRequest{
-		CategoryID:   categoryID,
-		Recursive:    recursive,
-		PeriodMonths: 6,
-		Period:       0,
-	}
-
 	var postCount int
 	var fileCount int64
 	var totalSize int64
-	var lastActivityUpdate int64
 	var lastFileStatsUpdate int64
 
+	// Get post count directly from database (forever data, not period-based)
 	if categoryID == config.ALL_CATEGORIES_ID {
 		// ALL_CATEGORIES_ID means global stats across all categories
-		if h.activityService != nil {
-			activityData, err := h.activityService.GetGlobalActivityPeriod(0, 6, "", "")
-			if err == nil {
-				postCount = activityData.Stats.TotalPosts
-			}
-			lastActivityUpdate = time.Now().UnixMilli()
+		if count, err := h.db.GetTotalPostCount(); err == nil {
+			postCount = count
 		}
 
 		if h.fileStatsService != nil {
@@ -80,26 +71,22 @@ func (h *CategoryStatsHandler) GetCategoryStats(w http.ResponseWriter, r *http.R
 			if err == nil {
 				fileCount = fileStatsData.FileCount
 				totalSize = fileStatsData.TotalSize
+				lastFileStatsUpdate = time.Now().UnixMilli() // Use current time for global stats
 			}
-			lastFileStatsUpdate = time.Now().UnixMilli()
 		}
 	} else {
-		if h.activityService != nil {
-			activityData, err := h.activityService.GetActivityPeriod(activityReq)
-			if err == nil {
-				postCount = activityData.Stats.TotalPosts
-			}
-
-			lastActivityUpdate = time.Now().UnixMilli() // Use current time as fallback
+		// Get post count for specific category (with or without recursive)
+		if count, err := h.db.GetPostCountByCategoryRecursive(categoryID, recursive); err == nil {
+			postCount = count
 		}
 
 		// Get file statistics
-		fileStatsReq := cache.FileStatsRequest{
-			CategoryID: categoryID,
-			Recursive:  recursive,
-		}
-
 		if h.fileStatsService != nil {
+			fileStatsReq := cache.FileStatsRequest{
+				CategoryID: categoryID,
+				Recursive:  recursive,
+			}
+
 			fileStats, err := h.fileStatsService.GetFileStats(fileStatsReq)
 			if err == nil {
 				fileCount = fileStats.Stats.FileCount
@@ -109,10 +96,10 @@ func (h *CategoryStatsHandler) GetCategoryStats(w http.ResponseWriter, r *http.R
 		}
 	}
 
-	// Use the most recent update time
-	lastUpdated := lastActivityUpdate
-	if lastFileStatsUpdate > lastUpdated {
-		lastUpdated = lastFileStatsUpdate
+	// Use file stats update time, or current time as fallback
+	lastUpdated := lastFileStatsUpdate
+	if lastUpdated == 0 {
+		lastUpdated = time.Now().UnixMilli()
 	}
 
 	response := CategoryStatsResponse{

@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (newCategory) {
                 populateCategorySelect(); // Update dropdowns
                 selectCategory(newCategory); // Programmatic selection after category creation
-                showSuccess(`Category "${newCategory.name}" ${window.AppConstants.USER_MESSAGES.success.categoryCreated}`);
+                showSuccess('');
             }
         } catch (error) {
             showError(error.message);
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (updatedCategory) {
                 populateCategorySelect(); // Update dropdowns
                 selectCategory(updatedCategory); // Programmatic selection after category update
-                showSuccess(`Category "${updatedCategory.name}" ${window.AppConstants.USER_MESSAGES.success.categoryUpdated}`);
+                showSuccess(``);
             }
         } catch (error) {
             showError(error.message);

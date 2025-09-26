@@ -56,7 +56,7 @@ func main() {
 	postHandler := handlers.NewPostHandler(db, settingsHandler, activityService, fileStatsService)
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
-	categoryStatsHandler := handlers.NewCategoryStatsHandler(activityService, fileStatsService)
+	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, activityService, fileStatsService)
 
 	// Activity handler (only if activity is enabled)
 	var activityHandler *handlers.ActivityHandler
