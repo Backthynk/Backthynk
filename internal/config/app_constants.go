@@ -1,5 +1,7 @@
 package config
 
+import "os"
+
 // Application Info
 const (
 	AppName     = "Backthynk"
@@ -36,4 +38,9 @@ func IsReservedRoute(route string) bool {
 		}
 	}
 	return false
+}
+
+// IsProduction checks if the application is running in production mode
+func IsProduction() bool {
+	return os.Getenv("BACKTHYNK_ENV") == "production"
 }

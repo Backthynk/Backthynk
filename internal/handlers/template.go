@@ -124,6 +124,14 @@ func (h *TemplateHandler) buildCategoryDescription(category *models.Category, br
 }
 
 func (h *TemplateHandler) renderTemplate(w http.ResponseWriter, templatePath string, data PageData) {
+	// Check if we're in production mode and use minified template if available
+	if config.IsProduction() {
+		minifiedPath := strings.Replace(templatePath, "web/templates/", "web/templates/compressed/", 1)
+		if _, err := template.ParseFiles(minifiedPath); err == nil {
+			templatePath = minifiedPath
+		}
+	}
+
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		http.Error(w, "Template parsing error", http.StatusInternalServerError)

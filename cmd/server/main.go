@@ -7,6 +7,7 @@ import (
 	"backthynk/internal/storage"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -109,7 +110,7 @@ func main() {
 	api.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT")
 
 	// Static files
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", createStaticFileHandler()))
 
 	// Serve main page - lowest priority
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -158,6 +159,34 @@ func isCategoryPath(path string) bool {
 func serveCategoryPage(w http.ResponseWriter, r *http.Request, path string, templateHandler *handlers.TemplateHandler) {
 	// Use template handler for proper SEO
 	templateHandler.ServeCategoryPage(w, r, path)
+}
+
+// createStaticFileHandler creates a file server that serves minified assets in production
+func createStaticFileHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+
+		// In production mode, serve optimized assets
+		if config.IsProduction() {
+			if strings.HasSuffix(path, ".js") {
+				// For JS files, serve the bundled version
+				bundlePath := "web/static/js/compressed/bundle.js"
+				if _, err := os.Stat(bundlePath); err == nil {
+					http.ServeFile(w, r, bundlePath)
+					return
+				}
+			} else if strings.HasSuffix(path, ".css") {
+				minifiedPath := "web/static/css/compressed" + strings.TrimPrefix(path, "/css")
+				if _, err := os.Stat(minifiedPath); err == nil {
+					http.ServeFile(w, r, minifiedPath)
+					return
+				}
+			}
+		}
+
+		// Fallback to original file
+		http.FileServer(http.Dir("web/static/")).ServeHTTP(w, r)
+	})
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
