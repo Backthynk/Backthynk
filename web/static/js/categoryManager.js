@@ -31,7 +31,7 @@ function createCategoryElement(category, level = 0) {
             </button>
         `;
     } else {
-        expandButton = `<div class="w-5 h-5 mr-1" style="margin-left: ${level * 14 + 5}px;"></div>`;
+        expandButton = `<div class="w-5 h-5 mr-1" style="margin-left: ${level * 14}px;"></div>`;
     }
 
     // Main category button with GitHub-style design
@@ -97,6 +97,19 @@ async function selectCategory(category, fromUserClick = false) {
     if (fromUserClick && currentCategory && currentCategory.id === category.id) {
         await deselectCategory();
         return;
+    }
+
+    // FIRST: Immediately clear the posts container to prevent old posts from showing
+    // Also force clear any ongoing loading state
+    isLoadingPosts = false;
+    const postsContainer = document.getElementById('posts-container');
+    if (postsContainer) {
+        postsContainer.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                <p>Loading posts...</p>
+            </div>
+        `;
     }
 
     currentCategory = category;
@@ -200,6 +213,18 @@ async function deselectCategory() {
 
     localStorage.removeItem('lastSelectedCategory');
     renderCategories();
+
+    // Immediately clear the posts container and loading state
+    isLoadingPosts = false;
+    const postsContainer = document.getElementById('posts-container');
+    if (postsContainer) {
+        postsContainer.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                <p>Loading posts...</p>
+            </div>
+        `;
+    }
 
     // Load posts for category ID 0 (all posts)
     loadPosts(0, false);

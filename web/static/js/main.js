@@ -149,6 +149,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Auto-select the newly created category
             if (newCategory) {
+                // Immediately clear posts to prevent showing previous category's posts
+                const postsContainer = document.getElementById('posts-container');
+                if (postsContainer) {
+                    postsContainer.innerHTML = `
+                        <div class="text-center text-gray-500 py-8">
+                            <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                            <p>Loading posts...</p>
+                        </div>
+                    `;
+                }
+
                 populateCategorySelect(); // Update dropdowns
                 selectCategory(newCategory); // Programmatic selection after category creation
                 showSuccess('');
@@ -332,22 +343,27 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if retroactive posting is enabled and add custom timestamp
             const dateTimeInput = document.getElementById('post-datetime');
             if (dateTimeInput && dateTimeInput.value) {
-                const customDate = new Date(dateTimeInput.value);
-                const minDate = new Date(window.AppConstants.MIN_RETROACTIVE_POST_TIMESTAMP);
-                const now = new Date();
+                // Only send custom timestamp if user actually changed the date from default
+                const userChangedDate = dateTimeInput.dataset.originalValue !== dateTimeInput.value;
 
-                // Validate the date
-                if (customDate < minDate) {
-                    showError(`Date cannot be earlier than ${minDate.toLocaleDateString()}`);
-                    return;
+                if (userChangedDate) {
+                    const customDate = new Date(dateTimeInput.value);
+                    const minDate = new Date(window.AppConstants.MIN_RETROACTIVE_POST_TIMESTAMP);
+                    const now = new Date();
+
+                    // Validate the date
+                    if (customDate < minDate) {
+                        showError(`Date cannot be earlier than ${minDate.toLocaleDateString()}`);
+                        return;
+                    }
+
+                    if (customDate > now) {
+                        showError('Date cannot be in the future');
+                        return;
+                    }
+
+                    postData.custom_timestamp = customDate.getTime();
                 }
-
-                if (customDate > now) {
-                    showError('Date cannot be in the future');
-                    return;
-                }
-
-                postData.custom_timestamp = customDate.getTime();
             }
 
             const post = await apiRequest('/posts', {

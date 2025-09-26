@@ -25,7 +25,10 @@ async function showCreatePost() {
                               String(now.getDate()).padStart(2, '0') + 'T' +
                               String(now.getHours()).padStart(2, '0') + ':' +
                               String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('post-datetime').value = formatted;
+            const dateTimeInput = document.getElementById('post-datetime');
+            dateTimeInput.value = formatted;
+            // Store the original default value to detect if user changed it
+            dateTimeInput.dataset.originalValue = formatted;
         } else {
             retroactiveDateContainer.style.display = 'none';
         }

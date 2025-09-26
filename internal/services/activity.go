@@ -2,6 +2,7 @@ package services
 
 import (
 	"backthynk/internal/cache"
+	"backthynk/internal/config"
 	"backthynk/internal/models"
 	"backthynk/internal/storage"
 	"fmt"
@@ -247,14 +248,106 @@ func (s *ActivityService) updateParentRecursiveActivity(categoryID int, timestam
 	return s.updateParentRecursiveActivity(*parentID, timestamp, delta)
 }
 
-// GetActivityPeriod returns activity data for a specific period
+// GetActivityPeriod returns activity data for a specific period (unified for all categories and specific categories)
 func (s *ActivityService) GetActivityPeriod(req cache.ActivityPeriodRequest) (*cache.ActivityPeriodResponse, error) {
 	// Set default period months if not specified
 	if req.PeriodMonths == 0 {
-		req.PeriodMonths = 6
+		req.PeriodMonths = config.DefaultActivityPeriodMonths
 	}
 
+	// Handle ALL_CATEGORIES_ID (category 0) by aggregating all categories
+	if req.CategoryID == config.ALL_CATEGORIES_ID {
+		return s.getGlobalActivityPeriod(req)
+	}
+
+	// Handle specific category using the cache
 	return s.cache.GetActivityPeriod(req)
+}
+
+// getGlobalActivityPeriod returns aggregated activity data across all categories for a specific time period
+func (s *ActivityService) getGlobalActivityPeriod(req cache.ActivityPeriodRequest) (*cache.ActivityPeriodResponse, error) {
+	// Get all categories to aggregate their activity
+	categories, err := s.db.GetCategories()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get categories: %w", err)
+	}
+
+	// Build a map to aggregate activity by day
+	aggregatedActivity := make(map[string]int)
+	totalPosts := 0
+	maxPeriods := 0 // Start with 0, we'll find the maximum
+
+	// Process each category
+	for _, category := range categories {
+		categoryReq := cache.ActivityPeriodRequest{
+			CategoryID:   category.ID,
+			Recursive:    false, // We'll process each category individually
+			Period:       req.Period,
+			PeriodMonths: req.PeriodMonths,
+			StartDate:    req.StartDate,
+			EndDate:      req.EndDate,
+		}
+
+		response, err := s.cache.GetActivityPeriod(categoryReq)
+		if err != nil {
+			// Log error but continue with other categories
+			log.Printf("Warning: failed to get activity for category %d: %v", category.ID, err)
+			continue
+		}
+
+		totalPosts += response.Stats.TotalPosts
+
+		// Track the maximum max_periods across all categories (All categories should show the full historical range)
+		if response.MaxPeriods > maxPeriods {
+			maxPeriods = response.MaxPeriods
+		}
+
+		// Aggregate the activity days
+		for _, day := range response.Days {
+			aggregatedActivity[day.Date] += day.Count
+		}
+	}
+
+	// Convert aggregated activity back to ActivityDay slice
+	var days []cache.ActivityDay
+	maxDayActivity := 0
+	for date, count := range aggregatedActivity {
+		if count > 0 { // Only include days with activity
+			days = append(days, cache.ActivityDay{
+				Date:  date,
+				Count: count,
+			})
+			if count > maxDayActivity {
+				maxDayActivity = count
+			}
+		}
+	}
+
+	// Calculate period dates using the same logic as individual categories
+	periodStartDate, periodEndDate := s.calculatePeriodDates(req.Period, req.PeriodMonths)
+	if req.StartDate != "" {
+		periodStartDate = req.StartDate
+	}
+	if req.EndDate != "" {
+		periodEndDate = req.EndDate
+	}
+
+	// Create stats
+	stats := cache.PeriodStats{
+		TotalPosts:     totalPosts,
+		ActiveDays:     len(days),
+		MaxDayActivity: maxDayActivity,
+	}
+
+	return &cache.ActivityPeriodResponse{
+		CategoryID: config.ALL_CATEGORIES_ID,
+		StartDate:  periodStartDate,
+		EndDate:    periodEndDate,
+		Period:     req.Period,
+		Days:       days,
+		Stats:      stats,
+		MaxPeriods: maxPeriods, // Use the minimum max_periods from all categories
+	}, nil
 }
 
 // RefreshCategoryCache rebuilds cache for a specific category (useful for data consistency)
@@ -280,85 +373,6 @@ func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 	return s.cache.RefreshCategory(categoryID, posts)
 }
 
-// GetGlobalActivityPeriod returns aggregated activity data across all categories for a specific time period
-func (s *ActivityService) GetGlobalActivityPeriod(period int, periodMonths int, startDate string, endDate string) (*cache.ActivityPeriodResponse, error) {
-	// Get all categories to aggregate their activity
-	categories, err := s.db.GetCategories()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get categories: %w", err)
-	}
-
-	// Build a map to aggregate activity by day
-	aggregatedActivity := make(map[string]int)
-	totalPosts := 0
-
-	// Process each category
-	for _, category := range categories {
-		req := cache.ActivityPeriodRequest{
-			CategoryID:   category.ID,
-			Recursive:    false, // We'll process each category individually
-			Period:       period,
-			PeriodMonths: periodMonths,
-			StartDate:    startDate,
-			EndDate:      endDate,
-		}
-
-		response, err := s.GetActivityPeriod(req)
-		if err != nil {
-			// Log error but continue with other categories
-			log.Printf("Warning: failed to get activity for category %d: %v", category.ID, err)
-			continue
-		}
-
-		totalPosts += response.Stats.TotalPosts
-
-		// Aggregate the activity days
-		for _, day := range response.Days {
-			aggregatedActivity[day.Date] += day.Count
-		}
-	}
-
-	// Convert aggregated activity back to ActivityDay slice
-	var days []cache.ActivityDay
-	maxDayActivity := 0
-	for date, count := range aggregatedActivity {
-		if count > 0 { // Only include days with activity
-			days = append(days, cache.ActivityDay{
-				Date:  date,
-				Count: count,
-			})
-			if count > maxDayActivity {
-				maxDayActivity = count
-			}
-		}
-	}
-
-	// Calculate period dates using the same logic as individual categories
-	periodStartDate, periodEndDate := s.calculatePeriodDates(period, periodMonths)
-	if startDate != "" {
-		periodStartDate = startDate
-	}
-	if endDate != "" {
-		periodEndDate = endDate
-	}
-
-	// Create stats
-	stats := cache.PeriodStats{
-		TotalPosts:     totalPosts,
-		ActiveDays:     len(days),
-		MaxDayActivity: maxDayActivity,
-	}
-
-	return &cache.ActivityPeriodResponse{
-		CategoryID: -1, // Special ID for global
-		StartDate:  periodStartDate,
-		EndDate:    periodEndDate,
-		Period:     period,
-		Days:       days,
-		Stats:      stats,
-		MaxPeriods: 0,
-	}, nil
-}
 
 // calculatePeriodDates calculates start and end dates for a given period
 func (s *ActivityService) calculatePeriodDates(period, periodMonths int) (string, string) {

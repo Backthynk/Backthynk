@@ -44,11 +44,13 @@ async function generateActivityHeatmap() {
     } catch (error) {
         console.error('Failed to generate activity heatmap:', error);
         // Fallback to empty heatmap
-        generateHeatmapFromCache({
+        const fallbackData = {
             days: [],
             stats: { total_posts: 0, active_days: 0, max_day_activity: 0 },
             max_periods: 0
-        });
+        };
+        currentActivityCache = fallbackData;
+        generateHeatmapFromCache(fallbackData);
     }
 }
 
@@ -136,7 +138,7 @@ function generateHeatmapFromCache(activityData) {
     const days = generateCalendarDays(activityData.start_date, activityData.end_date, activityMap);
 
     // Render heatmap
-    renderHeatmapGrid(days);
+    renderHeatmapGrid(days, activityData.start_date, activityData.end_date);
 
     // Update summary with pre-calculated stats
     const postsText = activityData.stats.total_posts === 1 ? window.AppConstants.UI_TEXT.post : window.AppConstants.UI_TEXT.posts;
@@ -146,7 +148,10 @@ function generateHeatmapFromCache(activityData) {
 
     // Update navigation buttons
     document.getElementById('activity-next').disabled = currentActivityPeriod >= 0;
-    document.getElementById('activity-prev').disabled = currentActivityPeriod <= -activityData.max_periods;
+
+    // Use actual max_periods from unified API response
+    const maxPeriods = activityData.max_periods !== undefined ? activityData.max_periods : 24;
+    document.getElementById('activity-prev').disabled = currentActivityPeriod <= -maxPeriods;
 
     // Update legend with dynamic colors
     updateActivityLegend();
@@ -181,24 +186,31 @@ function generateCalendarDays(startDate, endDate, activityMap) {
 }
 
 // Render heatmap grid with optimized layout
-function renderHeatmapGrid(days) {
+function renderHeatmapGrid(days, startDate, endDate) {
     const squaresPerRow = window.AppConstants.UI_CONFIG.heatmapSquaresPerRow;
     const rows = Math.ceil(days.length / squaresPerRow);
 
 
-    // Generate month labels starting from current date minus 3 months (to include current month)
+    // Generate month labels based on the actual activity period dates
     const monthLabels = [];
-    const currentDate = new Date();
-    const startMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - window.AppConstants.UI_CONFIG.activityPeriodMonths + 2, 1);
+    const start = new Date(startDate + 'T00:00:00Z');
+    const end = new Date(endDate + 'T00:00:00Z');
 
-    for (let i = 0; i < window.AppConstants.UI_CONFIG.activityPeriodMonths; i++) {
-        const monthDate = new Date(startMonth.getFullYear(), startMonth.getMonth() + i, 1);
-        const monthLabel = monthDate.toLocaleDateString('en-US', {
+    // Create array of unique months in the period
+    const monthsSet = new Set();
+    const current = new Date(start);
+
+    while (current <= end) {
+        const monthLabel = current.toLocaleDateString('en-US', {
             month: 'short',
             timeZone: 'UTC'
         });
-        monthLabels.push(monthLabel);
+        monthsSet.add(monthLabel);
+        current.setUTCMonth(current.getUTCMonth() + 1);
+        current.setUTCDate(1); // Reset to first day of month to avoid date overflow issues
     }
+
+    const uniqueMonthLabels = Array.from(monthsSet);
 
     let html = '<div class="space-y-1">';
 
@@ -212,8 +224,8 @@ function renderHeatmapGrid(days) {
         let monthLabel = '';
         if (row % nRowGap === 0) {
             const monthIndex = Math.floor(row / nRowGap);
-            if (monthIndex < monthLabels.length) {
-                monthLabel = monthLabels[monthIndex];
+            if (monthIndex < uniqueMonthLabels.length) {
+                monthLabel = uniqueMonthLabels[monthIndex];
             }
         }
 
@@ -285,9 +297,15 @@ function formatPeriodLabel(startDate, endDate, period) {
 async function changeActivityPeriod(direction) {
     const newPeriod = currentActivityPeriod + direction;
 
-    // Check bounds
+    // Check bounds - if no cache, allow navigation and let generateActivityHeatmap handle it
     if (currentActivityCache) {
-        if (newPeriod > 0 || newPeriod < -currentActivityCache.max_periods) {
+        const maxPeriods = currentActivityCache.max_periods !== undefined ? currentActivityCache.max_periods : 24;
+        if (newPeriod > 0 || newPeriod < -maxPeriods) {
+            return; // Out of bounds
+        }
+    } else {
+        // Basic bounds check without cache
+        if (newPeriod > 0 || newPeriod < -24) { // Allow up to 24 periods back
             return; // Out of bounds
         }
     }

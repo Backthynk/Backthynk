@@ -50,6 +50,9 @@ const (
 
 	// Retroactive Posting Configuration
 	MinRetroactivePostTimestamp = 946684800000 // 01/01/2000 00:00:00 UTC in milliseconds
+
+	// Activity Configuration
+	DefaultActivityPeriodMonths = 4 // Number of months to show in activity heatmap
 )
 
 // Error Messages
