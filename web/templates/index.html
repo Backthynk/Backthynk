@@ -107,6 +107,53 @@
         }
     }
 
+    /* Category actions dropdown styles */
+    #category-actions-menu {
+        animation: fadeInDown 0.15s ease-out;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    @keyframes fadeInDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Modal animation styles - GitHub-style */
+    #category-modal:not(.hidden) .transform,
+    #edit-category-modal:not(.hidden) .transform,
+    #confirmation-modal:not(.hidden) .transform {
+        animation: modalFadeIn 0.15s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+        0% {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    /* Enhanced focus states for form inputs */
+    input:focus,
+    textarea:focus,
+    select:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Better button active states */
+    button:active {
+        transform: translateY(1px);
+    }
+
     @media (max-width: 768px) {
         .heatmap-square {
             width: 8px;
@@ -294,8 +341,8 @@
                             <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
                                 <input type="file" id="post-files" multiple class="hidden" accept="*/*">
                                 <div class="text-center">
-                                    <button type="button" onclick="document.getElementById('post-files').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                                        <i class="fas fa-upload mr-2"></i>Choose Files
+                                    <button type="button" onclick="document.getElementById('post-files').click()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                                        <i class="fas fa-upload text-xs mr-2"></i>Choose Files
                                     </button>
                                     <p id="file-upload-text" class="text-sm text-gray-500 mt-2">Or drag and drop files here (max 20 files)</p>
                                 </div>
@@ -309,10 +356,10 @@
                         </div>
 
                         <div class="flex space-x-3">
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                                <i class="fas fa-paper-plane mr-2"></i>Post
+                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+                                <i class="fas fa-paper-plane text-xs mr-2"></i>Post
                             </button>
-                            <button type="button" id="cancel-post" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md">
+                            <button type="button" id="cancel-post" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
                                 Cancel
                             </button>
                         </div>
@@ -327,20 +374,39 @@
                 <h2 class="text-xl font-bold text-gray-900">Select a category to view posts</h2>
             </div>
             <div class="flex items-center space-x-3">
-                <button id="recursive-toggle-btn" class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors" style="display: none;">
-                    <i class="fas fa-sitemap text-sm"></i>
+                <button id="recursive-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors" style="display: none;">
+                    <i class="fas fa-sitemap text-xs mr-1"></i>
+                    <span>Recursive</span>
                 </button>
-                <button id="delete-category-btn" class="flex items-center justify-center w-10 h-10 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors" style="display: none;">
-                    <i class="fas fa-trash-alt text-sm"></i>
+
+                <!-- Dropdown menu for category actions (shown when category is selected) -->
+                <div id="category-actions-dropdown" class="relative" style="display: none;">
+                    <button id="category-actions-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                        <i class="fas fa-ellipsis-h text-xs mr-1"></i>
+                        <span>Actions</span>
+                        <i class="fas fa-chevron-down text-xs ml-2"></i>
+                    </button>
+                    <div id="category-actions-menu" class="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 hidden">
+                        <div class="py-1">
+                            <button id="edit-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                                <i class="fas fa-edit text-xs mr-3"></i>
+                                Edit category
+                            </button>
+                            <button id="delete-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                <i class="fas fa-trash-alt text-xs mr-3"></i>
+                                Delete category
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="settings-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                    <i class="fas fa-cog text-xs mr-1"></i>
+                    <span>Settings</span>
                 </button>
-                <button id="edit-category-btn" class="flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors" style="display: none;">
-                    <i class="fas fa-edit text-sm"></i>
-                </button>
-                <button id="settings-btn" class="flex items-center justify-center w-10 h-10 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors" style="display: none;">
-                    <i class="fas fa-cog text-sm"></i>
-                </button>
-                <button id="new-post-btn" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium" style="display: none;">
-                    <i class="fas fa-plus mr-2"></i>New Post
+                <button id="new-post-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" style="display: none;">
+                    <i class="fas fa-plus text-xs mr-1"></i>
+                    <span>New Post</span>
                 </button>
             </div>
         </div>
@@ -364,8 +430,8 @@
                         <h1 class="text-2xl font-bold text-gray-900">Settings</h1>
                         <p class="text-gray-600 mt-1">Configure your application preferences</p>
                     </div>
-                    <button id="settings-back-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    <button id="settings-back-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                        <i class="fas fa-arrow-left text-xs mr-2"></i>Back
                     </button>
                 </div>
 
@@ -514,15 +580,16 @@
 
                     <!-- Action Buttons -->
                     <div class="flex items-center justify-between pt-4">
-                        <button id="reset-settings-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md">
+                        <button id="reset-settings-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                            <i class="fas fa-undo text-xs mr-2"></i>
                             Reset to Defaults
                         </button>
                         <div class="flex space-x-3">
-                            <button id="cancel-settings-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md">
+                            <button id="cancel-settings-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
                                 Cancel
                             </button>
-                            <button id="save-settings-btn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">
-                                <i class="fas fa-save mr-2"></i>Save Settings
+                            <button id="save-settings-btn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+                                <i class="fas fa-save text-xs mr-2"></i>Save Settings
                             </button>
                         </div>
                     </div>
@@ -538,33 +605,50 @@
     <!-- Category Modal -->
     <div id="category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg p-6 w-full max-w-md">
-                <h3 class="text-lg font-semibold mb-4">Create Category</h3>
-                <form id="category-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                        <input type="text" id="category-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <div class="relative">
-                            <textarea id="category-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Optional description for this category"></textarea>
-                            <div class="absolute bottom-2 right-2 text-xs text-gray-400">
-                                <span id="description-counter">0</span>/<span id="description-max-length">280</span>
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Create Category</h3>
+                    <p class="text-sm text-gray-500 mt-1">Add a new category to organize your posts</p>
+                </div>
+
+                <!-- Body -->
+                <div class="px-6 py-4">
+                    <form id="category-form">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="category-name" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Description</label>
+                            <div class="relative">
+                                <textarea id="category-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this category"></textarea>
+                                <div class="absolute bottom-2 right-2 text-xs text-gray-400 bg-white px-1">
+                                    <span id="description-counter">0</span>/<span id="description-max-length">280</span>
+                                </div>
                             </div>
                         </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Parent Category</label>
+                            <select id="category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="">None (Root Category)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                    <div class="flex items-center justify-end space-x-3">
+                        <button type="button" id="cancel-category" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" form="category-form" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+                            <i class="fas fa-plus text-xs mr-2"></i>
+                            Create category
+                        </button>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
-                        <select id="category-parent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">None (Root Category)</option>
-                        </select>
-                    </div>
-                    <div class="flex space-x-3">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">Create</button>
-                        <button type="button" id="cancel-category" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md">Cancel</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -572,33 +656,50 @@
     <!-- Edit Category Modal -->
     <div id="edit-category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg p-6 w-full max-w-md">
-                <h3 class="text-lg font-semibold mb-4">Edit Category</h3>
-                <form id="edit-category-form">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
-                        <input type="text" id="edit-category-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <div class="relative">
-                            <textarea id="edit-category-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" placeholder="Optional description for this category"></textarea>
-                            <div class="absolute bottom-2 right-2 text-xs text-gray-400">
-                                <span id="edit-description-counter">0</span>/<span id="edit-description-max-length">280</span>
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Edit Category</h3>
+                    <p class="text-sm text-gray-500 mt-1">Update category information</p>
+                </div>
+
+                <!-- Body -->
+                <div class="px-6 py-4">
+                    <form id="edit-category-form">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="edit-category-name" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Description</label>
+                            <div class="relative">
+                                <textarea id="edit-category-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this category"></textarea>
+                                <div class="absolute bottom-2 right-2 text-xs text-gray-400 bg-white px-1">
+                                    <span id="edit-description-counter">0</span>/<span id="edit-description-max-length">280</span>
+                                </div>
                             </div>
                         </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Parent Category</label>
+                            <select id="edit-category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="">None (Root Category)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                    <div class="flex items-center justify-end space-x-3">
+                        <button type="button" id="cancel-edit-category" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" form="edit-category-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <i class="fas fa-save text-xs mr-2"></i>
+                            Update category
+                        </button>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Parent Category</label>
-                        <select id="edit-category-parent" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">None (Root Category)</option>
-                        </select>
-                    </div>
-                    <div class="flex space-x-3">
-                        <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md">Update</button>
-                        <button type="button" id="cancel-edit-category" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-md">Cancel</button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -633,30 +734,38 @@
 
     <!-- Custom Confirmation Modal -->
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-lg max-w-lg w-full mx-4 max-h-[90vh] flex flex-col">
-            <div class="p-6 flex-shrink-0">
-                <div class="flex items-center mb-4">
-                    <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-red-100">
-                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+        <div class="bg-white rounded-lg shadow-xl border border-gray-200 max-w-lg w-full mx-4 max-h-[90vh] flex flex-col transform transition-all">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-red-50 border border-red-200">
+                        <i class="fas fa-exclamation-triangle text-red-500"></i>
                     </div>
                     <div class="ml-4">
-                        <h3 id="confirmation-title" class="text-lg font-medium text-gray-900">Confirm Action</h3>
+                        <h3 id="confirmation-title" class="text-lg font-semibold text-gray-900">Confirm Action</h3>
                     </div>
                 </div>
+            </div>
+
+            <!-- Body -->
+            <div class="px-6 py-4 flex-1 overflow-y-auto">
                 <div class="mb-4">
-                    <p id="confirmation-message" class="text-sm text-gray-500 whitespace-pre-line"></p>
+                    <p id="confirmation-message" class="text-sm text-gray-600 whitespace-pre-line leading-relaxed"></p>
+                </div>
+                <div id="confirmation-details" style="display: none;">
+                    <!-- Dynamic content for lists will be inserted here -->
                 </div>
             </div>
-            <div id="confirmation-details" class="flex-1 overflow-y-auto px-6 pb-4" style="display: none;">
-                <!-- Dynamic content for lists will be inserted here -->
-            </div>
-            <div class="p-6 pt-4 flex-shrink-0 border-t">
-                <div class="flex space-x-3 justify-end">
-                    <button id="confirmation-cancel" class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-md transition-colors">
+
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg flex-shrink-0">
+                <div class="flex items-center justify-end space-x-3">
+                    <button id="confirmation-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
                         Cancel
                     </button>
-                    <button id="confirmation-confirm" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors">
-                        Confirm
+                    <button id="confirmation-confirm" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                        <i class="fas fa-trash-alt text-xs mr-2"></i>
+                        <span>Confirm</span>
                     </button>
                 </div>
             </div>

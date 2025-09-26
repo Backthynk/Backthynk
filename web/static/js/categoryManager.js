@@ -137,7 +137,8 @@ async function selectCategory(category, fromUserClick = false) {
     const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
     updateCategoryStatsDisplay(stats);
     document.getElementById('new-post-btn').style.display = 'block';
-    document.getElementById('settings-btn').style.display = 'block';
+    document.getElementById('settings-btn').style.display = 'none';
+    document.getElementById('category-actions-dropdown').style.display = 'block';
 
     generateActivityHeatmap();
 }
@@ -502,12 +503,11 @@ async function deleteCategory(category) {
             if (currentCategory && currentCategory.id === category.id) {
                 currentCategory = null;
                 localStorage.removeItem('lastSelectedCategory');
-                document.getElementById('timeline-title').textContent = 'Select a category';
+                document.getElementById('timeline-title').textContent = 'Select a category to view posts';
                 document.getElementById('new-post-btn').style.display = 'none';
-                document.getElementById('settings-btn').style.display = 'none';
+                document.getElementById('settings-btn').style.display = 'block';
                 document.getElementById('recursive-toggle-btn').style.display = 'none';
-                document.getElementById('delete-category-btn').style.display = 'none';
-                document.getElementById('edit-category-btn').style.display = 'none';
+                document.getElementById('category-actions-dropdown').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';
             }
         } catch (error) {

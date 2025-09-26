@@ -423,8 +423,8 @@ function updateCategoryStatsDisplay(stats) {
 function updateHeaderButtons() {
     if (!currentCategory) {
         document.getElementById('recursive-toggle-btn').style.display = 'none';
-        document.getElementById('delete-category-btn').style.display = 'none';
-        document.getElementById('edit-category-btn').style.display = 'none';
+        document.getElementById('category-actions-dropdown').style.display = 'none';
+        document.getElementById('settings-btn').style.display = 'block';
         return;
     }
 
@@ -436,17 +436,17 @@ function updateHeaderButtons() {
         recursiveToggleBtn.style.display = 'block';
         // Update button styling based on state
         if (currentCategory.recursiveMode) {
-            recursiveToggleBtn.className = 'flex items-center justify-center w-10 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors';
+            recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors';
         } else {
-            recursiveToggleBtn.className = 'flex items-center justify-center w-10 h-10 bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-lg transition-colors';
+            recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors';
         }
     } else {
         recursiveToggleBtn.style.display = 'none';
     }
 
-    // Always show delete and edit buttons when a category is selected
-    document.getElementById('delete-category-btn').style.display = 'block';
-    document.getElementById('edit-category-btn').style.display = 'block';
+    // Show dropdown and hide settings when a category is selected
+    document.getElementById('category-actions-dropdown').style.display = 'block';
+    document.getElementById('settings-btn').style.display = 'none';
 }
 
 // Function to navigate to a category when clicked from a post
@@ -494,5 +494,6 @@ async function updateAllCategoriesDisplay() {
 
     // Update button visibility - hide category-specific buttons
     document.getElementById('recursive-toggle-btn').style.display = 'none';
-    document.getElementById('delete-category-btn').style.display = 'none';
+    document.getElementById('category-actions-dropdown').style.display = 'none';
+    document.getElementById('settings-btn').style.display = 'block';
 }

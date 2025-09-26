@@ -192,6 +192,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Category actions dropdown functionality
+    const categoryActionsBtn = document.getElementById('category-actions-btn');
+    const categoryActionsMenu = document.getElementById('category-actions-menu');
+
+    categoryActionsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        categoryActionsMenu.classList.toggle('hidden');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!categoryActionsBtn.contains(e.target) && !categoryActionsMenu.contains(e.target)) {
+            categoryActionsMenu.classList.add('hidden');
+        }
+    });
+
     // Edit category modal events
     document.getElementById('cancel-edit-category').onclick = hideEditCategoryModal;
 
