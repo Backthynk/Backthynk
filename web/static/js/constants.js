@@ -249,6 +249,7 @@ const UI_TEXT = {
 
     // Empty state messages
     noPostsYet: 'No posts yet. Create your first post!',
+    noCategoriesYet: 'No categories yet. Create your first category!',
     noFilesSelected: 'No files selected',
     chooseFiles: 'Choose Files',
 

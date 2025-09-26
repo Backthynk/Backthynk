@@ -51,9 +51,15 @@ async function generateActivityHeatmap() {
 
     } catch (error) {
         console.error('Failed to generate activity heatmap:', error);
-        // Fallback to empty heatmap
+        // Fallback to empty heatmap with valid dates
+        const now = new Date();
+        const endDate = now.toISOString().split('T')[0];
+        const startDate = new Date(now.getTime() - (120 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // 120 days ago
+
         const fallbackData = {
             days: [],
+            start_date: startDate,
+            end_date: endDate,
             stats: { total_posts: 0, active_days: 0, max_day_activity: 0 },
             max_periods: 0
         };
@@ -173,8 +179,19 @@ function generateHeatmapFromCache(activityData) {
 // Generate calendar days efficiently without fetching all data
 function generateCalendarDays(startDate, endDate, activityMap) {
     const days = [];
+
+    // Check if dates are valid
+    if (!startDate || !endDate) {
+        return days; // Return empty array for invalid dates
+    }
+
     const current = new Date(startDate + 'T00:00:00Z'); // Ensure UTC
     const end = new Date(endDate + 'T00:00:00Z');
+
+    // Check if dates are valid after parsing
+    if (isNaN(current.getTime()) || isNaN(end.getTime())) {
+        return days; // Return empty array for invalid dates
+    }
 
     while (current <= end) {
         const dateKey = current.toISOString().split('T')[0];
@@ -200,11 +217,29 @@ function renderHeatmapGrid(days, startDate, endDate) {
     const squaresPerRow = window.AppConstants.UI_CONFIG.heatmapSquaresPerRow;
     const rows = Math.ceil(days.length / squaresPerRow);
 
+    // Handle empty days array
+    if (days.length === 0) {
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>No activity data available</p></div>';
+        return;
+    }
 
     // Generate month labels based on the actual activity period dates
     const monthLabels = [];
+
+    // Check if dates are valid
+    if (!startDate || !endDate) {
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>No activity data available</p></div>';
+        return;
+    }
+
     const start = new Date(startDate + 'T00:00:00Z');
     const end = new Date(endDate + 'T00:00:00Z');
+
+    // Check if dates are valid after parsing
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>No activity data available</p></div>';
+        return;
+    }
 
     // Create array of unique months in the period
     const monthsSet = new Set();
@@ -294,8 +329,18 @@ function updateActivityLegend() {
 
 // Format period label
 function formatPeriodLabel(startDate, endDate, period) {
+    // Check if dates are valid
+    if (!startDate || !endDate) {
+        return 'No activity period';
+    }
+
     const start = new Date(startDate + 'T00:00:00Z');
     const end = new Date(endDate + 'T00:00:00Z');
+
+    // Check if dates are valid after parsing
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return 'No activity period';
+    }
 
     const startMonth = start.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
     const endMonth = end.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });

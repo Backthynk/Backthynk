@@ -5,6 +5,16 @@ function renderCategories() {
 
     const rootCategories = categories.filter(cat => !cat.parent_id);
 
+    if (rootCategories.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-folder-plus text-4xl mb-4"></i>
+                <p>${window.AppConstants.UI_TEXT.noCategoriesYet}</p>
+            </div>
+        `;
+        return;
+    }
+
     rootCategories.forEach(category => {
         const element = createCategoryElement(category);
         container.appendChild(element);
