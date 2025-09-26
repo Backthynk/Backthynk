@@ -12,6 +12,7 @@ import (
 
 type DB struct {
 	*sql.DB
+	storagePath string
 }
 
 func NewDB(storagePath string) (*DB, error) {
@@ -29,7 +30,7 @@ func NewDB(storagePath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	dbWrapper := &DB{db}
+	dbWrapper := &DB{db, storagePath}
 	if err := dbWrapper.createTables(); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}

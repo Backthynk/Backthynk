@@ -361,7 +361,6 @@ func (s *ActivityService) GetGlobalActivityPeriod(period int, periodMonths int, 
 }
 
 // calculatePeriodDates calculates start and end dates for a given period
-// This uses the same logic as the cache layer
 func (s *ActivityService) calculatePeriodDates(period, periodMonths int) (string, string) {
 	now := time.Now().UTC()
 
@@ -381,5 +380,3 @@ func (s *ActivityService) calculatePeriodDates(period, periodMonths int) (string
 
 	return periodStart.Format("2006-01-02"), periodEnd.Format("2006-01-02")
 }
-
-
