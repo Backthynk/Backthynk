@@ -3,14 +3,14 @@ async function addFileToSelection(file) {
     const settings = await loadAppSettings();
 
     if (selectedFiles.size >= settings.maxFilesPerPost) {
-        showError(`Maximum ${settings.maxFilesPerPost} files allowed per post`);
+        showError(formatMessage(window.AppConstants.USER_MESSAGES.error.maxFilesExceeded, settings.maxFilesPerPost));
         return false;
     }
 
     // Check file size
     const maxFileSizeBytes = settings.maxFileSizeMB * window.AppConstants.UI_CONFIG.fileSizeUnit * window.AppConstants.UI_CONFIG.fileSizeUnit;
     if (file.size > maxFileSizeBytes) {
-        showError(`File "${file.name}" exceeds maximum file size of ${settings.maxFileSizeMB}MB`);
+        showError(formatMessage(window.AppConstants.USER_MESSAGES.error.fileSizeExceeded, file.name, settings.maxFileSizeMB));
         return false;
     }
 

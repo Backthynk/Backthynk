@@ -14,7 +14,7 @@ async function loadAppSettings(forceRefresh = false) {
             appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
         }
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToLoad} settings, ${window.AppConstants.UI_TEXT.usingDefaults}:`, error);
+        console.error('Failed to load settings, using defaults:', error);
         appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
     }
     return appSettings;
@@ -42,7 +42,7 @@ async function apiRequest(endpoint, options = {}) {
         const data = await response.json();
         return data || null;
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToParse}:`, error);
+        console.error('Failed to parse JSON response:', error);
         return null;
     }
 }
@@ -78,7 +78,7 @@ async function fetchCategories(skipRender = false) {
             await deselectCategory();
         }
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} categories:`, error);
+        console.error('Failed to fetch categories:', error);
         categories = [];
         renderCategories();
         populateCategorySelect();
@@ -95,7 +95,7 @@ async function createCategory(name, parentId, description = '') {
         await fetchCategories(true); // Skip render, we'll do it after selection
         return category;
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToCreate} category:`, error);
+        console.error('Failed to create category:', error);
         throw error;
     }
 }
@@ -110,7 +110,7 @@ async function updateCategory(categoryId, name, description, parentId) {
         await fetchCategories(true); // Skip render, we'll do it after selection
         return category;
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToUpdate} category:`, error);
+        console.error('Failed to update category:', error);
         throw error;
     }
 }
@@ -133,7 +133,7 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
         const response = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
         return response || { posts: [], has_more: false };
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} posts:`, error);
+        console.error('Failed to fetch posts:', error);
         return { posts: [], has_more: false };
     }
 }
@@ -155,7 +155,7 @@ async function fetchCategoryStats(categoryId, recursive = false) {
             last_updated: response.last_updated || 0
         };
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToFetch} category stats:`, error);
+        console.error('Failed to fetch category stats:', error);
         return { post_count: 0, file_count: 0, total_size: 0, last_updated: 0 };
     }
 }
@@ -167,7 +167,7 @@ async function createPost(categoryId, content) {
             body: JSON.stringify({ category_id: categoryId, content })
         });
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToCreate} post:`, error);
+        console.error('Failed to create post:', error);
         throw error;
     }
 }
@@ -178,7 +178,7 @@ async function deletePost(postId) {
             method: 'DELETE'
         });
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToDelete} post:`, error);
+        console.error('Failed to delete post:', error);
         throw error;
     }
 }
@@ -189,7 +189,7 @@ async function deleteCategoryApi(categoryId) {
             method: 'DELETE'
         });
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToDelete} category:`, error);
+        console.error('Failed to delete category:', error);
         throw error;
     }
 }
@@ -211,7 +211,7 @@ async function uploadFile(postId, file) {
 
         return response.json();
     } catch (error) {
-        console.error(`${window.AppConstants.UI_TEXT.failedToLoad} file:`, error);
+        console.error('Failed to load file:', error);
         throw error;
     }
 }

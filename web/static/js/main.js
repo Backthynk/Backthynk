@@ -5,7 +5,7 @@ async function initializeCharacterCounter() {
 
     if (!textarea || !counter) return;
 
-    const settings = await loadAppSettings(true); // Force refresh to get latest
+    const settings = await loadAppSettings(); // Use cached settings on initialization
 
     function updateCounter() {
         const currentSettings = window.currentSettings || settings;
@@ -59,6 +59,15 @@ async function refreshCharacterCounter() {
         counter.classList.remove('text-yellow-600', 'text-red-600');
         counter.classList.add('text-gray-500');
     }
+}
+
+// File upload text updater
+async function updateFileUploadText() {
+    const fileUploadText = document.getElementById('file-upload-text');
+    if (!fileUploadText) return;
+
+    const settings = window.currentSettings || await loadAppSettings();
+    fileUploadText.textContent = `Or drag and drop files here (max ${settings.maxFilesPerPost} files)`;
 }
 
 // Main initialization and event listeners
@@ -115,19 +124,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = document.getElementById('category-name').value.trim();
 
         if (name.length === 0) {
-            showError('Category name cannot be empty');
+            showError(window.AppConstants.USER_MESSAGES.error.categoryNameEmpty);
             return;
         }
 
         if (name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength) {
-            showError(`Category name must be ${window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength} characters or less`);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.categoryNameTooLong, window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength));
             return;
         }
 
         // Validate character restrictions
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
         if (!validNameRegex.test(name)) {
-            showError('Category name can only contain letters, numbers, and single spaces');
+            showError(window.AppConstants.USER_MESSAGES.error.categoryNameInvalidChars);
             return;
         }
 
@@ -142,6 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (newCategory) {
                 populateCategorySelect(); // Update dropdowns
                 selectCategory(newCategory); // Programmatic selection after category creation
+                showSuccess(`Category "${newCategory.name}" ${window.AppConstants.USER_MESSAGES.success.categoryCreated}`);
             }
         } catch (error) {
             showError(error.message);
@@ -205,19 +215,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const name = document.getElementById('edit-category-name').value.trim();
 
         if (name.length === 0) {
-            showError('Category name cannot be empty');
+            showError(window.AppConstants.USER_MESSAGES.error.categoryNameEmpty);
             return;
         }
 
         if (name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength) {
-            showError(`Category name must be ${window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength} characters or less`);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.categoryNameTooLong, window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength));
             return;
         }
 
         // Validate character restrictions
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
         if (!validNameRegex.test(name)) {
-            showError('Category name can only contain letters, numbers, and single spaces');
+            showError(window.AppConstants.USER_MESSAGES.error.categoryNameInvalidChars);
             return;
         }
 
@@ -225,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const description = document.getElementById('edit-category-description').value.trim();
 
         if (description.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength) {
-            showError(`Description cannot exceed ${window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength} characters`);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.categoryDescTooLong, window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength));
             return;
         }
 
@@ -251,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (updatedCategory) {
                 populateCategorySelect(); // Update dropdowns
                 selectCategory(updatedCategory); // Programmatic selection after category update
+                showSuccess(`Category "${updatedCategory.name}" ${window.AppConstants.USER_MESSAGES.success.categoryUpdated}`);
             }
         } catch (error) {
             showError(error.message);
@@ -292,19 +303,19 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
 
         if (!currentCategory) {
-            showError('No category selected');
+            showError(window.AppConstants.USER_MESSAGES.error.noCategorySelected);
             return;
         }
 
         const content = document.getElementById('post-content').value;
 
         if (!content.trim()) {
-            showError('Content is required');
+            showError(window.AppConstants.USER_MESSAGES.error.contentRequired);
             return;
         }
 
-        // Check content length against settings
-        const settings = await loadAppSettings(true); // Force refresh
+        // Check content length against settings (use current settings if available)
+        const settings = window.currentSettings || await loadAppSettings();
         if (content.length > settings.maxContentLength) {
             showError(`Content exceeds maximum length of ${settings.maxContentLength} characters`);
             return;
@@ -343,6 +354,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
             updateCategoryStatsDisplay(stats);
 
+            // Show success message
+            showSuccess('');
 
             // Regenerate activity heatmap to reflect new post
             generateActivityHeatmap();
@@ -418,6 +431,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize character counter
     initializeCharacterCounter();
+
+    // Initialize file upload text
+    updateFileUploadText();
 
     // Initialize link preview system when creating post
     const showCreatePostOriginal = window.showCreatePost;

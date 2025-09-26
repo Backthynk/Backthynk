@@ -340,6 +340,8 @@ async function confirmDeletePost(postId) {
         try {
             await deletePost(postId);
 
+            showSuccess('');
+
             // Update stats and refresh display
             const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
             updateCategoryStatsDisplay(stats);
@@ -357,7 +359,7 @@ async function confirmDeletePost(postId) {
             }
 
         } catch (error) {
-            showError('Failed to delete post: ' + error.message);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToDeletePost, error.message));
         }
     }
 }

@@ -23,7 +23,7 @@ async function showSettingsPage() {
             document.getElementById('settings-page').classList.remove('hidden');
             populateSettingsForm();
         } catch (error) {
-            showError('Failed to load settings: ' + error.message);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToLoadSettings, error.message));
         }
     }
 }
@@ -77,15 +77,15 @@ function validateSettings(settings) {
     const errors = [];
 
     if (settings.maxFileSizeMB < window.AppConstants.VALIDATION_LIMITS.minFileSizeMB || settings.maxFileSizeMB > window.AppConstants.VALIDATION_LIMITS.maxFileSizeMB) {
-        errors.push(window.AppConstants.ERROR_MESSAGES.fileSizeValidation);
+        errors.push(formatMessage(window.AppConstants.USER_MESSAGES.validation.fileSizeValidation, window.AppConstants.VALIDATION_LIMITS.minFileSizeMB, window.AppConstants.VALIDATION_LIMITS.maxFileSizeMB, (window.AppConstants.VALIDATION_LIMITS.maxFileSizeMB / 1024)));
     }
 
     if (settings.maxContentLength < window.AppConstants.VALIDATION_LIMITS.minContentLength || settings.maxContentLength > window.AppConstants.VALIDATION_LIMITS.maxContentLength) {
-        errors.push(window.AppConstants.ERROR_MESSAGES.contentLengthValidation);
+        errors.push(formatMessage(window.AppConstants.USER_MESSAGES.validation.contentLengthValidation, window.AppConstants.VALIDATION_LIMITS.minContentLength, window.AppConstants.VALIDATION_LIMITS.maxContentLength));
     }
 
     if (settings.maxFilesPerPost < window.AppConstants.VALIDATION_LIMITS.minFilesPerPost || settings.maxFilesPerPost > window.AppConstants.VALIDATION_LIMITS.maxFilesPerPost) {
-        errors.push(window.AppConstants.ERROR_MESSAGES.filesPerPostValidation);
+        errors.push(formatMessage(window.AppConstants.USER_MESSAGES.validation.filesPerPostValidation, window.AppConstants.VALIDATION_LIMITS.minFilesPerPost, window.AppConstants.VALIDATION_LIMITS.maxFilesPerPost));
     }
 
     return errors;
@@ -101,7 +101,7 @@ async function saveSettings() {
     }
 
     try {
-        showSettingsStatus('Saving settings...', 'info');
+        showSettingsStatus(window.AppConstants.USER_MESSAGES.info.savingSettings, 'info');
 
         const response = await fetch('/api/settings', {
             method: 'PUT',
@@ -132,7 +132,7 @@ async function saveSettings() {
             await checkFileStatsEnabled();
         }
 
-        showSettingsStatus('Settings saved successfully!', 'success');
+        showSuccess(window.AppConstants.USER_MESSAGES.success.settingsSaved);
 
         setTimeout(() => {
             if (window.router) {
@@ -144,7 +144,7 @@ async function saveSettings() {
 
     } catch (error) {
         console.error('Error saving settings:', error);
-        showSettingsStatus('Failed to save settings: ' + error.message, 'error');
+        showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToSaveSettings, error.message));
     }
 }
 
@@ -160,12 +160,12 @@ function cancelSettings() {
 }
 
 function resetToDefaults() {
-    if (confirm('Are you sure you want to reset all settings to their default values?')) {
+    if (confirm(window.AppConstants.USER_MESSAGES.info.resetSettingsConfirm)) {
         document.getElementById('maxFileSizeMB').value = window.AppConstants.DEFAULT_SETTINGS.maxFileSizeMB;
         document.getElementById('maxContentLength').value = window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
         document.getElementById('maxFilesPerPost').value = window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
         // Storage path is not reset as it's read-only
-        showSettingsStatus('Settings reset to defaults (not saved yet). Storage path is not changed as it requires server restart.', 'info');
+        showSettingsStatus(window.AppConstants.USER_MESSAGES.info.settingsResetInfo, 'info');
     }
 }
 

@@ -28,11 +28,54 @@ const VALIDATION_LIMITS = {
     maxCategoryDescriptionLength: 280
 };
 
-// Error Messages
-const ERROR_MESSAGES = {
-    fileSizeValidation: 'Maximum file size must be between 1MB and 10,240MB (10GB)',
-    contentLengthValidation: 'Maximum content length must be between 100 and 50,000 characters',
-    filesPerPostValidation: 'Maximum files per post must be between 1 and 50'
+// User Messages
+const USER_MESSAGES = {
+    // Success messages
+    success: {
+        categoryCreated: 'created successfully!',
+        categoryUpdated: 'updated successfully!',
+        categoryDeleted: 'deleted successfully!',
+        postCreated: 'Post created successfully!',
+        postDeleted: 'Post deleted successfully!',
+        settingsSaved: 'Settings saved successfully!'
+    },
+
+    // Error messages
+    error: {
+        categoryNameEmpty: 'Category name cannot be empty',
+        categoryNameTooLong: 'Category name must be {0} characters or less',
+        categoryNameInvalidChars: 'Category name can only contain letters, numbers, and single spaces',
+        categoryDescTooLong: 'Description cannot exceed {0} characters',
+        noCategorySelected: 'No category selected',
+        pleaseSelectCategory: 'Please select a category first',
+        contentRequired: 'Content is required',
+        contentTooLong: 'Content exceeds maximum length of {0} characters',
+        maxFilesExceeded: 'Maximum {0} files allowed per post',
+        fileSizeExceeded: 'File "{0}" exceeds maximum file size of {1}MB',
+        failedToLoadSettings: 'Failed to load settings: {0}',
+        failedToSaveSettings: 'Failed to save settings: {0}',
+        failedToDeleteCategory: 'Failed to delete category: {0}',
+        failedToDeletePost: 'Failed to delete post: {0}'
+    },
+
+    // Validation messages
+    validation: {
+        fileSizeValidation: 'Maximum file size must be between {0}MB and {1}MB ({2}GB)',
+        contentLengthValidation: 'Maximum content length must be between {0} and {1} characters',
+        filesPerPostValidation: 'Maximum files per post must be between {0} and {1}'
+    },
+
+    // Info messages
+    info: {
+        savingSettings: 'Saving settings...',
+        settingsResetInfo: 'Settings reset to defaults (not saved yet). Storage path is not changed as it requires server restart.',
+        resetSettingsConfirm: 'Are you sure you want to reset all settings to their default values?'
+    },
+
+    // File upload text template
+    fileUpload: {
+        dragDropText: 'Or drag and drop files here (max {0} files)'
+    }
 };
 
 // UI Configuration
@@ -154,14 +197,6 @@ const UI_TEXT = {
     failed: 'Failed',
     success: 'Success',
 
-    // Console error messages (for developers, but could be translated)
-    failedToLoad: 'Failed to load',
-    failedToParse: 'Failed to parse JSON response',
-    failedToFetch: 'Failed to fetch',
-    failedToCreate: 'Failed to create',
-    failedToDelete: 'Failed to delete',
-    usingDefaults: 'using defaults',
-
     // Navigation
     next: 'Next',
     previous: 'Previous',
@@ -201,7 +236,8 @@ window.AppConstants = {
     MAX_CATEGORY_DEPTH,
     DEFAULT_SETTINGS,
     VALIDATION_LIMITS,
-    ERROR_MESSAGES,
+    ERROR_MESSAGES: USER_MESSAGES.validation, // Legacy compatibility
+    USER_MESSAGES,
     UI_CONFIG,
     ACTIVITY_LEVELS,
     ACTIVITY_THRESHOLDS,

@@ -88,7 +88,7 @@ async function showSettingsPage() {
     } catch (error) {
         console.error('Failed to load settings:', error);
         if (typeof showError === 'function') {
-            showError('Failed to load settings: ' + error.message);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToLoadSettings, error.message));
         }
     }
 }

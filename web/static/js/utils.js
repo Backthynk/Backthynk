@@ -1,4 +1,11 @@
 // Utility functions
+
+// Message formatting with placeholders
+function formatMessage(template, ...args) {
+    return template.replace(/{(\d+)}/g, (match, index) => {
+        return typeof args[index] !== 'undefined' ? args[index] : match;
+    });
+}
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
@@ -36,8 +43,11 @@ function formatRelativeDate(timestamp) {
 }
 
 function showError(message) {
-    // For now keep using alert for errors, could be replaced later
-    alert(message);
+    if (window.showError && window.showError !== showError) {
+        window.showError(message);
+    } else {
+        alert(message);
+    }
 }
 
 // Custom confirmation dialog

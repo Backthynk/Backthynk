@@ -468,6 +468,9 @@ async function deleteCategory(category) {
 
             await fetchCategories();
 
+            // Show success message
+            showSuccess(`Category "${category.name}" ${window.AppConstants.USER_MESSAGES.success.categoryDeleted}`);
+
             // Cleanup any orphaned toggle states
             cleanupRecursiveToggleStates();
 
@@ -483,7 +486,7 @@ async function deleteCategory(category) {
                 document.getElementById('posts-container').innerHTML = '';
             }
         } catch (error) {
-            showError('Failed to delete category: ' + error.message);
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToDeleteCategory, error.message));
         }
     }
 }

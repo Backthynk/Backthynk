@@ -71,14 +71,3 @@ function updateActivityVisibility() {
         }
     }
 }
-
-// Activity system wrapper - only execute if enabled
-function withActivityEnabled(fn) {
-    return function(...args) {
-        if (activityEnabled) {
-            return fn.apply(this, args);
-        }
-        // Return empty result if activity is disabled
-        return Promise.resolve();
-    };
-}

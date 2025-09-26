@@ -1,7 +1,7 @@
 // UI functions
 function showCreatePost() {
     if (!currentCategory) {
-        showError('Please select a category first');
+        showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectCategory);
         return;
     }
 
@@ -60,7 +60,7 @@ function hideCategoryModal() {
 
 function showEditCategoryModal() {
     if (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        showError('Please select a category first');
+        showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectCategory);
         return;
     }
 
