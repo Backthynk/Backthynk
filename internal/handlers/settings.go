@@ -72,12 +72,13 @@ func (h *SettingsHandler) LoadOptions() (models.Options, error) {
 		// If file doesn't exist, return defaults
 		if os.IsNotExist(err) {
 			return models.Options{
-				MaxFileSizeMB:    config.DefaultMaxFileSizeMB,
-				MaxContentLength: config.DefaultMaxContentLength,
-				MaxFilesPerPost:  config.DefaultMaxFilesPerPost,
-				StoragePath:      config.DefaultStoragePath,
-				ActivityEnabled:  config.DefaultActivityEnabled,
-				FileStatsEnabled: config.DefaultFileStatsEnabled,
+				MaxFileSizeMB:            config.DefaultMaxFileSizeMB,
+				MaxContentLength:         config.DefaultMaxContentLength,
+				MaxFilesPerPost:          config.DefaultMaxFilesPerPost,
+				StoragePath:              config.DefaultStoragePath,
+				ActivityEnabled:          config.DefaultActivityEnabled,
+				FileStatsEnabled:         config.DefaultFileStatsEnabled,
+				RetroactivePostingEnabled: config.DefaultRetroactivePostingEnabled,
 			}, nil
 		}
 		return options, err

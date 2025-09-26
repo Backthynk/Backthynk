@@ -329,6 +329,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 link_previews: getCurrentLinkPreviews()
             };
 
+            // Check if retroactive posting is enabled and add custom timestamp
+            const dateTimeInput = document.getElementById('post-datetime');
+            if (dateTimeInput && dateTimeInput.value) {
+                const customDate = new Date(dateTimeInput.value);
+                const minDate = new Date(window.AppConstants.MIN_RETROACTIVE_POST_TIMESTAMP);
+                const now = new Date();
+
+                // Validate the date
+                if (customDate < minDate) {
+                    showError(`Date cannot be earlier than ${minDate.toLocaleDateString()}`);
+                    return;
+                }
+
+                if (customDate > now) {
+                    showError('Date cannot be in the future');
+                    return;
+                }
+
+                postData.custom_timestamp = customDate.getTime();
+            }
+
             const post = await apiRequest('/posts', {
                 method: 'POST',
                 body: JSON.stringify(postData)
@@ -392,6 +413,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+
+    // Retroactive posting functionality
+    const setCurrentTimeBtn = document.getElementById('set-current-time');
+    if (setCurrentTimeBtn) {
+        setCurrentTimeBtn.addEventListener('click', function() {
+            const now = new Date();
+            // Format to datetime-local format (YYYY-MM-DDTHH:mm)
+            const formatted = now.getFullYear() + '-' +
+                              String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                              String(now.getDate()).padStart(2, '0') + 'T' +
+                              String(now.getHours()).padStart(2, '0') + ':' +
+                              String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('post-datetime').value = formatted;
+        });
+    }
 
     // Image viewer events
     document.getElementById('viewer-close').onclick = closeImageViewer;

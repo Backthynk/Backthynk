@@ -1,5 +1,5 @@
 // UI functions
-function showCreatePost() {
+async function showCreatePost() {
     if (!currentCategory) {
         showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectCategory);
         return;
@@ -10,7 +10,31 @@ function showCreatePost() {
     document.getElementById('settings-btn').style.display = 'none';
     document.getElementById('new-post-btn-sticky').style.display = 'none';
     document.getElementById('post-content').focus();
-    
+
+    // Check if retroactive posting is enabled
+    try {
+        const settings = window.currentSettings || await loadAppSettings();
+        const retroactiveDateContainer = document.getElementById('retroactive-date-container');
+
+        if (settings.retroactivePostingEnabled) {
+            retroactiveDateContainer.style.display = 'block';
+            // Set default value to current time
+            const now = new Date();
+            const formatted = now.getFullYear() + '-' +
+                              String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                              String(now.getDate()).padStart(2, '0') + 'T' +
+                              String(now.getHours()).padStart(2, '0') + ':' +
+                              String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('post-datetime').value = formatted;
+        } else {
+            retroactiveDateContainer.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Failed to load settings for retroactive posting:', error);
+        // Hide the date container on error
+        document.getElementById('retroactive-date-container').style.display = 'none';
+    }
+
     // Initialize link preview after showing the form
     setTimeout(() => {
         initializeLinkPreview();
@@ -20,6 +44,13 @@ function showCreatePost() {
 function hideCreatePost() {
     document.getElementById('create-post-section').style.display = 'none';
     document.getElementById('create-post-form').reset();
+
+    // Clear the datetime picker
+    const dateTimeInput = document.getElementById('post-datetime');
+    if (dateTimeInput) {
+        dateTimeInput.value = '';
+    }
+
     selectedFiles.clear();
     updateFilePreview();
     window.pastedFiles = [];

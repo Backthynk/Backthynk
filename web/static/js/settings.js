@@ -61,6 +61,7 @@ function populateSettingsForm() {
     document.getElementById('storagePath').value = currentSettings.storagePath || window.AppConstants.DEFAULT_SETTINGS.storagePath;
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
+    document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
 }
 
 function getSettingsFromForm() {
@@ -69,7 +70,8 @@ function getSettingsFromForm() {
         maxContentLength: parseInt(document.getElementById('maxContentLength').value),
         maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
         activityEnabled: document.getElementById('activityEnabled').checked,
-        fileStatsEnabled: document.getElementById('fileStatsEnabled').checked
+        fileStatsEnabled: document.getElementById('fileStatsEnabled').checked,
+        retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked
     };
 }
 

@@ -160,11 +160,25 @@ async function fetchCategoryStats(categoryId, recursive = false) {
     }
 }
 
-async function createPost(categoryId, content) {
+async function createPost(categoryId, content, options = {}) {
     try {
+        const payload = {
+            category_id: categoryId,
+            content: content
+        };
+
+        // Add optional parameters
+        if (options.linkPreviews && options.linkPreviews.length > 0) {
+            payload.link_previews = options.linkPreviews;
+        }
+
+        if (options.customTimestamp) {
+            payload.custom_timestamp = options.customTimestamp;
+        }
+
         return await apiRequest('/posts', {
             method: 'POST',
-            body: JSON.stringify({ category_id: categoryId, content })
+            body: JSON.stringify(payload)
         });
     } catch (error) {
         console.error('Failed to create post:', error);

@@ -13,12 +13,13 @@ const (
 	FilePermissions      = 0644
 
 	// Default Application Settings
-	DefaultMaxFileSizeMB    = 100
-	DefaultMaxContentLength = 15000
-	DefaultMaxFilesPerPost  = 20
-	DefaultStoragePath      = ".storage"
-	DefaultActivityEnabled  = true
-	DefaultFileStatsEnabled = true
+	DefaultMaxFileSizeMB            = 100
+	DefaultMaxContentLength         = 15000
+	DefaultMaxFilesPerPost          = 20
+	DefaultStoragePath              = ".storage"
+	DefaultActivityEnabled          = true
+	DefaultFileStatsEnabled         = true
+	DefaultRetroactivePostingEnabled = false
 
 	// Validation Limits
 	MinFileSizeMB    = 1
@@ -46,6 +47,9 @@ const (
 
 	// Database Configuration
 	SQLiteConnectionOptions = "?_fk=1"
+
+	// Retroactive Posting Configuration
+	MinRetroactivePostTimestamp = 946684800000 // 01/01/2000 00:00:00 UTC in milliseconds
 )
 
 // Error Messages

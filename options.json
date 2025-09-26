@@ -4,5 +4,6 @@
   "maxFilesPerPost": 20,
   "storagePath": "./.storage",
   "activityEnabled": true,
-  "fileStatsEnabled": true
+  "fileStatsEnabled": true,
+  "retroactivePostingEnabled": true
 }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -34,6 +35,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		CategoryID   int                        `json:"category_id"`
 		Content      string                     `json:"content"`
 		LinkPreviews []LinkPreviewResponse     `json:"link_previews,omitempty"`
+		CustomTimestamp *int64                 `json:"custom_timestamp,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -51,10 +53,15 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Load settings and validate content length
+	// Load settings and validate content length and retroactive posting
+	var options models.Options
+	var retroactivePostingEnabled bool
 	if h.settingsHandler != nil {
-		options, err := h.settingsHandler.LoadOptions()
+		loadedOptions, err := h.settingsHandler.LoadOptions()
 		if err == nil {
+			options = loadedOptions
+			retroactivePostingEnabled = options.RetroactivePostingEnabled
+
 			if len(req.Content) > options.MaxContentLength {
 				http.Error(w, fmt.Sprintf("Content exceeds maximum length of %d characters", options.MaxContentLength), http.StatusBadRequest)
 				return
@@ -62,7 +69,34 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	post, err := h.db.CreatePost(req.CategoryID, req.Content)
+	// Validate custom timestamp if provided
+	if req.CustomTimestamp != nil {
+		if !retroactivePostingEnabled {
+			http.Error(w, "Retroactive posting is disabled", http.StatusBadRequest)
+			return
+		}
+
+		if *req.CustomTimestamp < config.MinRetroactivePostTimestamp {
+			http.Error(w, fmt.Sprintf("Custom timestamp cannot be earlier than %d (01/01/2000)", config.MinRetroactivePostTimestamp), http.StatusBadRequest)
+			return
+		}
+
+		// Don't allow future timestamps beyond current time
+		currentTime := time.Now().UnixMilli()
+		if *req.CustomTimestamp > currentTime {
+			http.Error(w, "Custom timestamp cannot be in the future", http.StatusBadRequest)
+			return
+		}
+	}
+
+	var post *models.Post
+	var err error
+
+	if req.CustomTimestamp != nil {
+		post, err = h.db.CreatePostWithTimestamp(req.CategoryID, req.Content, *req.CustomTimestamp)
+	} else {
+		post, err = h.db.CreatePost(req.CategoryID, req.Content)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

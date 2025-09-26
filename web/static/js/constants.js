@@ -13,7 +13,8 @@ const DEFAULT_SETTINGS = {
     maxFilesPerPost: 20,
     storagePath: '.storage',
     activityEnabled: true,
-    fileStatsEnabled: true
+    fileStatsEnabled: true,
+    retroactivePostingEnabled: false
 };
 
 // Validation Limits
@@ -230,6 +231,9 @@ const UI_TEXT = {
     dash: '-'
 };
 
+// Retroactive Posting Constants
+const MIN_RETROACTIVE_POST_TIMESTAMP = 946684800000; // 01/01/2000 00:00:00 UTC in milliseconds
+
 // Export all constants
 window.AppConstants = {
     ALL_CATEGORIES_ID,
@@ -242,5 +246,6 @@ window.AppConstants = {
     ACTIVITY_LEVELS,
     ACTIVITY_THRESHOLDS,
     ACTIVITY_CLASSES,
-    UI_TEXT
+    UI_TEXT,
+    MIN_RETROACTIVE_POST_TIMESTAMP
 };

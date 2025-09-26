@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
-func (db *DB) CreatePost(categoryID int, content string, customCreated ...string) (*models.Post, error) {
+func (db *DB) CreatePost(categoryID int, content string) (*models.Post, error) {
+	return db.CreatePostWithTimestamp(categoryID, content, time.Now().UnixMilli())
+}
+
+func (db *DB) CreatePostWithTimestamp(categoryID int, content string, timestampMillis int64) (*models.Post, error) {
 	var exists bool
 	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM categories WHERE id = ?)", categoryID).Scan(&exists)
 	if err != nil {
@@ -18,24 +22,9 @@ func (db *DB) CreatePost(categoryID int, content string, customCreated ...string
 		return nil, fmt.Errorf("category not found")
 	}
 
-	var result sql.Result
-	var timestamp int64
-
-	if len(customCreated) > 0 && customCreated[0] != "" {
-		// Parse custom timestamp string to Unix timestamp (assume it's already Unix timestamp string)
-		timestamp = time.Now().UnixMilli() // Default fallback if parsing fails
-		if customCreated[0] != "" {
-			// Assume customCreated is already Unix timestamp
-			timestamp = time.Now().UnixMilli()
-		}
-	} else {
-		// Use current Unix timestamp in milliseconds
-		timestamp = time.Now().UnixMilli()
-	}
-
-	result, err = db.Exec(
+	result, err := db.Exec(
 		"INSERT INTO posts (category_id, content, created) VALUES (?, ?, ?)",
-		categoryID, content, timestamp,
+		categoryID, content, timestampMillis,
 	)
 
 	if err != nil {
