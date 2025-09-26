@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 	"time"
+	"unsafe"
 )
 
 // ActivityDay represents a single day's activity
@@ -500,18 +501,38 @@ func (ac *ActivityCache) GetCacheStats() map[string]interface{} {
 	totalDays := 0
 	totalPosts := 0
 	categoriesCount := len(ac.categories)
+	totalMemoryBytes := int64(0)
+
+	// Calculate base cache overhead
+	totalMemoryBytes += int64(unsafe.Sizeof(*ac))
+	totalMemoryBytes += int64(len(ac.categories)) * int64(unsafe.Sizeof(uintptr(0))) // map entry overhead
 
 	for _, activity := range ac.categories {
 		activity.Mutex.RLock()
+
+		// Count activity data
 		totalDays += len(activity.Days)
 		totalPosts += activity.Stats.TotalPosts
+
+		// Calculate memory usage for this category
+		categoryMemory := int64(unsafe.Sizeof(*activity))
+
+		// Memory for Days map (date string -> count)
+		categoryMemory += int64(len(activity.Days)) * (10 + int64(unsafe.Sizeof(int(0)))) // ~10 bytes per date string + int
+
+		// Memory for Recursive map (date string -> count)
+		categoryMemory += int64(len(activity.Recursive)) * (10 + int64(unsafe.Sizeof(int(0))))
+
+		totalMemoryBytes += categoryMemory
 		activity.Mutex.RUnlock()
 	}
 
 	return map[string]interface{}{
-		"categories_cached": categoriesCount,
-		"total_activity_days": totalDays,
-		"total_posts_cached": totalPosts,
-		"memory_efficient": true,
+		"categories_cached":     categoriesCount,
+		"total_activity_days":   totalDays,
+		"total_posts_cached":    totalPosts,
+		"cache_size_bytes":      totalMemoryBytes,
+		"cache_size_mb":        float64(totalMemoryBytes) / (1024 * 1024),
+		"memory_efficient":      true,
 	}
 }

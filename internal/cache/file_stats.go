@@ -3,6 +3,7 @@ package cache
 import (
 	"sync"
 	"time"
+	"unsafe"
 )
 
 // FileStatsCache handles file statistics for categories with hot updates
@@ -180,19 +181,38 @@ func (c *FileStatsCache) GetCacheStats() map[string]interface{} {
 
 	totalFiles := int64(0)
 	totalSize := int64(0)
+	categoriesCount := len(c.categories)
+	totalMemoryBytes := int64(0)
+
+	// Calculate base cache overhead
+	totalMemoryBytes += int64(unsafe.Sizeof(*c))
+	totalMemoryBytes += int64(len(c.categories)) * int64(unsafe.Sizeof(uintptr(0))) // map entry overhead
 
 	for _, stats := range c.categories {
 		stats.Mutex.RLock()
+
+		// Count file stats
 		totalFiles += stats.Direct.FileCount
 		totalSize += stats.Direct.TotalSize
+
+		// Calculate memory usage for this category
+		categoryMemory := int64(unsafe.Sizeof(*stats))
+
+		// Add memory for the FileStats structures
+		categoryMemory += int64(unsafe.Sizeof(stats.Direct))
+		categoryMemory += int64(unsafe.Sizeof(stats.Recursive))
+
+		totalMemoryBytes += categoryMemory
 		stats.Mutex.RUnlock()
 	}
 
 	return map[string]interface{}{
-		"categories_cached": len(c.categories),
-		"total_files_cached": totalFiles,
-		"total_size_cached": totalSize,
-		"memory_efficient": true,
+		"categories_cached":     categoriesCount,
+		"total_files_cached":    totalFiles,
+		"total_size_cached":     totalSize,
+		"cache_size_bytes":      totalMemoryBytes,
+		"cache_size_mb":        float64(totalMemoryBytes) / (1024 * 1024),
+		"memory_efficient":      true,
 	}
 }
 
