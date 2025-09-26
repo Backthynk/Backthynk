@@ -1,3 +1,9 @@
+To fix:
+
+1. When starting navigation through settings menu, and going back to the dashboard the app is not initialized,
+you need to select a category for it while it should be direct.
+
+
 Todo later:
 
 1. Load in cache at launch time all the categories as they should never be more than a 1000 
@@ -10,3 +16,6 @@ It will take more space in the cache but it would work for every timezone. -> we
 
 3. In the confirm modal before removing a category it's currently calling all posts of the category recursirvely in order to show the files that are going to be removed.
 -> Replace this feature with a route that will fetch recursively all the files url (limited to 50) of a category recursively
+
+4. Display cache overview in a cell, so users have visibility over memory consumed by the program, could be done also with CPU, and maybe traffic (analytics)
+-> everything needs to be minimalistic and really simple. (data history doesn't need to be cached)

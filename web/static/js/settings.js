@@ -30,11 +30,8 @@ function hideSettingsPage() {
 
 async function loadSettings() {
     try {
-        const response = await fetch('/api/settings');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        currentSettings = await response.json();
+        // Use the cached settings from the global app settings instead of making a new API call
+        currentSettings = await loadAppSettings();
         originalSettings = { ...currentSettings };
     } catch (error) {
         console.error('Error loading settings:', error);

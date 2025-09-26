@@ -133,7 +133,13 @@ async function createCategory(name, parentId, description = '') {
             method: 'POST',
             body: JSON.stringify({ name, description, parent_id })
         });
-        await fetchCategories(true); // Skip render, we'll do it after selection
+
+        // Add the new category to the existing categories array instead of refetching
+        if (category && Array.isArray(categories)) {
+            categories.push(category);
+            cleanupRecursiveToggleStates();
+        }
+
         return category;
     } catch (error) {
         console.error('Failed to create category:', error);
@@ -148,7 +154,16 @@ async function updateCategory(categoryId, name, description, parentId) {
             method: 'PUT',
             body: JSON.stringify({ name, description, parent_id })
         });
-        await fetchCategories(true); // Skip render, we'll do it after selection
+
+        // Update the category in the existing categories array instead of refetching
+        if (category && Array.isArray(categories)) {
+            const index = categories.findIndex(cat => cat.id === categoryId);
+            if (index !== -1) {
+                categories[index] = category;
+            }
+            cleanupRecursiveToggleStates();
+        }
+
         return category;
     } catch (error) {
         console.error('Failed to update category:', error);

@@ -533,10 +533,13 @@ document.addEventListener('DOMContentLoaded', function() {
 // Add this to handle window resize events for activity heatmap
 window.addEventListener('resize', function() {
     if (currentCategory && document.getElementById('activity-container').style.display !== 'none') {
-        // Debounce resize events
+        // Debounce resize events with longer delay to prevent excessive API calls
         clearTimeout(window.resizeTimeout);
         window.resizeTimeout = setTimeout(function() {
-            generateActivityHeatmap();
-        }, 250);
+            // Only regenerate if we have cached data to avoid unnecessary API calls
+            if (currentActivityCache) {
+                generateHeatmapFromCache(currentActivityCache);
+            }
+        }, 500);
     }
 });

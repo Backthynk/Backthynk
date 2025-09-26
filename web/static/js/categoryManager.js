@@ -370,7 +370,12 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
 function navigateToCategory(categoryId) {
     const category = categories.find(cat => cat.id === categoryId);
     if (category) {
-        selectCategory(category); // Programmatic navigation from breadcrumb or other UI
+        // Use router to properly handle URL updates for categories with spaces
+        if (typeof router !== 'undefined' && router.navigateToCategory) {
+            router.navigateToCategory(category);
+        } else {
+            selectCategory(category); // Fallback if router not available
+        }
     }
 }
 

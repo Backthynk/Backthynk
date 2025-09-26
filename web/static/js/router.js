@@ -85,7 +85,8 @@ class Router {
         }
 
         // Must start with / and contain valid characters for category names
-        return /^\/[a-zA-Z0-9\s\/]+$/.test(path) && !path.includes('//');
+        // Allow URL-encoded characters (like %20 for spaces) and regular category name characters
+        return /^\/[a-zA-Z0-9\s\/%]+$/.test(path) && !path.includes('//');
     }
 
     // Handle category routing
@@ -99,9 +100,11 @@ class Router {
 
         const category = this.findCategoryByPath(path);
         if (category) {
+            console.log('Category found, showing page for:', category);
             // Navigate to category page and select the category
             await this.showCategoryPage(category);
         } else {
+            console.log('Category not found for path:', path, 'redirecting to home');
             // Category not found, redirect to home
             this.navigate('/', true);
         }
@@ -112,23 +115,34 @@ class Router {
         const pathParts = path.split('/').filter(part => part.length > 0);
         if (pathParts.length === 0) return null;
 
+        console.log('Finding category for path:', path);
+        console.log('Path parts:', pathParts);
+
         let currentCategory = null;
         let currentLevel = categories.filter(cat => !cat.parent_id);
 
-        for (const pathPart of pathParts) {
+        for (let i = 0; i < pathParts.length; i++) {
+            const pathPart = pathParts[i];
             const decodedPart = decodeURIComponent(pathPart);
+
+            console.log(`Level ${i}: Looking for "${decodedPart}" in:`, currentLevel.map(cat => cat.name));
+
             currentCategory = currentLevel.find(cat =>
                 cat.name.toLowerCase() === decodedPart.toLowerCase()
             );
 
             if (!currentCategory) {
+                console.log(`Category not found at level ${i}:`, decodedPart);
                 return null; // Category not found
             }
+
+            console.log(`Found category at level ${i}:`, currentCategory.name);
 
             // Get children for next level
             currentLevel = categories.filter(cat => cat.parent_id === currentCategory.id);
         }
 
+        console.log('Final category found:', currentCategory);
         return currentCategory;
     }
 

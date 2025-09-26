@@ -2,15 +2,23 @@
 // Replaces the old system that fetched all posts on every request
 
 let currentActivityCache = null;
+let isGeneratingActivity = false;
 // currentActivityPeriod is defined in state.js
 
 // Initialize activity tracking with cached data
 async function generateActivityHeatmap() {
+    // Prevent duplicate calls
+    if (isGeneratingActivity) {
+        return;
+    }
+
     // Check if activity system is enabled
     if (!activityEnabled || !currentCategory) {
         document.getElementById('activity-container').style.display = 'none';
         return;
     }
+
+    isGeneratingActivity = true;
 
     // Let CSS handle responsive visibility (hidden on mobile, visible on desktop)
     document.getElementById('activity-container').style.display = '';
@@ -51,6 +59,8 @@ async function generateActivityHeatmap() {
         };
         currentActivityCache = fallbackData;
         generateHeatmapFromCache(fallbackData);
+    } finally {
+        isGeneratingActivity = false;
     }
 }
 
