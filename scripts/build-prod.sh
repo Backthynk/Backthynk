@@ -181,7 +181,7 @@ done
 # Build optimized Go binary
 log_step "Building optimized Go binary..."
 log_substep "Cleaning Go build cache..."
-go clean -cache
+#go clean -cache
 log_substep "Building with CGO enabled for SQLite..."
 CGO_ENABLED=1 go build -o backthynk ./cmd/server/
 

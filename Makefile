@@ -62,7 +62,7 @@ clean:
 	@rm -rf web/static/js/compressed
 	@rm -rf web/static/css/compressed
 	@rm -rf web/templates/compressed
-	@go clean -cache
+# 	@go clean -cache
 	@echo -e "$(GREEN)✓$(NC) Clean complete"
 
 # Development script targets

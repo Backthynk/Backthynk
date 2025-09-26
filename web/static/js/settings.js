@@ -4,28 +4,16 @@ let originalSettings = {};
 
 function initializeSettings() {
     // Add event listeners
-    document.getElementById('settings-btn').addEventListener('click', showSettingsPage);
+    document.getElementById('settings-btn').addEventListener('click', showSettingsPageEvent);
     document.getElementById('settings-back-btn').addEventListener('click', hideSettingsPage);
     document.getElementById('cancel-settings-btn').addEventListener('click', cancelSettings);
     document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
     document.getElementById('reset-settings-btn').addEventListener('click', resetToDefaults);
 }
 
-async function showSettingsPage() {
-    // Use router to navigate to settings
-    if (window.router) {
-        window.router.navigate('/settings');
-    } else {
-        // Fallback if router not available
-        try {
-            await loadSettings();
-            document.querySelector('.container').style.display = 'none';
-            document.getElementById('settings-page').classList.remove('hidden');
-            populateSettingsForm();
-        } catch (error) {
-            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToLoadSettings, error.message));
-        }
-    }
+async function showSettingsPageEvent() {
+    window.router.navigate('/settings');
+    showSettingsPage()
 }
 
 function hideSettingsPage() {

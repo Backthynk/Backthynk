@@ -1,3 +1,4 @@
+
 // Simple client-side router for SPA functionality
 class Router {
     constructor() {
