@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 	"time"
 )
@@ -216,6 +217,11 @@ func (ac *ActivityCache) GetActivityPeriod(req ActivityPeriodRequest) (*Activity
 	ac.mutex.RLock()
 	defer ac.mutex.RUnlock()
 
+	// Handle ALL_CATEGORIES_ID by aggregating across all cached categories
+	if req.CategoryID == 0 { // ALL_CATEGORIES_ID
+		return ac.getGlobalActivityPeriod(req)
+	}
+
 	activity := ac.categories[req.CategoryID]
 	if activity == nil {
 		// For categories not in cache, still calculate proper period dates
@@ -322,6 +328,104 @@ func (ac *ActivityCache) calculateMaxPeriods(firstPostTime int64, periodMonths i
 
 	monthsDiff := (now.Year()-firstPost.Year())*12 + int(now.Month()-firstPost.Month())
 	return monthsDiff / periodMonths
+}
+
+// getGlobalActivityPeriod aggregates activity data across all cached categories
+func (ac *ActivityCache) getGlobalActivityPeriod(req ActivityPeriodRequest) (*ActivityPeriodResponse, error) {
+	// Calculate period dates
+	startDate, endDate := ac.calculatePeriodDates(req.Period, req.PeriodMonths)
+	if req.StartDate != "" {
+		startDate = req.StartDate
+	}
+	if req.EndDate != "" {
+		endDate = req.EndDate
+	}
+
+	// Parse period dates for filtering
+	periodStart, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid start date: %w", err)
+	}
+	periodEnd, err := time.Parse("2006-01-02", endDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid end date: %w", err)
+	}
+
+	// Aggregate activity across all categories
+	aggregatedActivity := make(map[string]int)
+	totalPosts := 0
+	activeDays := 0
+	maxDayActivity := 0
+	earliestTime := int64(0)
+
+	// Iterate through all cached categories
+	for _, activity := range ac.categories {
+		if activity == nil {
+			continue
+		}
+
+		activity.Mutex.RLock()
+
+		// Track earliest post time for max_periods calculation
+		if activity.Stats.FirstPostTime > 0 && (earliestTime == 0 || activity.Stats.FirstPostTime < earliestTime) {
+			earliestTime = activity.Stats.FirstPostTime
+		}
+
+		// Aggregate activity data for the period
+		activityData := activity.Days
+		if req.Recursive {
+			activityData = activity.Recursive
+		}
+
+		for dateStr, count := range activityData {
+			date, err := time.Parse("2006-01-02", dateStr)
+			if err != nil {
+				continue
+			}
+
+			// Only include dates within the period
+			if (date.Equal(periodStart) || date.After(periodStart)) &&
+				(date.Equal(periodEnd) || date.Before(periodEnd)) {
+				aggregatedActivity[dateStr] += count
+			}
+		}
+
+		activity.Mutex.RUnlock()
+	}
+
+	// Convert aggregated data to response format
+	var days []ActivityDay
+	for date, count := range aggregatedActivity {
+		if count > 0 {
+			days = append(days, ActivityDay{
+				Date:  date,
+				Count: count,
+			})
+			totalPosts += count
+			if count > maxDayActivity {
+				maxDayActivity = count
+			}
+		}
+	}
+
+	activeDays = len(days)
+
+	// Calculate max_periods from earliest post time
+	maxPeriods := ac.calculateMaxPeriods(earliestTime, req.PeriodMonths)
+
+	return &ActivityPeriodResponse{
+		CategoryID: 0, // ALL_CATEGORIES_ID
+		StartDate:  startDate,
+		EndDate:    endDate,
+		Period:     req.Period,
+		Days:       days,
+		Stats: PeriodStats{
+			TotalPosts:     totalPosts,
+			ActiveDays:     activeDays,
+			MaxDayActivity: maxDayActivity,
+		},
+		MaxPeriods: maxPeriods,
+	}, nil
 }
 
 // RefreshCategory rebuilds activity cache for a specific category

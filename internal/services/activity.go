@@ -255,100 +255,10 @@ func (s *ActivityService) GetActivityPeriod(req cache.ActivityPeriodRequest) (*c
 		req.PeriodMonths = config.DefaultActivityPeriodMonths
 	}
 
-	// Handle ALL_CATEGORIES_ID (category 0) by aggregating all categories
-	if req.CategoryID == config.ALL_CATEGORIES_ID {
-		return s.getGlobalActivityPeriod(req)
-	}
-
-	// Handle specific category using the cache
+	// Delegate to cache - it now handles both specific categories and ALL_CATEGORIES_ID
 	return s.cache.GetActivityPeriod(req)
 }
 
-// getGlobalActivityPeriod returns aggregated activity data across all categories for a specific time period
-func (s *ActivityService) getGlobalActivityPeriod(req cache.ActivityPeriodRequest) (*cache.ActivityPeriodResponse, error) {
-	// Get all categories to aggregate their activity
-	categories, err := s.db.GetCategories()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get categories: %w", err)
-	}
-
-	// Build a map to aggregate activity by day
-	aggregatedActivity := make(map[string]int)
-	totalPosts := 0
-	maxPeriods := 0 // Start with 0, we'll find the maximum
-
-	// Process each category
-	for _, category := range categories {
-		categoryReq := cache.ActivityPeriodRequest{
-			CategoryID:   category.ID,
-			Recursive:    false, // We'll process each category individually
-			Period:       req.Period,
-			PeriodMonths: req.PeriodMonths,
-			StartDate:    req.StartDate,
-			EndDate:      req.EndDate,
-		}
-
-		response, err := s.cache.GetActivityPeriod(categoryReq)
-		if err != nil {
-			// Log error but continue with other categories
-			log.Printf("Warning: failed to get activity for category %d: %v", category.ID, err)
-			continue
-		}
-
-		totalPosts += response.Stats.TotalPosts
-
-		// Track the maximum max_periods across all categories (All categories should show the full historical range)
-		if response.MaxPeriods > maxPeriods {
-			maxPeriods = response.MaxPeriods
-		}
-
-		// Aggregate the activity days
-		for _, day := range response.Days {
-			aggregatedActivity[day.Date] += day.Count
-		}
-	}
-
-	// Convert aggregated activity back to ActivityDay slice
-	var days []cache.ActivityDay
-	maxDayActivity := 0
-	for date, count := range aggregatedActivity {
-		if count > 0 { // Only include days with activity
-			days = append(days, cache.ActivityDay{
-				Date:  date,
-				Count: count,
-			})
-			if count > maxDayActivity {
-				maxDayActivity = count
-			}
-		}
-	}
-
-	// Calculate period dates using the same logic as individual categories
-	periodStartDate, periodEndDate := s.calculatePeriodDates(req.Period, req.PeriodMonths)
-	if req.StartDate != "" {
-		periodStartDate = req.StartDate
-	}
-	if req.EndDate != "" {
-		periodEndDate = req.EndDate
-	}
-
-	// Create stats
-	stats := cache.PeriodStats{
-		TotalPosts:     totalPosts,
-		ActiveDays:     len(days),
-		MaxDayActivity: maxDayActivity,
-	}
-
-	return &cache.ActivityPeriodResponse{
-		CategoryID: config.ALL_CATEGORIES_ID,
-		StartDate:  periodStartDate,
-		EndDate:    periodEndDate,
-		Period:     req.Period,
-		Days:       days,
-		Stats:      stats,
-		MaxPeriods: maxPeriods, // Use the minimum max_periods from all categories
-	}, nil
-}
 
 // RefreshCategoryCache rebuilds cache for a specific category (useful for data consistency)
 func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
@@ -373,24 +283,3 @@ func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 	return s.cache.RefreshCategory(categoryID, posts)
 }
 
-
-// calculatePeriodDates calculates start and end dates for a given period
-func (s *ActivityService) calculatePeriodDates(period, periodMonths int) (string, string) {
-	now := time.Now().UTC()
-
-	if period == 0 {
-		// Current period: last N months up to today
-		end := now
-		start := now.AddDate(0, -(periodMonths-1), 0)
-		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, time.UTC)
-		return start.Format("2006-01-02"), end.Format("2006-01-02")
-	}
-
-	// Historical periods
-	currentPeriodStart := now.AddDate(0, -(periodMonths-1), 0)
-	currentPeriodStart = time.Date(currentPeriodStart.Year(), currentPeriodStart.Month(), 1, 0, 0, 0, 0, time.UTC)
-	periodStart := currentPeriodStart.AddDate(0, periodMonths*period, 0)
-	periodEnd := periodStart.AddDate(0, periodMonths, -1)
-
-	return periodStart.Format("2006-01-02"), periodEnd.Format("2006-01-02")
-}
