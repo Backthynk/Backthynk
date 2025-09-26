@@ -24,10 +24,15 @@ func (db *DB) CreateCategory(name string, parentID *int, description string) (*m
 		return nil, fmt.Errorf("category name must be %d characters or less", config.MaxCategoryNameLength)
 	}
 
-	// Validate character restrictions: letters, numbers, and single spaces only
-	validNameRegex := regexp.MustCompile(`^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$`)
+	// Check if name is a reserved route
+	if config.IsReservedRoute(strings.ToLower(name)) {
+		return nil, fmt.Errorf("category name '%s' is reserved and cannot be used", name)
+	}
+
+	// Validate character restrictions: letters, numbers, single spaces, hyphens, and underscores
+	validNameRegex := regexp.MustCompile(`^[a-zA-Z0-9_-]+(?:\s[a-zA-Z0-9_-]+)*$`)
 	if !validNameRegex.MatchString(name) {
-		return nil, fmt.Errorf("category name can only contain letters, numbers, and single spaces")
+		return nil, fmt.Errorf("category name can only contain letters, numbers, hyphens, underscores, and single spaces")
 	}
 
 	// Check for duplicate names at the same level (case-insensitive)

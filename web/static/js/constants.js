@@ -1,5 +1,33 @@
 // Application Configuration Constants
 
+// Application Info
+const APP_NAME = 'Backthynk';
+const APP_TAGLINE = 'Personal Micro Blog';
+const APP_DESCRIPTION = 'Personal micro blog platform';
+
+// Reserved Routes (cannot be used as category names)
+const RESERVED_ROUTES = [
+    'api',
+    'static',
+    'uploads',
+    'settings'
+];
+
+// URL Configuration
+const URL_SETTINGS = {
+    spaceReplacement: '_', // Replace spaces with underscores in URLs
+    allowedChars: /^[a-zA-Z0-9\s_-]+$/ // Allowed characters in category names for URLs
+};
+
+// SEO Templates
+const SEO_TEMPLATES = {
+    pageTitle: '{categoryName} - {appName}',
+    defaultTitle: '{appName} - {tagline}',
+    settingsTitle: 'Settings - {appName}',
+    categoryDescription: 'Posts in {breadcrumb} category',
+    loadingTitle: 'Loading {categoryName}...'
+};
+
 // Special Category IDs
 const ALL_CATEGORIES_ID = 0; // Category ID 0 represents "all categories"
 
@@ -236,16 +264,39 @@ const MIN_RETROACTIVE_POST_TIMESTAMP = 946684800000; // 01/01/2000 00:00:00 UTC 
 
 // Export all constants
 window.AppConstants = {
+    // Application Info
+    APP_NAME,
+    APP_TAGLINE,
+    APP_DESCRIPTION,
+
+    // Routes
+    RESERVED_ROUTES,
+
+    // URL Settings
+    URL_SETTINGS,
+
+    // SEO Templates
+    SEO_TEMPLATES,
+
+    // Category Constants
     ALL_CATEGORIES_ID,
     MAX_CATEGORY_DEPTH,
+
+    // Settings and Configuration
     DEFAULT_SETTINGS,
     VALIDATION_LIMITS,
     ERROR_MESSAGES: USER_MESSAGES.validation, // Legacy compatibility
     USER_MESSAGES,
     UI_CONFIG,
+
+    // Activity System
     ACTIVITY_LEVELS,
     ACTIVITY_THRESHOLDS,
     ACTIVITY_CLASSES,
+
+    // UI Text
     UI_TEXT,
+
+    // Other
     MIN_RETROACTIVE_POST_TIMESTAMP
 };

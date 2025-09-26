@@ -3,7 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Backthynk - Personal Micro Blog</title>
+    <title>{{if .Title}}{{.Title}}{{else}}Backthynk - Personal Micro Blog{{end}}</title>
+    <meta name="description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{if .URL}}{{.URL}}{{else}}{{end}}">
+    <meta property="og:title" content="{{if .Title}}{{.Title}}{{else}}Backthynk - Personal Micro Blog{{end}}">
+    <meta property="og:description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:url" content="{{if .URL}}{{.URL}}{{else}}{{end}}">
+    <meta property="twitter:title" content="{{if .Title}}{{.Title}}{{else}}Backthynk - Personal Micro Blog{{end}}">
+    <meta property="twitter:description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
+
+    {{if .Category}}
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "{{.Category.Name}}",
+        "description": "{{if .Category.Description}}{{.Category.Description}}{{else}}Posts in {{.Breadcrumb}}{{end}}",
+        "url": "{{.URL}}",
+        "breadcrumb": {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": "/"
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": "{{.Category.Name}}",
+                    "item": "{{.URL}}"
+                }
+            ]
+        }
+    }
+    </script>
+    {{end}}
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
    <style>

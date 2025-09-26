@@ -63,19 +63,34 @@ async function fetchCategories(skipRender = false) {
         }
 
 
-        // Auto-select last category if exists, otherwise show all categories
-        const lastCategoryId = getLastCategory();
-        if (lastCategoryId) {
-            const lastCategory = categories.find(cat => cat.id == lastCategoryId);
-            if (lastCategory) {
-                selectCategory(lastCategory); // Programmatic selection of last selected category
-            } else {
-                // Last category no longer exists, show all categories
-                await deselectCategory();
+        // Check if we should handle URL routing or cached category logic
+        if (typeof router !== 'undefined') {
+            // If we're on a category path, let the router handle it
+            if (window.location.pathname !== '/' && router.isCategoryPath && router.isCategoryPath(window.location.pathname)) {
+                // This is a category URL, trigger router handling
+                router.handleRoute(window.location.pathname, false);
+            } else if (router.checkCachedCategoryRedirect) {
+                // On root path, check for cached category redirect
+                if (!router.checkCachedCategoryRedirect()) {
+                    // No redirect happened, show all categories
+                    await deselectCategory();
+                }
             }
         } else {
-            // No last category, show all categories
-            await deselectCategory();
+            // Fallback to original logic
+            const lastCategoryId = getLastCategory();
+            if (lastCategoryId) {
+                const lastCategory = categories.find(cat => cat.id == lastCategoryId);
+                if (lastCategory) {
+                    selectCategory(lastCategory); // Programmatic selection of last selected category
+                } else {
+                    // Last category no longer exists, show all categories
+                    await deselectCategory();
+                }
+            } else {
+                // No last category, show all categories
+                await deselectCategory();
+            }
         }
     } catch (error) {
         console.error('Failed to fetch categories:', error);

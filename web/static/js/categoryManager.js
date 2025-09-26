@@ -67,7 +67,23 @@ function createCategoryElement(category, level = 0) {
 
     categoryButton.addEventListener('click', (e) => {
         e.stopPropagation();
-        selectCategory(category, true); // fromUserClick = true
+
+        // Check if clicking on already selected category (deselection)
+        if (currentCategory && currentCategory.id === category.id) {
+            // Deselect by navigating to root
+            if (typeof router !== 'undefined' && router.navigate) {
+                router.navigate('/');
+            } else {
+                selectCategory(category, true); // fallback to original logic
+            }
+        } else {
+            // Navigate using router to update URL
+            if (typeof router !== 'undefined' && router.navigateToCategory) {
+                router.navigateToCategory(category);
+            } else {
+                selectCategory(category, true); // fallback
+            }
+        }
     });
 
     // Add subcategories only if expanded

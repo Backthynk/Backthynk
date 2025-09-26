@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -57,6 +59,7 @@ func main() {
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
 	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, activityService, fileStatsService)
+	templateHandler := handlers.NewTemplateHandler(db)
 
 	// Activity handler (only if activity is enabled)
 	var activityHandler *handlers.ActivityHandler
@@ -109,15 +112,51 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir("web/static/"))))
 
 	// Serve main page - lowest priority
-	r.HandleFunc("/", serveIndex).Methods("GET")
-	r.HandleFunc("/{path:.*}", serveIndex).Methods("GET") // SPA fallback
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		serveIndex(w, r, templateHandler)
+	}).Methods("GET")
+	r.HandleFunc("/{path:.*}", func(w http.ResponseWriter, r *http.Request) {
+		serveIndex(w, r, templateHandler)
+	}).Methods("GET") // SPA fallback
 
 	log.Println("Server starting on :" + config.DefaultServerPort)
 	log.Fatal(http.ListenAndServe(":" + config.DefaultServerPort, r))
 }
 
-func serveIndex(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "web/templates/index.html")
+func serveIndex(w http.ResponseWriter, r *http.Request, templateHandler *handlers.TemplateHandler) {
+	// Check if this is a category path for SEO
+	path := r.URL.Path
+	if path != "/" && path != "/settings" && isCategoryPath(path) {
+		// This might be a category path, serve with SEO data
+		serveCategoryPage(w, r, path, templateHandler)
+		return
+	}
+
+	// Serve regular index with default template data
+	templateHandler.ServeCategoryPage(w, r, path)
+}
+
+// Check if path could be a category path
+func isCategoryPath(path string) bool {
+	if path == "/" {
+		return false
+	}
+
+	// Check against reserved routes
+	pathParts := strings.Split(strings.Trim(path, "/"), "/")
+	if len(pathParts) > 0 && config.IsReservedRoute(pathParts[0]) {
+		return false
+	}
+
+	// Simple validation: starts with /, contains only valid category characters (including underscores)
+	return len(path) > 1 && !strings.Contains(path, "//") &&
+		   regexp.MustCompile(`^/[a-zA-Z0-9\s_/-]+$`).MatchString(path)
+}
+
+// Serve category page with SEO data
+func serveCategoryPage(w http.ResponseWriter, r *http.Request, path string, templateHandler *handlers.TemplateHandler) {
+	// Use template handler for proper SEO
+	templateHandler.ServeCategoryPage(w, r, path)
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
