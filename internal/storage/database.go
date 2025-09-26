@@ -20,7 +20,7 @@ func NewDB(storagePath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
-	dbPath := filepath.Join(storagePath, config.DatabaseFilename)
+	dbPath := filepath.Join(storagePath, config.DatabaseFilename())
 	db, err := sql.Open("sqlite3", dbPath+config.SQLiteConnectionOptions)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

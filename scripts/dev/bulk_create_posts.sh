@@ -11,6 +11,13 @@ CATEGORY_ID=$1
 COUNT=$2
 MONTHS=$3
 
+# Load common utilities
+source "$(dirname "$0")/../common.sh"
+
+# Check dependencies and load configuration
+check_dependencies jq
+load_config
+
 # Work directly with milliseconds for better precision
 NOW_MS=$(date +%s%3N)
 PAST_MS=$((NOW_MS - (MONTHS * 30 * 24 * 60 * 60 * 1000)))
@@ -32,7 +39,7 @@ for i in $(seq 1 $COUNT); do
     HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
         -H "Content-Type: application/json" \
         -d "{\"category_id\":$CATEGORY_ID,\"content\":\"$CONTENT\",\"custom_timestamp\":$POST_TIME_MS}" \
-        http://localhost:8080/api/posts)
+        http://localhost:$SERVER_PORT/api/posts)
 
     if [ "$HTTP_CODE" = "201" ]; then
         SUCCESS=$((SUCCESS + 1))

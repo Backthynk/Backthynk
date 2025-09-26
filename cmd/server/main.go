@@ -16,15 +16,20 @@ import (
 )
 
 func main() {
+	// Load service configuration
+	if err := config.LoadServiceConfig(); err != nil {
+		log.Fatal("Failed to load service.json:", err)
+	}
+
 	// Load configuration
-	settingsHandler := handlers.NewSettingsHandler(config.ConfigFilename)
+	settingsHandler := handlers.NewSettingsHandler(config.ConfigFilename())
 	options, err := settingsHandler.LoadOptions()
 	if err != nil {
 		log.Fatal("Failed to load options:", err)
 	}
 
 	// Initialize database
-	db, err := storage.NewDB(options.StoragePath)
+	db, err := storage.NewDB(config.StoragePath())
 	if err != nil {
 		log.Fatal("Failed to initialize database:", err)
 	}
@@ -57,7 +62,7 @@ func main() {
 	// Initialize handlers
 	categoryHandler := handlers.NewCategoryHandler(db, activityService, fileStatsService)
 	postHandler := handlers.NewPostHandler(db, settingsHandler, activityService, fileStatsService)
-	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(options.StoragePath, config.UploadsSubdir), settingsHandler, fileStatsService)
+	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(config.StoragePath(), config.UploadsSubdir()), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
 	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, activityService, fileStatsService)
 	templateHandler := handlers.NewTemplateHandler(db)
@@ -120,8 +125,8 @@ func main() {
 		serveIndex(w, r, templateHandler)
 	}).Methods("GET") // SPA fallback
 
-	log.Println("Server starting on :" + config.DefaultServerPort)
-	log.Fatal(http.ListenAndServe(":" + config.DefaultServerPort, r))
+	log.Println("Server starting on :" + config.ServerPort())
+	log.Fatal(http.ListenAndServe(":" + config.ServerPort(), r))
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request, templateHandler *handlers.TemplateHandler) {

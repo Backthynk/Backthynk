@@ -10,13 +10,19 @@
 #   ./scripts/dev/list_categories.sh
 #
 # REQUIREMENTS:
-#   - Server must be running on localhost:8080 (or set BACKTHYNK_URL environment variable)
+#   - Server must be running (port configured in service.json or set BACKTHYNK_URL environment variable)
 #   - curl and jq must be installed
 
 set -e
 
-# Configuration
-BACKTHYNK_URL=${BACKTHYNK_URL:-"http://localhost:8080"}
+# Load common utilities
+source "$(dirname "$0")/../common.sh"
+
+# Check dependencies and load configuration
+check_dependencies curl jq
+load_config
+
+BACKTHYNK_URL=${BACKTHYNK_URL:-"http://localhost:$SERVER_PORT"}
 API_BASE="$BACKTHYNK_URL/api"
 
 # Colors for output
@@ -25,17 +31,6 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# Check dependencies
-if ! command -v curl &> /dev/null; then
-    echo -e "${RED}Error: curl is required but not installed${NC}"
-    exit 1
-fi
-
-if ! command -v jq &> /dev/null; then
-    echo -e "${RED}Error: jq is required but not installed${NC}"
-    exit 1
-fi
 
 echo -e "${BLUE}Backthynk Categories${NC}"
 echo "===================="

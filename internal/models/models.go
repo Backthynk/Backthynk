@@ -43,11 +43,10 @@ type PostWithAttachments struct {
 }
 
 type Options struct {
-	MaxFileSizeMB            int    `json:"maxFileSizeMB"`
-	MaxContentLength         int    `json:"maxContentLength"`
-	MaxFilesPerPost          int    `json:"maxFilesPerPost"`
-	StoragePath              string `json:"storagePath"`
-	ActivityEnabled          bool   `json:"activityEnabled"`
-	FileStatsEnabled         bool   `json:"fileStatsEnabled"`
-	RetroactivePostingEnabled bool   `json:"retroactivePostingEnabled"`
+	MaxFileSizeMB            int  `json:"maxFileSizeMB"`
+	MaxContentLength         int  `json:"maxContentLength"`
+	MaxFilesPerPost          int  `json:"maxFilesPerPost"`
+	ActivityEnabled          bool `json:"activityEnabled"`
+	FileStatsEnabled         bool `json:"fileStatsEnabled"`
+	RetroactivePostingEnabled bool `json:"retroactivePostingEnabled"`
 }

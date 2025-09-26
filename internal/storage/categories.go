@@ -515,7 +515,7 @@ func (db *DB) getDescendantCategories(parentID int) ([]int, error) {
 func (db *DB) deletePhysicalFile(filePath string) error {
 	// The filePath is relative to the uploads directory
 	// We need to construct the full path
-	uploadsDir := filepath.Join(db.storagePath, config.UploadsSubdir)
+	uploadsDir := filepath.Join(db.storagePath, config.UploadsSubdir())
 	fullPath := filepath.Join(uploadsDir, filePath)
 
 	// Check if file exists

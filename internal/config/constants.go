@@ -2,11 +2,6 @@ package config
 
 // Application Configuration Constants
 const (
-	// Server Configuration
-	DefaultServerPort = "8080"
-	ConfigFilename    = "options.json"
-	DatabaseFilename  = "app.db"
-	UploadsSubdir     = "uploads"
 
 	// File Permissions
 	DirectoryPermissions = 0755
@@ -16,7 +11,6 @@ const (
 	DefaultMaxFileSizeMB            = 100
 	DefaultMaxContentLength         = 15000
 	DefaultMaxFilesPerPost          = 20
-	DefaultStoragePath              = ".storage"
 	DefaultActivityEnabled          = true
 	DefaultFileStatsEnabled         = true
 	DefaultRetroactivePostingEnabled = false
@@ -62,3 +56,24 @@ const (
 	ErrContentLengthValidation = "maxContentLength must be between 100 and 50000"
 	ErrFilesPerPostValidation  = "maxFilesPerPost must be between 1 and 50"
 )
+
+// Configuration getters that use service.json values
+func ServerPort() string {
+	return GetServiceConfig().Server.Port
+}
+
+func ConfigFilename() string {
+	return GetServiceConfig().Files.ConfigFilename
+}
+
+func DatabaseFilename() string {
+	return GetServiceConfig().Files.DatabaseFilename
+}
+
+func UploadsSubdir() string {
+	return GetServiceConfig().Files.UploadsSubdir
+}
+
+func StoragePath() string {
+	return GetServiceConfig().Files.StoragePath
+}

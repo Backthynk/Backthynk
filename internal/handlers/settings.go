@@ -38,16 +38,6 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Load current options to preserve storage path
-	currentOptions, err := h.LoadOptions()
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to load current settings: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Preserve storage path from current options (not updatable via API)
-	newOptions.StoragePath = currentOptions.StoragePath
-
 	// Validate options
 	if err := h.validateOptions(newOptions); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -75,7 +65,6 @@ func (h *SettingsHandler) LoadOptions() (models.Options, error) {
 				MaxFileSizeMB:            config.DefaultMaxFileSizeMB,
 				MaxContentLength:         config.DefaultMaxContentLength,
 				MaxFilesPerPost:          config.DefaultMaxFilesPerPost,
-				StoragePath:              config.DefaultStoragePath,
 				ActivityEnabled:          config.DefaultActivityEnabled,
 				FileStatsEnabled:         config.DefaultFileStatsEnabled,
 				RetroactivePostingEnabled: config.DefaultRetroactivePostingEnabled,

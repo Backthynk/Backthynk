@@ -5,41 +5,12 @@
 
 set -e  # Exit on error
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-GRAY='\033[0;90m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+# Load common utilities
+source "$(dirname "$0")/common.sh"
 
-# Helper functions for colored output
-log_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-log_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
-log_step() {
-    echo -e "${PURPLE}▶${NC} $1"
-}
-
-log_substep() {
-    echo -e "  ${GRAY}•${NC} $1"
-}
+# Check dependencies and load configuration
+check_dependencies curl go sed awk tr find mkdir numfmt du cat
+load_config
 
 echo -e "${BOLD}${CYAN}Building production-optimized Backthynk server...${NC}"
 
