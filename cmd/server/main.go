@@ -126,7 +126,8 @@ func main() {
 func serveIndex(w http.ResponseWriter, r *http.Request, templateHandler *handlers.TemplateHandler) {
 	// Check if this is a category path for SEO
 	path := r.URL.Path
-	if path != "/" && path != "/settings" && isCategoryPath(path) {
+
+	if path != "/" && isCategoryPath(path) {
 		// This might be a category path, serve with SEO data
 		serveCategoryPage(w, r, path, templateHandler)
 		return

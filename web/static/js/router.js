@@ -73,9 +73,15 @@ class Router {
 
     // Check if path is a category path
     isCategoryPath(path) {
+        if (path === '/')
+            return false
         // Category paths start with / and contain only valid category name characters
         // They shouldn't match existing static routes
-        if (path === '/' || path === '/settings') return false;
+        for (const r in window.AppConstants.RESERVED_ROUTES){
+            if (path === ('/'+r)){
+                return false
+            }
+        }
 
         // Must start with / and contain valid characters for category names
         return /^\/[a-zA-Z0-9\s\/]+$/.test(path) && !path.includes('//');
@@ -195,11 +201,11 @@ async function showHomePage() {
     // Show main container, hide settings page
     const mainContainer = document.querySelector('.container');
     const settingsPage = document.getElementById('settings-page');
-
+    
     if (mainContainer) mainContainer.style.display = 'block';
     if (settingsPage) settingsPage.classList.add('hidden');
 
-    document.title = 'Backthynk - Personal Micro Blog';
+    document.title = `${window.AppConstants.APP_NAME} - ${window.AppConstants.APP_TAGLINE}`
 
     // If there's a current category, deselect it to show all posts
     if (typeof currentCategory !== 'undefined' && currentCategory && currentCategory.id !== window.AppConstants?.ALL_CATEGORIES_ID) {
@@ -217,7 +223,7 @@ async function showSettingsPage() {
     if (mainContainer) mainContainer.style.display = 'none';
     if (settingsPage) settingsPage.classList.remove('hidden');
 
-    document.title = 'Settings - Backthynk';
+    document.title = `${window.AppConstants.APP_NAME} - Settings`;
 
     // Load and populate settings
     try {
