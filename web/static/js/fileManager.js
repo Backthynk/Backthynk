@@ -1,6 +1,6 @@
 // File Management
 async function addFileToSelection(file) {
-    const settings = await loadAppSettings();
+    const settings = window.currentSettings || await loadAppSettings();
 
     if (selectedFiles.size >= settings.maxFilesPerPost) {
         showError(formatMessage(window.AppConstants.USER_MESSAGES.error.maxFilesExceeded, settings.maxFilesPerPost));

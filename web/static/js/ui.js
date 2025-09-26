@@ -13,10 +13,10 @@ async function showCreatePost() {
 
     // Check if retroactive posting is enabled
     try {
-        const settings = window.currentSettings || await loadAppSettings();
+        const settings = window.currentSettings;
         const retroactiveDateContainer = document.getElementById('retroactive-date-container');
 
-        if (settings.retroactivePostingEnabled) {
+        if (settings && settings.retroactivePostingEnabled) {
             retroactiveDateContainer.style.display = 'block';
             // Set default value to current time
             const now = new Date();

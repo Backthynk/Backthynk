@@ -36,7 +36,7 @@ function loadExpandedCategories() {
 // Activity system management
 async function checkActivityEnabled() {
     try {
-        const settings = await loadAppSettings();
+        const settings = window.currentSettings || await loadAppSettings();
         activityEnabled = settings.activityEnabled !== undefined ? settings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     } catch (error) {
         console.warn('Failed to check activity status, using default:', error);
@@ -50,7 +50,7 @@ async function checkActivityEnabled() {
 // File statistics system management
 async function checkFileStatsEnabled() {
     try {
-        const settings = await loadAppSettings();
+        const settings = window.currentSettings || await loadAppSettings();
         fileStatsEnabled = settings.fileStatsEnabled !== undefined ? settings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     } catch (error) {
         console.warn('Failed to check file stats status, using default:', error);

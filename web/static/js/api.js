@@ -1,21 +1,46 @@
 // API functions
 let appSettings = null;
+let settingsPromise = null;
 
 // Load application settings
 async function loadAppSettings(forceRefresh = false) {
     if (appSettings && !forceRefresh) return appSettings;
 
+    // If a request is already in progress, wait for it
+    if (settingsPromise && !forceRefresh) {
+        return await settingsPromise;
+    }
+
+    // Create new promise for settings loading
+    settingsPromise = loadSettingsInternal();
+
+    try {
+        appSettings = await settingsPromise;
+        return appSettings;
+    } finally {
+        settingsPromise = null;
+    }
+}
+
+async function loadSettingsInternal() {
     try {
         const response = await fetch('/api/settings');
         if (response.ok) {
-            appSettings = await response.json();
+            return await response.json();
         } else {
             // Use defaults if settings can't be loaded
-            appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
+            return { ...window.AppConstants.DEFAULT_SETTINGS };
         }
     } catch (error) {
         console.error('Failed to load settings, using defaults:', error);
-        appSettings = { ...window.AppConstants.DEFAULT_SETTINGS };
+        return { ...window.AppConstants.DEFAULT_SETTINGS };
+    }
+}
+
+// Initialize settings early and cache them
+async function initializeAppSettings() {
+    if (!appSettings) {
+        appSettings = await loadAppSettings();
     }
     return appSettings;
 }
@@ -23,6 +48,7 @@ async function loadAppSettings(forceRefresh = false) {
 // Clear settings cache (used when settings are updated)
 function clearSettingsCache() {
     appSettings = null;
+    settingsPromise = null;
 }
 async function apiRequest(endpoint, options = {}) {
     const response = await fetch(`/api${endpoint}`, {

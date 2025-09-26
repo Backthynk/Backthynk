@@ -115,9 +115,10 @@ async function selectCategory(category, fromUserClick = false) {
         return;
     }
 
-    // FIRST: Immediately clear the posts container to prevent old posts from showing
-    // Also force clear any ongoing loading state
+    // Immediately stop any ongoing posts loading and clear display
     isLoadingPosts = false;
+
+    // Clear posts container immediately
     const postsContainer = document.getElementById('posts-container');
     if (postsContainer) {
         postsContainer.innerHTML = `
@@ -128,36 +129,35 @@ async function selectCategory(category, fromUserClick = false) {
         `;
     }
 
+    // Update category state
     currentCategory = category;
-    // Load saved recursive mode state for this category
     currentCategory.recursiveMode = loadRecursiveToggleState(category.id);
 
     saveLastCategory(category.id);
 
-    // Ensure all parent categories are expanded to make this category visible
-    expandCategoryPath(category.id);
-
-    renderCategories();
-
-    // Scroll to the selected category after rendering
-    scrollToCategoryElement(category.id);
-
-    loadPosts(category.id, currentCategory.recursiveMode);
-
-    // Reset activity period when switching categories
-    currentActivityPeriod = 0;
-
-    // Reset scroll position to top
-    window.scrollTo(0, 0);
-
-    const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
-    updateCategoryStatsDisplay(stats);
+    // Update UI
     document.getElementById('new-post-btn').style.display = 'block';
     document.getElementById('settings-btn').style.display = 'none';
     document.getElementById('category-actions-dropdown').style.display = 'block';
 
+    // Ensure all parent categories are expanded
+    expandCategoryPath(category.id);
+    renderCategories();
+    scrollToCategoryElement(category.id);
+
+    // Load posts
+    loadPosts(category.id, currentCategory.recursiveMode);
+
+    // Reset activity period
+    currentActivityPeriod = 0;
+    window.scrollTo(0, 0);
+
+    // Load stats and activity
+    const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
+    updateCategoryStatsDisplay(stats);
     generateActivityHeatmap();
 }
+
 
 // Helper function to expand all parent categories of a given category
 function expandCategoryPath(categoryId) {
@@ -221,18 +221,10 @@ function scrollToCategoryElement(categoryId) {
 }
 
 async function deselectCategory() {
-    // Create a special "category" object with ALL_CATEGORIES_ID to represent "all categories"
-    currentCategory = {
-        id: window.AppConstants.ALL_CATEGORIES_ID,
-        name: "All categories",
-        recursiveMode: false
-    };
-
-    localStorage.removeItem('lastSelectedCategory');
-    renderCategories();
-
-    // Immediately clear the posts container and loading state
+    // Stop any ongoing loading
     isLoadingPosts = false;
+
+    // Clear posts container immediately
     const postsContainer = document.getElementById('posts-container');
     if (postsContainer) {
         postsContainer.innerHTML = `
@@ -243,20 +235,30 @@ async function deselectCategory() {
         `;
     }
 
-    // Load posts for category ID 0 (all posts)
-    loadPosts(0, false);
+    // Create "all categories" state
+    currentCategory = {
+        id: window.AppConstants.ALL_CATEGORIES_ID,
+        name: "All categories",
+        recursiveMode: false
+    };
 
-    // Reset activity period when switching to all categories
-    currentActivityPeriod = 0;
+    localStorage.removeItem('lastSelectedCategory');
+    renderCategories();
 
-    // Reset scroll position to top
-    window.scrollTo(0, 0);
-
-    // Update UI to show "All categories"
-    await updateAllCategoriesDisplay();
+    // Update UI
     document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
+    document.getElementById('category-actions-dropdown').style.display = 'none';
 
+    // Load all posts
+    loadPosts(0, false);
+
+    // Reset activity and scroll
+    currentActivityPeriod = 0;
+    window.scrollTo(0, 0);
+
+    // Update display and generate activity
+    await updateAllCategoriesDisplay();
     generateActivityHeatmap();
 }
 

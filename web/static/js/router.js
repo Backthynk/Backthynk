@@ -151,13 +151,14 @@ class Router {
 
     // Show category page
     async showCategoryPage(category) {
-        // Ensure we're on the home page
-        showHomePage();
+        // Ensure we're on the home page layout
+        const mainContainer = document.querySelector('.container');
+        const settingsPage = document.getElementById('settings-page');
 
-        // Wait a bit to ensure the page is loaded
-        await new Promise(resolve => setTimeout(resolve, 50));
+        if (mainContainer) mainContainer.style.display = 'block';
+        if (settingsPage) settingsPage.classList.add('hidden');
 
-        // Select the category (this will load posts and update UI)
+        // Directly select the category without any intermediate steps
         if (typeof selectCategory === 'function') {
             await selectCategory(category, false); // fromUserClick = false (programmatic)
         }
@@ -202,7 +203,7 @@ async function showHomePage() {
     // Show main container, hide settings page
     const mainContainer = document.querySelector('.container');
     const settingsPage = document.getElementById('settings-page');
-    
+
     if (mainContainer) mainContainer.style.display = 'block';
     if (settingsPage) settingsPage.classList.add('hidden');
 

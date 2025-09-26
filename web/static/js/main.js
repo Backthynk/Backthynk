@@ -5,10 +5,12 @@ async function initializeCharacterCounter() {
 
     if (!textarea || !counter) return;
 
-    const settings = await loadAppSettings(); // Use cached settings on initialization
+    const settings = window.currentSettings; // Use globally cached settings
 
     function updateCounter() {
-        const currentSettings = window.currentSettings || settings;
+        const currentSettings = window.currentSettings;
+        if (!currentSettings) return;
+
         const currentLength = textarea.value.length;
         counter.textContent = `${currentLength} / ${currentSettings.maxContentLength}`;
 
@@ -30,9 +32,6 @@ async function initializeCharacterCounter() {
 
     // Update counter on input
     textarea.addEventListener('input', updateCounter);
-
-    // Store settings for later use
-    window.currentSettings = settings;
 }
 
 // Refresh character counter with new settings
@@ -66,12 +65,17 @@ async function updateFileUploadText() {
     const fileUploadText = document.getElementById('file-upload-text');
     if (!fileUploadText) return;
 
-    const settings = window.currentSettings || await loadAppSettings();
+    const settings = window.currentSettings;
+    if (!settings) return;
+
     fileUploadText.textContent = `Or drag and drop files here (max ${settings.maxFilesPerPost} files)`;
 }
 
-// Main initialization and event listeners
-document.addEventListener('DOMContentLoaded', function() {
+// Centralized app initialization
+async function initializeApp() {
+    // Load and cache settings first - single API call
+    window.currentSettings = await initializeAppSettings();
+
     // Set description max length attributes and counters from constants
     const maxDescLength = window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength;
 
@@ -82,19 +86,30 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update counter display
     document.getElementById('description-max-length').textContent = maxDescLength;
     document.getElementById('edit-description-max-length').textContent = maxDescLength;
+
     // Load saved state
     loadExpandedCategories();
 
-    // Check activity system status
+    // Check activity system status (now uses cached settings)
     checkActivityEnabled();
 
-    // Check file statistics system status
+    // Check file statistics system status (now uses cached settings)
     checkFileStatsEnabled();
 
     // Load initial data
     fetchCategories();
 
     initializeStickyHeader();
+
+    // Initialize components that need settings
+    initializeCharacterCounter();
+    updateFileUploadText();
+}
+
+// Main initialization and event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize app asynchronously
+    initializeApp();
     
     // Category modal events
     document.getElementById('add-category-btn').onclick = showCategoryModal;
@@ -342,8 +357,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Check content length against settings (use current settings if available)
-        const settings = window.currentSettings || await loadAppSettings();
-        if (content.length > settings.maxContentLength) {
+        const settings = window.currentSettings;
+        if (settings && content.length > settings.maxContentLength) {
             showError(`Content exceeds maximum length of ${settings.maxContentLength} characters`);
             return;
         }
@@ -496,12 +511,6 @@ document.addEventListener('DOMContentLoaded', function() {
             closeImageViewer();
         }
     };
-
-    // Initialize character counter
-    initializeCharacterCounter();
-
-    // Initialize file upload text
-    updateFileUploadText();
 
     // Initialize link preview system when creating post
     const showCreatePostOriginal = window.showCreatePost;
