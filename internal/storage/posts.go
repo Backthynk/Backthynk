@@ -66,7 +66,7 @@ func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit,
 
 	if recursive {
 		// Get all descendant category IDs including the current one
-		descendants, err := db.getDescendantCategories(categoryID)
+		descendants, err := db.GetDescendantCategories(categoryID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get descendant categories: %w", err)
 		}
@@ -123,9 +123,6 @@ func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit,
 	return posts, nil
 }
 
-func (db *DB) GetPostCountByCategory(categoryID int) (int, error) {
-	return db.GetPostCountByCategoryRecursive(categoryID, false)
-}
 
 func (db *DB) GetPostCountByCategoryRecursive(categoryID int, recursive bool) (int, error) {
 	var count int
@@ -134,7 +131,7 @@ func (db *DB) GetPostCountByCategoryRecursive(categoryID int, recursive bool) (i
 
 	if recursive {
 		// Get all descendant category IDs including the current one
-		descendants, err := db.getDescendantCategories(categoryID)
+		descendants, err := db.GetDescendantCategories(categoryID)
 		if err != nil {
 			return 0, fmt.Errorf("failed to get descendant categories: %w", err)
 		}

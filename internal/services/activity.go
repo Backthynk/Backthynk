@@ -14,7 +14,9 @@ import (
 type ActivityService struct {
 	db              *storage.DB
 	cache           *cache.ActivityCache
+	coordinator     *cache.CacheCoordinator
 	categoryService *CategoryService
+	cacheEnabled    bool
 }
 
 // NewActivityService creates a new activity service
@@ -22,7 +24,9 @@ func NewActivityService(db *storage.DB, categoryService *CategoryService) *Activ
 	return &ActivityService{
 		db:              db,
 		cache:           cache.GetActivityCache(),
+		coordinator:     cache.GetCacheCoordinator(),
 		categoryService: categoryService,
+		cacheEnabled:    true, // Default enabled
 	}
 }
 
@@ -47,6 +51,9 @@ func (s *ActivityService) InitializeCache() error {
 			parentMap[cat.ID] = *cat.ParentID
 		}
 	}
+
+	// Set hierarchy in cache for proper parent updates
+	s.cache.SetHierarchy(hierarchy, parentMap)
 
 	// Get all posts for activity calculation
 	allPosts, err := s.getAllPostsForCache()
@@ -282,5 +289,31 @@ func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 	}
 
 	return s.cache.RefreshCategory(categoryID, posts)
+}
+
+// RefreshCache manually refreshes the entire activity cache from database
+func (s *ActivityService) RefreshCache() error {
+	if !s.cacheEnabled {
+		return fmt.Errorf("activity cache is not enabled")
+	}
+	return s.InitializeCache()
+}
+
+// GetCacheStats returns cache statistics
+func (s *ActivityService) GetCacheStats() map[string]interface{} {
+	if !s.cacheEnabled {
+		return map[string]interface{}{
+			"cache_enabled": false,
+		}
+	}
+
+	stats := s.cache.GetCacheStats()
+	stats["cache_enabled"] = true
+	return stats
+}
+
+// SetCacheEnabled enables or disables the activity cache
+func (s *ActivityService) SetCacheEnabled(enabled bool) {
+	s.cacheEnabled = enabled
 }
 

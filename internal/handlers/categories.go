@@ -16,14 +16,16 @@ type CategoryHandler struct {
 	categoryService  *services.CategoryService
 	activityService  *services.ActivityService
 	fileStatsService *services.FileStatsService
+	postCountService *services.PostCountService
 }
 
-func NewCategoryHandler(db *storage.DB, categoryService *services.CategoryService, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryHandler {
+func NewCategoryHandler(db *storage.DB, categoryService *services.CategoryService, activityService *services.ActivityService, fileStatsService *services.FileStatsService, postCountService *services.PostCountService) *CategoryHandler {
 	return &CategoryHandler{
 		db:               db,
 		categoryService:  categoryService,
 		activityService:  activityService,
 		fileStatsService: fileStatsService,
+		postCountService: postCountService,
 	}
 }
 
@@ -161,11 +163,11 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 		parentChanged = true
 	}
 
-	// Only invalidate caches if parent actually changed
+	// Handle cache updates
 	if parentChanged {
-		fmt.Printf("Category %d parent changed from %v to %v - invalidating caches\n", id, oldCategory.ParentID, req.ParentID)
+		fmt.Printf("Category %d parent changed from %v to %v - invalidating hierarchy-dependent caches\n", id, oldCategory.ParentID, req.ParentID)
 
-		// Reinitialize all caches because hierarchy changed
+		// Services without incremental updates need full reinitialize
 		if h.activityService != nil {
 			if err := h.activityService.InitializeCache(); err != nil {
 				fmt.Printf("Warning: failed to reinitialize activity cache: %v\n", err)
@@ -177,10 +179,17 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 				fmt.Printf("Warning: failed to reinitialize file stats cache: %v\n", err)
 			}
 		}
-	} else {
-		// Only name or description changed - no cache invalidation needed
-		fmt.Printf("Category %d name/description updated (parent unchanged) - no cache invalidation needed\n", id)
+
+		// PostCountService needs reinitialize because recursive counts depend on hierarchy
+		if h.postCountService != nil {
+			if err := h.postCountService.InitializeCache(); err != nil {
+				fmt.Printf("Warning: failed to reinitialize post count cache: %v\n", err)
+			}
+		}
 	}
+
+	// Always update category cache incrementally (handles both name/parent changes)
+	h.categoryService.UpdateCategoryCache(category)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(category)
@@ -198,6 +207,27 @@ func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
+	}
+
+	// Category deletion affects hierarchy - invalidate all hierarchy-dependent caches
+	fmt.Printf("Category %d deleted - invalidating hierarchy-dependent caches\n", id)
+
+	if h.activityService != nil {
+		if err := h.activityService.InitializeCache(); err != nil {
+			fmt.Printf("Warning: failed to reinitialize activity cache: %v\n", err)
+		}
+	}
+
+	if h.fileStatsService != nil {
+		if err := h.fileStatsService.InitializeCache(); err != nil {
+			fmt.Printf("Warning: failed to reinitialize file stats cache: %v\n", err)
+		}
+	}
+
+	if h.postCountService != nil {
+		if err := h.postCountService.InitializeCache(); err != nil {
+			fmt.Printf("Warning: failed to reinitialize post count cache: %v\n", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

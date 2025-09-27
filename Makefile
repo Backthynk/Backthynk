@@ -1,4 +1,4 @@
-.PHONY: help build build-prod run serve-dev serve-prod clean dev-generate-posts dev-list-categories dev-check
+.PHONY: help build build-prod run serve-dev serve-prod clean test test-verbose test-coverage dev-generate-posts dev-list-categories dev-check
 
 # Color codes
 RED := \033[0;31m
@@ -23,6 +23,11 @@ help:
 	@echo -e "    $(GREEN)serve-dev$(NC)                Run the server in development mode"
 	@echo -e "    $(GREEN)serve-prod$(NC)               Run the server in production mode"
 	@echo -e "    $(GREEN)clean$(NC)                    Clean build artifacts"
+	@echo ""
+	@echo -e "  $(YELLOW)Testing:$(NC)"
+	@echo -e "    $(GREEN)test$(NC)                     Run all tests"
+	@echo -e "    $(GREEN)test-verbose$(NC)             Run all tests with verbose output"
+	@echo -e "    $(GREEN)test-coverage$(NC)            Run tests with coverage report"
 	@echo ""
 	@echo -e "  $(YELLOW)Development Scripts:$(NC)"
 	@echo -e "    $(GREEN)dev-generate-posts$(NC)       Generate random posts for testing"
@@ -64,6 +69,25 @@ clean:
 	@rm -rf web/templates/compressed
 # 	@go clean -cache
 	@echo -e "$(GREEN)✓$(NC) Clean complete"
+
+# Test targets
+test:
+	@echo -e "$(BLUE)▶$(NC) Running all tests..."
+	@go test ./internal/cache ./internal/services
+	@echo -e "$(GREEN)✓$(NC) All tests passed"
+
+test-verbose:
+	@echo -e "$(BLUE)▶$(NC) Running all tests with verbose output..."
+	@go test -v ./internal/cache ./internal/services
+
+test-coverage:
+	@echo -e "$(BLUE)▶$(NC) Running tests with coverage..."
+	@go test -cover ./internal/cache ./internal/services
+	@echo ""
+	@echo -e "$(BLUE)▶$(NC) Generating detailed coverage report..."
+	@go test -coverprofile=coverage.out ./internal/cache ./internal/services
+	@go tool cover -html=coverage.out -o coverage.html
+	@echo -e "$(GREEN)✓$(NC) Coverage report generated: coverage.html"
 
 # Development script targets
 dev-generate-posts:

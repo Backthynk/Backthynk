@@ -12,6 +12,7 @@ import (
 type CategoryService struct {
 	db           *storage.DB
 	cache        *cache.CategoryCache
+	coordinator  *cache.CacheCoordinator
 	cacheEnabled bool
 }
 
@@ -19,6 +20,7 @@ func NewCategoryService(db *storage.DB, cacheEnabled bool) *CategoryService {
 	return &CategoryService{
 		db:           db,
 		cache:        cache.GetCategoryCache(),
+		coordinator:  cache.GetCacheCoordinator(),
 		cacheEnabled: cacheEnabled,
 	}
 }
@@ -49,10 +51,10 @@ func (cs *CategoryService) InitializeCache() error {
 		return err
 	}
 
-	// Initialize post counts as well
-	err = cs.InitializePostCounts()
+	// Initialize coordinator hierarchy
+	err = cs.coordinator.InitializeHierarchy(categories)
 	if err != nil {
-		log.Printf("Warning: failed to initialize post counts: %v", err)
+		return err
 	}
 
 	elapsed := time.Since(start)
@@ -106,6 +108,14 @@ func (cs *CategoryService) CreateCategory(name string, parentID *int, descriptio
 	// Update cache if enabled
 	if cs.cacheEnabled {
 		cs.cache.AddCategory(category)
+
+		// Notify coordinator
+		cs.coordinator.ProcessEvent(cache.CacheEvent{
+			Type:       cache.EventCategoryCreated,
+			CategoryID: category.ID,
+			Timestamp:  time.Now().UnixMilli(),
+			Data:       category,
+		})
 	}
 
 	return category, nil
@@ -113,6 +123,12 @@ func (cs *CategoryService) CreateCategory(name string, parentID *int, descriptio
 
 // UpdateCategory updates a category and updates the cache if enabled
 func (cs *CategoryService) UpdateCategory(id int, name string, description string, newParentID *int) (*models.Category, error) {
+	// Get the old category to detect parent changes
+	var oldCategory *models.Category
+	if cs.cacheEnabled {
+		oldCategory, _ = cs.cache.GetCategory(id)
+	}
+
 	// Update in database first
 	category, err := cs.db.UpdateCategory(id, name, description, newParentID)
 	if err != nil {
@@ -122,6 +138,21 @@ func (cs *CategoryService) UpdateCategory(id int, name string, description strin
 	// Update cache if enabled
 	if cs.cacheEnabled {
 		cs.cache.UpdateCategory(category)
+
+		// Notify coordinator about the update
+		var oldParentID *int
+		if oldCategory != nil {
+			oldParentID = oldCategory.ParentID
+		}
+
+		cs.coordinator.ProcessEvent(cache.CacheEvent{
+			Type:        cache.EventCategoryUpdated,
+			CategoryID:  category.ID,
+			OldParentID: oldParentID,
+			NewParentID: category.ParentID,
+			Timestamp:   time.Now().UnixMilli(),
+			Data:        category,
+		})
 	}
 
 	return category, nil
@@ -138,9 +169,23 @@ func (cs *CategoryService) DeleteCategory(id int) error {
 	// Remove from cache if enabled
 	if cs.cacheEnabled {
 		cs.cache.RemoveCategory(id)
+
+		// Notify coordinator
+		cs.coordinator.ProcessEvent(cache.CacheEvent{
+			Type:       cache.EventCategoryDeleted,
+			CategoryID: id,
+			Timestamp:  time.Now().UnixMilli(),
+		})
 	}
 
 	return nil
+}
+
+// UpdateCategoryCache updates a category in cache if enabled
+func (cs *CategoryService) UpdateCategoryCache(category *models.Category) {
+	if cs.cacheEnabled {
+		cs.cache.UpdateCategory(category)
+	}
 }
 
 // GetCacheStats returns cache statistics if caching is enabled
@@ -165,154 +210,4 @@ func (cs *CategoryService) RefreshCache() error {
 	return cs.InitializeCache()
 }
 
-// GetCategoryWithCount returns a category with its cached post count if caching is enabled
-func (cs *CategoryService) GetCategoryWithCount(id int) (*cache.CategoryWithCount, error) {
-	if cs.cacheEnabled {
-		if categoryWithCount, found := cs.cache.GetCategoryWithCount(id); found {
-			return categoryWithCount, nil
-		}
-		// If not in cache, fall back to database query
-	}
 
-	// Fall back to database query
-	category, err := cs.db.GetCategory(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get post count from database
-	postCount, err := cs.getPostCountFromDB(id)
-	if err != nil {
-		return nil, err
-	}
-
-	return &cache.CategoryWithCount{
-		Category:  *category,
-		PostCount: postCount,
-	}, nil
-}
-
-// GetCategoriesWithCount returns all categories with their cached post counts if caching is enabled
-func (cs *CategoryService) GetCategoriesWithCount() ([]cache.CategoryWithCount, error) {
-	if cs.cacheEnabled {
-		return cs.cache.GetCategoriesWithCount(), nil
-	}
-
-	// Fall back to database query
-	categories, err := cs.db.GetCategories()
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]cache.CategoryWithCount, len(categories))
-	for i, category := range categories {
-		postCount, err := cs.getPostCountFromDB(category.ID)
-		if err != nil {
-			return nil, err
-		}
-
-		result[i] = cache.CategoryWithCount{
-			Category:  category,
-			PostCount: postCount,
-		}
-	}
-
-	return result, nil
-}
-
-// getPostCountFromDB gets the post count for a category from the database
-func (cs *CategoryService) getPostCountFromDB(categoryID int) (int, error) {
-	query := "SELECT COUNT(*) FROM posts WHERE category_id = ?"
-	var count int
-	err := cs.db.QueryRow(query, categoryID).Scan(&count)
-	return count, err
-}
-
-// InitializePostCounts loads post counts from database into cache
-func (cs *CategoryService) InitializePostCounts() error {
-	if !cs.cacheEnabled {
-		return nil
-	}
-
-	log.Println("Initializing category post counts cache...")
-	start := time.Now()
-
-	// Get post counts for all categories
-	query := "SELECT category_id, COUNT(*) FROM posts GROUP BY category_id"
-	rows, err := cs.db.Query(query)
-	if err != nil {
-		return fmt.Errorf("failed to load post counts for cache: %w", err)
-	}
-	defer rows.Close()
-
-	countMap := make(map[int]int)
-	for rows.Next() {
-		var categoryID, count int
-		err := rows.Scan(&categoryID, &count)
-		if err != nil {
-			return fmt.Errorf("failed to scan post count: %w", err)
-		}
-		countMap[categoryID] = count
-	}
-
-	// Set post counts in cache
-	categories := cs.cache.GetCategories()
-	for _, category := range categories {
-		count := countMap[category.ID] // Will be 0 if not found
-		cs.cache.SetPostCount(category.ID, count)
-	}
-
-	elapsed := time.Since(start)
-	log.Printf("Category post counts cache initialized in %v. %d categories processed", elapsed, len(categories))
-
-	return nil
-}
-
-// OnPostCreated updates the cache when a post is created
-func (cs *CategoryService) OnPostCreated(categoryID int) {
-	if cs.cacheEnabled {
-		cs.cache.UpdatePostCount(categoryID, 1)
-	}
-}
-
-// OnPostDeleted updates the cache when a post is deleted
-func (cs *CategoryService) OnPostDeleted(categoryID int) {
-	if cs.cacheEnabled {
-		cs.cache.UpdatePostCount(categoryID, -1)
-	}
-}
-
-// OnPostMoved updates the cache when a post is moved between categories
-func (cs *CategoryService) OnPostMoved(fromCategoryID, toCategoryID int) {
-	if cs.cacheEnabled {
-		cs.cache.UpdatePostCount(fromCategoryID, -1)
-		cs.cache.UpdatePostCount(toCategoryID, 1)
-	}
-}
-
-// GetPostCount returns the post count for a category, using cache if enabled
-func (cs *CategoryService) GetPostCount(categoryID int, recursive bool) (int, error) {
-	if cs.cacheEnabled && !recursive {
-		// For non-recursive, we can use the cached count directly
-		return cs.cache.GetPostCount(categoryID), nil
-	}
-
-	// For recursive or when cache is disabled, use database
-	return cs.db.GetPostCountByCategoryRecursive(categoryID, recursive)
-}
-
-// GetTotalPostCount returns the total post count across all categories
-func (cs *CategoryService) GetTotalPostCount() (int, error) {
-	if cs.cacheEnabled {
-		// Sum all cached post counts
-		categories := cs.cache.GetCategories()
-		totalCount := 0
-		for _, category := range categories {
-			totalCount += cs.cache.GetPostCount(category.ID)
-		}
-		return totalCount, nil
-	}
-
-	// Fall back to database
-	return cs.db.GetTotalPostCount()
-}

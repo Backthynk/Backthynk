@@ -35,51 +35,39 @@ func main() {
 	}
 	defer db.Close()
 
-	// Initialize category service and cache FIRST (other services depend on it)
-	var categoryService *services.CategoryService
-	categoryService = services.NewCategoryService(db, options.CategoryCacheEnabled)
-	if options.CategoryCacheEnabled {
-		if err := categoryService.InitializeCache(); err != nil {
-			log.Printf("Warning: Failed to initialize category cache: %v", err)
-		}
-		log.Println("Category cache system enabled")
-	} else {
-		log.Println("Category cache system disabled")
+	// Initialize cache manager with all services
+	cacheConfig := services.CacheConfig{
+		CategoryCacheEnabled: options.CategoryCacheEnabled,
+		ActivityEnabled:      options.ActivityEnabled,
+		FileStatsEnabled:     options.FileStatsEnabled,
 	}
 
-	// Initialize activity service and cache (if enabled)
+	cacheManager := services.NewCacheManager(db, cacheConfig)
+	if err := cacheManager.InitializeAllCaches(); err != nil {
+		log.Printf("Warning: Failed to initialize caches: %v", err)
+	}
+
+	// Get services from cache manager
+	categoryService := cacheManager.CategoryService()
 	var activityService *services.ActivityService
 	if options.ActivityEnabled {
-		activityService = services.NewActivityService(db, categoryService)
-		if err := activityService.InitializeCache(); err != nil {
-			log.Printf("Warning: Failed to initialize activity cache: %v", err)
-		}
-		log.Println("Activity system enabled")
-	} else {
-		log.Println("Activity system disabled")
+		activityService = cacheManager.ActivityService()
 	}
-
-	// Initialize file statistics service and cache (if enabled)
+	postCountService := cacheManager.PostCountService()
 	var fileStatsService *services.FileStatsService
 	if options.FileStatsEnabled {
-		fileStatsService = services.NewFileStatsService(db, categoryService)
-		if err := fileStatsService.InitializeCache(); err != nil {
-			log.Printf("Warning: Failed to initialize file statistics cache: %v", err)
-		}
-		log.Println("File statistics system enabled")
-	} else {
-		log.Println("File statistics system disabled")
+		fileStatsService = cacheManager.FileStatsService()
 	}
 
 	// Update settings handler with category service for dynamic cache updates
 	settingsHandler = handlers.NewSettingsHandler(config.ConfigFilename(), categoryService)
 
 	// Initialize handlers
-	categoryHandler := handlers.NewCategoryHandler(db, categoryService, activityService, fileStatsService)
-	postHandler := handlers.NewPostHandler(db, settingsHandler, categoryService, activityService, fileStatsService)
+	categoryHandler := handlers.NewCategoryHandler(db, categoryService, activityService, fileStatsService, postCountService)
+	postHandler := handlers.NewPostHandler(db, settingsHandler, categoryService, fileStatsService, postCountService)
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(config.StoragePath(), config.UploadsSubdir()), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
-	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, categoryService, activityService, fileStatsService)
+	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, categoryService, activityService, fileStatsService, postCountService)
 	templateHandler := handlers.NewTemplateHandler(db, categoryService)
 
 	// Activity handler (only if activity is enabled)

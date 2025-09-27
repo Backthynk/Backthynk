@@ -12,7 +12,7 @@ import (
 
 type DB struct {
 	*sql.DB
-	storagePath string
+	storagePath    string
 }
 
 func NewDB(storagePath string) (*DB, error) {
@@ -30,7 +30,10 @@ func NewDB(storagePath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	dbWrapper := &DB{db, storagePath}
+	dbWrapper := &DB{
+		DB:          db,
+		storagePath: storagePath,
+	}
 	if err := dbWrapper.createTables(); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
@@ -40,6 +43,48 @@ func NewDB(storagePath string) (*DB, error) {
 	}
 
 	return dbWrapper, nil
+}
+
+// GetDescendantCategories recursively gets all descendant category IDs for a given parent
+func (db *DB) GetDescendantCategories(parentID int) ([]int, error) {
+	var descendants []int
+
+	// Get direct children
+	rows, err := db.Query("SELECT id FROM categories WHERE parent_id = ?", parentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query child categories: %w", err)
+	}
+	defer rows.Close()
+
+	var childIDs []int
+	for rows.Next() {
+		var childID int
+		if err := rows.Scan(&childID); err != nil {
+			return nil, fmt.Errorf("failed to scan child category: %w", err)
+		}
+		childIDs = append(childIDs, childID)
+	}
+
+	// Recursively get descendants for each child
+	for _, childID := range childIDs {
+		childDescendants, err := db.GetDescendantCategories(childID)
+		if err != nil {
+			return nil, err
+		}
+		descendants = append(descendants, childDescendants...)
+		descendants = append(descendants, childID)
+	}
+
+	return descendants, nil
+}
+
+// GetDescendantCategoriesWithParent returns descendants including the parent category
+func (db *DB) GetDescendantCategoriesWithParent(parentID int) ([]int, error) {
+	descendants, err := db.GetDescendantCategories(parentID)
+	if err != nil {
+		return nil, err
+	}
+	return append(descendants, parentID), nil
 }
 
 func (db *DB) createTables() error {

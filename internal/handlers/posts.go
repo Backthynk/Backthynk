@@ -18,17 +18,17 @@ type PostHandler struct {
 	db               *storage.DB
 	settingsHandler  *SettingsHandler
 	categoryService  *services.CategoryService
-	activityService  *services.ActivityService
 	fileStatsService *services.FileStatsService
+	postCountService *services.PostCountService
 }
 
-func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler, categoryService *services.CategoryService, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *PostHandler {
+func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler, categoryService *services.CategoryService, fileStatsService *services.FileStatsService, postCountService *services.PostCountService) *PostHandler {
 	return &PostHandler{
 		db:               db,
 		settingsHandler:  settingsHandler,
 		categoryService:  categoryService,
-		activityService:  activityService,
 		fileStatsService: fileStatsService,
+		postCountService: postCountService,
 	}
 }
 
@@ -104,18 +104,8 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update activity cache
-	if h.activityService != nil {
-		if err := h.activityService.OnPostCreated(post.CategoryID, post.Created); err != nil {
-			// Log error but don't fail the request
-			fmt.Printf("Warning: failed to update activity cache: %v\n", err)
-		}
-	}
-
-	// Update category post count cache
-	if h.categoryService != nil {
-		h.categoryService.OnPostCreated(post.CategoryID)
-	}
+	// Update post count cache (this will trigger cache coordinator for all cache updates)
+	h.postCountService.OnPostCreatedWithTimestamp(post.CategoryID, post.Created)
 
 	// Extract and save link previews from content
 	var linkPreviewsToSave []LinkPreviewResponse
@@ -197,15 +187,7 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		}
 
 		if withMeta {
-			if h.categoryService != nil {
-				totalCount, err = h.categoryService.GetTotalPostCount()
-			} else {
-				totalCount, err = h.db.GetTotalPostCount()
-			}
-			if err != nil {
-				http.Error(w, "Failed to get total post count", http.StatusInternalServerError)
-				return
-			}
+			totalCount = h.postCountService.GetTotalPostCount()
 		}
 	} else {
 		// Normal category-specific posts
@@ -216,14 +198,10 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		}
 
 		if withMeta {
-			if h.categoryService != nil {
-				totalCount, err = h.categoryService.GetPostCount(categoryID, recursive)
+			if recursive {
+				totalCount = h.postCountService.GetPostCountRecursive(categoryID)
 			} else {
-				totalCount, err = h.db.GetPostCountByCategoryRecursive(categoryID, recursive)
-			}
-			if err != nil {
-				http.Error(w, "Failed to get post count", http.StatusInternalServerError)
-				return
+				totalCount = h.postCountService.GetPostCount(categoryID)
 			}
 		}
 	}
@@ -293,17 +271,9 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update activity cache
-	if h.activityService != nil && categoryID > 0 {
-		if err := h.activityService.OnPostDeleted(categoryID, created); err != nil {
-			// Log error but don't fail the request
-			fmt.Printf("Warning: failed to update activity cache: %v\n", err)
-		}
-	}
-
-	// Update category post count cache
-	if h.categoryService != nil && categoryID > 0 {
-		h.categoryService.OnPostDeleted(categoryID)
+	// Update post count cache (this will trigger cache coordinator for all cache updates)
+	if categoryID > 0 {
+		h.postCountService.OnPostDeletedWithTimestamp(categoryID, created)
 	}
 
 	// Update file statistics cache for deleted attachments
@@ -362,22 +332,8 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update activity cache for both old and new categories
-	if h.activityService != nil {
-		// Remove from old category
-		if err := h.activityService.OnPostDeleted(oldPost.CategoryID, oldPost.Created); err != nil {
-			fmt.Printf("Warning: failed to update activity cache for old category: %v\n", err)
-		}
-		// Add to new category
-		if err := h.activityService.OnPostCreated(req.CategoryID, oldPost.Created); err != nil {
-			fmt.Printf("Warning: failed to update activity cache for new category: %v\n", err)
-		}
-	}
-
-	// Update category post count cache for both categories
-	if h.categoryService != nil {
-		h.categoryService.OnPostMoved(oldPost.CategoryID, req.CategoryID)
-	}
+	// Update post count cache for both categories (this will trigger cache coordinator for all cache updates)
+	h.postCountService.OnPostMovedWithTimestamp(oldPost.CategoryID, req.CategoryID, oldPost.Created)
 
 	// Update file statistics cache for both categories if there are attachments
 	if h.fileStatsService != nil {

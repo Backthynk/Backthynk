@@ -13,6 +13,7 @@ import (
 type FileStatsService struct {
 	db              *storage.DB
 	cache           *cache.FileStatsCache
+	coordinator     *cache.CacheCoordinator
 	categoryService *CategoryService
 }
 
@@ -21,6 +22,7 @@ func NewFileStatsService(db *storage.DB, categoryService *CategoryService) *File
 	return &FileStatsService{
 		db:              db,
 		cache:           cache.GetFileStatsCache(),
+		coordinator:     cache.GetCacheCoordinator(),
 		categoryService: categoryService,
 	}
 }
@@ -172,22 +174,24 @@ func (s *FileStatsService) getAllAttachmentsForCache() ([]cache.AttachmentData, 
 
 // OnFileUploaded updates the cache when a file is uploaded
 func (s *FileStatsService) OnFileUploaded(categoryID int, fileSize int64) error {
-	if err := s.cache.UpdateFileStats(categoryID, fileSize, 1); err != nil {
-		log.Printf("Warning: failed to update file stats cache for file upload: %v", err)
-	}
-
-	// Update parent categories' recursive file statistics
-	return s.updateParentRecursiveFileStats(categoryID, fileSize, 1)
+	s.coordinator.ProcessEvent(cache.CacheEvent{
+		Type:       cache.EventFileAdded,
+		CategoryID: categoryID,
+		Timestamp:  time.Now().UnixMilli(),
+		FileSize:   fileSize,
+	})
+	return nil
 }
 
 // OnFileDeleted updates the cache when a file is deleted
 func (s *FileStatsService) OnFileDeleted(categoryID int, fileSize int64) error {
-	if err := s.cache.UpdateFileStats(categoryID, -fileSize, -1); err != nil {
-		log.Printf("Warning: failed to update file stats cache for file deletion: %v", err)
-	}
-
-	// Update parent categories' recursive file statistics
-	return s.updateParentRecursiveFileStats(categoryID, -fileSize, -1)
+	s.coordinator.ProcessEvent(cache.CacheEvent{
+		Type:       cache.EventFileDeleted,
+		CategoryID: categoryID,
+		Timestamp:  time.Now().UnixMilli(),
+		FileSize:   fileSize,
+	})
+	return nil
 }
 
 // updateParentRecursiveFileStats updates recursive file statistics for parent categories
@@ -297,4 +301,11 @@ func (s *FileStatsService) GetGlobalFileStats() (*cache.FileStatsSummary, error)
 		FileCount: totalFiles,
 		TotalSize: totalSize,
 	}, nil
+}
+
+// GetCacheStats returns cache statistics
+func (s *FileStatsService) GetCacheStats() map[string]interface{} {
+	stats := s.cache.GetCacheStats()
+	stats["cache_enabled"] = true
+	return stats
 }

@@ -7,18 +7,12 @@ import (
 	"unsafe"
 )
 
-// CategoryWithCount extends Category with cached post count
-type CategoryWithCount struct {
-	models.Category
-	PostCount int `json:"post_count"`
-}
 
 // CategoryCache manages all category data in memory
 type CategoryCache struct {
 	categories    map[int]*models.Category // categoryID -> category
 	byParent      map[int][]int            // parentID -> []childIDs (nil key for root categories)
 	allCategories []models.Category        // cached list of all categories
-	postCounts    map[int]int              // categoryID -> post count
 	mutex         sync.RWMutex
 	lastUpdate    int64 // Unix timestamp in milliseconds
 }
@@ -33,7 +27,6 @@ func GetCategoryCache() *CategoryCache {
 			categories:    make(map[int]*models.Category),
 			byParent:      make(map[int][]int),
 			allCategories: make([]models.Category, 0),
-			postCounts:    make(map[int]int),
 			lastUpdate:    time.Now().UnixMilli(),
 		}
 	})
@@ -49,7 +42,6 @@ func (cc *CategoryCache) RefreshCache(categories []models.Category) error {
 	cc.categories = make(map[int]*models.Category)
 	cc.byParent = make(map[int][]int)
 	cc.allCategories = make([]models.Category, 0, len(categories))
-	cc.postCounts = make(map[int]int)
 
 	// Populate cache
 	for i := range categories {
@@ -278,65 +270,4 @@ func (cc *CategoryCache) GetCategoryCount() int {
 	return len(cc.categories)
 }
 
-// GetCategoryWithCount returns a category with its cached post count
-func (cc *CategoryCache) GetCategoryWithCount(id int) (*CategoryWithCount, bool) {
-	cc.mutex.RLock()
-	defer cc.mutex.RUnlock()
 
-	category, exists := cc.categories[id]
-	if !exists {
-		return nil, false
-	}
-
-	postCount := cc.postCounts[id]
-
-	return &CategoryWithCount{
-		Category:  *category,
-		PostCount: postCount,
-	}, true
-}
-
-// GetCategoriesWithCount returns all categories with their cached post counts
-func (cc *CategoryCache) GetCategoriesWithCount() []CategoryWithCount {
-	cc.mutex.RLock()
-	defer cc.mutex.RUnlock()
-
-	result := make([]CategoryWithCount, 0, len(cc.allCategories))
-	for _, category := range cc.allCategories {
-		postCount := cc.postCounts[category.ID]
-		result = append(result, CategoryWithCount{
-			Category:  category,
-			PostCount: postCount,
-		})
-	}
-	return result
-}
-
-// UpdatePostCount updates the post count for a category
-func (cc *CategoryCache) UpdatePostCount(categoryID int, delta int) {
-	cc.mutex.Lock()
-	defer cc.mutex.Unlock()
-
-	cc.postCounts[categoryID] += delta
-	if cc.postCounts[categoryID] < 0 {
-		cc.postCounts[categoryID] = 0
-	}
-	cc.lastUpdate = time.Now().UnixMilli()
-}
-
-// SetPostCount sets the post count for a category (used during initialization)
-func (cc *CategoryCache) SetPostCount(categoryID int, count int) {
-	cc.mutex.Lock()
-	defer cc.mutex.Unlock()
-
-	cc.postCounts[categoryID] = count
-	cc.lastUpdate = time.Now().UnixMilli()
-}
-
-// GetPostCount returns the cached post count for a category
-func (cc *CategoryCache) GetPostCount(categoryID int) int {
-	cc.mutex.RLock()
-	defer cc.mutex.RUnlock()
-
-	return cc.postCounts[categoryID]
-}

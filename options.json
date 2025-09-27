@@ -2,7 +2,7 @@
   "maxFileSizeMB": 100,
   "maxContentLength": 15000,
   "maxFilesPerPost": 25,
-  "activityEnabled": true,
+  "activityEnabled": false,
   "fileStatsEnabled": false,
   "categoryCacheEnabled": false,
   "retroactivePostingEnabled": true

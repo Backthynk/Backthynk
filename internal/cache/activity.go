@@ -63,31 +63,46 @@ type PeriodStats struct {
 
 // ActivityCache manages all category activity data in memory
 type ActivityCache struct {
-	categories map[int]*CategoryActivity // categoryID -> activity
-	hierarchy  map[int][]int             // parentID -> []childIDs
-	mutex      sync.RWMutex
+	categories     map[int]*CategoryActivity // categoryID -> activity
+	hierarchy      map[int][]int             // parentID -> []childIDs
+	parentMap      map[int]int               // childID -> parentID
+	mutex          sync.RWMutex
 }
 
 // Global activity cache instance
 var activityCache *ActivityCache
-
-// InitActivityCache initializes the global activity cache
-func InitActivityCache() *ActivityCache {
-	if activityCache == nil {
-		activityCache = &ActivityCache{
-			categories: make(map[int]*CategoryActivity),
-			hierarchy:  make(map[int][]int),
-		}
-	}
-	return activityCache
-}
+var activityCacheOnce sync.Once
 
 // GetActivityCache returns the global activity cache instance
 func GetActivityCache() *ActivityCache {
-	if activityCache == nil {
-		return InitActivityCache()
-	}
+	activityCacheOnce.Do(func() {
+		activityCache = &ActivityCache{
+			categories: make(map[int]*CategoryActivity),
+			hierarchy:  make(map[int][]int),
+			parentMap:  make(map[int]int),
+		}
+	})
 	return activityCache
+}
+
+// SetHierarchy sets the category hierarchy for proper parent activity updates
+func (ac *ActivityCache) SetHierarchy(hierarchy map[int][]int, parentMap map[int]int) {
+	ac.mutex.Lock()
+	defer ac.mutex.Unlock()
+
+	ac.hierarchy = make(map[int][]int)
+	ac.parentMap = make(map[int]int)
+
+	// Copy hierarchy
+	for parentID, children := range hierarchy {
+		ac.hierarchy[parentID] = make([]int, len(children))
+		copy(ac.hierarchy[parentID], children)
+	}
+
+	// Copy parent map
+	for childID, parentID := range parentMap {
+		ac.parentMap[childID] = parentID
+	}
 }
 
 // UpdatePostActivity updates the activity cache when a post is created/deleted
@@ -208,9 +223,20 @@ func (ac *ActivityCache) updateCategoryRecursiveActivity(categoryID int, date st
 
 // updateParentActivities updates recursive activity for parent categories
 func (ac *ActivityCache) updateParentActivities(categoryID int, date string, timestamp int64, delta int) error {
-	// This would need to be implemented with knowledge of category hierarchy
-	// For now, we'll implement this in the storage layer
-	return nil
+	// Get the current category's parent
+	parentID, hasParent := ac.parentMap[categoryID]
+	if !hasParent {
+		// No parent, we're done
+		return nil
+	}
+
+	// Update parent's recursive activity
+	if err := ac.updateCategoryRecursiveActivity(parentID, date, delta); err != nil {
+		return fmt.Errorf("failed to update parent activity for category %d: %w", parentID, err)
+	}
+
+	// Recursively update grandparents
+	return ac.updateParentActivities(parentID, date, timestamp, delta)
 }
 
 // GetActivityPeriod returns compact activity data for a specific period

@@ -222,7 +222,7 @@ func (db *DB) UpdateCategory(id int, name string, description string, newParentI
 			}
 
 			// Check if newParentID is a descendant of current category
-			descendants, err := db.getDescendantCategories(id)
+			descendants, err := db.GetDescendantCategories(id)
 			if err != nil {
 				return nil, fmt.Errorf("failed to check descendants: %w", err)
 			}
@@ -397,7 +397,7 @@ func (db *DB) DeleteCategory(id int) error {
 	}
 
 	// Get all descendant categories recursively
-	descendants, err := db.getDescendantCategories(id)
+	descendants, err := db.GetDescendantCategories(id)
 	if err != nil {
 		return fmt.Errorf("failed to get descendant categories: %w", err)
 	}
@@ -478,37 +478,6 @@ func (db *DB) DeleteCategory(id int) error {
 	return nil
 }
 
-func (db *DB) getDescendantCategories(parentID int) ([]int, error) {
-	var descendants []int
-
-	// Get direct children
-	rows, err := db.Query("SELECT id FROM categories WHERE parent_id = ?", parentID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query child categories: %w", err)
-	}
-	defer rows.Close()
-
-	var childIDs []int
-	for rows.Next() {
-		var childID int
-		if err := rows.Scan(&childID); err != nil {
-			return nil, fmt.Errorf("failed to scan child category: %w", err)
-		}
-		childIDs = append(childIDs, childID)
-	}
-
-	// Recursively get descendants for each child
-	for _, childID := range childIDs {
-		childDescendants, err := db.getDescendantCategories(childID)
-		if err != nil {
-			return nil, err
-		}
-		descendants = append(descendants, childDescendants...)
-		descendants = append(descendants, childID)
-	}
-
-	return descendants, nil
-}
 
 // Helper function to delete physical files
 func (db *DB) deletePhysicalFile(filePath string) error {
