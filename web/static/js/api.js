@@ -253,6 +253,18 @@ async function deletePost(postId) {
     }
 }
 
+async function movePost(postId, newCategoryId) {
+    try {
+        return await apiRequest(`/posts/${postId}/move`, {
+            method: 'PUT',
+            body: JSON.stringify({ category_id: newCategoryId })
+        });
+    } catch (error) {
+        console.error('Failed to move post:', error);
+        throw error;
+    }
+}
+
 async function deleteCategoryApi(categoryId) {
     try {
         await apiRequest(`/categories/${categoryId}`, {

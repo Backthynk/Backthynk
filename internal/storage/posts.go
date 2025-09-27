@@ -255,6 +255,45 @@ func (db *DB) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, erro
 	return posts, nil
 }
 
+// UpdatePostCategory updates the category_id of a post
+func (db *DB) UpdatePostCategory(postID int, newCategoryID int) error {
+	// First verify the post exists
+	var exists bool
+	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM posts WHERE id = ?)", postID).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check post existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("post not found")
+	}
+
+	// Verify the new category exists
+	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM categories WHERE id = ?)", newCategoryID).Scan(&exists)
+	if err != nil {
+		return fmt.Errorf("failed to check category existence: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("category not found")
+	}
+
+	// Update the post's category
+	result, err := db.Exec("UPDATE posts SET category_id = ? WHERE id = ?", newCategoryID, postID)
+	if err != nil {
+		return fmt.Errorf("failed to update post category: %w", err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+
+	if affected == 0 {
+		return fmt.Errorf("no rows were updated")
+	}
+
+	return nil
+}
+
 // GetTotalPostCount gets the total count of all posts across all categories
 func (db *DB) GetTotalPostCount() (int, error) {
 	var count int

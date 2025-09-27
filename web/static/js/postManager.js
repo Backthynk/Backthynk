@@ -218,9 +218,23 @@ function createPostElement(post) {
                     </span>
                 ` : ''}
             </div>
-            <button onclick="confirmDeletePost(${post.id})" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all">
-                <i class="fas fa-trash-alt text-sm"></i>
-            </button>
+            <div class="relative opacity-0 group-hover:opacity-100 transition-all">
+                <button onclick="togglePostActionMenu(${post.id})" class="text-gray-400 hover:text-gray-600 p-1 rounded transition-all">
+                    <i class="fas fa-ellipsis-h text-sm"></i>
+                </button>
+                <div id="post-action-menu-${post.id}" class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-50 hidden">
+                    <div class="py-1">
+                        <button onclick="showMoveModal(${post.id})" class="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                            <i class="fas fa-exchange-alt text-xs mr-2"></i>
+                            Move
+                        </button>
+                        <button onclick="confirmDeletePost(${post.id})" class="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <i class="fas fa-trash-alt text-xs mr-2"></i>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
 
@@ -304,6 +318,145 @@ function createPostElement(post) {
     div.innerHTML = headerHtml + contentHtml + linkPreviewsHtml + attachmentsHtml;
     return div;
 }
+
+function togglePostActionMenu(postId) {
+    // Close any other open menus first
+    document.querySelectorAll('[id^="post-action-menu-"]').forEach(menu => {
+        if (menu.id !== `post-action-menu-${postId}`) {
+            menu.classList.add('hidden');
+        }
+    });
+
+    const menu = document.getElementById(`post-action-menu-${postId}`);
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('[id^="post-action-menu-"]') && !e.target.closest('button[onclick*="togglePostActionMenu"]')) {
+        document.querySelectorAll('[id^="post-action-menu-"]').forEach(menu => {
+            menu.classList.add('hidden');
+        });
+    }
+});
+
+let currentMovePostId = null;
+
+function showMoveModal(postId) {
+    currentMovePostId = postId;
+
+    // Find the post to get current category info
+    const post = currentPosts.find(p => p.id === postId);
+    if (!post) return;
+
+    // Get current category name
+    const currentCategory = categories.find(cat => cat.id === post.category_id);
+    const currentCategoryBreadcrumb = currentCategory ? getCategoryBreadcrumb(post.category_id) : 'Unknown Category';
+
+    // Update current category display
+    document.getElementById('current-category-display').textContent = currentCategoryBreadcrumb;
+
+    // Populate category dropdown
+    populateMoveCategoryDropdown(post.category_id);
+
+    // Show modal
+    document.getElementById('move-modal').classList.remove('hidden');
+
+    // Close any open post action menus
+    document.querySelectorAll('[id^="post-action-menu-"]').forEach(menu => {
+        menu.classList.add('hidden');
+    });
+}
+
+function populateMoveCategoryDropdown(currentCategoryId) {
+    const select = document.getElementById('move-category');
+    select.innerHTML = '<option value="">Select a category...</option>';
+
+    // Add all categories except the current one
+    categories.forEach(category => {
+        if (category.id !== currentCategoryId) {
+            const breadcrumb = getCategoryBreadcrumb(category.id);
+            const option = document.createElement('option');
+            option.value = category.id;
+            option.textContent = breadcrumb;
+            select.appendChild(option);
+        }
+    });
+}
+
+function hideMoveModal() {
+    document.getElementById('move-modal').classList.add('hidden');
+    document.getElementById('move-category').value = '';
+    currentMovePostId = null;
+}
+
+// Event listeners for move modal
+document.getElementById('cancel-move').addEventListener('click', hideMoveModal);
+
+document.getElementById('move-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    if (!currentMovePostId) return;
+
+    const newCategoryId = parseInt(document.getElementById('move-category').value);
+    if (!newCategoryId) {
+        showError('Please select a category to move the post to.');
+        return;
+    }
+
+    try {
+        await movePost(currentMovePostId, newCategoryId);
+
+        // Find the new category name for success message
+        const newCategory = categories.find(cat => cat.id === newCategoryId);
+        const newCategoryName = newCategory ? newCategory.name : 'selected category';
+
+        showSuccess(`Post successfully moved to ${newCategoryName}`);
+
+        // Remove the post from current view if it no longer belongs here
+        const shouldRemoveFromView = currentCategory && (
+            // Remove if we're viewing a specific category and post moved to different category
+            (currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID && currentCategory.id !== newCategoryId) ||
+            // Remove if we're in non-recursive mode and post moved to a subcategory or different category
+            (!currentCategory.recursiveMode && currentCategory.id !== newCategoryId)
+        );
+
+        if (shouldRemoveFromView) {
+            // Remove the post from current posts array
+            currentPosts = currentPosts.filter(p => p.id !== currentMovePostId);
+
+            // Update virtual scroller if it exists
+            if (virtualScroller) {
+                virtualScroller.removeItem(currentMovePostId);
+            }
+        } else {
+            // Update the post's category_id in the array (for All categories view or recursive mode)
+            const postIndex = currentPosts.findIndex(p => p.id === currentMovePostId);
+            if (postIndex !== -1) {
+                currentPosts[postIndex].category_id = newCategoryId;
+            }
+        }
+
+        // Refresh the display
+        renderPosts(currentPosts, true);
+
+        // Update stats for the current category
+        if (currentCategory) {
+            const stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
+            updateCategoryStatsDisplay(stats);
+        }
+
+        // Regenerate activity heatmap to reflect the moved post
+        generateActivityHeatmap();
+
+        hideMoveModal();
+
+    } catch (error) {
+        showError(`Failed to move post: ${error.message}`);
+    }
+});
 
 async function confirmDeletePost(postId) {
     // Find the post in current posts to get attachment details

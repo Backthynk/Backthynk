@@ -95,6 +95,7 @@ func main() {
 	api.HandleFunc("/posts", postHandler.CreatePost).Methods("POST")
 	api.HandleFunc("/posts/{id}", postHandler.GetPost).Methods("GET")
 	api.HandleFunc("/posts/{id}", postHandler.DeletePost).Methods("DELETE")
+	api.HandleFunc("/posts/{id}/move", postHandler.MovePost).Methods("PUT")
 	api.HandleFunc("/categories/{id}/posts", postHandler.GetPostsByCategory).Methods("GET")
 
 	// Link previews

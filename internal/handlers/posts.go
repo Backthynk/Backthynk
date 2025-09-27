@@ -299,3 +299,90 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	postId, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		CategoryID int `json:"category_id"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	if req.CategoryID <= 0 {
+		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the post before updating to have old category info for cache updates
+	oldPost, err := h.db.GetPost(postId)
+	if err != nil {
+		http.Error(w, "Post not found", http.StatusNotFound)
+		return
+	}
+
+	// Verify the new category exists
+	_, err = h.db.GetCategory(req.CategoryID)
+	if err != nil {
+		http.Error(w, "Target category not found", http.StatusBadRequest)
+		return
+	}
+
+	// Update the post's category
+	err = h.db.UpdatePostCategory(postId, req.CategoryID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Update activity cache for both old and new categories
+	if h.activityService != nil {
+		// Remove from old category
+		if err := h.activityService.OnPostDeleted(oldPost.CategoryID, oldPost.Created); err != nil {
+			fmt.Printf("Warning: failed to update activity cache for old category: %v\n", err)
+		}
+		// Add to new category
+		if err := h.activityService.OnPostCreated(req.CategoryID, oldPost.Created); err != nil {
+			fmt.Printf("Warning: failed to update activity cache for new category: %v\n", err)
+		}
+	}
+
+	// Update file statistics cache for both categories if there are attachments
+	if h.fileStatsService != nil {
+		attachments, err := h.db.GetAttachmentsByPost(postId)
+		if err == nil && len(attachments) > 0 {
+			// Calculate total file size
+			var totalSize int64
+			for _, attachment := range attachments {
+				totalSize += attachment.FileSize
+			}
+
+			// Remove from old category stats
+			if err := h.fileStatsService.OnFileDeleted(oldPost.CategoryID, totalSize); err != nil {
+				fmt.Printf("Warning: failed to update file statistics cache for old category: %v\n", err)
+			}
+			// Add to new category stats
+			if err := h.fileStatsService.OnFileUploaded(req.CategoryID, totalSize); err != nil {
+				fmt.Printf("Warning: failed to update file statistics cache for new category: %v\n", err)
+			}
+		}
+	}
+
+	// Return the updated post
+	updatedPost, err := h.db.GetPost(postId)
+	if err != nil {
+		http.Error(w, "Failed to retrieve updated post", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(updatedPost)
+}

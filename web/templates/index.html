@@ -507,6 +507,50 @@
         </div>
     </div>
 
+    <!-- Move Post Modal -->
+    <div id="move-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all">
+                <!-- Header -->
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Move Post</h3>
+                    <p class="text-sm text-gray-500 mt-1">Move this post to a different category</p>
+                </div>
+
+                <!-- Body -->
+                <div class="px-6 py-4">
+                    <form id="move-form">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">Current Category</label>
+                            <div id="current-category-display" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-600">
+                                <!-- Current category will be displayed here -->
+                            </div>
+                        </div>
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-900 mb-2">New Category <span class="text-red-500">*</span></label>
+                            <select id="move-category" class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Select a category...</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+                    <div class="flex items-center justify-end space-x-3">
+                        <button type="button" id="cancel-move" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit" form="move-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                            <i class="fas fa-exchange-alt text-xs mr-2"></i>
+                            Move Post
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Confirmation Modal -->
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-lg shadow-xl border border-gray-200 max-w-lg w-full mx-4 max-h-[90vh] flex flex-col transform transition-all">

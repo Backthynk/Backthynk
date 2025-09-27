@@ -98,7 +98,6 @@ class Router {
             return;
         }
 
-
         const category = this.findCategoryByPath(path);
         if (category) {
             console.log('Category found, showing page for:', category);
