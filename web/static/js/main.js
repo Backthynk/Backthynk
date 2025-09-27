@@ -73,6 +73,7 @@ async function updateFileUploadText() {
 
 // Centralized app initialization
 async function initializeApp() {
+
     // Load and cache settings first - single API call
     window.currentSettings = await initializeAppSettings();
 
@@ -96,8 +97,10 @@ async function initializeApp() {
     // Check file statistics system status (now uses cached settings)
     checkFileStatsEnabled();
 
-    // Load initial data
-    fetchCategories();
+    if (window.location.pathname === "/" || router.isCategoryPath(window.location.pathname)){
+        // Load initial data
+        fetchCategories();
+    }
 
     initializeStickyHeader();
 
@@ -108,6 +111,7 @@ async function initializeApp() {
 
 // Main initialization and event listeners
 document.addEventListener('DOMContentLoaded', function() {
+
     // Initialize app asynchronously
     initializeApp();
     

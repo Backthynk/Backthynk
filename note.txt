@@ -19,3 +19,7 @@ It will take more space in the cache but it would work for every timezone. -> we
 
 4. Display cache overview in a cell, so users have visibility over memory consumed by the program, could be done also with CPU, and maybe traffic (analytics)
 -> everything needs to be minimalistic and really simple. (data history doesn't need to be cached)
+
+5. Redo the entire css design without using tailwind and font-awesome, they are great but extremely heavy.
+
+6. New readme adapted to maximum version

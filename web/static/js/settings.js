@@ -19,7 +19,13 @@ async function showSettingsPageEvent() {
 function hideSettingsPage() {
     // Use router to navigate back to home
     if (window.router) {
-        window.router.navigate('/');
+        if (typeof categories === 'undefined' || !categories || categories.length === 0){
+            window.router.navigate('/');
+            initializeApp()
+        } else {
+            router.handleCategoryRoute('/');
+        }
+
     } else {
         // Fallback if router not available
         document.getElementById('settings-page').classList.add('hidden');

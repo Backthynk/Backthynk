@@ -78,7 +78,7 @@ class Router {
             return false
         // Category paths start with / and contain only valid category name characters
         // They shouldn't match existing static routes
-        for (const r in window.AppConstants.RESERVED_ROUTES){
+        for (const r of window.AppConstants.RESERVED_ROUTES){
             if (path === ('/'+r)){
                 return false
             }
@@ -97,6 +97,7 @@ class Router {
             setTimeout(() => this.handleCategoryRoute(path), 100);
             return;
         }
+
 
         const category = this.findCategoryByPath(path);
         if (category) {
