@@ -8,11 +8,12 @@ const (
 	FilePermissions      = 0644
 
 	// Default Application Settings
-	DefaultMaxFileSizeMB            = 100
-	DefaultMaxContentLength         = 15000
-	DefaultMaxFilesPerPost          = 20
-	DefaultActivityEnabled          = true
-	DefaultFileStatsEnabled         = true
+	DefaultMaxFileSizeMB             = 100
+	DefaultMaxContentLength          = 15000
+	DefaultMaxFilesPerPost           = 20
+	DefaultActivityEnabled           = true
+	DefaultFileStatsEnabled          = true
+	DefaultCategoryCacheEnabled      = true
 	DefaultRetroactivePostingEnabled = false
 
 	// Validation Limits
@@ -24,10 +25,10 @@ const (
 	MaxFilesPerPost  = 50
 
 	// Category Configuration
-	MaxCategoryDepth = 2
-	DefaultDepth     = 0
-	ALL_CATEGORIES_ID = 0 // Special category ID representing "all categories" view
-	MaxCategoryNameLength = 30
+	MaxCategoryDepth             = 2
+	DefaultDepth                 = 0
+	ALL_CATEGORIES_ID            = 0 // Special category ID representing "all categories" view
+	MaxCategoryNameLength        = 30
 	MaxCategoryDescriptionLength = 280
 
 	// Post Pagination
@@ -37,7 +38,7 @@ const (
 
 	// HTTP Configuration
 	LinkPreviewTimeout = 10 // seconds
-	UserAgent         = "Mozilla/5.0 (compatible; LinkPreviewBot/1.0)"
+	UserAgent          = "Mozilla/5.0 (compatible; LinkPreviewBot/1.0)"
 
 	// Database Configuration
 	SQLiteConnectionOptions = "?_fk=1"
@@ -51,8 +52,8 @@ const (
 
 // Error Messages
 const (
-	ErrMaxDepthExceeded     = "maximum category depth (3) exceeded"
-	ErrFileSizeValidation   = "maxFileSizeMB must be between 1 and 10240 (10GB)"
+	ErrMaxDepthExceeded        = "maximum category depth (3) exceeded"
+	ErrFileSizeValidation      = "maxFileSizeMB must be between 1 and 10240 (10GB)"
 	ErrContentLengthValidation = "maxContentLength must be between 100 and 50000"
 	ErrFilesPerPostValidation  = "maxFilesPerPost must be between 1 and 50"
 )

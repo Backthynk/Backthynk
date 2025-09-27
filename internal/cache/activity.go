@@ -15,50 +15,50 @@ type ActivityDay struct {
 
 // CategoryActivity represents all activity for a category
 type CategoryActivity struct {
-	CategoryID int                    `json:"category_id"`
-	Days       map[string]int         `json:"days"`        // date -> post count
-	Recursive  map[string]int         `json:"recursive"`   // recursive activity including children
-	Stats      ActivityStats          `json:"stats"`
-	LastUpdate int64                  `json:"last_update"` // Unix timestamp in milliseconds
-	Mutex      sync.RWMutex           `json:"-"`
+	CategoryID int            `json:"category_id"`
+	Days       map[string]int `json:"days"`      // date -> post count
+	Recursive  map[string]int `json:"recursive"` // recursive activity including children
+	Stats      ActivityStats  `json:"stats"`
+	LastUpdate int64          `json:"last_update"` // Unix timestamp in milliseconds
+	Mutex      sync.RWMutex   `json:"-"`
 }
 
 // ActivityStats represents aggregated activity statistics
 type ActivityStats struct {
-	TotalPosts       int   `json:"total_posts"`
-	TotalActiveDays  int   `json:"total_active_days"`
-	FirstPostTime    int64 `json:"first_post_time"`  // Unix timestamp in milliseconds
-	LastPostTime     int64 `json:"last_post_time"`   // Unix timestamp in milliseconds
-	RecursivePosts   int   `json:"recursive_posts"`
-	RecursiveActiveDays int `json:"recursive_active_days"`
+	TotalPosts          int   `json:"total_posts"`
+	TotalActiveDays     int   `json:"total_active_days"`
+	FirstPostTime       int64 `json:"first_post_time"` // Unix timestamp in milliseconds
+	LastPostTime        int64 `json:"last_post_time"`  // Unix timestamp in milliseconds
+	RecursivePosts      int   `json:"recursive_posts"`
+	RecursiveActiveDays int   `json:"recursive_active_days"`
 }
 
 // ActivityPeriodRequest represents a request for activity data in a specific period
 type ActivityPeriodRequest struct {
-	CategoryID    int  `json:"category_id"`
-	Recursive     bool `json:"recursive"`
-	StartDate     string `json:"start_date"` // YYYY-MM-DD
-	EndDate       string `json:"end_date"`   // YYYY-MM-DD
-	Period        int  `json:"period"`      // 0 = current, -1 = previous period, etc.
-	PeriodMonths  int  `json:"period_months"` // Number of months per period (default 6)
+	CategoryID   int    `json:"category_id"`
+	Recursive    bool   `json:"recursive"`
+	StartDate    string `json:"start_date"`    // YYYY-MM-DD
+	EndDate      string `json:"end_date"`      // YYYY-MM-DD
+	Period       int    `json:"period"`        // 0 = current, -1 = previous period, etc.
+	PeriodMonths int    `json:"period_months"` // Number of months per period (default 6)
 }
 
 // ActivityPeriodResponse represents compact activity data for a period
 type ActivityPeriodResponse struct {
-	CategoryID    int           `json:"category_id"`
-	StartDate     string        `json:"start_date"`
-	EndDate       string        `json:"end_date"`
-	Period        int           `json:"period"`
-	Days          []ActivityDay `json:"days"`          // Only days with activity > 0
-	Stats         PeriodStats   `json:"stats"`
-	MaxPeriods    int           `json:"max_periods"`   // Total available historical periods
+	CategoryID int           `json:"category_id"`
+	StartDate  string        `json:"start_date"`
+	EndDate    string        `json:"end_date"`
+	Period     int           `json:"period"`
+	Days       []ActivityDay `json:"days"` // Only days with activity > 0
+	Stats      PeriodStats   `json:"stats"`
+	MaxPeriods int           `json:"max_periods"` // Total available historical periods
 }
 
 // PeriodStats represents statistics for a specific period
 type PeriodStats struct {
-	TotalPosts      int `json:"total_posts"`
-	ActiveDays      int `json:"active_days"`
-	MaxDayActivity  int `json:"max_day_activity"`
+	TotalPosts     int `json:"total_posts"`
+	ActiveDays     int `json:"active_days"`
+	MaxDayActivity int `json:"max_day_activity"`
 }
 
 // ActivityCache manages all category activity data in memory
@@ -304,13 +304,13 @@ func (ac *ActivityCache) calculatePeriodDates(period, periodMonths int) (string,
 	if period == 0 {
 		// Current period: last N months up to today
 		end := now
-		start := now.AddDate(0, -(periodMonths-1), 0)
+		start := now.AddDate(0, -(periodMonths - 1), 0)
 		start = time.Date(start.Year(), start.Month(), 1, 0, 0, 0, 0, time.UTC)
 		return start.Format("2006-01-02"), end.Format("2006-01-02")
 	}
 
 	// Historical periods
-	currentPeriodStart := now.AddDate(0, -(periodMonths-1), 0)
+	currentPeriodStart := now.AddDate(0, -(periodMonths - 1), 0)
 	currentPeriodStart = time.Date(currentPeriodStart.Year(), currentPeriodStart.Month(), 1, 0, 0, 0, 0, time.UTC)
 	periodStart := currentPeriodStart.AddDate(0, periodMonths*period, 0)
 	periodEnd := periodStart.AddDate(0, periodMonths, -1)
@@ -528,11 +528,11 @@ func (ac *ActivityCache) GetCacheStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"categories_cached":     categoriesCount,
-		"total_activity_days":   totalDays,
-		"total_posts_cached":    totalPosts,
-		"cache_size_bytes":      totalMemoryBytes,
-		"cache_size_mb":        float64(totalMemoryBytes) / (1024 * 1024),
-		"memory_efficient":      true,
+		"categories_cached":   categoriesCount,
+		"total_activity_days": totalDays,
+		"total_posts_cached":  totalPosts,
+		"cache_size_bytes":    totalMemoryBytes,
+		"cache_size_mb":       float64(totalMemoryBytes) / (1024 * 1024),
+		"memory_efficient":    true,
 	}
 }

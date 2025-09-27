@@ -4,5 +4,6 @@
   "maxFilesPerPost": 25,
   "activityEnabled": true,
   "fileStatsEnabled": true,
+  "categoryCacheEnabled": true,
   "retroactivePostingEnabled": true
 }

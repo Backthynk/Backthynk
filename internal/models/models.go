@@ -9,12 +9,11 @@ type Category struct {
 	Created     int64  `json:"created" db:"created"`
 }
 
-
 type Post struct {
-	ID         int       `json:"id" db:"id"`
-	CategoryID int       `json:"category_id" db:"category_id"`
-	Content    string    `json:"content" db:"content"`
-	Created    int64 `json:"created" db:"created"`
+	ID         int    `json:"id" db:"id"`
+	CategoryID int    `json:"category_id" db:"category_id"`
+	Content    string `json:"content" db:"content"`
+	Created    int64  `json:"created" db:"created"`
 }
 
 type Attachment struct {
@@ -43,10 +42,11 @@ type PostWithAttachments struct {
 }
 
 type Options struct {
-	MaxFileSizeMB            int  `json:"maxFileSizeMB"`
-	MaxContentLength         int  `json:"maxContentLength"`
-	MaxFilesPerPost          int  `json:"maxFilesPerPost"`
-	ActivityEnabled          bool `json:"activityEnabled"`
-	FileStatsEnabled         bool `json:"fileStatsEnabled"`
+	MaxFileSizeMB             int  `json:"maxFileSizeMB"`
+	MaxContentLength          int  `json:"maxContentLength"`
+	MaxFilesPerPost           int  `json:"maxFilesPerPost"`
+	ActivityEnabled           bool `json:"activityEnabled"`
+	FileStatsEnabled          bool `json:"fileStatsEnabled"`
+	CategoryCacheEnabled      bool `json:"categoryCacheEnabled"`
 	RetroactivePostingEnabled bool `json:"retroactivePostingEnabled"`
 }

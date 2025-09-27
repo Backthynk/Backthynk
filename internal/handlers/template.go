@@ -3,6 +3,7 @@ package handlers
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/models"
+	"backthynk/internal/services"
 	"backthynk/internal/storage"
 	"fmt"
 	"html/template"
@@ -12,11 +13,15 @@ import (
 )
 
 type TemplateHandler struct {
-	db *storage.DB
+	db              *storage.DB
+	categoryService *services.CategoryService
 }
 
-func NewTemplateHandler(db *storage.DB) *TemplateHandler {
-	return &TemplateHandler{db: db}
+func NewTemplateHandler(db *storage.DB, categoryService *services.CategoryService) *TemplateHandler {
+	return &TemplateHandler{
+		db:              db,
+		categoryService: categoryService,
+	}
 }
 
 type PageData struct {
@@ -57,7 +62,7 @@ func (h *TemplateHandler) ServeCategoryPage(w http.ResponseWriter, r *http.Reque
 
 func (h *TemplateHandler) findCategoryByPath(path string) (*models.Category, string) {
 	// Get all categories
-	categories, err := h.db.GetCategories()
+	categories, err := h.categoryService.GetCategories()
 	if err != nil {
 		return nil, ""
 	}
@@ -152,7 +157,7 @@ func IsCategoryPath(path string) bool {
 	}
 	for _, v := range config.ReservedRoutes {
 		if v == path {
-			return false;
+			return false
 		}
 	}
 

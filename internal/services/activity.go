@@ -12,15 +12,17 @@ import (
 
 // ActivityService handles activity cache operations with database integration
 type ActivityService struct {
-	db    *storage.DB
-	cache *cache.ActivityCache
+	db              *storage.DB
+	cache           *cache.ActivityCache
+	categoryService *CategoryService
 }
 
 // NewActivityService creates a new activity service
-func NewActivityService(db *storage.DB) *ActivityService {
+func NewActivityService(db *storage.DB, categoryService *CategoryService) *ActivityService {
 	return &ActivityService{
-		db:    db,
-		cache: cache.GetActivityCache(),
+		db:              db,
+		cache:           cache.GetActivityCache(),
+		categoryService: categoryService,
 	}
 }
 
@@ -30,7 +32,7 @@ func (s *ActivityService) InitializeCache() error {
 	start := time.Now()
 
 	// Get all categories to build hierarchy
-	categories, err := s.db.GetCategories()
+	categories, err := s.categoryService.GetCategories()
 	if err != nil {
 		return fmt.Errorf("failed to get categories: %w", err)
 	}
@@ -259,7 +261,6 @@ func (s *ActivityService) GetActivityPeriod(req cache.ActivityPeriodRequest) (*c
 	return s.cache.GetActivityPeriod(req)
 }
 
-
 // RefreshCategoryCache rebuilds cache for a specific category (useful for data consistency)
 func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 	// Get all posts for this category
@@ -282,4 +283,3 @@ func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 
 	return s.cache.RefreshCategory(categoryID, posts)
 }
-

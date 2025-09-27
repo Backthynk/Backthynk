@@ -14,11 +14,11 @@ type FileStatsCache struct {
 
 // CategoryFileStats stores file statistics for a category
 type CategoryFileStats struct {
-	CategoryID int                 `json:"category_id"`
-	Direct     FileStatsSummary    `json:"direct"`
-	Recursive  FileStatsSummary    `json:"recursive"`
-	LastUpdate int64               `json:"last_update"`
-	Mutex      sync.RWMutex        `json:"-"`
+	CategoryID int              `json:"category_id"`
+	Direct     FileStatsSummary `json:"direct"`
+	Recursive  FileStatsSummary `json:"recursive"`
+	LastUpdate int64            `json:"last_update"`
+	Mutex      sync.RWMutex     `json:"-"`
 }
 
 // FileStatsSummary contains aggregated file statistics
@@ -207,12 +207,12 @@ func (c *FileStatsCache) GetCacheStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"categories_cached":     categoriesCount,
-		"total_files_cached":    totalFiles,
-		"total_size_cached":     totalSize,
-		"cache_size_bytes":      totalMemoryBytes,
-		"cache_size_mb":        float64(totalMemoryBytes) / (1024 * 1024),
-		"memory_efficient":      true,
+		"categories_cached":  categoriesCount,
+		"total_files_cached": totalFiles,
+		"total_size_cached":  totalSize,
+		"cache_size_bytes":   totalMemoryBytes,
+		"cache_size_mb":      float64(totalMemoryBytes) / (1024 * 1024),
+		"memory_efficient":   true,
 	}
 }
 

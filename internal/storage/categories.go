@@ -128,7 +128,6 @@ func (db *DB) GetCategories() ([]models.Category, error) {
 	return categories, nil
 }
 
-
 func (db *DB) GetCategoriesByParent(parentID *int) ([]models.Category, error) {
 	var rows *sql.Rows
 	var err error

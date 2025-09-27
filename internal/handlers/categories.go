@@ -12,21 +12,23 @@ import (
 )
 
 type CategoryHandler struct {
-	db                *storage.DB
-	activityService   *services.ActivityService
-	fileStatsService  *services.FileStatsService
+	db               *storage.DB
+	categoryService  *services.CategoryService
+	activityService  *services.ActivityService
+	fileStatsService *services.FileStatsService
 }
 
-func NewCategoryHandler(db *storage.DB, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryHandler {
+func NewCategoryHandler(db *storage.DB, categoryService *services.CategoryService, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryHandler {
 	return &CategoryHandler{
 		db:               db,
+		categoryService:  categoryService,
 		activityService:  activityService,
 		fileStatsService: fileStatsService,
 	}
 }
 
 func (h *CategoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.db.GetCategories()
+	categories, err := h.categoryService.GetCategories()
 	if err != nil {
 		http.Error(w, "Failed to get categories", http.StatusInternalServerError)
 		return
@@ -48,7 +50,7 @@ func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.R
 		parentID = &id
 	}
 
-	categories, err := h.db.GetCategoriesByParent(parentID)
+	categories, err := h.categoryService.GetCategoriesByParent(parentID)
 	if err != nil {
 		http.Error(w, "Failed to get categories", http.StatusInternalServerError)
 		return
@@ -75,7 +77,7 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	category, err := h.db.CreateCategory(req.Name, req.ParentID, req.Description)
+	category, err := h.categoryService.CreateCategory(req.Name, req.ParentID, req.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -102,7 +104,7 @@ func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	category, err := h.db.GetCategory(id)
+	category, err := h.categoryService.GetCategory(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -137,13 +139,13 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Get old category info before updating to know the old parent
-	oldCategory, err := h.db.GetCategory(id)
+	oldCategory, err := h.categoryService.GetCategory(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	category, err := h.db.UpdateCategory(id, req.Name, req.Description, req.ParentID)
+	category, err := h.categoryService.UpdateCategory(id, req.Name, req.Description, req.ParentID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -192,7 +194,7 @@ func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = h.db.DeleteCategory(id)
+	err = h.categoryService.DeleteCategory(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

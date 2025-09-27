@@ -29,12 +29,12 @@ func NewCategoryStatsHandler(db *storage.DB, activityService *services.ActivityS
 
 // CategoryStatsResponse provides comprehensive category statistics
 type CategoryStatsResponse struct {
-	CategoryID  int                      `json:"category_id"`
-	Recursive   bool                     `json:"recursive"`
-	PostCount   int                      `json:"post_count"`
-	FileCount   int64                    `json:"file_count"`
-	TotalSize   int64                    `json:"total_size"`
-	LastUpdated int64                    `json:"last_updated"`
+	CategoryID  int   `json:"category_id"`
+	Recursive   bool  `json:"recursive"`
+	PostCount   int   `json:"post_count"`
+	FileCount   int64 `json:"file_count"`
+	TotalSize   int64 `json:"total_size"`
+	LastUpdated int64 `json:"last_updated"`
 }
 
 // GetCategoryStats handles GET /api/category-stats/{id}

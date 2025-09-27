@@ -18,17 +18,17 @@ import (
 )
 
 type UploadHandler struct {
-	db         *storage.DB
-	uploadPath string
-	settingsHandler *SettingsHandler
+	db               *storage.DB
+	uploadPath       string
+	settingsHandler  *SettingsHandler
 	fileStatsService *services.FileStatsService
 }
 
 func NewUploadHandler(db *storage.DB, uploadPath string, settingsHandler *SettingsHandler, fileStatsService *services.FileStatsService) *UploadHandler {
 	return &UploadHandler{
-		db: db,
-		uploadPath: uploadPath,
-		settingsHandler: settingsHandler,
+		db:               db,
+		uploadPath:       uploadPath,
+		settingsHandler:  settingsHandler,
 		fileStatsService: fileStatsService,
 	}
 }

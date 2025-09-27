@@ -4,8 +4,8 @@ import "os"
 
 // Application Info
 const (
-	AppName     = "Backthynk"
-	AppTagline  = "Personal Micro Blog"
+	AppName        = "Backthynk"
+	AppTagline     = "Personal Micro Blog"
 	AppDescription = "Personal micro blog platform"
 )
 
@@ -24,10 +24,10 @@ const (
 
 // SEO Templates
 const (
-	SEOPageTitleTemplate     = "%s - %s"        // category name - app name
-	SEODefaultTitle         = "%s - %s"         // app name - tagline
-	SEOSettingsTitle        = "Settings - %s"   // app name
-	SEOCategoryDescription  = "Posts in %s category" // breadcrumb
+	SEOPageTitleTemplate   = "%s - %s"              // category name - app name
+	SEODefaultTitle        = "%s - %s"              // app name - tagline
+	SEOSettingsTitle       = "Settings - %s"        // app name
+	SEOCategoryDescription = "Posts in %s category" // breadcrumb
 )
 
 // IsReservedRoute checks if a route name is reserved

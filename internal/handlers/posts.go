@@ -15,27 +15,29 @@ import (
 )
 
 type PostHandler struct {
-	db              *storage.DB
-	settingsHandler *SettingsHandler
-	activityService *services.ActivityService
+	db               *storage.DB
+	settingsHandler  *SettingsHandler
+	categoryService  *services.CategoryService
+	activityService  *services.ActivityService
 	fileStatsService *services.FileStatsService
 }
 
-func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *PostHandler {
+func NewPostHandler(db *storage.DB, settingsHandler *SettingsHandler, categoryService *services.CategoryService, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *PostHandler {
 	return &PostHandler{
-		db:              db,
-		settingsHandler: settingsHandler,
-		activityService: activityService,
+		db:               db,
+		settingsHandler:  settingsHandler,
+		categoryService:  categoryService,
+		activityService:  activityService,
 		fileStatsService: fileStatsService,
 	}
 }
 
 func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		CategoryID   int                        `json:"category_id"`
-		Content      string                     `json:"content"`
-		LinkPreviews []LinkPreviewResponse     `json:"link_previews,omitempty"`
-		CustomTimestamp *int64                 `json:"custom_timestamp,omitempty"`
+		CategoryID      int                   `json:"category_id"`
+		Content         string                `json:"content"`
+		LinkPreviews    []LinkPreviewResponse `json:"link_previews,omitempty"`
+		CustomTimestamp *int64                `json:"custom_timestamp,omitempty"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -112,7 +114,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 	// Extract and save link previews from content
 	var linkPreviewsToSave []LinkPreviewResponse
-	
+
 	// If link previews were provided in the request, use those
 	if len(req.LinkPreviews) > 0 {
 		linkPreviewsToSave = req.LinkPreviews
@@ -120,7 +122,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		// Otherwise, extract URLs from content and fetch previews
 		urls := ExtractURLsFromText(req.Content)
 		linkPreviewHandler := NewLinkPreviewHandler(h.db)
-		
+
 		for _, url := range urls {
 			preview, err := linkPreviewHandler.extractMetadata(url)
 			if err == nil {
@@ -139,7 +141,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 			ImageURL:    preview.ImageURL,
 			SiteName:    preview.SiteName,
 		}
-		
+
 		if err := h.db.CreateLinkPreview(linkPreview); err != nil {
 			// Log error but don't fail the post creation
 			// Could add logging here
@@ -150,7 +152,6 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(post)
 }
-
 
 func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -330,7 +331,7 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify the new category exists
-	_, err = h.db.GetCategory(req.CategoryID)
+	_, err = h.categoryService.GetCategory(req.CategoryID)
 	if err != nil {
 		http.Error(w, "Target category not found", http.StatusBadRequest)
 		return

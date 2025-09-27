@@ -41,6 +41,7 @@ const DEFAULT_SETTINGS = {
     maxFilesPerPost: 20,
     activityEnabled: true,
     fileStatsEnabled: true,
+    categoryCacheEnabled: true,
     retroactivePostingEnabled: false
 };
 

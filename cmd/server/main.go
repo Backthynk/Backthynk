@@ -21,8 +21,8 @@ func main() {
 		log.Fatal("Failed to load service.json:", err)
 	}
 
-	// Load configuration
-	settingsHandler := handlers.NewSettingsHandler(config.ConfigFilename())
+	// Load configuration (temporarily without category service)
+	settingsHandler := handlers.NewSettingsHandler(config.ConfigFilename(), nil)
 	options, err := settingsHandler.LoadOptions()
 	if err != nil {
 		log.Fatal("Failed to load options:", err)
@@ -35,10 +35,22 @@ func main() {
 	}
 	defer db.Close()
 
+	// Initialize category service and cache FIRST (other services depend on it)
+	var categoryService *services.CategoryService
+	categoryService = services.NewCategoryService(db, options.CategoryCacheEnabled)
+	if options.CategoryCacheEnabled {
+		if err := categoryService.InitializeCache(); err != nil {
+			log.Printf("Warning: Failed to initialize category cache: %v", err)
+		}
+		log.Println("Category cache system enabled")
+	} else {
+		log.Println("Category cache system disabled")
+	}
+
 	// Initialize activity service and cache (if enabled)
 	var activityService *services.ActivityService
 	if options.ActivityEnabled {
-		activityService = services.NewActivityService(db)
+		activityService = services.NewActivityService(db, categoryService)
 		if err := activityService.InitializeCache(); err != nil {
 			log.Printf("Warning: Failed to initialize activity cache: %v", err)
 		}
@@ -50,7 +62,7 @@ func main() {
 	// Initialize file statistics service and cache (if enabled)
 	var fileStatsService *services.FileStatsService
 	if options.FileStatsEnabled {
-		fileStatsService = services.NewFileStatsService(db)
+		fileStatsService = services.NewFileStatsService(db, categoryService)
 		if err := fileStatsService.InitializeCache(); err != nil {
 			log.Printf("Warning: Failed to initialize file statistics cache: %v", err)
 		}
@@ -59,13 +71,16 @@ func main() {
 		log.Println("File statistics system disabled")
 	}
 
+	// Update settings handler with category service for dynamic cache updates
+	settingsHandler = handlers.NewSettingsHandler(config.ConfigFilename(), categoryService)
+
 	// Initialize handlers
-	categoryHandler := handlers.NewCategoryHandler(db, activityService, fileStatsService)
-	postHandler := handlers.NewPostHandler(db, settingsHandler, activityService, fileStatsService)
+	categoryHandler := handlers.NewCategoryHandler(db, categoryService, activityService, fileStatsService)
+	postHandler := handlers.NewPostHandler(db, settingsHandler, categoryService, activityService, fileStatsService)
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(config.StoragePath(), config.UploadsSubdir()), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
 	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, activityService, fileStatsService)
-	templateHandler := handlers.NewTemplateHandler(db)
+	templateHandler := handlers.NewTemplateHandler(db, categoryService)
 
 	// Activity handler (only if activity is enabled)
 	var activityHandler *handlers.ActivityHandler
@@ -127,7 +142,7 @@ func main() {
 	}).Methods("GET") // SPA fallback
 
 	log.Println("Server starting on :" + config.ServerPort())
-	log.Fatal(http.ListenAndServe(":" + config.ServerPort(), r))
+	log.Fatal(http.ListenAndServe(":"+config.ServerPort(), r))
 }
 
 func serveIndex(w http.ResponseWriter, r *http.Request, templateHandler *handlers.TemplateHandler) {
@@ -158,7 +173,7 @@ func isCategoryPath(path string) bool {
 
 	// Simple validation: starts with /, contains only valid category characters (including underscores)
 	return len(path) > 1 && !strings.Contains(path, "//") &&
-		   regexp.MustCompile(`^/[a-zA-Z0-9\s_/-]+$`).MatchString(path)
+		regexp.MustCompile(`^/[a-zA-Z0-9\s_/-]+$`).MatchString(path)
 }
 
 // Serve category page with SEO data

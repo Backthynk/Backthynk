@@ -11,15 +11,17 @@ import (
 
 // FileStatsService handles file statistics cache operations with database integration
 type FileStatsService struct {
-	db    *storage.DB
-	cache *cache.FileStatsCache
+	db              *storage.DB
+	cache           *cache.FileStatsCache
+	categoryService *CategoryService
 }
 
 // NewFileStatsService creates a new file statistics service
-func NewFileStatsService(db *storage.DB) *FileStatsService {
+func NewFileStatsService(db *storage.DB, categoryService *CategoryService) *FileStatsService {
 	return &FileStatsService{
-		db:    db,
-		cache: cache.GetFileStatsCache(),
+		db:              db,
+		cache:           cache.GetFileStatsCache(),
+		categoryService: categoryService,
 	}
 }
 
@@ -29,7 +31,7 @@ func (s *FileStatsService) InitializeCache() error {
 	start := time.Now()
 
 	// Get all categories to build hierarchy
-	categories, err := s.db.GetCategories()
+	categories, err := s.categoryService.GetCategories()
 	if err != nil {
 		return fmt.Errorf("failed to get categories: %w", err)
 	}
@@ -265,7 +267,7 @@ func (s *FileStatsService) RefreshCategoryFileStats(categoryID int) error {
 // GetGlobalFileStats returns aggregated file statistics across all categories
 func (s *FileStatsService) GetGlobalFileStats() (*cache.FileStatsSummary, error) {
 	// Get all categories to aggregate their file statistics
-	categories, err := s.db.GetCategories()
+	categories, err := s.categoryService.GetCategories()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get categories: %w", err)
 	}
@@ -296,5 +298,3 @@ func (s *FileStatsService) GetGlobalFileStats() (*cache.FileStatsSummary, error)
 		TotalSize: totalSize,
 	}, nil
 }
-
-

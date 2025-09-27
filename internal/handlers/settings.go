@@ -3,6 +3,7 @@ package handlers
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/models"
+	"backthynk/internal/services"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,12 +12,14 @@ import (
 )
 
 type SettingsHandler struct {
-	configPath string
+	configPath      string
+	categoryService *services.CategoryService
 }
 
-func NewSettingsHandler(configPath string) *SettingsHandler {
+func NewSettingsHandler(configPath string, categoryService *services.CategoryService) *SettingsHandler {
 	return &SettingsHandler{
-		configPath: configPath,
+		configPath:      configPath,
+		categoryService: categoryService,
 	}
 }
 
@@ -32,6 +35,13 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	// Get current options to compare
+	currentOptions, err := h.LoadOptions()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to load current settings: %v", err), http.StatusInternalServerError)
+		return
+	}
+
 	var newOptions models.Options
 	if err := json.NewDecoder(r.Body).Decode(&newOptions); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
@@ -50,6 +60,13 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Update cache settings if they changed
+	if h.categoryService != nil && currentOptions.CategoryCacheEnabled != newOptions.CategoryCacheEnabled {
+		fmt.Printf("Category cache setting changed from %v to %v\n", currentOptions.CategoryCacheEnabled, newOptions.CategoryCacheEnabled)
+		h.categoryService.SetCacheEnabled(newOptions.CategoryCacheEnabled)
+		fmt.Printf("Category cache is now %s\n", map[bool]string{true: "enabled", false: "disabled"}[newOptions.CategoryCacheEnabled])
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(newOptions)
 }
@@ -62,11 +79,12 @@ func (h *SettingsHandler) LoadOptions() (models.Options, error) {
 		// If file doesn't exist, return defaults
 		if os.IsNotExist(err) {
 			return models.Options{
-				MaxFileSizeMB:            config.DefaultMaxFileSizeMB,
-				MaxContentLength:         config.DefaultMaxContentLength,
-				MaxFilesPerPost:          config.DefaultMaxFilesPerPost,
-				ActivityEnabled:          config.DefaultActivityEnabled,
-				FileStatsEnabled:         config.DefaultFileStatsEnabled,
+				MaxFileSizeMB:             config.DefaultMaxFileSizeMB,
+				MaxContentLength:          config.DefaultMaxContentLength,
+				MaxFilesPerPost:           config.DefaultMaxFilesPerPost,
+				ActivityEnabled:           config.DefaultActivityEnabled,
+				FileStatsEnabled:          config.DefaultFileStatsEnabled,
+				CategoryCacheEnabled:      config.DefaultCategoryCacheEnabled,
 				RetroactivePostingEnabled: config.DefaultRetroactivePostingEnabled,
 			}, nil
 		}
