@@ -79,7 +79,7 @@ func main() {
 	postHandler := handlers.NewPostHandler(db, settingsHandler, categoryService, activityService, fileStatsService)
 	uploadHandler := handlers.NewUploadHandler(db, filepath.Join(config.StoragePath(), config.UploadsSubdir()), settingsHandler, fileStatsService)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(db)
-	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, activityService, fileStatsService)
+	categoryStatsHandler := handlers.NewCategoryStatsHandler(db, categoryService, activityService, fileStatsService)
 	templateHandler := handlers.NewTemplateHandler(db, categoryService)
 
 	// Activity handler (only if activity is enabled)

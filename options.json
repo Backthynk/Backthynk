@@ -3,7 +3,7 @@
   "maxContentLength": 15000,
   "maxFilesPerPost": 25,
   "activityEnabled": true,
-  "fileStatsEnabled": true,
-  "categoryCacheEnabled": true,
+  "fileStatsEnabled": false,
+  "categoryCacheEnabled": false,
   "retroactivePostingEnabled": true
 }

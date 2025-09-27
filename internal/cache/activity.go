@@ -536,3 +536,4 @@ func (ac *ActivityCache) GetCacheStats() map[string]interface{} {
 		"memory_efficient":    true,
 	}
 }
+

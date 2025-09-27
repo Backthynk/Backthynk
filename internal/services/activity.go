@@ -283,3 +283,4 @@ func (s *ActivityService) RefreshCategoryCache(categoryID int) error {
 
 	return s.cache.RefreshCategory(categoryID, posts)
 }
+

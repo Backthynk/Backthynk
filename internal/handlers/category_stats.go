@@ -15,13 +15,15 @@ import (
 
 type CategoryStatsHandler struct {
 	db               *storage.DB
+	categoryService  *services.CategoryService
 	activityService  *services.ActivityService
 	fileStatsService *services.FileStatsService
 }
 
-func NewCategoryStatsHandler(db *storage.DB, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryStatsHandler {
+func NewCategoryStatsHandler(db *storage.DB, categoryService *services.CategoryService, activityService *services.ActivityService, fileStatsService *services.FileStatsService) *CategoryStatsHandler {
 	return &CategoryStatsHandler{
 		db:               db,
+		categoryService:  categoryService,
 		activityService:  activityService,
 		fileStatsService: fileStatsService,
 	}
@@ -59,11 +61,18 @@ func (h *CategoryStatsHandler) GetCategoryStats(w http.ResponseWriter, r *http.R
 	var totalSize int64
 	var lastFileStatsUpdate int64
 
-	// Get post count directly from database (forever data, not period-based)
+	// Get post count using cache when available
 	if categoryID == config.ALL_CATEGORIES_ID {
 		// ALL_CATEGORIES_ID means global stats across all categories
-		if count, err := h.db.GetTotalPostCount(); err == nil {
-			postCount = count
+		if h.categoryService != nil {
+			if count, err := h.categoryService.GetTotalPostCount(); err == nil {
+				postCount = count
+			}
+		} else {
+			// Fallback to database if no category service
+			if count, err := h.db.GetTotalPostCount(); err == nil {
+				postCount = count
+			}
 		}
 
 		if h.fileStatsService != nil {
@@ -76,8 +85,15 @@ func (h *CategoryStatsHandler) GetCategoryStats(w http.ResponseWriter, r *http.R
 		}
 	} else {
 		// Get post count for specific category (with or without recursive)
-		if count, err := h.db.GetPostCountByCategoryRecursive(categoryID, recursive); err == nil {
-			postCount = count
+		if h.categoryService != nil {
+			if count, err := h.categoryService.GetPostCount(categoryID, recursive); err == nil {
+				postCount = count
+			}
+		} else {
+			// Fallback to database if no category service
+			if count, err := h.db.GetPostCountByCategoryRecursive(categoryID, recursive); err == nil {
+				postCount = count
+			}
 		}
 
 		// Get file statistics

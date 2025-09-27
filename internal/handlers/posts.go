@@ -112,6 +112,11 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Update category post count cache
+	if h.categoryService != nil {
+		h.categoryService.OnPostCreated(post.CategoryID)
+	}
+
 	// Extract and save link previews from content
 	var linkPreviewsToSave []LinkPreviewResponse
 
@@ -192,7 +197,11 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		}
 
 		if withMeta {
-			totalCount, err = h.db.GetTotalPostCount()
+			if h.categoryService != nil {
+				totalCount, err = h.categoryService.GetTotalPostCount()
+			} else {
+				totalCount, err = h.db.GetTotalPostCount()
+			}
 			if err != nil {
 				http.Error(w, "Failed to get total post count", http.StatusInternalServerError)
 				return
@@ -207,7 +216,11 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		}
 
 		if withMeta {
-			totalCount, err = h.db.GetPostCountByCategoryRecursive(categoryID, recursive)
+			if h.categoryService != nil {
+				totalCount, err = h.categoryService.GetPostCount(categoryID, recursive)
+			} else {
+				totalCount, err = h.db.GetPostCountByCategoryRecursive(categoryID, recursive)
+			}
 			if err != nil {
 				http.Error(w, "Failed to get post count", http.StatusInternalServerError)
 				return
@@ -288,6 +301,11 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	// Update category post count cache
+	if h.categoryService != nil && categoryID > 0 {
+		h.categoryService.OnPostDeleted(categoryID)
+	}
+
 	// Update file statistics cache for deleted attachments
 	if h.fileStatsService != nil && categoryID > 0 {
 		for _, attachment := range attachments {
@@ -354,6 +372,11 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 		if err := h.activityService.OnPostCreated(req.CategoryID, oldPost.Created); err != nil {
 			fmt.Printf("Warning: failed to update activity cache for new category: %v\n", err)
 		}
+	}
+
+	// Update category post count cache for both categories
+	if h.categoryService != nil {
+		h.categoryService.OnPostMoved(oldPost.CategoryID, req.CategoryID)
 	}
 
 	// Update file statistics cache for both categories if there are attachments
