@@ -538,3 +538,5 @@ func (cc *CacheCoordinator) GetStats() map[string]interface{} {
 		"coordinator_active":   true,
 	}
 }
+
+

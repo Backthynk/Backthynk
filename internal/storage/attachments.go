@@ -52,20 +52,3 @@ func (db *DB) GetAttachmentsByPost(postID int) ([]models.Attachment, error) {
 	return attachments, nil
 }
 
-func (db *DB) DeleteAttachment(id int) error {
-	result, err := db.Exec("DELETE FROM attachments WHERE id = ?", id)
-	if err != nil {
-		return fmt.Errorf("failed to delete attachment: %w", err)
-	}
-
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
-
-	if affected == 0 {
-		return fmt.Errorf("attachment not found")
-	}
-
-	return nil
-}

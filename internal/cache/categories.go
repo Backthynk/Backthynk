@@ -256,18 +256,5 @@ func (cc *CategoryCache) GetCacheStats() map[string]interface{} {
 	}
 }
 
-// IsEmpty returns true if the cache is empty
-func (cc *CategoryCache) IsEmpty() bool {
-	cc.mutex.RLock()
-	defer cc.mutex.RUnlock()
-	return len(cc.categories) == 0
-}
-
-// GetCategoryCount returns the number of categories in the cache
-func (cc *CategoryCache) GetCategoryCount() int {
-	cc.mutex.RLock()
-	defer cc.mutex.RUnlock()
-	return len(cc.categories)
-}
 
 

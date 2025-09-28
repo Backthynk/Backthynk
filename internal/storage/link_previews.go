@@ -47,8 +47,3 @@ func (db *DB) GetLinkPreviewsByPostID(postID int) ([]models.LinkPreview, error) 
 	return previews, rows.Err()
 }
 
-func (db *DB) DeleteLinkPreviewsByPostID(postID int) error {
-	query := `DELETE FROM link_previews WHERE post_id = ?`
-	_, err := db.Exec(query, postID)
-	return err
-}

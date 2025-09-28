@@ -78,14 +78,6 @@ func (db *DB) GetDescendantCategories(parentID int) ([]int, error) {
 	return descendants, nil
 }
 
-// GetDescendantCategoriesWithParent returns descendants including the parent category
-func (db *DB) GetDescendantCategoriesWithParent(parentID int) ([]int, error) {
-	descendants, err := db.GetDescendantCategories(parentID)
-	if err != nil {
-		return nil, err
-	}
-	return append(descendants, parentID), nil
-}
 
 func (db *DB) createTables() error {
 	queries := []string{

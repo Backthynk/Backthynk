@@ -512,12 +512,6 @@ func (ac *ActivityCache) GetCategoryActivity(categoryID int) *CategoryActivity {
 	return ac.categories[categoryID]
 }
 
-// SetCategoryActivity sets activity data for a specific category (used during initialization)
-func (ac *ActivityCache) SetCategoryActivity(categoryID int, activity *CategoryActivity) {
-	ac.mutex.Lock()
-	defer ac.mutex.Unlock()
-	ac.categories[categoryID] = activity
-}
 
 // GetCacheStats returns cache statistics for monitoring
 func (ac *ActivityCache) GetCacheStats() map[string]interface{} {

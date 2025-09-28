@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"regexp"
 	"strings"
 )
 
@@ -150,18 +149,3 @@ func (h *TemplateHandler) renderTemplate(w http.ResponseWriter, templatePath str
 	}
 }
 
-// Helper function to check if path is a valid category path
-func IsCategoryPath(path string) bool {
-	if path == "/" {
-		return false
-	}
-	for _, v := range config.ReservedRoutes {
-		if v == path {
-			return false
-		}
-	}
-
-	// Must start with / and contain valid characters for category names
-	validPath := regexp.MustCompile(`^/[a-zA-Z0-9\s/]+$`)
-	return validPath.MatchString(path) && !strings.Contains(path, "//")
-}

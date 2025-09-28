@@ -172,3 +172,4 @@ func (pcc *PostCountCache) IsEmpty() bool {
 	defer pcc.mutex.RUnlock()
 	return len(pcc.counts) == 0
 }
+
