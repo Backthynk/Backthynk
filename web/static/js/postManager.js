@@ -642,8 +642,19 @@ function navigateToCategoryFromPost(categoryId) {
 
 // Function to update display for "All categories" view
 async function updateAllCategoriesDisplay() {
-    // Get global stats using category ID 0
-    const stats = await fetchCategoryStats(0, false);
+    // Calculate total post count by summing top-level categories' recursive post counts
+    // This avoids double counting when there are parent-child relationships
+    const totalPostCount = categories.reduce((total, category) => {
+        // Only count top-level categories (no parent_id) using their recursive count
+        // which includes all their descendants
+        if (!category.parent_id) {
+            return total + (category.recursive_post_count || category.post_count || 0);
+        }
+        return total;
+    }, 0);
+
+    // Get file stats from the API (still needed for file count and size)
+    const fileStats = await fetchCategoryStats(0, false);
 
     // Find the first category created (oldest)
     const oldestCategory = categories.reduce((oldest, current) => {
@@ -658,11 +669,11 @@ async function updateAllCategoriesDisplay() {
         }) :
         'Date unavailable';
 
-    let statsText = `${stats.post_count} post${stats.post_count !== 1 ? 's' : ''}`;
+    let statsText = `${totalPostCount} post${totalPostCount !== 1 ? 's' : ''}`;
 
     // Only show files and size if file stats are enabled and there are files
-    if (fileStatsEnabled && stats.file_count > 0) {
-        statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
+    if (fileStatsEnabled && fileStats.file_count > 0) {
+        statsText += ` • ${fileStats.file_count} file${fileStats.file_count !== 1 ? 's' : ''} • ${formatFileSize(fileStats.total_size)}`;
     }
 
     document.getElementById('timeline-title').innerHTML = `

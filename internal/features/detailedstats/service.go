@@ -161,6 +161,10 @@ func (s *Service) HandleEvent(event events.Event) error {
 		if data.OldParentID != data.NewParentID {
 			s.handleCategoryHierarchyChange(data.CategoryID, data.OldParentID, data.NewParentID)
 		}
+
+	case events.CategoryDeleted:
+		data := event.Data.(events.CategoryEvent)
+		s.handleCategoryDeleted(data.CategoryID, data.AffectedPosts, data.OldParentID)
 	}
 	
 	return nil
@@ -207,6 +211,11 @@ func (s *Service) updateParentRecursiveStats(categoryID int, sizeDelta int64, co
 			stats.Recursive.FileCount = 0
 		}
 		stats.mu.Unlock()
+	}
+
+	// If catCache is nil (e.g., in tests), we can only update this one level
+	if s.catCache == nil {
+		return
 	}
 
 	// Update ancestors by walking up the parent chain
@@ -397,6 +406,88 @@ func (s *Service) trackFileByPost(categoryID, postID int, sizeDelta int64, count
 			delete(s.postFiles, categoryID)
 		}
 	}
+}
+
+// updateParentRecursiveStatsFromParent updates recursive stats starting from a specific parent category
+// This is used when we know the parent ID but the child category is already removed from cache
+func (s *Service) updateParentRecursiveStatsFromParent(startParentID int, sizeDelta int64, countDelta int) {
+	current := startParentID
+
+	for {
+		// Update current category's recursive stats
+		if stats, ok := s.stats[current]; ok {
+			stats.mu.Lock()
+			stats.Recursive.TotalSize += sizeDelta
+			stats.Recursive.FileCount += int64(countDelta)
+
+			if stats.Recursive.TotalSize < 0 {
+				stats.Recursive.TotalSize = 0
+			}
+			if stats.Recursive.FileCount < 0 {
+				stats.Recursive.FileCount = 0
+			}
+			stats.mu.Unlock()
+		} else {
+			// Create stats entry for this category
+			newStats := &CategoryStats{}
+			newStats.Recursive.TotalSize = sizeDelta
+			newStats.Recursive.FileCount = int64(countDelta)
+			if newStats.Recursive.TotalSize < 0 {
+				newStats.Recursive.TotalSize = 0
+			}
+			if newStats.Recursive.FileCount < 0 {
+				newStats.Recursive.FileCount = 0
+			}
+			s.stats[current] = newStats
+		}
+
+		// Get parent of current category
+		// If catCache is nil (e.g., in tests), we can only update this one level
+		if s.catCache == nil {
+			break
+		}
+
+		cat, ok := s.catCache.Get(current)
+		if !ok || cat.ParentID == nil {
+			break
+		}
+
+		current = *cat.ParentID
+	}
+}
+
+// handleCategoryDeleted handles when a category and potentially its subcategories are deleted
+func (s *Service) handleCategoryDeleted(categoryID int, affectedPosts []int, parentID *int) {
+	if !s.enabled {
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Get the stats of the category before deletion to update parent recursive stats
+	if stats, exists := s.stats[categoryID]; exists {
+		// Get the direct stats that need to be subtracted from parent categories
+		stats.mu.RLock()
+		deletedFileCount := stats.Direct.FileCount
+		deletedTotalSize := stats.Direct.TotalSize
+		stats.mu.RUnlock()
+
+		// Update parent recursive stats by subtracting the deleted category's direct stats
+		// Use the parent information from the event since the category is already removed from cache
+		if (deletedFileCount > 0 || deletedTotalSize > 0) && parentID != nil {
+			s.updateParentRecursiveStatsFromParent(*parentID, -deletedTotalSize, -int(deletedFileCount))
+		}
+	}
+
+	// Remove stats for the deleted category
+	delete(s.stats, categoryID)
+
+	// Remove post file tracking for the deleted category
+	delete(s.postFiles, categoryID)
+
+	// Note: For subcategories, the category service sends separate CategoryDeleted events
+	// for each subcategory, so this method will be called for each one individually
 }
 
 // handlePostMoved handles when a post is moved between categories

@@ -1,9 +1,9 @@
 {
   "core": {
-    "maxContentLength": 15000,
+    "maxContentLength": 100,
     "maxFileSizeMB": 100,
     "maxFilesPerPost": 25,
-    "retroactivePostingEnabled": false
+    "retroactivePostingEnabled": true
   },
   "features": {
     "activity": {

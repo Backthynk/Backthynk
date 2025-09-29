@@ -158,34 +158,87 @@ func (s *CategoryService) Update(id int, name, description string, parentID *int
 }
 
 func (s *CategoryService) Delete(id int) error {
-	// Get all affected posts for event
+	// Get parent information before deletion for event
+	var parentID *int
+	if cat, ok := s.cache.Get(id); ok {
+		parentID = cat.ParentID
+	}
+
+	// Get all affected categories (including descendants)
 	descendants := s.cache.GetDescendants(id)
 	allCategories := append([]int{id}, descendants...)
-	
+
+	// Fire PostDeleted events for all posts with their file information
+	// This must happen BEFORE database deletion so detailed stats service gets the events
 	var affectedPosts []int
 	for _, catID := range allCategories {
-		posts, _ := s.db.GetPostIDsByCategory(catID)
-		affectedPosts = append(affectedPosts, posts...)
+		postIDs, _ := s.db.GetPostIDsByCategory(catID)
+		affectedPosts = append(affectedPosts, postIDs...)
+
+		// For each post, get its details and fire PostDeleted event
+		for _, postID := range postIDs {
+			if err := s.firePostDeletedEvent(postID, catID); err != nil {
+				// Log error but continue with other posts
+				// TODO: Add proper logging
+				continue
+			}
+		}
 	}
-	
-	// Delete from database
+
+	// Delete from database (CASCADE will handle posts and files at DB level)
 	if err := s.db.DeleteCategory(id); err != nil {
 		return err
 	}
-	
+
 	// Update cache
 	for _, catID := range allCategories {
 		s.cache.Delete(catID)
 	}
-	
-	// Dispatch event
+
+	// Dispatch CategoryDeleted event (for any services that need to know about category deletion itself)
 	s.dispatcher.Dispatch(events.Event{
 		Type: events.CategoryDeleted,
 		Data: events.CategoryEvent{
 			CategoryID:    id,
+			OldParentID:   parentID, // Include parent info for stats updates
 			AffectedPosts: affectedPosts,
 		},
 	})
-	
+
+	return nil
+}
+
+// firePostDeletedEvent fires a PostDeleted event for a specific post, including file information
+func (s *CategoryService) firePostDeletedEvent(postID, categoryID int) error {
+	// Get post details
+	post, err := s.db.GetPost(postID)
+	if err != nil {
+		return err
+	}
+
+	// Get attachments for file stats
+	attachments, err := s.db.GetAttachmentsByPost(postID)
+	if err != nil {
+		return err
+	}
+
+	// Calculate total file size
+	var totalSize int64
+	for _, att := range attachments {
+		totalSize += att.FileSize
+	}
+
+	// Dispatch PostDeleted event (same as PostService.Delete does)
+	s.dispatcher.Dispatch(events.Event{
+		Type: events.PostDeleted,
+		Data: events.PostEvent{
+			PostID:     postID,
+			CategoryID: categoryID,
+			Timestamp:  post.Created,
+			FileSize:   totalSize,
+			FileCount:  len(attachments),
+		},
+	})
+
 	return nil
 }
