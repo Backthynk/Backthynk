@@ -1,0 +1,11 @@
+{
+  "server": {
+    "port": "8081"
+  },
+  "files": {
+    "configFilename": "options.json",
+    "databaseFilename": "app.db",
+    "uploadsSubdir": "uploads",
+    "storagePath": ".storage"
+  }
+}

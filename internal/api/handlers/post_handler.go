@@ -1,0 +1,228 @@
+package handlers
+
+import (
+	"backthynk/internal/config"
+	"backthynk/internal/core/models"
+	"backthynk/internal/core/services"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
+)
+
+type PostHandler struct {
+	postService *services.PostService
+	fileService *services.FileService
+	options     *config.OptionsConfig
+}
+
+func NewPostHandler(postService *services.PostService, fileService *services.FileService, options *config.OptionsConfig) *PostHandler {
+	return &PostHandler{
+		postService: postService,
+		fileService: fileService,
+		options:     options,
+	}
+}
+
+func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		CategoryID      int                   `json:"category_id"`
+		Content         string                `json:"content"`
+		LinkPreviews    []LinkPreviewRequest `json:"link_previews,omitempty"`
+		CustomTimestamp *int64               `json:"custom_timestamp,omitempty"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	
+	if req.Content == "" {
+		http.Error(w, "Content is required", http.StatusBadRequest)
+		return
+	}
+	
+	if req.CategoryID <= 0 {
+		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
+		return
+	}
+	
+	// Validate content length
+	if len(req.Content) > h.options.Core.MaxContentLength {
+		http.Error(w, fmt.Sprintf("Content exceeds maximum length of %d characters", h.options.Core.MaxContentLength), http.StatusBadRequest)
+		return
+	}
+	
+	// Validate custom timestamp if provided
+	if req.CustomTimestamp != nil {
+		if !h.options.Core.RetroactivePostingEnabled {
+			http.Error(w, "Retroactive posting is disabled", http.StatusBadRequest)
+			return
+		}
+		
+		if *req.CustomTimestamp < config.MinRetroactivePostTimestamp {
+			http.Error(w, "Custom timestamp cannot be earlier than 01/01/2000", http.StatusBadRequest)
+			return
+		}
+	}
+	
+	post, err := h.postService.Create(req.CategoryID, req.Content, req.CustomTimestamp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
+	// Save link previews
+	for _, preview := range req.LinkPreviews {
+		h.fileService.SaveLinkPreview(post.ID, preview)
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(post)
+}
+
+func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		return
+	}
+	
+	post, err := h.fileService.GetPostWithAttachments(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(post)
+}
+
+func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		return
+	}
+	
+	if err := h.postService.Delete(id); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	postID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		return
+	}
+	
+	var req struct {
+		CategoryID int `json:"category_id"`
+	}
+	
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+	
+	if req.CategoryID <= 0 {
+		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
+		return
+	}
+	
+	if err := h.postService.Move(postID, req.CategoryID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	// Return updated post
+	post, err := h.fileService.GetPostWithAttachments(postID)
+	if err != nil {
+		http.Error(w, "Failed to retrieve updated post", http.StatusInternalServerError)
+		return
+	}
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(post)
+}
+
+func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	categoryID, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		return
+	}
+	
+	// Parse query params
+	limitStr := r.URL.Query().Get("limit")
+	offsetStr := r.URL.Query().Get("offset")
+	withMeta := r.URL.Query().Get("with_meta") == "true"
+	recursive := r.URL.Query().Get("recursive") == "true"
+	
+	limit := config.DefaultPostLimit
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= config.MaxPostLimit {
+			limit = l
+		}
+	}
+	
+	offset := 0
+	if offsetStr != "" {
+		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
+			offset = o
+		}
+	}
+	
+	var posts []models.PostWithAttachments
+	var totalCount int
+	
+	if categoryID == 0 { // All categories
+		posts, err = h.postService.GetAllPosts(limit, offset)
+		if withMeta {
+			totalCount, _ = h.fileService.GetTotalPostCount()
+		}
+	} else {
+		posts, err = h.postService.GetByCategory(categoryID, recursive, limit, offset)
+		if withMeta {
+			// Get count from cache
+			if cat, ok := h.postService.GetCategoryFromCache(categoryID); ok {
+				if recursive {
+					totalCount = cat.RecursivePostCount
+				} else {
+					totalCount = cat.PostCount
+				}
+			}
+		}
+	}
+	
+	if err != nil {
+		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
+		return
+	}
+	
+	if withMeta {
+		response := map[string]interface{}{
+			"posts":       posts,
+			"total_count": totalCount,
+			"offset":      offset,
+			"limit":       limit,
+			"has_more":    offset+len(posts) < totalCount,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(posts)
+	}
+}

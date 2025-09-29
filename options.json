@@ -1,0 +1,17 @@
+{
+  "core": {
+    "maxContentLength": 15000,
+    "maxFileSizeMB": 100,
+    "maxFilesPerPost": 25,
+    "retroactivePostingEnabled": false
+  },
+  "features": {
+    "activity": {
+      "enabled": true,
+      "periodMonths": 4
+    },
+    "detailedStats": {
+      "enabled": true
+    }
+  }
+}
