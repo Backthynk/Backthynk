@@ -466,23 +466,80 @@ func (s *Service) HandleEvent(event events.Event) error {
 	if !s.enabled {
 		return nil
 	}
-	
+
 	switch event.Type {
 	case events.PostCreated:
 		data := event.Data.(events.PostEvent)
 		s.updateActivity(data.CategoryID, data.Timestamp, 1)
-		
+
 	case events.PostDeleted:
 		data := event.Data.(events.PostEvent)
 		s.updateActivity(data.CategoryID, data.Timestamp, -1)
-		
+
 	case events.PostMoved:
 		data := event.Data.(events.PostEvent)
 		if data.OldCategoryID != nil {
 			s.updateActivity(*data.OldCategoryID, data.Timestamp, -1)
 		}
 		s.updateActivity(data.CategoryID, data.Timestamp, 1)
+
+	case events.CategoryUpdated:
+		data := event.Data.(events.CategoryEvent)
+		s.handleCategoryHierarchyChange(data.CategoryID, data.OldParentID, data.NewParentID)
 	}
-	
+
 	return nil
+}
+
+func (s *Service) handleCategoryHierarchyChange(categoryID int, oldParentID, newParentID *int) {
+	// When a category moves in the hierarchy, we need to recalculate
+	// recursive activity for all affected parent categories
+
+	// First, recalculate for all old ancestors
+	if oldParentID != nil {
+		s.recalculateAncestorActivity(*oldParentID)
+	}
+
+	// Then, recalculate for all new ancestors
+	if newParentID != nil {
+		s.recalculateAncestorActivity(*newParentID)
+	}
+
+	// Finally, recalculate for the moved category itself and all its descendants
+	s.recalculateDescendantActivity(categoryID)
+}
+
+func (s *Service) recalculateAncestorActivity(categoryID int) {
+	if s.catCache == nil {
+		return
+	}
+
+	// Walk up the parent chain and recalculate each ancestor
+	current := categoryID
+	for {
+		s.calculateRecursiveActivity(current)
+
+		// Get parent of current category
+		cat, ok := s.catCache.Get(current)
+		if !ok || cat.ParentID == nil {
+			break
+		}
+
+		current = *cat.ParentID
+	}
+}
+
+func (s *Service) recalculateDescendantActivity(categoryID int) {
+	if s.catCache == nil {
+		return
+	}
+
+	// Recalculate for the category itself
+	s.calculateRecursiveActivity(categoryID)
+
+	// Recalculate for all descendants
+	descendants := s.catCache.GetDescendants(categoryID)
+	for _, descID := range descendants {
+		s.calculateRecursiveActivity(descID)
+	}
 }

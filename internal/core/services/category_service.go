@@ -130,8 +130,10 @@ func (s *CategoryService) Update(id int, name, description string, parentID *int
 	}
 	
 	if hierarchyChanged {
-		// Rebuild entire cache if hierarchy changed
-		s.InitializeCache()
+		// Update cache for hierarchy change
+		s.cache.Set(cat)
+		// Efficiently update recursive post counts
+		s.cache.HandleHierarchyChange(cat.ID, oldCat.ParentID, parentID)
 	} else {
 		// Simple update
 		cat.PostCount = oldCat.PostCount

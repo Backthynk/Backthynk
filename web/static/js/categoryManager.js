@@ -536,7 +536,7 @@ async function deleteCategory(category) {
             if (currentCategory && currentCategory.id === category.id) {
                 currentCategory = null;
                 localStorage.removeItem('lastSelectedCategory');
-                document.getElementById('timeline-title').textContent = 'Select a category to view posts';
+                document.getElementById('timeline-title').textContent = '';
                 document.getElementById('new-post-btn').style.display = 'none';
                 document.getElementById('settings-btn').style.display = 'block';
                 document.getElementById('recursive-toggle-btn').style.display = 'none';

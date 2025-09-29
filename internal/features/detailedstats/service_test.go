@@ -262,8 +262,9 @@ func TestCategoryStatsStructure(t *testing.T) {
 
 func TestServiceConcurrentAccess(t *testing.T) {
 	service := &Service{
-		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		enabled:   true,
+		stats:     make(map[int]*CategoryStats),
+		postFiles: make(map[int]map[int]*FileInfo),
 	}
 
 	// Initialize some stats
@@ -291,4 +292,66 @@ func TestServiceConcurrentAccess(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		<-done
 	}
+}
+
+func TestServicePostFileTracking(t *testing.T) {
+	// This test verifies that the service properly tracks files by post
+	service := &Service{
+		enabled:   true,
+		stats:     make(map[int]*CategoryStats),
+		postFiles: make(map[int]map[int]*FileInfo),
+	}
+
+	// Test file tracking by post
+	categoryID := 1
+	postID := 1
+
+	// Track files for a post
+	service.trackFileByPost(categoryID, postID, 5000, 1)
+	service.trackFileByPost(categoryID, postID, 3000, 1)
+
+	// Verify tracking
+	service.mu.RLock()
+	if postFiles, ok := service.postFiles[categoryID]; ok {
+		if fileInfo, exists := postFiles[postID]; exists {
+			if fileInfo.FileCount != 2 {
+				t.Errorf("Expected 2 files tracked, got %d", fileInfo.FileCount)
+			}
+			if fileInfo.TotalSize != 8000 {
+				t.Errorf("Expected 8000 bytes tracked, got %d", fileInfo.TotalSize)
+			}
+		} else {
+			t.Error("Post should be tracked")
+		}
+	} else {
+		t.Error("Category should have post tracking")
+	}
+	service.mu.RUnlock()
+
+	// Test file removal
+	service.trackFileByPost(categoryID, postID, -3000, -1)
+
+	service.mu.RLock()
+	if postFiles, ok := service.postFiles[categoryID]; ok {
+		if fileInfo, exists := postFiles[postID]; exists {
+			if fileInfo.FileCount != 1 {
+				t.Errorf("Expected 1 file after removal, got %d", fileInfo.FileCount)
+			}
+			if fileInfo.TotalSize != 5000 {
+				t.Errorf("Expected 5000 bytes after removal, got %d", fileInfo.TotalSize)
+			}
+		}
+	}
+	service.mu.RUnlock()
+
+	// Test complete removal
+	service.trackFileByPost(categoryID, postID, -5000, -1)
+
+	service.mu.RLock()
+	if postFiles, ok := service.postFiles[categoryID]; ok {
+		if _, exists := postFiles[postID]; exists {
+			t.Error("Post should no longer be tracked after all files removed")
+		}
+	}
+	service.mu.RUnlock()
 }

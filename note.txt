@@ -24,10 +24,16 @@ It will take more space in the cache but it would work for every timezone. -> we
 
 6. New readme adapted to maximum version
 
+7. Add a feature to have an api that gives all right when added in the browser (all methods to change the state of the app.)
+if the token is system is enabled and it's not entered in the cookies or somehwere then on the client side hide everything.
+
+8. When 7 is done then add a feature to make private/public a categorie (it will be a recursive feature), if set then you can only see category's content if the token is in the cookies.
+
 
 
 
 ---
-GetLinkPreviewsByPost
---
+
 GetPostsByCategoryRecursive, GetAllPosts : unefficient
+
+

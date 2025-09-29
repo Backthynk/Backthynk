@@ -224,3 +224,60 @@ func (c *CategoryCache) RebuildHierarchy() {
 		}
 	}
 }
+
+// HandleHierarchyChange efficiently updates recursive post counts when a category is moved
+func (c *CategoryCache) HandleHierarchyChange(categoryID int, oldParentID, newParentID *int) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	_, ok := c.categories[categoryID]
+	if !ok {
+		return
+	}
+
+	// Get the post count impact from the moved category and all its descendants
+	impactCount := c.getDescendantPostCountUnlocked(categoryID)
+
+	// Update old ancestor chain (subtract the impact)
+	if oldParentID != nil {
+		c.updateAncestorRecursiveCountsUnlocked(*oldParentID, -impactCount)
+	}
+
+	// Update new ancestor chain (add the impact)
+	if newParentID != nil {
+		c.updateAncestorRecursiveCountsUnlocked(*newParentID, impactCount)
+	}
+}
+
+// getDescendantPostCountUnlocked calculates total posts in category and all descendants
+func (c *CategoryCache) getDescendantPostCountUnlocked(categoryID int) int {
+	total := 0
+
+	// Add direct posts from this category
+	if cat, ok := c.categories[categoryID]; ok {
+		total += cat.PostCount
+	}
+
+	// Add posts from all descendants
+	descendants := c.getDescendantsUnlocked(categoryID)
+	for _, descID := range descendants {
+		if cat, ok := c.categories[descID]; ok {
+			total += cat.PostCount
+		}
+	}
+
+	return total
+}
+
+// updateAncestorRecursiveCountsUnlocked updates recursive post counts for all ancestors
+func (c *CategoryCache) updateAncestorRecursiveCountsUnlocked(categoryID int, delta int) {
+	ancestors := c.getAncestorsUnlocked(categoryID)
+	// Also update the category itself since ancestors walk up from parent
+	ancestors = append([]int{categoryID}, ancestors...)
+
+	for _, ancestorID := range ancestors {
+		if cat, ok := c.categories[ancestorID]; ok {
+			cat.RecursivePostCount += delta
+		}
+	}
+}

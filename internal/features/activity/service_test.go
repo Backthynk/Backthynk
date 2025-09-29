@@ -1,7 +1,9 @@
 package activity
 
 import (
+	"backthynk/internal/core/cache"
 	"backthynk/internal/core/events"
+	"backthynk/internal/core/models"
 	"testing"
 	"time"
 )
@@ -425,4 +427,83 @@ func TestUpdateRecursiveActivity(t *testing.T) {
 		t.Error("Expected date to be removed from recursive when count reaches zero")
 	}
 	activity.mu.RUnlock()
+}
+
+func TestCategoryUpdatedEvent(t *testing.T) {
+	service := &Service{
+		enabled:  true,
+		activity: make(map[int]*CategoryActivity),
+		catCache: nil, // Disable cache for simple test
+	}
+
+	// Test that CategoryUpdated events are handled without errors
+	t.Run("EventHandlingBasic", func(t *testing.T) {
+		err := service.HandleEvent(events.Event{
+			Type: events.CategoryUpdated,
+			Data: events.CategoryEvent{
+				CategoryID:  1,
+				OldParentID: nil,
+				NewParentID: &[]int{2}[0],
+			},
+		})
+
+		if err != nil {
+			t.Errorf("Expected no error handling CategoryUpdated event, got %v", err)
+		}
+	})
+
+	// Test with cache - just verify the methods are called
+	t.Run("EventHandlingWithCache", func(t *testing.T) {
+		catCache := cache.NewCategoryCache()
+
+		// Set up a simple hierarchy
+		cat1 := &models.Category{ID: 1, Name: "Parent", ParentID: nil}
+		cat2 := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
+
+		catCache.Set(cat1)
+		catCache.Set(cat2)
+
+		service.catCache = catCache
+
+		// Create some activity in category 2
+		now := time.Now().Unix() * 1000
+		service.updateActivity(2, now, 1)
+
+		// Trigger CategoryUpdated event (move category 2 to root)
+		err := service.HandleEvent(events.Event{
+			Type: events.CategoryUpdated,
+			Data: events.CategoryEvent{
+				CategoryID:  2,
+				OldParentID: &[]int{1}[0],
+				NewParentID: nil,
+			},
+		})
+
+		if err != nil {
+			t.Errorf("Expected no error handling CategoryUpdated event with cache, got %v", err)
+		}
+
+		// Just verify that activity was recalculated (should not crash)
+		service.mu.RLock()
+		activity1, exists1 := service.activity[1]
+		activity2, exists2 := service.activity[2]
+		service.mu.RUnlock()
+
+		if exists1 {
+			activity1.mu.RLock()
+			t.Logf("Category 1 recursive posts: %d", activity1.Stats.RecursivePosts)
+			activity1.mu.RUnlock()
+		}
+
+		if exists2 {
+			activity2.mu.RLock()
+			t.Logf("Category 2 total posts: %d, recursive posts: %d", activity2.Stats.TotalPosts, activity2.Stats.RecursivePosts)
+			if activity2.Stats.TotalPosts != 1 {
+				t.Errorf("Expected 1 total post in category 2, got %d", activity2.Stats.TotalPosts)
+			}
+			activity2.mu.RUnlock()
+		} else {
+			t.Error("Expected category 2 activity to exist")
+		}
+	})
 }

@@ -61,6 +61,7 @@ func main() {
 		dispatcher.Subscribe(events.FileDeleted, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.PostDeleted, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.PostMoved, detailedStatsService.HandleEvent)
+		dispatcher.Subscribe(events.CategoryUpdated, detailedStatsService.HandleEvent)
 		log.Println("Detailed stats feature enabled")
 	}
 	
@@ -74,6 +75,7 @@ func main() {
 		dispatcher.Subscribe(events.PostCreated, activityService.HandleEvent)
 		dispatcher.Subscribe(events.PostDeleted, activityService.HandleEvent)
 		dispatcher.Subscribe(events.PostMoved, activityService.HandleEvent)
+		dispatcher.Subscribe(events.CategoryUpdated, activityService.HandleEvent)
 		log.Println("Activity tracking feature enabled")
 	}
 	

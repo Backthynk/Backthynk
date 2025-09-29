@@ -133,3 +133,39 @@ func (db *DB) GetAllFileStats() (map[int]FileStats, error) {
 	
 	return stats, nil
 }
+
+// PostFileStats represents file stats for a specific post
+type PostFileStats struct {
+	PostID     int
+	CategoryID int
+	FileCount  int64
+	TotalSize  int64
+}
+
+// GetAllPostFileStats returns file statistics for all posts grouped by category and post
+func (db *DB) GetAllPostFileStats() ([]PostFileStats, error) {
+	query := `
+		SELECT p.id, p.category_id, COUNT(a.id), COALESCE(SUM(a.file_size), 0)
+		FROM posts p
+		LEFT JOIN attachments a ON p.id = a.post_id
+		GROUP BY p.id, p.category_id
+		HAVING COUNT(a.id) > 0
+	`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var postStats []PostFileStats
+	for rows.Next() {
+		var stat PostFileStats
+		if err := rows.Scan(&stat.PostID, &stat.CategoryID, &stat.FileCount, &stat.TotalSize); err != nil {
+			return nil, err
+		}
+		postStats = append(postStats, stat)
+	}
+
+	return postStats, nil
+}
