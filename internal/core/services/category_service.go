@@ -130,6 +130,9 @@ func (s *CategoryService) Update(id int, name, description string, parentID *int
 	}
 	
 	if hierarchyChanged {
+		// Preserve post counts from the cached version
+		cat.PostCount = oldCat.PostCount
+		cat.RecursivePostCount = oldCat.RecursivePostCount
 		// Update cache for hierarchy change
 		s.cache.Set(cat)
 		// Efficiently update recursive post counts

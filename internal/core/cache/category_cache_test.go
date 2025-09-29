@@ -193,3 +193,82 @@ func TestCategoryCache_UpdatePostCount(t *testing.T) {
 		t.Errorf("Expected category 3 recursive count to be 1 after decrement, got %d", updatedCat3.RecursivePostCount)
 	}
 }
+
+func TestCategoryCache_PostCountPreservationDuringHierarchyChange(t *testing.T) {
+	cache := NewCategoryCache()
+
+	// Set up hierarchy: 1 (5 posts) -> 2 (3 posts) -> 3 (2 posts)
+	cat1 := &models.Category{ID: 1, Name: "Parent", ParentID: nil, PostCount: 5}
+	cat2 := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0], PostCount: 3}
+	cat3 := &models.Category{ID: 3, Name: "Grandchild", ParentID: &[]int{2}[0], PostCount: 2}
+	cat4 := &models.Category{ID: 4, Name: "NewParent", ParentID: nil, PostCount: 0}
+
+	cache.Set(cat1)
+	cache.Set(cat2)
+	cache.Set(cat3)
+	cache.Set(cat4)
+
+	// Set initial recursive counts (simulate normal operation)
+	cat1.RecursivePostCount = 10 // 5 + 3 + 2
+	cat2.RecursivePostCount = 5  // 3 + 2
+	cat3.RecursivePostCount = 2  // 2
+	cat4.RecursivePostCount = 0  // 0
+
+	t.Run("PostCountsPreservedAfterMove", func(t *testing.T) {
+		// Move category 3 from parent 2 to parent 4
+		oldParentID := 2
+		newParentID := 4
+
+		// Simulate the service layer update - this would normally reset counts to 0
+		// but our fix should prevent this by preserving the counts before calling HandleHierarchyChange
+
+		// Create a new category object as the database would return (without post counts)
+		updatedCat3 := &models.Category{
+			ID: 3,
+			Name: "Grandchild Moved",
+			ParentID: &newParentID,
+			PostCount: 0,  // Database returns 0 since post counts are managed by cache
+			RecursivePostCount: 0,  // Database returns 0 since recursive counts are managed by cache
+		}
+
+		// Get the cached version with correct post counts
+		cachedCat3, _ := cache.Get(3)
+
+		// Preserve post counts (this is what the fix does)
+		updatedCat3.PostCount = cachedCat3.PostCount
+		updatedCat3.RecursivePostCount = cachedCat3.RecursivePostCount
+
+		// Update cache and handle hierarchy change
+		cache.Set(updatedCat3)
+		cache.HandleHierarchyChange(3, &oldParentID, &newParentID)
+
+		// Verify counts are preserved and hierarchy is updated correctly
+		finalCat1, _ := cache.Get(1)
+		finalCat2, _ := cache.Get(2)
+		finalCat3, _ := cache.Get(3)
+		finalCat4, _ := cache.Get(4)
+
+		// Cat3 should retain its original post counts
+		if finalCat3.PostCount != 2 {
+			t.Errorf("Expected category 3 post count to be preserved at 2, got %d", finalCat3.PostCount)
+		}
+		if finalCat3.RecursivePostCount != 2 {
+			t.Errorf("Expected category 3 recursive post count to be preserved at 2, got %d", finalCat3.RecursivePostCount)
+		}
+
+		// Cat1 should have reduced recursive count (5 + 3 = 8, lost the 2 from cat3)
+		if finalCat1.RecursivePostCount != 8 {
+			t.Errorf("Expected category 1 recursive count to be 8 after move, got %d", finalCat1.RecursivePostCount)
+		}
+
+		// Cat2 should have reduced recursive count (3 only, lost the 2 from cat3)
+		if finalCat2.RecursivePostCount != 3 {
+			t.Errorf("Expected category 2 recursive count to be 3 after move, got %d", finalCat2.RecursivePostCount)
+		}
+
+		// Cat4 should have gained recursive count (0 + 2 = 2)
+		if finalCat4.RecursivePostCount != 2 {
+			t.Errorf("Expected category 4 recursive count to be 2 after move, got %d", finalCat4.RecursivePostCount)
+		}
+	})
+}
