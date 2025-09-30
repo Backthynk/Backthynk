@@ -1,4 +1,4 @@
-.PHONY: help build build-prod run serve-dev serve-prod clean test test-verbose dev-generate-posts dev-list-categories dev-check
+.PHONY: help build build-prod run serve-dev serve-prod clean test test-verbose dev-generate-posts dev-list-categories
 
 # Color codes
 RED := \033[0;31m
@@ -31,7 +31,6 @@ help:
 	@echo -e "  $(YELLOW)Development Scripts:$(NC)"
 	@echo -e "    $(GREEN)dev-generate-posts$(NC)       Generate random posts for testing"
 	@echo -e "    $(GREEN)dev-list-categories$(NC)      List all available categories"
-	@echo -e "    $(GREEN)dev-check$(NC)               Check development environment"
 	@echo ""
 
 # Build targets
@@ -97,19 +96,3 @@ dev-generate-posts:
 dev-list-categories:
 	@echo -e "$(BLUE)▶$(NC) Listing available categories..."
 	@./scripts/dev/list_categories.sh
-
-dev-check:
-	@echo -e "$(BLUE)▶$(NC) Checking development environment..."
-	@echo ""
-	@echo -e "$(BOLD)Required tools:$(NC)"
-	@which go > /dev/null 2>&1 && echo -e "  $(GREEN)✓$(NC) Go found: $$(go version)" || echo -e "  $(RED)✗$(NC) Go not found"
-	@which curl > /dev/null 2>&1 && echo -e "  $(GREEN)✓$(NC) curl found: $$(curl --version | head -n1)" || echo -e "  $(RED)✗$(NC) curl not found"
-	@which jq > /dev/null 2>&1 && echo -e "  $(GREEN)✓$(NC) jq found: $$(jq --version)" || echo -e "  $(RED)✗$(NC) jq not found"
-	@echo ""
-	@echo -e "$(BOLD)Development scripts:$(NC)"
-	@ls -la scripts/dev/ | grep -E '\.(sh|py)$$' | awk '{print "  " $$9}' || echo "  No scripts found"
-	@echo ""
-	@echo -e "$(BOLD)Server status:$(NC)"
-	@curl -s --max-time 2 http://localhost:8080 > /dev/null 2>&1 && \
-		echo -e "  $(GREEN)✓$(NC) Server is running on localhost:8080" || \
-		echo -e "  $(YELLOW)✗$(NC) Server not reachable on localhost:8080"

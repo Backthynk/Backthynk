@@ -18,6 +18,14 @@ type PostHandler struct {
 	options     *config.OptionsConfig
 }
 
+type PostLinkPreview struct {
+	URL         string `json:"url"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	ImageURL    string `json:"image_url"`
+	SiteName    string `json:"site_name"`
+}
+
 func NewPostHandler(postService *services.PostService, fileService *services.FileService, options *config.OptionsConfig) *PostHandler {
 	return &PostHandler{
 		postService: postService,
@@ -28,10 +36,10 @@ func NewPostHandler(postService *services.PostService, fileService *services.Fil
 
 func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		CategoryID      int                   `json:"category_id"`
-		Content         string                `json:"content"`
-		LinkPreviews    []LinkPreviewRequest `json:"link_previews,omitempty"`
-		CustomTimestamp *int64               `json:"custom_timestamp,omitempty"`
+		CategoryID      int                 `json:"category_id"`
+		Content         string              `json:"content"`
+		LinkPreviews    []PostLinkPreview   `json:"link_previews,omitempty"`
+		CustomTimestamp *int64              `json:"custom_timestamp,omitempty"`
 	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

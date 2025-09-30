@@ -42,6 +42,21 @@ function formatRelativeDate(timestamp) {
     }
 }
 
+function formatDateTimeMMDDYY(timestamp) {
+    // timestamp is expected to be Unix timestamp in milliseconds
+    const date = new Date(timestamp);
+
+    // Format as mm/dd/yy hh:mm:ss (24h format)
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = String(date.getFullYear()).slice(-2);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
 function showError(message) {
     if (window.showError && window.showError !== showError) {
         window.showError(message);
@@ -143,10 +158,72 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
 function formatTextWithUrls(text) {
     // URL regex - same as used in link preview
     const urlRegex = /https?:\/\/[^\s\)]+/g;
-    
+
     // Replace URLs with formatted links
     return text.replace(urlRegex, (url) => {
         const shortUrl = shortenUrl(url);
         return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors">${escapeHtml(shortUrl)}</a>`;
     });
+}
+
+function getFileIcon(fileExtension) {
+    const ext = fileExtension.toLowerCase();
+
+    // Programming/Code files
+    if (['js', 'ts', 'jsx', 'tsx', 'vue', 'react'].includes(ext)) return 'fa-code';
+    if (['html', 'htm', 'xml'].includes(ext)) return 'fa-code';
+    if (['css', 'scss', 'sass', 'less'].includes(ext)) return 'fa-palette';
+    if (['py', 'python'].includes(ext)) return 'fa-code';
+    if (['java', 'jar'].includes(ext)) return 'fa-coffee';
+    if (['c', 'cpp', 'cc', 'h', 'hpp'].includes(ext)) return 'fa-code';
+    if (['cs', 'csharp'].includes(ext)) return 'fa-code';
+    if (['php'].includes(ext)) return 'fa-code';
+    if (['rb', 'ruby'].includes(ext)) return 'fa-gem';
+    if (['go'].includes(ext)) return 'fa-code';
+    if (['rs', 'rust'].includes(ext)) return 'fa-code';
+    if (['swift'].includes(ext)) return 'fa-code';
+    if (['kt', 'kotlin'].includes(ext)) return 'fa-code';
+    if (['dart'].includes(ext)) return 'fa-code';
+    if (['r'].includes(ext)) return 'fa-chart-line';
+    if (['m', 'mm'].includes(ext)) return 'fa-code';
+    if (['scala'].includes(ext)) return 'fa-code';
+    if (['clj', 'clojure'].includes(ext)) return 'fa-code';
+    if (['hs', 'haskell'].includes(ext)) return 'fa-code';
+    if (['lua'].includes(ext)) return 'fa-code';
+    if (['perl', 'pl'].includes(ext)) return 'fa-code';
+    if (['sh', 'bash', 'zsh', 'fish'].includes(ext)) return 'fa-terminal';
+    if (['bat', 'cmd'].includes(ext)) return 'fa-terminal';
+    if (['ps1', 'powershell'].includes(ext)) return 'fa-terminal';
+
+    // Documents
+    if (['pdf'].includes(ext)) return 'fa-file-pdf';
+    if (['doc', 'docx'].includes(ext)) return 'fa-file-word';
+    if (['xls', 'xlsx'].includes(ext)) return 'fa-file-excel';
+    if (['ppt', 'pptx'].includes(ext)) return 'fa-file-powerpoint';
+    if (['txt', 'text'].includes(ext)) return 'fa-file-alt';
+    if (['rtf'].includes(ext)) return 'fa-file-alt';
+    if (['odt', 'ods', 'odp'].includes(ext)) return 'fa-file-alt';
+
+    // Images
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico', 'tiff', 'tif'].includes(ext)) return 'fa-image';
+
+    // Audio
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a'].includes(ext)) return 'fa-file-audio';
+
+    // Video
+    if (['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v'].includes(ext)) return 'fa-file-video';
+
+    // Archives
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'].includes(ext)) return 'fa-file-archive';
+
+    // Data/Config files
+    if (['json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf'].includes(ext)) return 'fa-cog';
+    if (['csv', 'tsv'].includes(ext)) return 'fa-table';
+    if (['sql', 'db', 'sqlite'].includes(ext)) return 'fa-database';
+
+    // Markdown/Documentation
+    if (['md', 'markdown', 'rst'].includes(ext)) return 'fa-file-alt';
+
+    // Default
+    return 'fa-file';
 }

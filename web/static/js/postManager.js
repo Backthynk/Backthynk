@@ -201,22 +201,12 @@ function createPostElement(post) {
         `<span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors" onclick="navigateToCategoryFromPost(${post.category_id})">${categoryBreadcrumb}</span>` :
         '';
 
-    // Simple header
+    // Redesigned header
     const headerHtml = `
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
                 ${clickableCategoryBreadcrumb}
-                <span class="text-sm text-gray-500">${formatRelativeDate(post.created)}</span>
-                ${totalAttachments > 0 ? `
-                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                        ${totalAttachments} file${totalAttachments > 1 ? 's' : ''}
-                    </span>
-                ` : ''}
-                ${linkPreviews.length > 0 ? `
-                    <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                        ${linkPreviews.length} link${linkPreviews.length > 1 ? 's' : ''}
-                    </span>
-                ` : ''}
+                <span class="text-sm text-gray-600 font-mono">${formatDateTimeMMDDYY(post.created)}</span>
             </div>
             <div class="relative opacity-0 group-hover:opacity-100 transition-all">
                 <button onclick="togglePostActionMenu(${post.id})" class="text-gray-400 hover:text-gray-600 p-1 rounded transition-all">
@@ -255,62 +245,49 @@ function createPostElement(post) {
         `;
     }
 
-    // Simple attachments
+    // Enhanced attachments display
     let attachmentsHtml = '';
     if (totalAttachments > 0) {
-        attachmentsHtml = '<div class="border-t pt-4 space-y-3">';
+        attachmentsHtml = '<div class="border-t pt-4 space-y-4">';
 
-        // Images - simple grid
-        if (images.length > 0) {
-            const imageData = images.map(img => ({url: '/uploads/' + img.file_path, filename: img.filename}));
+        // Combine all attachments for a unified display
+        const allAttachments = [...images, ...otherFiles];
+        const imageData = images.map(img => ({url: '/uploads/' + img.file_path, filename: img.filename}));
 
-            if (images.length === 1) {
-                attachmentsHtml += `
-                    <div class="max-w-lg">
-                        <img src="/uploads/${images[0].file_path}"
-                             alt="${images[0].filename}"
-                             class="w-full rounded-lg border cursor-pointer hover:opacity-90"
-                             onclick="openImageGallery(0)"
-                             data-images='${JSON.stringify(imageData)}'>
-                    </div>
-                `;
-            } else {
-                attachmentsHtml += `
-                    <div class="grid grid-cols-2 gap-2 max-w-lg">
-                        ${images.slice(0, 4).map((img, idx) => `
-                            <img src="/uploads/${img.file_path}"
-                                 alt="${img.filename}"
-                                 class="w-full h-32 object-cover rounded border cursor-pointer hover:opacity-90"
-                                 onclick="openImageGallery(${idx})"
-                                 data-images='${JSON.stringify(imageData)}'>
-                        `).join('')}
-                    </div>
-                `;
+        attachmentsHtml += `
+            <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-3">Attachments (${totalAttachments})</h4>
+                <div class="flex items-center space-x-3 overflow-x-auto pb-2">
+                    ${allAttachments.map((attachment, idx) => {
+                        const isImage = attachment.file_type.startsWith('image/');
+                        const fileExtension = attachment.filename.split('.').pop().toLowerCase();
 
-                if (images.length > 4) {
-                    attachmentsHtml += `<p class="text-sm text-gray-500">+${images.length - 4} more images</p>`;
-                }
-            }
-        }
-
-        // Other files - simple list
-        if (otherFiles.length > 0) {
-            attachmentsHtml += `
-                <div class="space-y-2">
-                    ${otherFiles.map(file => `
-                        <div class="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
-                             onclick="window.open('/uploads/${file.file_path}', '_blank')">
-                            <i class="fas fa-file text-gray-500 mr-3"></i>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 truncate">${file.filename}</p>
-                                <p class="text-xs text-gray-500">${formatFileSize(file.file_size)}</p>
-                            </div>
-                            <i class="fas fa-external-link-alt text-gray-400 text-xs"></i>
-                        </div>
-                    `).join('')}
+                        if (isImage) {
+                            const imageIndex = images.findIndex(img => img.filename === attachment.filename);
+                            return `
+                                <div class="flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="openImageGallery(${imageIndex})" data-images='${JSON.stringify(imageData)}'>
+                                    <img src="/uploads/${attachment.file_path}"
+                                         alt="${attachment.filename}"
+                                         class="w-full h-full object-cover rounded-lg border hover:opacity-90 transition-opacity">
+                                    <p class="text-xs text-gray-500 mt-1 text-center truncate">${attachment.filename}</p>
+                                </div>
+                            `;
+                        } else {
+                            return `
+                                <div class="flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="window.open('/uploads/${attachment.file_path}', '_blank')">
+                                    <div class="w-full h-full bg-gray-100 border rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
+                                        <i class="fas ${getFileIcon(fileExtension)} text-2xl text-gray-600 mb-1"></i>
+                                        <span class="text-xs text-gray-500 font-medium">${fileExtension.toUpperCase()}</span>
+                                        ${attachment.file_size ? `<span class="text-xs text-gray-400">${formatFileSize(attachment.file_size)}</span>` : ''}
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1 text-center truncate">${attachment.filename}</p>
+                                </div>
+                            `;
+                        }
+                    }).join('')}
                 </div>
-            `;
-        }
+            </div>
+        `;
 
         attachmentsHtml += '</div>';
     }

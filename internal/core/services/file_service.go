@@ -120,22 +120,6 @@ func (s *FileService) SaveLinkPreview(postID int, preview interface{}) error {
 			SiteName:    getString(p, "site_name"),
 		}
 		return s.db.CreateLinkPreview(linkPreview)
-	case struct {
-		URL         string `json:"url"`
-		Title       string `json:"title"`
-		Description string `json:"description"`
-		ImageURL    string `json:"image_url"`
-		SiteName    string `json:"site_name"`
-	}:
-		linkPreview := &models.LinkPreview{
-			PostID:      postID,
-			URL:         p.URL,
-			Title:       p.Title,
-			Description: p.Description,
-			ImageURL:    p.ImageURL,
-			SiteName:    p.SiteName,
-		}
-		return s.db.CreateLinkPreview(linkPreview)
 	default:
 		// Try reflection for any struct with proper field names
 		if preview != nil {
