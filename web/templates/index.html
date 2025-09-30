@@ -133,67 +133,6 @@
 
             <!-- Main Content -->
             <div class="lg:col-span-3">
-                <!-- Create Post Form -->
-                <div id="create-post-section" class="bg-white rounded-lg shadow-sm border p-6 mb-6" style="display: none;">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Create New Post</h3>
-                    <form id="create-post-form">
-                        <div class="mb-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="block text-sm font-medium text-gray-700">Content</label>
-                                <span id="char-counter" class="text-sm text-gray-500">0 / 15,000</span>
-                            </div>
-                            <textarea id="post-content" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="What's on your mind?"></textarea>
-                        </div>
-
-                        <!-- Retroactive Posting Date Picker -->
-                        <div id="retroactive-date-container" class="mb-4" style="display: none;">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Post Date & Time</label>
-                            <div class="flex items-center space-x-3">
-                                <input type="datetime-local" id="post-datetime" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <button type="button" id="set-current-time" class="text-sm text-blue-600 hover:text-blue-800 underline">
-                                    Set to now
-                                </button>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1">
-                                Choose when this post was created. Minimum date: January 1, 2000.
-                            </p>
-                        </div>
-                        
-                        <!-- Link Preview Container -->
-                        <div id="link-preview-container" class="mb-4" style="display: none;">
-                            <!-- Link previews will appear here -->
-                        </div>
-                        
-                        <!-- New File Upload Area -->
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Attachments</label>
-                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
-                                <input type="file" id="post-files" multiple class="hidden" accept="*/*">
-                                <div class="text-center">
-                                    <button type="button" onclick="document.getElementById('post-files').click()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
-                                        <i class="fas fa-upload text-xs mr-2"></i>Choose Files
-                                    </button>
-                                    <p id="file-upload-text" class="text-sm text-gray-500 mt-2">Or drag and drop files here (max 20 files)</p>
-                                </div>
-                            </div>
-                            <div id="file-preview-container" class="mt-4 space-y-2">
-                                <!-- File previews will appear here -->
-                            </div>
-                            <div id="pasted-files-display" class="mt-2">
-                                <!-- Pasted files display -->
-                            </div>
-                        </div>
-
-                        <div class="flex space-x-3">
-                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
-                                <i class="fas fa-paper-plane text-xs mr-2"></i>Post
-                            </button>
-                            <button type="button" id="cancel-post" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
 
                 <div id="timeline-section">
 <div id="timeline-header" class="py-4 mb-6">
@@ -606,6 +545,127 @@
                         <i class="fas fa-trash-alt text-xs mr-2"></i>
                         <span>Confirm</span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Post Modal -->
+    <div id="create-post-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen px-4 py-4 sm:px-4 sm:py-4">
+            <div class="bg-white rounded-lg sm:rounded-lg shadow-xl border border-gray-200 w-full max-w-2xl max-h-[90vh] sm:max-h-[90vh] flex flex-col transform transition-all modal-mobile-full">
+                <!-- Header -->
+                <div class="px-4 py-3 border-b border-gray-200 flex-shrink-0">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-lg font-semibold text-gray-900">Create Post</h3>
+                        <button id="close-post-modal" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-all duration-200">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between text-sm">
+                        <div id="modal-category-display" class="text-gray-500 flex items-center min-w-0 flex-1">
+                            <i class="fas fa-folder text-xs mr-2 flex-shrink-0"></i>
+                            <span class="truncate">Publishing to: <span id="modal-category-name" class="font-medium text-gray-700"></span></span>
+                        </div>
+
+                        <!-- Retroactive Date/Time in Header -->
+                        <div id="modal-retroactive-header" class="flex items-center space-x-2 ml-4" style="display: none;">
+                            <div class="flex items-center space-x-1">
+                                <i class="fas fa-clock text-xs text-gray-400"></i>
+                                <input type="datetime-local" id="modal-post-datetime" class="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500" style="width: 140px;">
+                            </div>
+                            <button type="button" id="modal-set-current-time" class="text-xs text-blue-600 hover:text-blue-800 px-1 py-1 rounded hover:bg-blue-50">
+                                <i class="fas fa-sync text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Body - Scrollable -->
+                <div class="px-4 py-4 flex-1 overflow-y-auto">
+                    <form id="modal-create-post-form">
+                        <div class="mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="block text-sm font-medium text-gray-700">What's on your mind?</label>
+                                <span id="modal-char-counter" class="text-sm text-gray-500">0 / 15,000</span>
+                            </div>
+                            <textarea
+                                id="modal-post-content"
+                                rows="4"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200"
+                                placeholder="Share your thoughts..."
+                                style="min-height: 100px; max-height: 200px; overflow-y: auto;"
+                            ></textarea>
+                        </div>
+
+                        <!-- Horizontal Link Preview Container -->
+                        <div id="modal-link-preview-container" class="mb-4" style="display: none;">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700">Link Previews</label>
+                                <div class="flex items-center space-x-2">
+                                    <button type="button" id="modal-link-prev" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled>
+                                        <i class="fas fa-chevron-left text-xs"></i>
+                                    </button>
+                                    <span id="modal-link-counter" class="text-xs text-gray-500">1 / 1</span>
+                                    <button type="button" id="modal-link-next" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled>
+                                        <i class="fas fa-chevron-right text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="relative overflow-hidden">
+                                <div id="modal-link-preview-list" class="flex transition-transform duration-300 ease-in-out">
+                                    <!-- Link previews will appear here horizontally -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Attachments Section -->
+                        <div class="mb-4">
+                            <!-- File Upload Trigger -->
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-3 hover:border-gray-400 transition-colors text-center">
+                                <input type="file" id="modal-post-files" multiple class="hidden" accept="*/*">
+                                <button type="button" onclick="document.getElementById('modal-post-files').click()" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                                    <i class="fas fa-paperclip text-xs mr-2"></i>Attach Files
+                                </button>
+                                <p id="modal-file-upload-text" class="text-xs text-gray-500 mt-1">Or drag and drop files here</p>
+                            </div>
+
+                            <!-- Horizontal File Preview Container -->
+                            <div id="modal-file-preview-container" class="mt-3" style="display: none;">
+                                <div class="flex items-center space-x-2 overflow-x-auto pb-2" id="modal-file-preview-list">
+                                    <!-- File previews will appear here horizontally -->
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Footer -->
+                <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 rounded-b-lg flex-shrink-0">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <div class="flex items-center">
+                                <i class="fas fa-image text-xs mr-1"></i>
+                                <span class="hidden sm:inline">Media</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-link text-xs mr-1"></i>
+                                <span class="hidden sm:inline">Links</span>
+                            </div>
+                            <div id="modal-file-size-display" class="text-xs font-medium" style="display: none;">
+                                <!-- Total file size will appear here -->
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" id="modal-cancel-post" class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors">
+                                Cancel
+                            </button>
+                            <button type="submit" form="modal-create-post-form" id="modal-submit-post" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-paper-plane text-xs mr-2"></i>Post
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

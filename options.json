@@ -11,7 +11,7 @@
       "periodMonths": 4
     },
     "detailedStats": {
-      "enabled": false
+      "enabled": true
     }
   }
 }

@@ -97,3 +97,215 @@ function removePastedFile(index) {
         updatePastedFilesDisplay();
     }
 }
+
+// Modal file management functions
+async function addModalFileToSelection(file) {
+    const settings = window.currentSettings || await loadAppSettings();
+
+    if (modalSelectedFiles.size >= settings.maxFilesPerPost) {
+        showError(formatMessage(window.AppConstants.USER_MESSAGES.error.maxFilesExceeded, settings.maxFilesPerPost));
+        return false;
+    }
+
+    // Check file size
+    const maxFileSizeBytes = settings.maxFileSizeMB * window.AppConstants.UI_CONFIG.fileSizeUnit * window.AppConstants.UI_CONFIG.fileSizeUnit;
+    if (file.size > maxFileSizeBytes) {
+        showError(formatMessage(window.AppConstants.USER_MESSAGES.error.fileSizeExceeded, file.name, settings.maxFileSizeMB));
+        return false;
+    }
+
+    const fileId = ++modalFileCounter;
+    modalSelectedFiles.set(fileId, file);
+    updateModalFilePreview();
+    return true;
+}
+
+function removeModalFileFromSelection(fileId) {
+    modalSelectedFiles.delete(fileId);
+    updateModalFilePreview();
+}
+
+function updateModalFilePreview() {
+    const container = document.getElementById('modal-file-preview-container');
+    const list = document.getElementById('modal-file-preview-list');
+
+    if (modalSelectedFiles.size === 0 && (!window.modalPastedFiles || window.modalPastedFiles.length === 0)) {
+        container.style.display = 'none';
+        updateModalFileSizeDisplay();
+        return;
+    }
+
+    container.style.display = 'block';
+    list.innerHTML = '';
+
+    // Add regular files
+    const filesArray = Array.from(modalSelectedFiles.entries());
+    filesArray.forEach(([fileId, file]) => {
+        const fileElement = createModalFilePreviewElement(fileId, file, 'file');
+        list.appendChild(fileElement);
+    });
+
+    // Add pasted files
+    if (window.modalPastedFiles && window.modalPastedFiles.length > 0) {
+        window.modalPastedFiles.forEach((file, index) => {
+            const fileElement = createModalFilePreviewElement(index, file, 'pasted');
+            list.appendChild(fileElement);
+        });
+    }
+
+    updateModalFileSizeDisplay();
+}
+
+function createModalFilePreviewElement(id, file, type) {
+    const fileDiv = document.createElement('div');
+    fileDiv.className = 'relative group flex-shrink-0 w-20 h-20 border border-gray-200 rounded-lg overflow-hidden bg-white hover:border-gray-300 transition-colors';
+
+    const preview = generateFilePreview(file);
+    const removeHandler = type === 'pasted' ? `removeModalPastedFile(${id})` : `removeModalFileFromSelection(${id})`;
+
+    fileDiv.innerHTML = `
+        ${preview}
+        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1">
+            <p class="text-white text-xs truncate leading-tight">${file.name}</p>
+        </div>
+        <button type="button" onclick="${removeHandler}"
+                class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
+            <i class="fas fa-times text-xs"></i>
+        </button>
+    `;
+
+    return fileDiv;
+}
+
+function generateFilePreview(file) {
+    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf';
+    const isVideo = file.type.startsWith('video/');
+    const isAudio = file.type.startsWith('audio/');
+    const isCode = isCodeFile(file.name);
+    const isArchive = isArchiveFile(file.type);
+    const isDocument = isDocumentFile(file.type);
+
+    if (isImage) {
+        const objectUrl = URL.createObjectURL(file);
+        return `<img src="${objectUrl}" class="w-full h-full object-cover" onload="URL.revokeObjectURL(this.src)">`;
+    } else if (isPDF) {
+        return `<div class="w-full h-full bg-red-50 flex flex-col items-center justify-center">
+            <i class="fas fa-file-pdf text-red-500 text-lg mb-1"></i>
+            <span class="text-xs text-red-600 font-medium">PDF</span>
+        </div>`;
+    } else if (isVideo) {
+        return `<div class="w-full h-full bg-purple-50 flex flex-col items-center justify-center">
+            <i class="fas fa-play-circle text-purple-500 text-lg mb-1"></i>
+            <span class="text-xs text-purple-600 font-medium">${getVideoFormat(file.type)}</span>
+        </div>`;
+    } else if (isAudio) {
+        return `<div class="w-full h-full bg-green-50 flex flex-col items-center justify-center">
+            <i class="fas fa-music text-green-500 text-lg mb-1"></i>
+            <span class="text-xs text-green-600 font-medium">${getAudioFormat(file.type)}</span>
+        </div>`;
+    } else if (isCode) {
+        const lang = getCodeLanguage(file.name);
+        return `<div class="w-full h-full bg-blue-50 flex flex-col items-center justify-center">
+            <i class="fas fa-code text-blue-500 text-lg mb-1"></i>
+            <span class="text-xs text-blue-600 font-medium">${lang}</span>
+        </div>`;
+    } else if (isArchive) {
+        return `<div class="w-full h-full bg-orange-50 flex flex-col items-center justify-center">
+            <i class="fas fa-file-archive text-orange-500 text-lg mb-1"></i>
+            <span class="text-xs text-orange-600 font-medium">ZIP</span>
+        </div>`;
+    } else if (isDocument) {
+        return `<div class="w-full h-full bg-indigo-50 flex flex-col items-center justify-center">
+            <i class="fas fa-file-alt text-indigo-500 text-lg mb-1"></i>
+            <span class="text-xs text-indigo-600 font-medium">DOC</span>
+        </div>`;
+    } else {
+        return `<div class="w-full h-full bg-gray-50 flex flex-col items-center justify-center">
+            <i class="fas fa-file text-gray-500 text-lg mb-1"></i>
+            <span class="text-xs text-gray-600 font-medium">FILE</span>
+        </div>`;
+    }
+}
+
+function isCodeFile(filename) {
+    const codeExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.h', '.css', '.html', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala', '.sql', '.json', '.xml', '.yaml', '.yml', '.sh', '.bash', '.ps1', '.r', '.m', '.vue', '.svelte'];
+    return codeExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+}
+
+function isArchiveFile(type) {
+    return ['application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed', 'application/x-tar', 'application/gzip'].includes(type);
+}
+
+function isDocumentFile(type) {
+    return ['application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(type);
+}
+
+function getCodeLanguage(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    const langMap = {
+        'js': 'JS', 'ts': 'TS', 'jsx': 'JSX', 'tsx': 'TSX', 'py': 'PY', 'java': 'JAVA',
+        'cpp': 'C++', 'c': 'C', 'h': 'C/H', 'css': 'CSS', 'html': 'HTML', 'php': 'PHP',
+        'rb': 'RUBY', 'go': 'GO', 'rs': 'RUST', 'swift': 'SWIFT', 'kt': 'KOTLIN',
+        'scala': 'SCALA', 'sql': 'SQL', 'json': 'JSON', 'xml': 'XML', 'yaml': 'YAML',
+        'yml': 'YAML', 'sh': 'BASH', 'bash': 'BASH', 'ps1': 'PS', 'r': 'R', 'm': 'MATLAB',
+        'vue': 'VUE', 'svelte': 'SVELTE'
+    };
+    return langMap[ext] || 'CODE';
+}
+
+function getVideoFormat(type) {
+    if (type.includes('mp4')) return 'MP4';
+    if (type.includes('webm')) return 'WEBM';
+    if (type.includes('avi')) return 'AVI';
+    if (type.includes('mov')) return 'MOV';
+    return 'VIDEO';
+}
+
+function getAudioFormat(type) {
+    if (type.includes('mp3')) return 'MP3';
+    if (type.includes('wav')) return 'WAV';
+    if (type.includes('ogg')) return 'OGG';
+    if (type.includes('m4a')) return 'M4A';
+    return 'AUDIO';
+}
+
+function updateModalFileSizeDisplay() {
+    const display = document.getElementById('modal-file-size-display');
+    let totalSize = 0;
+    let fileCount = 0;
+
+    // Add regular files
+    modalSelectedFiles.forEach(file => {
+        totalSize += file.size;
+        fileCount++;
+    });
+
+    // Add pasted files
+    if (window.modalPastedFiles && window.modalPastedFiles.length > 0) {
+        window.modalPastedFiles.forEach(file => {
+            totalSize += file.size;
+            fileCount++;
+        });
+    }
+
+    if (fileCount === 0) {
+        display.style.display = 'none';
+    } else {
+        display.style.display = 'block';
+        const sizeText = formatFileSize(totalSize);
+        display.innerHTML = `<i class="fas fa-paperclip text-xs mr-1"></i>${fileCount} file${fileCount > 1 ? 's' : ''} • ${sizeText}`;
+    }
+}
+
+function updateModalPastedFilesDisplay() {
+    // This function is now integrated with updateModalFilePreview
+    updateModalFilePreview();
+}
+
+function removeModalPastedFile(index) {
+    if (window.modalPastedFiles && window.modalPastedFiles.length > index) {
+        window.modalPastedFiles.splice(index, 1);
+        updateModalFilePreview();
+    }
+}

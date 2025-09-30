@@ -118,7 +118,8 @@
 /* Modal animation styles - GitHub-style */
 #category-modal:not(.hidden) .transform,
 #edit-category-modal:not(.hidden) .transform,
-#confirmation-modal:not(.hidden) .transform {
+#confirmation-modal:not(.hidden) .transform,
+#create-post-modal:not(.hidden) .transform {
     animation: modalFadeIn 0.15s ease-out;
 }
 
@@ -317,4 +318,90 @@ button:active {
 
 #category-sort-footer .sort-option:active .sort-icon {
     transform: scale(0.95);
+}
+
+/* Modal file preview scrollbar styling */
+#modal-file-preview-list {
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+
+#modal-file-preview-list::-webkit-scrollbar {
+    height: 4px;
+}
+
+#modal-file-preview-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#modal-file-preview-list::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+
+#modal-file-preview-list::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+
+/* Auto-resizing textarea */
+#modal-post-content {
+    transition: height 0.2s ease;
+}
+
+/* Mobile adjustments for create post modal */
+@media (max-width: 640px) {
+    /* Full screen modal on mobile */
+    .modal-mobile-full {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    #create-post-modal .flex.items-center.justify-center {
+        padding: 0 !important;
+    }
+
+    /* Reduce padding on mobile */
+    #create-post-modal .px-4 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* Smaller file preview items on mobile */
+    #modal-file-preview-list .w-20 {
+        width: 4rem;
+    }
+
+    #modal-file-preview-list .h-20 {
+        height: 4rem;
+    }
+
+    /* Hide datetime input label on very small screens */
+    #modal-retroactive-header .fas.fa-clock {
+        display: none;
+    }
+
+    #modal-retroactive-header input {
+        width: 120px !important;
+    }
+
+    /* Stack buttons on very small screens */
+    @media (max-width: 480px) {
+        #create-post-modal .flex.items-center.space-x-3 {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.5rem;
+        }
+
+        #create-post-modal .flex.items-center.space-x-3 > * {
+            margin: 0;
+        }
+
+        #modal-retroactive-header {
+            display: none !important;
+        }
+    }
 }

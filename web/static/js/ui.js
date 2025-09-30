@@ -5,18 +5,24 @@ async function showCreatePost() {
         return;
     }
 
-    document.getElementById('create-post-section').style.display = 'block';
-    document.getElementById('new-post-btn').style.display = 'none';
-    document.getElementById('settings-btn').style.display = 'none';
-    document.getElementById('post-content').focus();
+    // Show modal and set category info
+    document.getElementById('create-post-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 
-    // Check if retroactive posting is enabled
+    // Set category breadcrumb in modal
+    const categoryBreadcrumb = getCategoryFullBreadcrumb(currentCategory);
+    document.getElementById('modal-category-name').textContent = categoryBreadcrumb;
+
+    // Focus on content area
+    document.getElementById('modal-post-content').focus();
+
+    // Check if retroactive posting is enabled and show in header
     try {
         const settings = window.currentSettings;
-        const retroactiveDateContainer = document.getElementById('retroactive-date-container');
+        const retroactiveHeader = document.getElementById('modal-retroactive-header');
 
         if (settings && settings.retroactivePostingEnabled) {
-            retroactiveDateContainer.style.display = 'block';
+            retroactiveHeader.style.display = 'flex';
             // Set default value to current time
             const now = new Date();
             const formatted = now.getFullYear() + '-' +
@@ -24,44 +30,43 @@ async function showCreatePost() {
                               String(now.getDate()).padStart(2, '0') + 'T' +
                               String(now.getHours()).padStart(2, '0') + ':' +
                               String(now.getMinutes()).padStart(2, '0');
-            const dateTimeInput = document.getElementById('post-datetime');
+            const dateTimeInput = document.getElementById('modal-post-datetime');
             dateTimeInput.value = formatted;
             // Store the original default value to detect if user changed it
             dateTimeInput.dataset.originalValue = formatted;
         } else {
-            retroactiveDateContainer.style.display = 'none';
+            retroactiveHeader.style.display = 'none';
         }
     } catch (error) {
         console.error('Failed to load settings for retroactive posting:', error);
-        // Hide the date container on error
-        document.getElementById('retroactive-date-container').style.display = 'none';
+        // Hide the header container on error
+        document.getElementById('modal-retroactive-header').style.display = 'none';
     }
 
-    // Initialize link preview after showing the form
+    // Initialize link preview after showing the modal
     setTimeout(() => {
-        initializeLinkPreview();
+        initializeModalLinkPreview();
     }, window.AppConstants.UI_CONFIG.settingsTransitionDelay);
 }
 
 function hideCreatePost() {
-    document.getElementById('create-post-section').style.display = 'none';
-    document.getElementById('create-post-form').reset();
+    document.getElementById('create-post-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    document.getElementById('modal-create-post-form').reset();
 
     // Clear the datetime picker
-    const dateTimeInput = document.getElementById('post-datetime');
+    const dateTimeInput = document.getElementById('modal-post-datetime');
     if (dateTimeInput) {
         dateTimeInput.value = '';
     }
 
-    selectedFiles.clear();
-    updateFilePreview();
-    window.pastedFiles = [];
-    updatePastedFilesDisplay();
-    document.getElementById('new-post-btn').style.display = 'block';
-    document.getElementById('settings-btn').style.display = 'block';
-    
-    // Reset link previews when hiding form
-    resetLinkPreviews();
+    // Clear modal-specific files and previews
+    modalSelectedFiles.clear();
+    window.modalPastedFiles = [];
+    updateModalFilePreview();
+
+    // Reset link previews when hiding modal
+    resetModalLinkPreviews();
 }
 
 function showCategoryModal() {
@@ -283,5 +288,25 @@ function updateDescriptionCounter(textareaId, counterId) {
     if (textarea && counter) {
         counter.textContent = textarea.value.length;
     }
+}
+
+function getCategoryFullBreadcrumb(category) {
+    if (!category || category.id === window.AppConstants.ALL_CATEGORIES_ID) {
+        return 'All Categories';
+    }
+
+    const path = [];
+    let current = category;
+
+    while (current) {
+        path.unshift(current.name);
+        if (current.parent_id) {
+            current = categories.find(cat => cat.id === current.parent_id);
+        } else {
+            current = null;
+        }
+    }
+
+    return path.join(' > ');
 }
 

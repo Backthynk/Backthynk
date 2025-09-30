@@ -1,11 +1,10 @@
-// Character counter functionality
-async function initializeCharacterCounter() {
-    const textarea = document.getElementById('post-content');
-    const counter = document.getElementById('char-counter');
+
+// Modal character counter functionality
+async function initializeModalCharacterCounter() {
+    const textarea = document.getElementById('modal-post-content');
+    const counter = document.getElementById('modal-char-counter');
 
     if (!textarea || !counter) return;
-
-    const settings = window.currentSettings; // Use globally cached settings
 
     function updateCounter() {
         const currentSettings = window.currentSettings;
@@ -25,6 +24,16 @@ async function initializeCharacterCounter() {
             counter.classList.remove('text-yellow-600', 'text-red-600');
             counter.classList.add('text-gray-500');
         }
+
+        // Update submit button state
+        const submitBtn = document.getElementById('modal-submit-post');
+        if (currentLength === 0 || currentLength > currentSettings.maxContentLength) {
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
     }
 
     // Initialize counter
@@ -34,41 +43,62 @@ async function initializeCharacterCounter() {
     textarea.addEventListener('input', updateCounter);
 }
 
-// Refresh character counter with new settings
-async function refreshCharacterCounter() {
-    const textarea = document.getElementById('post-content');
-    const counter = document.getElementById('char-counter');
+// Auto-resize textarea functionality
+function initializeAutoResizeTextarea() {
+    const textarea = document.getElementById('modal-post-content');
+    if (!textarea) return;
 
-    if (!textarea || !counter) return;
+    const minHeight = 100; // Initial height
+    const maxHeight = 200; // Max height (2x initial)
 
-    const settings = await loadAppSettings(true);
-    window.currentSettings = settings;
+    function adjustHeight() {
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
 
-    const currentLength = textarea.value.length;
-    counter.textContent = `${currentLength} / ${settings.maxContentLength}`;
+        // Calculate new height
+        const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
 
-    // Update color
-    if (currentLength > settings.maxContentLength * 0.9) {
-        counter.classList.remove('text-gray-500', 'text-yellow-600');
-        counter.classList.add('text-red-600');
-    } else if (currentLength > settings.maxContentLength * 0.7) {
-        counter.classList.remove('text-gray-500', 'text-red-600');
-        counter.classList.add('text-yellow-600');
+        // Set the new height
+        textarea.style.height = newHeight + 'px';
+    }
+
+    // Adjust on input
+    textarea.addEventListener('input', adjustHeight);
+
+    // Initial adjustment
+    adjustHeight();
+}
+
+// Handle modal close with content warning
+function handleModalClose() {
+    if (hasModalContent()) {
+        if (confirm('You have unsaved content. Are you sure you want to close?')) {
+            hideCreatePost();
+        }
     } else {
-        counter.classList.remove('text-yellow-600', 'text-red-600');
-        counter.classList.add('text-gray-500');
+        hideCreatePost();
     }
 }
 
+// Check if modal has content
+function hasModalContent() {
+    const content = document.getElementById('modal-post-content').value.trim();
+    const hasFiles = modalSelectedFiles.size > 0 || (window.modalPastedFiles && window.modalPastedFiles.length > 0);
+    const hasLinks = modalCurrentLinkPreviews.length > 0;
+
+    return content.length > 0 || hasFiles || hasLinks;
+}
+
+
 // File upload text updater
 async function updateFileUploadText() {
-    const fileUploadText = document.getElementById('file-upload-text');
-    if (!fileUploadText) return;
+    const modalFileUploadText = document.getElementById('modal-file-upload-text');
+    if (!modalFileUploadText) return;
 
     const settings = window.currentSettings;
     if (!settings) return;
 
-    fileUploadText.textContent = `Or drag and drop files here (max ${settings.maxFilesPerPost} files)`;
+    modalFileUploadText.textContent = `Or drag and drop files here (max ${settings.maxFilesPerPost} files)`;
 }
 
 // Centralized app initialization
@@ -105,7 +135,8 @@ async function initializeApp() {
     initializeStickyHeader();
 
     // Initialize components that need settings
-    initializeCharacterCounter();
+    initializeModalCharacterCounter();
+    initializeAutoResizeTextarea();
     updateFileUploadText();
     initializeSortFooter();
 }
@@ -191,7 +222,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Post creation events
     document.getElementById('new-post-btn').onclick = showCreatePost;
-    document.getElementById('cancel-post').onclick = hideCreatePost;
+
+    // Modal post creation events
+    document.getElementById('close-post-modal').onclick = handleModalClose;
+    document.getElementById('modal-cancel-post').onclick = handleModalClose;
+
+    // Link preview navigation
+    document.getElementById('modal-link-prev').onclick = () => navigateModalLinkPreview('prev');
+    document.getElementById('modal-link-next').onclick = () => navigateModalLinkPreview('next');
 
     // Header button events
     document.getElementById('recursive-toggle-btn').addEventListener('click', () => {
@@ -315,38 +353,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // File input handling
-    const fileInput = document.getElementById('post-files');
-    fileInput.addEventListener('change', async function(e) {
-        for (let file of e.target.files) {
-            await addFileToSelection(file);
-        }
-        // Reset input to allow selecting same file again
-        e.target.value = '';
-    });
 
-    // Drag and drop
-    const dropZone = fileInput.parentElement;
-    dropZone.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        dropZone.classList.add('bg-blue-50', 'border-blue-300');
-    });
 
-    dropZone.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        dropZone.classList.remove('bg-blue-50', 'border-blue-300');
-    });
-
-    dropZone.addEventListener('drop', async function(e) {
-        e.preventDefault();
-        dropZone.classList.remove('bg-blue-50', 'border-blue-300');
-
-        for (let file of e.dataTransfer.files) {
-            await addFileToSelection(file);
-        }
-    });
-
-    document.getElementById('create-post-form').onsubmit = async function(e) {
+    // Modal form submission handler
+    document.getElementById('modal-create-post-form').onsubmit = async function(e) {
         e.preventDefault();
 
         if (!currentCategory) {
@@ -354,14 +364,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const content = document.getElementById('post-content').value;
+        const content = document.getElementById('modal-post-content').value;
 
         if (!content.trim()) {
             showError(window.AppConstants.USER_MESSAGES.error.contentRequired);
             return;
         }
 
-        // Check content length against settings (use current settings if available)
+        // Check content length against settings
         const settings = window.currentSettings;
         if (settings && content.length > settings.maxContentLength) {
             showError(`Content exceeds maximum length of ${settings.maxContentLength} characters`);
@@ -373,11 +383,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const postData = {
                 category_id: currentCategory.id,
                 content: content,
-                link_previews: getCurrentLinkPreviews()
+                link_previews: getCurrentModalLinkPreviews ? getCurrentModalLinkPreviews() : []
             };
 
             // Check if retroactive posting is enabled and add custom timestamp
-            const dateTimeInput = document.getElementById('post-datetime');
+            const dateTimeInput = document.getElementById('modal-post-datetime');
             if (dateTimeInput && dateTimeInput.value) {
                 // Only send custom timestamp if user actually changed the date from default
                 const userChangedDate = dateTimeInput.dataset.originalValue !== dateTimeInput.value;
@@ -407,17 +417,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify(postData)
             });
 
-            // Upload selected files
-            for (let [fileId, file] of selectedFiles) {
-                await uploadFile(post.id, file);
+            // Upload selected files (using modal file handling)
+            if (modalSelectedFiles && modalSelectedFiles.size > 0) {
+                for (let [fileId, file] of modalSelectedFiles) {
+                    await uploadFile(post.id, file);
+                }
             }
 
             // Upload pasted files
-            if (window.pastedFiles && window.pastedFiles.length > 0) {
-                for (let file of window.pastedFiles) {
+            if (window.modalPastedFiles && window.modalPastedFiles.length > 0) {
+                for (let file of window.modalPastedFiles) {
                     await uploadFile(post.id, file);
                 }
-                window.pastedFiles = [];
+                window.modalPastedFiles = [];
             }
 
             hideCreatePost();
@@ -447,8 +459,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Paste event for images
-    document.getElementById('post-content').addEventListener('paste', function(e) {
+
+    // Modal paste event for images
+    document.getElementById('modal-post-content').addEventListener('paste', function(e) {
         const items = e.clipboardData.items;
 
         for (let item of items) {
@@ -457,29 +470,59 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const file = item.getAsFile();
                 if (file) {
-                    if (!window.pastedFiles) {
-                        window.pastedFiles = [];
+                    if (!window.modalPastedFiles) {
+                        window.modalPastedFiles = [];
                     }
 
                     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
                     const extension = file.type.split('/')[1] || 'png';
                     const newFile = new File([file], `pasted-image-${timestamp}.${extension}`, { type: file.type });
 
-                    window.pastedFiles.push(newFile);
+                    window.modalPastedFiles.push(newFile);
 
-                    const currentContent = document.getElementById('post-content').value;
-                    document.getElementById('post-content').value = currentContent + (currentContent ? '\n\n' : '') + `[Image pasted: ${newFile.name}]`;
-
-                    updatePastedFilesDisplay();
+                    // Don't add text to the content area - just add to file preview
+                    updateModalPastedFilesDisplay();
                 }
             }
         }
     });
 
-    // Retroactive posting functionality
-    const setCurrentTimeBtn = document.getElementById('set-current-time');
-    if (setCurrentTimeBtn) {
-        setCurrentTimeBtn.addEventListener('click', function() {
+    // Modal file input handling
+    const modalFileInput = document.getElementById('modal-post-files');
+    modalFileInput.addEventListener('change', async function(e) {
+        for (let file of e.target.files) {
+            await addModalFileToSelection(file);
+        }
+        // Reset input to allow selecting same file again
+        e.target.value = '';
+    });
+
+    // Modal drag and drop
+    const modalDropZone = modalFileInput.parentElement;
+    modalDropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        modalDropZone.classList.add('bg-blue-50', 'border-blue-300');
+    });
+
+    modalDropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        modalDropZone.classList.remove('bg-blue-50', 'border-blue-300');
+    });
+
+    modalDropZone.addEventListener('drop', async function(e) {
+        e.preventDefault();
+        modalDropZone.classList.remove('bg-blue-50', 'border-blue-300');
+
+        for (let file of e.dataTransfer.files) {
+            await addModalFileToSelection(file);
+        }
+    });
+
+
+    // Modal retroactive posting functionality
+    const modalSetCurrentTimeBtn = document.getElementById('modal-set-current-time');
+    if (modalSetCurrentTimeBtn) {
+        modalSetCurrentTimeBtn.addEventListener('click', function() {
             const now = new Date();
             // Format to datetime-local format (YYYY-MM-DDTHH:mm)
             const formatted = now.getFullYear() + '-' +
@@ -487,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
                               String(now.getDate()).padStart(2, '0') + 'T' +
                               String(now.getHours()).padStart(2, '0') + ':' +
                               String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('post-datetime').value = formatted;
+            document.getElementById('modal-post-datetime').value = formatted;
         });
     }
 
@@ -496,10 +539,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('viewer-prev').onclick = () => navigateImage('prev');
     document.getElementById('viewer-next').onclick = () => navigateImage('next');
 
-    // Keyboard navigation for image viewer
+    // Keyboard navigation for image viewer and modals
     document.addEventListener('keydown', function(e) {
-        const modal = document.getElementById('image-viewer-modal');
-        if (!modal.classList.contains('hidden')) {
+        const imageModal = document.getElementById('image-viewer-modal');
+        const createPostModal = document.getElementById('create-post-modal');
+
+        if (!imageModal.classList.contains('hidden')) {
             switch(e.key) {
                 case 'Escape':
                     closeImageViewer();
@@ -509,6 +554,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'ArrowRight':
                     navigateImage('next');
+                    break;
+            }
+        } else if (!createPostModal.classList.contains('hidden')) {
+            switch(e.key) {
+                case 'Escape':
+                    handleModalClose();
                     break;
             }
         }
@@ -527,22 +578,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Initialize link preview system when creating post
-    const showCreatePostOriginal = window.showCreatePost;
-    window.showCreatePost = function() {
-        showCreatePostOriginal();
-        // Initialize link preview after showing the form
-        setTimeout(() => {
-            initializeLinkPreview();
-        }, 100);
+    // Close create post modal when clicking outside
+    document.getElementById('create-post-modal').onclick = function(e) {
+        if (e.target === this) {
+            handleModalClose();
+        }
     };
 
-    const hideCreatePostOriginal = window.hideCreatePost;
-    window.hideCreatePost = function() {
-        hideCreatePostOriginal();
-        // Reset link previews when hiding form
-        resetLinkPreviews();
-    };
 });
 
 // Add this to handle window resize events for activity heatmap
