@@ -8,7 +8,6 @@ async function showCreatePost() {
     document.getElementById('create-post-section').style.display = 'block';
     document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'none';
-    document.getElementById('new-post-btn-sticky').style.display = 'none';
     document.getElementById('post-content').focus();
 
     // Check if retroactive posting is enabled
@@ -60,7 +59,6 @@ function hideCreatePost() {
     updatePastedFilesDisplay();
     document.getElementById('new-post-btn').style.display = 'block';
     document.getElementById('settings-btn').style.display = 'block';
-    document.getElementById('new-post-btn-sticky').style.display = 'block';
     
     // Reset link previews when hiding form
     resetLinkPreviews();

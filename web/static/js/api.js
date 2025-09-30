@@ -197,6 +197,12 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
 
 async function fetchCategoryStats(categoryId, recursive = false) {
     try {
+        // Check if detailed stats feature is enabled
+        const settings = await loadAppSettings();
+        if (!settings.fileStatsEnabled) {
+            return { file_count: 0, total_size: 0, last_updated: 0 };
+        }
+
         // Use efficient cached API that returns all statistics in one request
         const params = new URLSearchParams({
             recursive: recursive.toString()
@@ -205,14 +211,13 @@ async function fetchCategoryStats(categoryId, recursive = false) {
         const response = await apiRequest(`/category-stats/${categoryId}?${params.toString()}`);
 
         return {
-            post_count: response.post_count || 0,
             file_count: response.file_count || 0,
             total_size: response.total_size || 0,
             last_updated: response.last_updated || 0
         };
     } catch (error) {
         console.error('Failed to fetch category stats:', error);
-        return { post_count: 0, file_count: 0, total_size: 0, last_updated: 0 };
+        return { file_count: 0, total_size: 0, last_updated: 0 };
     }
 }
 

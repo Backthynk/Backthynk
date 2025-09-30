@@ -42,6 +42,11 @@ func NewDB(storagePath string) (*DB, error) {
 	return dbWrapper, nil
 }
 
+// GetStoragePath returns the storage path for this database
+func (db *DB) GetStoragePath() string {
+	return db.storagePath
+}
+
 func (db *DB) createTables() error {
 	queries := []string{
 		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS categories (

@@ -71,6 +71,26 @@
                         <div id="categories-tree" class="flex-1 overflow-y-auto px-2 py-1">
                             <!-- Categories will be loaded here -->
                         </div>
+                        <!-- Category Sorting Footer -->
+                        <div id="category-sort-footer" class="border-t border-gray-100 px-4 py-2 bg-gray-50 flex-shrink-0" style="display: none;">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-500 font-medium">Sort by:</span>
+                                <div class="flex items-center space-x-3">
+                                    <button class="sort-option flex items-center text-gray-600 hover:text-gray-900 transition-colors" data-sort="name">
+                                        <span>Name</span>
+                                        <i class="fas fa-sort-alpha-down ml-1 sort-icon" data-asc="fa-sort-alpha-down" data-desc="fa-sort-alpha-up"></i>
+                                    </button>
+                                    <button class="sort-option flex items-center text-gray-600 hover:text-gray-900 transition-colors" data-sort="posts">
+                                        <span>Posts</span>
+                                        <i class="fas fa-sort-numeric-down ml-1 sort-icon" data-asc="fa-sort-numeric-down" data-desc="fa-sort-numeric-up"></i>
+                                    </button>
+                                    <button class="sort-option flex items-center text-gray-600 hover:text-gray-900 transition-colors" data-sort="created">
+                                        <span>Created</span>
+                                        <i class="fas fa-sort-numeric-down ml-1 sort-icon" data-asc="fa-sort-numeric-down" data-desc="fa-sort-numeric-up"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Activity Container - Hidden on mobile for space -->

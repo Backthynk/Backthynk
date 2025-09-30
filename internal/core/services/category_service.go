@@ -6,6 +6,8 @@ import (
 	"backthynk/internal/core/models"
 	"backthynk/internal/storage"
 	"fmt"
+	"os"
+	"path/filepath"
 )
 
 type CategoryService struct {
@@ -168,29 +170,33 @@ func (s *CategoryService) Delete(id int) error {
 	descendants := s.cache.GetDescendants(id)
 	allCategories := append([]int{id}, descendants...)
 
-	// Fire PostDeleted events for all posts with their file information
+	// Fire PostDeleted events and handle file cleanup for all posts
 	// This must happen BEFORE database deletion so detailed stats service gets the events
 	var affectedPosts []int
 	for _, catID := range allCategories {
 		postIDs, _ := s.db.GetPostIDsByCategory(catID)
 		affectedPosts = append(affectedPosts, postIDs...)
 
-		// For each post, get its details and fire PostDeleted event
+		// For each post, handle file cleanup and fire PostDeleted event
 		for _, postID := range postIDs {
+			// Fire PostDeleted event for statistics
 			if err := s.firePostDeletedEvent(postID, catID); err != nil {
 				// Log error but continue with other posts
 				// TODO: Add proper logging
 				continue
 			}
+
+			// Update cache post counts (same logic as PostService.Delete)
+			s.cache.UpdatePostCount(catID, -1)
 		}
 	}
 
-	// Delete from database (CASCADE will handle posts and files at DB level)
+	// Delete from database (CASCADE will handle posts and attachments at DB level)
 	if err := s.db.DeleteCategory(id); err != nil {
 		return err
 	}
 
-	// Update cache
+	// Update cache - remove deleted categories
 	for _, catID := range allCategories {
 		s.cache.Delete(catID)
 	}
@@ -221,6 +227,15 @@ func (s *CategoryService) firePostDeletedEvent(postID, categoryID int) error {
 	if err != nil {
 		return err
 	}
+
+	// Delete physical files (same pattern as in storage/posts.go)
+	uploadsDir := filepath.Join(s.db.GetStoragePath(), "uploads")
+	for _, attachment := range attachments {
+		fullPath := filepath.Join(uploadsDir, attachment.FilePath)
+		os.Remove(fullPath) // Ignore errors like in posts.go
+	}
+
+
 
 	// Calculate total file size
 	var totalSize int64

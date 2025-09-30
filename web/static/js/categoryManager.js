@@ -12,13 +12,20 @@ function renderCategories() {
                 <p>${window.AppConstants.UI_TEXT.noCategoriesYet}</p>
             </div>
         `;
+        updateSortFooterVisibility();
         return;
     }
 
-    rootCategories.forEach(category => {
+    // Sort root categories
+    const sortedRootCategories = sortCategories(rootCategories);
+
+    sortedRootCategories.forEach(category => {
         const element = createCategoryElement(category);
         container.appendChild(element);
     });
+
+    // Update sort footer visibility
+    updateSortFooterVisibility();
 }
 
 function createCategoryElement(category, level = 0) {
@@ -99,7 +106,8 @@ function createCategoryElement(category, level = 0) {
     // Add subcategories only if expanded
     if (hasChildren && shouldShowChildren) {
         const subcategories = categories.filter(cat => cat.parent_id === category.id);
-        subcategories.forEach(subcat => {
+        const sortedSubcategories = sortCategories(subcategories);
+        sortedSubcategories.forEach(subcat => {
             const subElement = createCategoryElement(subcat, level + 1);
             div.appendChild(subElement);
         });
@@ -445,17 +453,12 @@ async function getAllPostsRecursively(categoryId) {
 }
 
 async function deleteCategory(category) {
-    // Get recursive stats to show the true count including subcategories
-    const recursiveStats = await fetchCategoryStats(category.id, true);
-    const totalPosts = recursiveStats.post_count;
-    const totalFiles = recursiveStats.file_count;
+    // Get total posts from category's recursive count
+    const totalPosts = category.recursive_post_count || 0;
 
     // Get all descendant categories for accurate count
     const allDescendants = await getAllDescendantCategories(category.id);
     const totalSubcategories = allDescendants.length;
-
-    // Get all posts with attachments to build file list
-    const allPosts = await getAllPostsRecursively(category.id);
 
     let message = `Are you sure you want to delete "${category.name}"?`;
 
@@ -465,15 +468,12 @@ async function deleteCategory(category) {
 
     if (totalPosts > 0) {
         message += ` and **${totalPosts}** post(s)`;
-        if (fileStatsEnabled && totalFiles > 0) {
-            message += ` with **${totalFiles}** file(s)`;
-        }
         message += '.';
     }
 
     message += '\n\nThis action cannot be undone.';
 
-    // Build details HTML for lists
+    // Build details HTML for subcategories list only
     let detailsHtml = '';
 
     // Subcategories list
@@ -484,34 +484,6 @@ async function deleteCategory(category) {
         allDescendants.forEach(subcat => {
             const breadcrumb = getCategoryBreadcrumb(subcat.id);
             detailsHtml += `<li>• ${breadcrumb}</li>`;
-        });
-
-        detailsHtml += '</ul></div></div>';
-    }
-
-    // Files list
-    const allFiles = [];
-    allPosts.forEach(post => {
-        if (post.attachments && post.attachments.length > 0) {
-            post.attachments.forEach(attachment => {
-                allFiles.push({
-                    filename: attachment.filename,
-                    size: attachment.file_size,
-                    postId: post.id
-                });
-            });
-        }
-    });
-
-    if (fileStatsEnabled && allFiles.length > 0) {
-        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Files to be deleted:</h4>';
-        detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-40 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
-
-        allFiles.forEach(file => {
-            detailsHtml += `<li class="flex justify-between items-center">
-                <span>• ${file.filename}</span>
-                <span class="text-xs text-gray-400">${formatFileSize(file.size)}</span>
-            </li>`;
         });
 
         detailsHtml += '</ul></div></div>';
@@ -547,4 +519,138 @@ async function deleteCategory(category) {
             showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToDeleteCategory, error.message));
         }
     }
+}
+
+// Category sorting functionality
+function getSortPreference() {
+    const stored = localStorage.getItem('categorySortPreference');
+    return stored ? JSON.parse(stored) : { field: 'name', ascending: true };
+}
+
+function setSortPreference(field, ascending) {
+    const preference = { field, ascending };
+    localStorage.setItem('categorySortPreference', JSON.stringify(preference));
+}
+
+function sortCategories(categoriesArray) {
+    const sortPref = getSortPreference();
+    const sorted = [...categoriesArray];
+
+    sorted.sort((a, b) => {
+        let aValue, bValue;
+
+        switch (sortPref.field) {
+            case 'name':
+                aValue = a.name.toLowerCase();
+                bValue = b.name.toLowerCase();
+                break;
+            case 'posts':
+                // Use recursive post count as requested
+                aValue = a.recursive_post_count || 0;
+                bValue = b.recursive_post_count || 0;
+                break;
+            case 'created':
+                aValue = a.created || 0;
+                bValue = b.created || 0;
+                break;
+            default:
+                return 0;
+        }
+
+        let comparison = 0;
+        if (aValue < bValue) {
+            comparison = -1;
+        } else if (aValue > bValue) {
+            comparison = 1;
+        }
+
+        return sortPref.ascending ? comparison : -comparison;
+    });
+
+    return sorted;
+}
+
+function updateSortFooterVisibility() {
+    const footer = document.getElementById('category-sort-footer');
+    if (!footer) return;
+
+    // Count categories at the same level (root level and each parent level)
+    const rootCategories = categories.filter(cat => !cat.parent_id);
+
+    // Show footer if there are 2 or more root categories, or if any parent has 2+ children
+    let shouldShow = rootCategories.length >= 2;
+
+    if (!shouldShow) {
+        // Check if any expanded parent has 2+ children
+        for (const category of categories) {
+            if (expandedCategories.has(category.id)) {
+                const children = categories.filter(cat => cat.parent_id === category.id);
+                if (children.length >= 2) {
+                    shouldShow = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    footer.style.display = shouldShow ? 'block' : 'none';
+}
+
+function initializeSortFooter() {
+    const footer = document.getElementById('category-sort-footer');
+    if (!footer) return;
+
+    const sortOptions = footer.querySelectorAll('.sort-option');
+    const currentPref = getSortPreference();
+
+    // Set initial active state
+    updateSortButtonStates();
+
+    // Add click listeners
+    sortOptions.forEach(button => {
+        button.addEventListener('click', () => {
+            const field = button.dataset.sort;
+            const currentPref = getSortPreference();
+
+            let ascending = true;
+            if (currentPref.field === field) {
+                // If clicking the same field, toggle direction
+                ascending = !currentPref.ascending;
+            }
+
+            setSortPreference(field, ascending);
+            updateSortButtonStates();
+            renderCategories();
+        });
+    });
+}
+
+function updateSortButtonStates() {
+    const footer = document.getElementById('category-sort-footer');
+    if (!footer) return;
+
+    const sortOptions = footer.querySelectorAll('.sort-option');
+    const currentPref = getSortPreference();
+
+    sortOptions.forEach(button => {
+        const field = button.dataset.sort;
+        const isActive = currentPref.field === field;
+        const icon = button.querySelector('.sort-icon');
+
+        // Update button appearance
+        if (isActive) {
+            button.classList.remove('text-gray-600');
+            button.classList.add('text-blue-600', 'font-medium');
+        } else {
+            button.classList.remove('text-blue-600', 'font-medium');
+            button.classList.add('text-gray-600');
+        }
+
+        // Update icon direction
+        if (icon && isActive) {
+            const ascIcon = icon.dataset.asc;
+            const descIcon = icon.dataset.desc;
+            icon.className = `fas ${currentPref.ascending ? ascIcon : descIcon} ml-1 sort-icon`;
+        }
+    });
 }

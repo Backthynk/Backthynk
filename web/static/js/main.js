@@ -107,6 +107,7 @@ async function initializeApp() {
     // Initialize components that need settings
     initializeCharacterCounter();
     updateFileUploadText();
+    initializeSortFooter();
 }
 
 // Main initialization and event listeners

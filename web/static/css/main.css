@@ -290,3 +290,31 @@ button:active {
     text-align: center;
     line-height: 1.2;
 }
+
+/* Category Sort Footer Styles */
+#category-sort-footer {
+    transition: opacity 0.2s ease;
+}
+
+#category-sort-footer .sort-option {
+    transition: all 0.15s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    position: relative;
+}
+
+#category-sort-footer .sort-option:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+#category-sort-footer .sort-option.text-blue-600 {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+#category-sort-footer .sort-option .sort-icon {
+    transition: transform 0.1s ease;
+}
+
+#category-sort-footer .sort-option:active .sort-icon {
+    transform: scale(0.95);
+}
