@@ -154,19 +154,25 @@ function updateModalFilePreview() {
     }
 
     updateModalFileSizeDisplay();
+    updateModalNavigationButtons();
 }
 
 function createModalFilePreviewElement(id, file, type) {
     const fileDiv = document.createElement('div');
+    const fileSizeText = formatFileSize(file.size);
+    const tooltipText = `${file.name} • ${fileSizeText}`;
+
     fileDiv.className = 'relative group flex-shrink-0 w-20 h-20 border border-gray-200 rounded-lg overflow-hidden bg-white hover:border-gray-300 transition-colors';
+    fileDiv.title = tooltipText;
 
     const preview = generateFilePreview(file);
     const removeHandler = type === 'pasted' ? `removeModalPastedFile(${id})` : `removeModalFileFromSelection(${id})`;
 
     fileDiv.innerHTML = `
         ${preview}
-        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1">
+        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 hover:opacity-100 transition-opacity">
             <p class="text-white text-xs truncate leading-tight">${file.name}</p>
+            <p class="text-white/80 text-xs">${fileSizeText}</p>
         </div>
         <button type="button" onclick="${removeHandler}"
                 class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
@@ -308,4 +314,38 @@ function removeModalPastedFile(index) {
         window.modalPastedFiles.splice(index, 1);
         updateModalFilePreview();
     }
+}
+
+// Modal attachment navigation functions
+function updateModalNavigationButtons() {
+    const container = document.getElementById('modal-file-preview-list');
+    const leftBtn = document.getElementById('modal-scroll-left');
+    const rightBtn = document.getElementById('modal-scroll-right');
+
+    if (!container || !leftBtn || !rightBtn) return;
+
+    function updateButtonVisibility() {
+        const canScrollLeft = container.scrollLeft > 0;
+        const canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth);
+
+        leftBtn.style.display = canScrollLeft ? 'flex' : 'none';
+        rightBtn.style.display = canScrollRight ? 'flex' : 'none';
+    }
+
+    // Remove existing listener to avoid duplicates
+    container.removeEventListener('scroll', container.updateButtonVisibility);
+    container.updateButtonVisibility = updateButtonVisibility;
+    container.addEventListener('scroll', updateButtonVisibility);
+    updateButtonVisibility();
+}
+
+function scrollModalAttachments(direction) {
+    const container = document.getElementById('modal-file-preview-list');
+    if (!container) return;
+
+    const scrollAmount = 200; // pixels to scroll
+    container.scrollBy({
+        left: direction * scrollAmount,
+        behavior: 'smooth'
+    });
 }

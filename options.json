@@ -1,7 +1,7 @@
 {
   "core": {
-    "maxContentLength": 100,
-    "maxFileSizeMB": 100,
+    "maxContentLength": 10000,
+    "maxFileSizeMB": 5,
     "maxFilesPerPost": 25,
     "retroactivePostingEnabled": true
   },

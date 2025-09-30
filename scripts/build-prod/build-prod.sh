@@ -5,23 +5,53 @@
 
 set -e  # Exit on error
 
-# Load common utilities
-source "$(dirname "$0")/common.sh"
+# Load configuration from _script.json
+source "$(dirname "$0")/../common/load-config.sh"
 
-# Check dependencies and load configuration
-check_dependencies curl go sed awk tr find mkdir numfmt du cat gzip
-load_config
+# Check dependencies
+check_dependencies() {
+    local missing_deps=()
+    for cmd in "$@"; do
+        if ! command -v "$cmd" &> /dev/null; then
+            missing_deps+=("$cmd")
+        fi
+    done
+    if [ ${#missing_deps[@]} -ne 0 ]; then
+        echo "Error: The following required commands are not installed:" >&2
+        printf "  %s\n" "${missing_deps[@]}" >&2
+        exit 1
+    fi
+}
+
+check_dependencies curl go sed awk tr find mkdir numfmt du cat gzip jq
 
 echo -e "${BOLD}${CYAN}Building production-optimized Backthynk server...${NC}"
 
 # Start build timer
 BUILD_START=$(date +%s)
 
+# Helper functions for logging
+log_step() { echo -e "${PURPLE}▶${NC} $1"; }
+log_substep() { echo -e "  ${GRAY}•${NC} $1"; }
+log_success() { echo -e "${GREEN}✓${NC} $1"; }
+log_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
+log_info() { echo -e "${BLUE}ℹ${NC} $1"; }
+
+# Extract minimal CSS first
+log_step "Extracting minimal CSS from Tailwind and Font Awesome..."
+CSS_TOOL_BINARY=$(jq -r '.makefile.css_tool_build_command | split(" ") | .[2]' "$SCRIPT_DIR/_script.json")
+if [ ! -f "$CSS_TOOL_BINARY" ]; then
+    log_substep "Building CSS extraction tool..."
+    eval "$CSS_TOOL_BUILD_COMMAND"
+fi
+./$CSS_TOOL_BINARY
+
 # Create compressed directories
 log_step "Creating compressed asset directories..."
-mkdir -p web/static/js/compressed
-mkdir -p web/static/css/compressed
-mkdir -p web/templates/compressed
+BUILD_COMPRESSED_DIRS=$(jq -r '.build.compressed_dirs[]' "$SCRIPT_DIR/_script.json")
+while IFS= read -r dir; do
+    [ -n "$dir" ] && mkdir -p "$dir"
+done <<< "$BUILD_COMPRESSED_DIRS"
 
 # Function to check available minification tools and select the best one
 select_minifier() {
@@ -44,7 +74,8 @@ select_minifier() {
 
         # Fall back to curl API (moderate compression)
         log_substep "Using Toptal API for compression..."
-        if curl -X POST -s --data-urlencode "input@$input_file" https://www.toptal.com/developers/javascript-minifier/api/raw -o "$output_file" 2>/dev/null; then
+        FALLBACK_API=$(jq -r '.build.minification.fallback_api' "$SCRIPT_DIR/_script.json")
+        if curl -X POST -s --data-urlencode "input@$input_file" "$FALLBACK_API" -o "$output_file" 2>/dev/null; then
             [ -s "$output_file" ] && return 0
         fi
 
@@ -77,12 +108,13 @@ select_minifier() {
 # Bundle and minify JavaScript files
 log_step "Bundling and minifying JavaScript files..."
 
-# Dynamically discover JS files, with priority order for dependencies
-JS_DIR="web/static/js"
+# Get JS configuration from JSON
+JS_DIR=$(jq -r '.paths.js_dir' "$SCRIPT_DIR/_script.json")
+BUNDLE_OUTPUT=$(jq -r '.build.js_files.bundle_output' "$SCRIPT_DIR/_script.json")
 
-# Define priority files (dependencies first, main.js last)
-PRIORITY_FILES=("constants.js" "router.js" "state.js" "utils.js" "alertSystem.js" "api.js")
-LAST_FILES=("main.js")
+# Get priority and last files from JSON
+readarray -t PRIORITY_FILES < <(jq -r '.build.js_files.priority_order[]?' "$SCRIPT_DIR/_script.json")
+readarray -t LAST_FILES < <(jq -r '.build.js_files.last_files[]?' "$SCRIPT_DIR/_script.json")
 
 # Get all JS files and create ordered list
 JS_FILES=()
@@ -113,7 +145,7 @@ for last_file in "${LAST_FILES[@]}"; do
 done
 
 log_substep "Bundling JavaScript files in correct order..."
-BUNDLE_FILE="web/static/js/compressed/bundle.js"
+BUNDLE_FILE="$BUNDLE_OUTPUT"
 
 # Create empty bundle file
 > "$BUNDLE_FILE"
@@ -171,11 +203,13 @@ log_success "Created gzipped bundle: $(basename ${BUNDLE_FILE}.gz) ($(du -h ${BU
 
 # Minify CSS files
 log_step "Minifying CSS files..."
-if [ -d web/static/css ] && [ -n "$(find web/static/css -name "*.css" 2>/dev/null)" ]; then
-	for cssfile in web/static/css/*.css; do
+CSS_DIR=$(jq -r '.paths.css_dir' "$SCRIPT_DIR/_script.json")
+CSS_COMPRESSED_DIR=$(jq -r '.build.compressed_dirs[] | select(contains("css"))' "$SCRIPT_DIR/_script.json")
+if [ -d "$CSS_DIR" ] && [ -n "$(find "$CSS_DIR" -name "*.css" 2>/dev/null)" ]; then
+	for cssfile in "$CSS_DIR"/*.css; do
 		if [ -f "$cssfile" ] && [ "$(basename $cssfile)" != "compressed" ]; then
 			log_substep "Minifying $(basename $cssfile)..."
-			output_file="web/static/css/compressed/$(basename $cssfile)"
+			output_file="$CSS_COMPRESSED_DIR/$(basename $cssfile)"
 
 			# Apply CSS minification
 			ORIGINAL_CSS_SIZE=$(du -sb "$cssfile" | awk '{print $1}')
@@ -196,7 +230,9 @@ fi
 
 # Minify HTML templates and replace JS includes with bundle
 log_step "Minifying HTML templates..."
-for htmlfile in web/templates/*.html; do
+TEMPLATES_DIR=$(jq -r '.paths.templates_root' "$SCRIPT_DIR/_script.json")
+TEMPLATES_COMPRESSED_DIR=$(jq -r '.build.compressed_dirs[] | select(contains("templates"))' "$SCRIPT_DIR/_script.json")
+for htmlfile in "$TEMPLATES_DIR"/*.html; do
 	if [ -f "$htmlfile" ] && [ "$(basename $htmlfile)" != "compressed" ]; then
 		log_substep "Minifying $(basename $htmlfile) and replacing JS includes with bundle..."
 
@@ -211,7 +247,7 @@ for htmlfile in web/templates/*.html; do
 <script src="/static/js/compressed/bundle.js"></script>
 			/<script src="\/static\/js\/.*\.js"><\/script>/d
 		}' | \
-		sed 's|/static/css/\([^"]*\)\.css|/static/css/compressed/\1.css|g' > "web/templates/compressed/$(basename $htmlfile)"
+		sed 's|/static/css/\([^"]*\)\.css|/static/css/compressed/\1.css|g' > "$TEMPLATES_COMPRESSED_DIR/$(basename $htmlfile)"
 	fi
 done
 
@@ -220,13 +256,13 @@ log_step "Building optimized Go binary..."
 log_substep "Cleaning Go build cache..."
 #go clean -cache
 log_substep "Building with CGO enabled for SQLite..."
-CGO_ENABLED=1 go build -o backthynk ./cmd/server/
+CGO_ENABLED=1 eval "$BUILD_COMMAND"
 
 # Calculate build time
 BUILD_END=$(date +%s)
 BUILD_TIME=$((BUILD_END - BUILD_START))
 
-log_success "Production build complete: ./backthynk"
+log_success "Production build complete: ./$BINARY_NAME"
 log_success "Compressed assets available in compressed/ directories"
 
 # Calculate total bundle size including 3rd party CDN resources
@@ -265,8 +301,10 @@ get_remote_size() {
 
 # Get 3rd party resource sizes
 log_substep "Fetching 3rd party resource sizes..."
-TAILWIND_SIZE=$(get_remote_size "https://cdn.tailwindcss.com/3.4.17")
-FONTAWESOME_SIZE=$(get_remote_size "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css")
+TAILWIND_CDN=$(jq -r '.css_extraction.tailwind.cdn_url' "$SCRIPT_DIR/_script.json")
+FONTAWESOME_CDN=$(jq -r '.css_extraction.fontawesome.cdn_url' "$SCRIPT_DIR/_script.json")
+TAILWIND_SIZE=$(get_remote_size "$TAILWIND_CDN")
+FONTAWESOME_SIZE=$(get_remote_size "$FONTAWESOME_CDN")
 
 # Debug output for troubleshooting
 log_substep "Tailwind size: $TAILWIND_SIZE bytes, FontAwesome size: $FONTAWESOME_SIZE bytes"
@@ -294,18 +332,18 @@ else
 fi
 
 # Local JavaScript bundle (gzipped)
-if [ -f web/static/js/compressed/bundle.js.gz ]; then
-    JS_GZ_SIZE=$(du -sb web/static/js/compressed/bundle.js.gz | awk '{print $1}')
-    JS_ORIG=$(du -sb web/static/js --exclude=compressed | awk '{print $1}')
+if [ -f "${BUNDLE_OUTPUT}.gz" ]; then
+    JS_GZ_SIZE=$(du -sb "${BUNDLE_OUTPUT}.gz" | awk '{print $1}')
+    JS_ORIG=$(du -sb "$JS_DIR" --exclude=compressed | awk '{print $1}')
     SAVINGS=$((JS_ORIG - JS_GZ_SIZE))
     PERCENT=$((SAVINGS * 100 / JS_ORIG))
     printf "${GREEN}JavaScript (gzipped):${NC}    %8s ${GRAY}(-%d%%, saved %s)${NC}\n" "$(numfmt --to=iec $JS_GZ_SIZE)" "$PERCENT" "$(numfmt --to=iec $SAVINGS)"
     TOTAL_SIZE=$((TOTAL_SIZE + JS_GZ_SIZE))
 else
     # Fallback to regular bundle
-    if [ -f web/static/js/compressed/bundle.js ]; then
-        JS_SIZE=$(du -sb web/static/js/compressed/bundle.js | awk '{print $1}')
-        JS_ORIG=$(du -sb web/static/js --exclude=compressed | awk '{print $1}')
+    if [ -f "$BUNDLE_OUTPUT" ]; then
+        JS_SIZE=$(du -sb "$BUNDLE_OUTPUT" | awk '{print $1}')
+        JS_ORIG=$(du -sb "$JS_DIR" --exclude=compressed | awk '{print $1}')
         SAVINGS=$((JS_ORIG - JS_SIZE))
         PERCENT=$((SAVINGS * 100 / JS_ORIG))
         printf "${GREEN}JavaScript (bundled):${NC}    %8s ${GRAY}(-%d%%, saved %s)${NC}\n" "$(numfmt --to=iec $JS_SIZE)" "$PERCENT" "$(numfmt --to=iec $SAVINGS)"
@@ -314,16 +352,16 @@ else
 fi
 
 # CSS size calculation (gzipped if available)
-if [ -d web/static/css/compressed ]; then
+if [ -d "$CSS_COMPRESSED_DIR" ]; then
     CSS_GZ_TOTAL=0
     CSS_TOTAL=0
-    for cssfile in web/static/css/compressed/*.css.gz; do
+    for cssfile in "$CSS_COMPRESSED_DIR"/*.css.gz; do
         if [ -f "$cssfile" ]; then
             CSS_GZ_SIZE=$(du -sb "$cssfile" | awk '{print $1}')
             CSS_GZ_TOTAL=$((CSS_GZ_TOTAL + CSS_GZ_SIZE))
         fi
     done
-    for cssfile in web/static/css/compressed/*.css; do
+    for cssfile in "$CSS_COMPRESSED_DIR"/*.css; do
         if [ -f "$cssfile" ] && [[ "$cssfile" != *.gz ]]; then
             CSS_SIZE=$(du -sb "$cssfile" | awk '{print $1}')
             CSS_TOTAL=$((CSS_TOTAL + CSS_SIZE))
@@ -331,7 +369,7 @@ if [ -d web/static/css/compressed ]; then
     done
 
     if [ $CSS_GZ_TOTAL -gt 0 ]; then
-        CSS_ORIG=$(du -sb web/static/css --exclude=compressed | awk '{print $1}')
+        CSS_ORIG=$(du -sb "$CSS_DIR" --exclude=compressed | awk '{print $1}')
         if [ $CSS_ORIG -gt 0 ]; then
             SAVINGS=$((CSS_ORIG - CSS_GZ_TOTAL))
             PERCENT=$((SAVINGS * 100 / CSS_ORIG))
@@ -344,23 +382,24 @@ if [ -d web/static/css/compressed ]; then
         printf "${GREEN}CSS (minified):${NC}          %8s\n" "$(numfmt --to=iec $CSS_TOTAL)"
         TOTAL_SIZE=$((TOTAL_SIZE + CSS_TOTAL))
     fi
-elif [ -d web/static/css ]; then
-    CSS_SIZE=$(du -sb web/static/css | awk '{print $1}')
+elif [ -d "$CSS_DIR" ]; then
+    CSS_SIZE=$(du -sb "$CSS_DIR" | awk '{print $1}')
     printf "${GREEN}CSS:${NC}                     %8s\n" "$(numfmt --to=iec $CSS_SIZE)"
     TOTAL_SIZE=$((TOTAL_SIZE + CSS_SIZE))
 fi
 
 # Images size (if any)
-if [ -d web/static/images ]; then
-    IMG_SIZE=$(du -sb web/static/images | awk '{print $1}')
+STATIC_ROOT=$(jq -r '.paths.static_root' "$SCRIPT_DIR/_script.json")
+if [ -d "$STATIC_ROOT/images" ]; then
+    IMG_SIZE=$(du -sb "$STATIC_ROOT/images" | awk '{print $1}')
     printf "${GREEN}Images:${NC}                  %8s\n" "$(numfmt --to=iec $IMG_SIZE)"
     TOTAL_SIZE=$((TOTAL_SIZE + IMG_SIZE))
 fi
 
 # HTML size calculation
-if [ -d web/templates/compressed ]; then
-    HTML_SIZE=$(find web/templates/compressed -name "*.html" -exec cat {} \; | wc -c 2>/dev/null || echo 0)
-    HTML_ORIG=$(find web/templates -name "*.html" ! -path "*/compressed/*" -exec cat {} \; | wc -c 2>/dev/null || echo 0)
+if [ -d "$TEMPLATES_COMPRESSED_DIR" ]; then
+    HTML_SIZE=$(find "$TEMPLATES_COMPRESSED_DIR" -name "*.html" -exec cat {} \; | wc -c 2>/dev/null || echo 0)
+    HTML_ORIG=$(find "$TEMPLATES_DIR" -name "*.html" ! -path "*/compressed/*" -exec cat {} \; | wc -c 2>/dev/null || echo 0)
     if [ $HTML_ORIG -gt 0 ] && [ $HTML_SIZE -gt 0 ]; then
         SAVINGS=$((HTML_ORIG - HTML_SIZE))
         PERCENT=$((SAVINGS * 100 / HTML_ORIG))
@@ -370,7 +409,7 @@ if [ -d web/templates/compressed ]; then
     fi
     TOTAL_SIZE=$((TOTAL_SIZE + HTML_SIZE))
 else
-    HTML_SIZE=$(find web/templates -name "*.html" -exec cat {} \; | wc -c 2>/dev/null || echo 0)
+    HTML_SIZE=$(find "$TEMPLATES_DIR" -name "*.html" -exec cat {} \; | wc -c 2>/dev/null || echo 0)
     if [ $HTML_SIZE -gt 0 ]; then
         printf "${GREEN}HTML Templates:${NC}          %8s\n" "$(numfmt --to=iec $HTML_SIZE)"
         TOTAL_SIZE=$((TOTAL_SIZE + HTML_SIZE))

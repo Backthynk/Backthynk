@@ -47,8 +47,57 @@
     }
     </script>
     {{end}}
+    <!-- CSS: Use minimal if available, fallback to CDN -->
+    <script>
+        // Check if minimal CSS files exist
+        var tailwindMinimal = '/static/css/tailwind-minimal.css';
+        var faMinimal = '/static/css/fontawesome-minimal.css';
+
+        // Try to load minimal CSS first
+        fetch(tailwindMinimal, {method: 'HEAD'}).then(response => {
+            if (response.ok) {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = tailwindMinimal;
+                document.head.appendChild(link);
+            } else {
+                // Fallback to CDN
+                var script = document.createElement('script');
+                script.src = 'https://cdn.tailwindcss.com/3.4.17';
+                document.head.appendChild(script);
+            }
+        }).catch(() => {
+            // Fallback to CDN
+            var script = document.createElement('script');
+            script.src = 'https://cdn.tailwindcss.com/3.4.17';
+            document.head.appendChild(script);
+        });
+
+        fetch(faMinimal, {method: 'HEAD'}).then(response => {
+            if (response.ok) {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = faMinimal;
+                document.head.appendChild(link);
+            } else {
+                // Fallback to CDN
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+                document.head.appendChild(link);
+            }
+        }).catch(() => {
+            // Fallback to CDN
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
+            document.head.appendChild(link);
+        });
+    </script>
+
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
     <link href="/static/css/main.css" rel="stylesheet">
 </head>
 
@@ -633,8 +682,16 @@
 
                             <!-- Horizontal File Preview Container -->
                             <div id="modal-file-preview-container" class="mt-3" style="display: none;">
-                                <div class="flex items-center space-x-2 overflow-x-auto pb-2" id="modal-file-preview-list">
-                                    <!-- File previews will appear here horizontally -->
+                                <div class="relative group">
+                                    <button class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollModalAttachments(-1)" style="display: none;" id="modal-scroll-left">
+                                        <i class="fas fa-chevron-left text-sm text-gray-600"></i>
+                                    </button>
+                                    <button class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollModalAttachments(1)" style="display: none;" id="modal-scroll-right">
+                                        <i class="fas fa-chevron-right text-sm text-gray-600"></i>
+                                    </button>
+                                    <div class="flex items-center space-x-2 overflow-x-auto pb-2 scroll-smooth" id="modal-file-preview-list">
+                                        <!-- File previews will appear here horizontally -->
+                                    </div>
                                 </div>
                             </div>
                         </div>

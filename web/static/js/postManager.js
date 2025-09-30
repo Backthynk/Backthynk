@@ -228,10 +228,10 @@ function createPostElement(post) {
         </div>
     `;
 
-    // Content with formatted URLs
+    // Content with markdown formatting
     const contentHtml = `
         <div class="mb-4 post-content">
-            <div class="text-gray-900 leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere">${formatTextWithUrls(post.content)}</div>
+            <div class="text-gray-900 leading-relaxed break-words overflow-wrap-anywhere markdown-content">${formatMarkdown(post.content)}</div>
         </div>
     `;
 
@@ -257,34 +257,49 @@ function createPostElement(post) {
         attachmentsHtml += `
             <div>
                 <h4 class="text-sm font-medium text-gray-700 mb-3">Attachments (${totalAttachments})</h4>
-                <div class="flex items-center space-x-3 overflow-x-auto pb-2">
-                    ${allAttachments.map((attachment, idx) => {
-                        const isImage = attachment.file_type.startsWith('image/');
-                        const fileExtension = attachment.filename.split('.').pop().toLowerCase();
+                <div class="relative group">
+                    <button class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollAttachments(this, -1)" style="display: none;">
+                        <i class="fas fa-chevron-left text-sm text-gray-600"></i>
+                    </button>
+                    <button class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollAttachments(this, 1)" style="display: none;">
+                        <i class="fas fa-chevron-right text-sm text-gray-600"></i>
+                    </button>
+                    <div class="flex items-center space-x-3 overflow-x-auto pb-2 scroll-smooth" data-attachment-container>
+                        ${allAttachments.map((attachment, idx) => {
+                            const isImage = attachment.file_type.startsWith('image/');
+                            const fileExtension = attachment.filename.split('.').pop().toLowerCase();
+                            const fileSizeText = attachment.file_size ? formatFileSize(attachment.file_size) : '';
+                            const tooltipText = `${attachment.filename}${fileSizeText ? ' • ' + fileSizeText : ''}`;
 
-                        if (isImage) {
-                            const imageIndex = images.findIndex(img => img.filename === attachment.filename);
-                            return `
-                                <div class="flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="openImageGallery(${imageIndex})" data-images='${JSON.stringify(imageData)}'>
-                                    <img src="/uploads/${attachment.file_path}"
-                                         alt="${attachment.filename}"
-                                         class="w-full h-full object-cover rounded-lg border hover:opacity-90 transition-opacity">
-                                    <p class="text-xs text-gray-500 mt-1 text-center truncate">${attachment.filename}</p>
-                                </div>
-                            `;
-                        } else {
-                            return `
-                                <div class="flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="window.open('/uploads/${attachment.file_path}', '_blank')">
-                                    <div class="w-full h-full bg-gray-100 border rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
-                                        <i class="fas ${getFileIcon(fileExtension)} text-2xl text-gray-600 mb-1"></i>
-                                        <span class="text-xs text-gray-500 font-medium">${fileExtension.toUpperCase()}</span>
-                                        ${attachment.file_size ? `<span class="text-xs text-gray-400">${formatFileSize(attachment.file_size)}</span>` : ''}
+                            if (isImage) {
+                                const imageIndex = images.findIndex(img => img.filename === attachment.filename);
+                                return `
+                                    <div class="relative flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="openImageGallery(${imageIndex})" data-images='${JSON.stringify(imageData)}' title="${tooltipText}">
+                                        <img src="/uploads/${attachment.file_path}"
+                                             alt="${attachment.filename}"
+                                             class="w-full h-full object-cover rounded-lg border hover:opacity-90 transition-opacity">
+                                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1 rounded-b-lg opacity-0 hover:opacity-100 transition-opacity">
+                                            <p class="text-white text-xs truncate leading-tight">${attachment.filename}</p>
+                                            ${fileSizeText ? `<p class="text-white/80 text-xs">${fileSizeText}</p>` : ''}
+                                        </div>
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-1 text-center truncate">${attachment.filename}</p>
-                                </div>
-                            `;
-                        }
-                    }).join('')}
+                                `;
+                            } else {
+                                return `
+                                    <div class="relative flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="window.open('/uploads/${attachment.file_path}', '_blank')" title="${tooltipText}">
+                                        <div class="w-full h-full bg-gray-100 border rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
+                                            <i class="fas ${getFileIcon(fileExtension)} text-2xl text-gray-600 mb-1"></i>
+                                            <span class="text-xs text-gray-500 font-medium">${fileExtension.toUpperCase()}</span>
+                                        </div>
+                                        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1 rounded-b-lg opacity-0 hover:opacity-100 transition-opacity">
+                                            <p class="text-white text-xs truncate leading-tight">${attachment.filename}</p>
+                                            ${fileSizeText ? `<p class="text-white/80 text-xs">${fileSizeText}</p>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        }).join('')}
+                    </div>
                 </div>
             </div>
         `;
@@ -293,6 +308,12 @@ function createPostElement(post) {
     }
 
     div.innerHTML = headerHtml + contentHtml + linkPreviewsHtml + attachmentsHtml;
+
+    // Setup navigation buttons for attachments
+    if (totalAttachments > 0) {
+        setTimeout(() => setupAttachmentNavigation(div), 0);
+    }
+
     return div;
 }
 
@@ -722,4 +743,35 @@ function incrementCategoryPostCount(categoryId, delta) {
 
     // Re-render categories to show updated counts
     renderCategories();
+}
+
+// Attachment navigation functions
+function setupAttachmentNavigation(postElement) {
+    const container = postElement.querySelector('[data-attachment-container]');
+    const leftBtn = postElement.querySelector('button[onclick*="scrollAttachments"][onclick*="-1"]');
+    const rightBtn = postElement.querySelector('button[onclick*="scrollAttachments"][onclick*="1"]');
+
+    if (!container || !leftBtn || !rightBtn) return;
+
+    function updateButtonVisibility() {
+        const canScrollLeft = container.scrollLeft > 0;
+        const canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth);
+
+        leftBtn.style.display = canScrollLeft ? 'flex' : 'none';
+        rightBtn.style.display = canScrollRight ? 'flex' : 'none';
+    }
+
+    container.addEventListener('scroll', updateButtonVisibility);
+    updateButtonVisibility();
+}
+
+function scrollAttachments(button, direction) {
+    const container = button.parentNode.querySelector('[data-attachment-container]');
+    if (!container) return;
+
+    const scrollAmount = 200; // pixels to scroll
+    container.scrollBy({
+        left: direction * scrollAmount,
+        behavior: 'smooth'
+    });
 }

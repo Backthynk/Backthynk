@@ -12,7 +12,7 @@ COUNT=$2
 MONTHS=$3
 
 # Load common utilities
-source "$(dirname "$0")/../common.sh"
+source "$(dirname "$0")/../common/common.sh"
 
 # Check dependencies and load configuration
 check_dependencies jq

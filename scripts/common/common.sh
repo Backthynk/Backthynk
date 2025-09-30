@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Common utilities for Backthynk scripts
-# Source this file in other scripts: source "$(dirname "$0")/../common.sh"
+# Source this file in other scripts: source "$(dirname "$0")/../common/common.sh"
 
 # Configuration loader from service.json
 # Sets global variables: SERVER_PORT, CONFIG_FILENAME, DATABASE_FILENAME, UPLOADS_SUBDIR

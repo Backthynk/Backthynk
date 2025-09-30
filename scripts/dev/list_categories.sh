@@ -16,7 +16,7 @@
 set -e
 
 # Load common utilities
-source "$(dirname "$0")/../common.sh"
+source "$(dirname "$0")/../common/common.sh"
 
 # Check dependencies and load configuration
 check_dependencies curl jq

@@ -166,6 +166,134 @@ function formatTextWithUrls(text) {
     });
 }
 
+function formatMarkdown(text) {
+    // Check if marked library is available
+    if (typeof marked === 'undefined') {
+        // Fallback to URL formatting only if marked is not available
+        return formatTextWithUrls(text);
+    }
+
+    // Configure marked for GitHub-style rendering
+    marked.setOptions({
+        breaks: true, // Convert line breaks to <br>
+        gfm: true, // GitHub Flavored Markdown
+        headerIds: false, // Don't add IDs to headers
+        mangle: false, // Don't mangle autolinked emails
+    });
+
+    // Custom renderer for better GitHub-style formatting
+    const renderer = new marked.Renderer();
+
+    // Override code block rendering for better styling
+    renderer.code = function(code, language) {
+        // Escape HTML in code
+        const escapedCode = escapeHtml(code);
+
+        // Add syntax highlighting classes (can be extended with highlight.js later)
+        const langClass = language ? ` language-${escapeHtml(language)}` : '';
+
+        return `<div class="code-block-container bg-gray-50 border border-gray-200 rounded-md my-4 overflow-hidden">
+            ${language ? `<div class="code-block-header bg-gray-100 px-3 py-2 text-xs font-mono text-gray-600 border-b border-gray-200">${escapeHtml(language)}</div>` : ''}
+            <pre class="code-block overflow-x-auto p-4 m-0"><code class="block font-mono text-sm${langClass}">${escapedCode}</code></pre>
+        </div>`;
+    };
+
+    // Override inline code rendering
+    renderer.codespan = function(code) {
+        return `<code class="inline-code bg-gray-100 text-red-600 px-1.5 py-0.5 rounded text-sm font-mono">${escapeHtml(code)}</code>`;
+    };
+
+    // Override blockquote rendering
+    renderer.blockquote = function(quote) {
+        return `<blockquote class="border-l-4 border-gray-300 pl-4 py-2 my-4 text-gray-700 italic bg-gray-50">${quote}</blockquote>`;
+    };
+
+    // Override table rendering for better styling
+    renderer.table = function(header, body) {
+        return `<div class="table-container overflow-x-auto my-4">
+            <table class="min-w-full border border-gray-200 rounded-md overflow-hidden">
+                <thead class="bg-gray-50">${header}</thead>
+                <tbody class="bg-white divide-y divide-gray-200">${body}</tbody>
+            </table>
+        </div>`;
+    };
+
+    renderer.tablerow = function(content) {
+        return `<tr class="hover:bg-gray-50">${content}</tr>`;
+    };
+
+    renderer.tablecell = function(content, flags) {
+        const type = flags.header ? 'th' : 'td';
+        const className = flags.header ? 'px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider' : 'px-4 py-2 text-sm text-gray-900';
+        return `<${type} class="${className}">${content}</${type}>`;
+    };
+
+    // Override list rendering for better spacing
+    renderer.list = function(body, ordered) {
+        const type = ordered ? 'ol' : 'ul';
+        const className = ordered ? 'list-decimal list-inside space-y-1 ml-4' : 'list-disc list-inside space-y-1 ml-4';
+        return `<${type} class="${className} my-2">${body}</${type}>`;
+    };
+
+    renderer.listitem = function(text) {
+        return `<li class="text-gray-900">${text}</li>`;
+    };
+
+    // Override header rendering
+    renderer.heading = function(text, level) {
+        const sizes = {
+            1: 'text-2xl font-bold',
+            2: 'text-xl font-bold',
+            3: 'text-lg font-semibold',
+            4: 'text-base font-semibold',
+            5: 'text-sm font-semibold',
+            6: 'text-xs font-semibold'
+        };
+        const className = sizes[level] || sizes[6];
+        return `<h${level} class="${className} text-gray-900 mt-6 mb-3 first:mt-0">${text}</h${level}>`;
+    };
+
+    // Override link rendering to maintain existing URL styling
+    renderer.link = function(href, title, text) {
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        return `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors"${titleAttr}>${text}</a>`;
+    };
+
+    // Override paragraph rendering for better spacing
+    renderer.paragraph = function(text) {
+        return `<p class="mb-4 last:mb-0">${text}</p>`;
+    };
+
+    try {
+        // Parse markdown with custom renderer
+        const html = marked.parse(text, { renderer });
+
+        // Sanitize the HTML to prevent XSS attacks
+        if (typeof DOMPurify !== 'undefined') {
+            return DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: [
+                    'div', 'p', 'br', 'strong', 'em', 'u', 'del', 's', 'strike',
+                    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                    'ul', 'ol', 'li',
+                    'blockquote',
+                    'a', 'code', 'pre',
+                    'table', 'thead', 'tbody', 'tr', 'th', 'td',
+                    'hr'
+                ],
+                ALLOWED_ATTR: ['class', 'href', 'title', 'target', 'rel'],
+                KEEP_CONTENT: true,
+                ALLOW_DATA_ATTR: false
+            });
+        } else {
+            return html;
+        }
+    } catch (error) {
+        console.error('Markdown parsing error:', error);
+        // Fallback to URL formatting only if markdown parsing fails
+        return formatTextWithUrls(text);
+    }
+}
+
 function getFileIcon(fileExtension) {
     const ext = fileExtension.toLowerCase();
 
