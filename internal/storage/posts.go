@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+type PostData struct {
+	ID         int
+	CategoryID int
+	Created    int64
+}
+
 func (db *DB) CreatePost(categoryID int, content string) (*models.Post, error) {
 	return db.CreatePostWithTimestamp(categoryID, content, time.Now().UnixMilli())
 }
@@ -77,27 +83,22 @@ func (db *DB) GetPostIDsByCategory(categoryID int) ([]int, error) {
 	return ids, nil
 }
 
-func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit, offset int) ([]models.PostWithAttachments, error) {
+func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit, offset int, descendants []int) ([]models.PostWithAttachments, error) {
 	var query string
 	var args []interface{}
-	
 	if recursive {
-		// Get descendant categories
-		descendants, err := db.getDescendantCategories(categoryID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get descendants: %w", err)
-		}
-		descendants = append(descendants, categoryID)
-		
-		placeholders := make([]string, len(descendants))
-		args = make([]interface{}, len(descendants)+2)
-		for i, id := range descendants {
+		// Use provided descendants from cache instead of database query
+		categoryIDs := append(descendants, categoryID)
+
+		placeholders := make([]string, len(categoryIDs))
+		args = make([]interface{}, len(categoryIDs)+2)
+		for i, id := range categoryIDs {
 			placeholders[i] = "?"
 			args[i] = id
 		}
-		args[len(descendants)] = limit
-		args[len(descendants)+1] = offset
-		
+		args[len(categoryIDs)] = limit
+		args[len(categoryIDs)+1] = offset
+
 		query = fmt.Sprintf(
 			"SELECT id, category_id, content, created FROM posts WHERE category_id IN (%s) ORDER BY created DESC LIMIT ? OFFSET ?",
 			strings.Join(placeholders, ","),
@@ -251,32 +252,24 @@ func (db *DB) GetTotalPostCount() (int, error) {
 	return count, nil
 }
 
-func (db *DB) getDescendantCategories(parentID int) ([]int, error) {
-	var descendants []int
-	
-	rows, err := db.Query("SELECT id FROM categories WHERE parent_id = ?", parentID)
+
+func (db *DB) GetAllPostsHeader() ([]PostData, error) {
+	query := "SELECT id, category_id, created FROM posts ORDER BY created"
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	
-	var childIDs []int
+	var posts []PostData
 	for rows.Next() {
-		var childID int
-		if err := rows.Scan(&childID); err != nil {
-			return nil, err
-		}
-		childIDs = append(childIDs, childID)
-	}
-	
-	for _, childID := range childIDs {
-		childDescendants, err := db.getDescendantCategories(childID)
+		var post PostData
+		err := rows.Scan(&post.ID, &post.CategoryID, &post.Created)
 		if err != nil {
 			return nil, err
 		}
-		descendants = append(descendants, childDescendants...)
-		descendants = append(descendants, childID)
+		posts = append(posts, post)
 	}
 	
-	return descendants, nil
+	return posts, nil
 }

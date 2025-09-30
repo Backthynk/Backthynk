@@ -89,6 +89,7 @@ func (s *PostService) Delete(id int) error {
 	return nil
 }
 
+
 func (s *PostService) Move(postID int, newCategoryID int) error {
 	post, err := s.db.GetPost(postID)
 	if err != nil {
@@ -130,7 +131,11 @@ func (s *PostService) Move(postID int, newCategoryID int) error {
 }
 
 func (s *PostService) GetByCategory(categoryID int, recursive bool, limit, offset int) ([]models.PostWithAttachments, error) {
-	return s.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset)
+	var descendants []int
+	if recursive {
+		descendants = s.cache.GetDescendants(categoryID)
+	}
+	return s.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset, descendants)
 }
 
 func (s *PostService) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, error) {

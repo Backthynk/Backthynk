@@ -51,7 +51,7 @@ func (s *Service) Initialize() error {
 	log.Println("Initializing activity cache...")
 	
 	// Load all posts for activity calculation
-	posts, err := s.db.GetAllPostsForActivity()
+	posts, err := s.db.GetAllPostsHeader()
 	if err != nil {
 		return err
 	}

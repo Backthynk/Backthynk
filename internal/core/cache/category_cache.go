@@ -118,10 +118,6 @@ func (c *CategoryCache) getAncestorsUnlocked(categoryID int) []int {
 	return ancestors
 }
 
-func (c *CategoryCache) isDescendantUnlocked(childID, parentID int) bool {
-	return c.isDescendantUnlockedWithVisited(childID, parentID, make(map[int]bool))
-}
-
 func (c *CategoryCache) isDescendantUnlockedWithVisited(childID, parentID int, visited map[int]bool) bool {
 	cat, ok := c.categories[childID]
 	if !ok || cat.ParentID == nil {

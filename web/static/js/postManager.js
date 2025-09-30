@@ -725,12 +725,17 @@ function incrementCategoryPostCount(categoryId, delta) {
         category.recursive_post_count = (category.recursive_post_count || 0) + delta;
     }
 
-    // Update all parent categories' recursive counts
-    categories.forEach(cat => {
-        if (isDescendantCategory(categoryId, cat.id)) {
-            cat.recursive_post_count = (cat.recursive_post_count || 0) + delta;
+    // Update all parent categories' recursive counts by walking up the tree
+    let currentCat = category;
+    while (currentCat && currentCat.parent_id) {
+        const parent = categories.find(cat => cat.id === currentCat.parent_id);
+        if (parent) {
+            parent.recursive_post_count = (parent.recursive_post_count || 0) + delta;
+            currentCat = parent;
+        } else {
+            break;
         }
-    });
+    }
 
     // Update currentCategory if it matches
     if (currentCategory && currentCategory.id === categoryId) {
