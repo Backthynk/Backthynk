@@ -164,7 +164,7 @@ async function selectCategory(category, fromUserClick = false) {
 
     // Load stats and activity
     const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
-    updateCategoryStatsDisplay(stats);
+    await updateCategoryStatsDisplay(stats);
     generateActivityHeatmap();
 }
 
@@ -287,7 +287,7 @@ async function toggleRecursiveMode(category) {
     loadPosts(category.id, currentCategory.recursiveMode);
 
     const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
-    updateCategoryStatsDisplay(stats);
+    await updateCategoryStatsDisplay(stats);
 
     generateActivityHeatmap();
 }

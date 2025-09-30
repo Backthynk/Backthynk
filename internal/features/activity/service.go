@@ -258,30 +258,37 @@ func (s *Service) updateRecursiveActivity(categoryID int, date string, delta int
 
 		parentID := *cat.ParentID
 
-		s.mu.RLock()
+		s.mu.Lock()
 		parentActivity, ok := s.activity[parentID]
-		s.mu.RUnlock()
-
-		if ok {
-			parentActivity.mu.Lock()
-			oldCount := parentActivity.Recursive[date]
-			newCount := oldCount + delta
-
-			if newCount <= 0 {
-				delete(parentActivity.Recursive, date)
-			} else {
-				parentActivity.Recursive[date] = newCount
+		if !ok {
+			// Create activity record for parent if it doesn't exist
+			parentActivity = &CategoryActivity{
+				Days:      make(map[string]int),
+				Recursive: make(map[string]int),
+				Stats:     ActivityStats{},
 			}
-
-			parentActivity.Stats.RecursivePosts += delta
-
-			if oldCount == 0 && newCount > 0 {
-				parentActivity.Stats.RecursiveActiveDays++
-			} else if oldCount > 0 && newCount <= 0 {
-				parentActivity.Stats.RecursiveActiveDays--
-			}
-			parentActivity.mu.Unlock()
+			s.activity[parentID] = parentActivity
 		}
+		s.mu.Unlock()
+
+		parentActivity.mu.Lock()
+		oldCount := parentActivity.Recursive[date]
+		newCount := oldCount + delta
+
+		if newCount <= 0 {
+			delete(parentActivity.Recursive, date)
+		} else {
+			parentActivity.Recursive[date] = newCount
+		}
+
+		parentActivity.Stats.RecursivePosts += delta
+
+		if oldCount == 0 && newCount > 0 {
+			parentActivity.Stats.RecursiveActiveDays++
+		} else if oldCount > 0 && newCount <= 0 {
+			parentActivity.Stats.RecursiveActiveDays--
+		}
+		parentActivity.mu.Unlock()
 
 		current = parentID
 	}

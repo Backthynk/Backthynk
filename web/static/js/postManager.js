@@ -466,7 +466,7 @@ document.getElementById('move-form').addEventListener('submit', async function(e
 
         // Update the display with the updated counts
         if (currentCategory) {
-            updateCategoryStatsDisplay();
+            await updateCategoryStatsDisplay();
         }
 
         // Regenerate activity heatmap to reflect the moved post (with small delay for backend processing)
@@ -521,7 +521,7 @@ async function confirmDeletePost(postId) {
             incrementCategoryPostCount(currentCategory.id, -1);
 
             // Update the display
-            updateCategoryStatsDisplay();
+            await updateCategoryStatsDisplay();
 
             // Regenerate activity heatmap to reflect deleted post (with small delay for backend processing)
             setTimeout(generateActivityHeatmap, 100);
@@ -542,7 +542,7 @@ async function confirmDeletePost(postId) {
     }
 }
 
-function updateCategoryStatsDisplay(stats) {
+async function updateCategoryStatsDisplay(stats) {
     if (!currentCategory) return;
 
     // Ensure currentCategory has all properties by finding it in categories array
@@ -560,6 +560,16 @@ function updateCategoryStatsDisplay(stats) {
         (currentCategory.post_count || 0);
 
     let statsText = `${postCount} post${postCount !== 1 ? 's' : ''}`;
+
+    // If file stats are enabled but no stats provided, fetch them
+    if (fileStatsEnabled && !stats) {
+        try {
+            stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
+        } catch (error) {
+            console.error('Failed to fetch category stats for display:', error);
+            stats = { file_count: 0, total_size: 0 };
+        }
+    }
 
     // Only show files and size if file stats are enabled and there are files
     if (fileStatsEnabled && stats && stats.file_count > 0) {
