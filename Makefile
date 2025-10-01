@@ -1,4 +1,4 @@
-.PHONY: help build build-prod run serve-dev serve-prod clean fclean test test-verbose dev-generate-posts dev-list-categories extract-css
+.PHONY: help build build-prod run serve-dev serve-prod clean fclean test test-verbose dev-generate-posts dev-list-categories
 
 # Default target
 help:
@@ -49,6 +49,3 @@ dev-generate-posts:
 dev-list-categories:
 	@echo -e "\033[0;34m▶\033[0m Listing available categories..."
 	@./scripts/dev/list_categories.sh
-
-extract-css:
-	@./scripts/makefile/extract-css.sh

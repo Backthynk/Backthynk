@@ -16,6 +16,7 @@ CSS_BUNDLE_PATH=$(jq -r '.build.assets.css_bundle_path' "$SCRIPT_DIR/_script.jso
 JS_START_TAG=$(jq -r '.build.html_processing.js_script_tags_start' "$SCRIPT_DIR/_script.json")
 JS_END_TAG=$(jq -r '.build.html_processing.js_script_tags_end' "$SCRIPT_DIR/_script.json")
 TAILWIND_CDN_PATTERN=$(jq -r '.build.html_processing.tailwind_cdn_pattern' "$SCRIPT_DIR/_script.json")
+FONTAWESOME_CDN_PATTERN=$(jq -r '.build.html_processing.fontawesome_cdn_pattern' "$SCRIPT_DIR/_script.json")
 
 if [ ! -d "$TEMPLATES_DIR" ]; then
     log_warning "Templates directory not found: $TEMPLATES_DIR"
@@ -41,7 +42,8 @@ for htmlfile in "$TEMPLATES_DIR"/*.html; do
             /<script src=\"\/static\/js\/.*\.js\"><\/script>/d
         }" | \
         sed "s|/static/css/\([^\"]*\)\.css|${CSS_BUNDLE_PATH}|g" | \
-        sed "/<script src=\"${TAILWIND_CDN_PATTERN//\//\\/}\/.*\"><\/script>/d" > "$output_file"
+        sed "/<script src=\"${TAILWIND_CDN_PATTERN//\//\\/}\/.*\"><\/script>/d" | \
+        sed "/<link href=\"${FONTAWESOME_CDN_PATTERN//\//\\/}\/.*\" rel=\"stylesheet\">/d" > "$output_file"
 
         # Calculate savings
         ORIGINAL_SIZE=$(du -sb "$htmlfile" | awk '{print $1}')

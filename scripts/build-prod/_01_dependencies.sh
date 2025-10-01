@@ -59,7 +59,7 @@ export TERSER_AVAILABLE=$(command -v terser &> /dev/null && echo "true" || echo 
 export ESBUILD_AVAILABLE=$(command -v esbuild &> /dev/null && echo "true" || echo "false")
 
 # Check and setup Tailwind CSS dependencies
-TAILWIND_DIR="scripts/tailwind-build"
+TAILWIND_DIR="scripts/build-prod/tailwind-build"
 if [ -d "$TAILWIND_DIR" ]; then
     log_substep "Checking Tailwind CSS setup..."
     if [ ! -d "$TAILWIND_DIR/node_modules" ]; then
@@ -71,6 +71,21 @@ if [ -d "$TAILWIND_DIR" ]; then
     fi
 else
     log_warning "Tailwind CSS build directory not found at $TAILWIND_DIR"
+fi
+
+# Check and setup Font Awesome dependencies
+FONTAWESOME_DIR="scripts/build-prod/fontawesome-build"
+if [ -d "$FONTAWESOME_DIR" ]; then
+    log_substep "Checking Font Awesome setup..."
+    if [ ! -d "$FONTAWESOME_DIR/node_modules" ]; then
+        log_substep "Installing Font Awesome dependencies..."
+        (cd "$FONTAWESOME_DIR" && npm install --silent)
+        log_substep "✓ Font Awesome dependencies installed"
+    else
+        log_substep "✓ Font Awesome dependencies already installed"
+    fi
+else
+    log_warning "Font Awesome build directory not found at $FONTAWESOME_DIR"
 fi
 
 log_success "Dependency check complete"
