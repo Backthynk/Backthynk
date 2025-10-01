@@ -4,6 +4,7 @@ import (
 	"backthynk/internal/core/cache"
 	"backthynk/internal/core/events"
 	"backthynk/internal/core/models"
+	"backthynk/internal/core/utils"
 	"backthynk/internal/storage"
 )
 
@@ -24,16 +25,19 @@ func NewPostService(db *storage.DB, cache *cache.CategoryCache, dispatcher *even
 func (s *PostService) Create(categoryID int, content string, customTimestamp *int64) (*models.Post, error) {
 	var post *models.Post
 	var err error
-	
+
 	if customTimestamp != nil {
 		post, err = s.db.CreatePostWithTimestamp(categoryID, content, *customTimestamp)
 	} else {
 		post, err = s.db.CreatePost(categoryID, content)
 	}
-	
+
 	if err != nil {
 		return nil, err
 	}
+
+	// Process content on-the-fly for the response
+	post.ProcessedContent = utils.ProcessMarkdown(post.Content)
 	
 	// Update cache
 	s.cache.UpdatePostCount(categoryID, 1)
@@ -135,11 +139,31 @@ func (s *PostService) GetByCategory(categoryID int, recursive bool, limit, offse
 	if recursive {
 		descendants = s.cache.GetDescendants(categoryID)
 	}
-	return s.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset, descendants)
+	posts, err := s.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset, descendants)
+	if err != nil {
+		return nil, err
+	}
+
+	// Process content on-the-fly for each post
+	for i := range posts {
+		posts[i].ProcessedContent = utils.ProcessMarkdown(posts[i].Content)
+	}
+
+	return posts, nil
 }
 
 func (s *PostService) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, error) {
-	return s.db.GetAllPosts(limit, offset)
+	posts, err := s.db.GetAllPosts(limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	// Process content on-the-fly for each post
+	for i := range posts {
+		posts[i].ProcessedContent = utils.ProcessMarkdown(posts[i].Content)
+	}
+
+	return posts, nil
 }
 
 func (s *PostService) GetCategoryFromCache(categoryID int) (*models.Category, bool) {

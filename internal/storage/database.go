@@ -108,30 +108,30 @@ func (db *DB) runMigrations() error {
 		return fmt.Errorf("failed to get table info: %w", err)
 	}
 	defer rows.Close()
-	
+
 	hasDescription := false
 	for rows.Next() {
 		var cid int
 		var name, dataType string
 		var notNull, pk bool
 		var defaultValue sql.NullString
-		
+
 		if err := rows.Scan(&cid, &name, &dataType, &notNull, &defaultValue, &pk); err != nil {
 			return fmt.Errorf("failed to scan table info: %w", err)
 		}
-		
+
 		if name == "description" {
 			hasDescription = true
 			break
 		}
 	}
-	
+
 	if !hasDescription {
 		_, err := db.Exec("ALTER TABLE categories ADD COLUMN description TEXT DEFAULT ''")
 		if err != nil {
 			return fmt.Errorf("failed to add description column: %w", err)
 		}
 	}
-	
+
 	return nil
 }

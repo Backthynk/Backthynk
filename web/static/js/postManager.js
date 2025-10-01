@@ -231,7 +231,7 @@ function createPostElement(post) {
     // Content with markdown formatting
     const contentHtml = `
         <div class="mb-4 post-content">
-            <div class="text-gray-900 leading-relaxed break-words overflow-wrap-anywhere markdown-content">${formatMarkdown(post.content)}</div>
+            <div class="text-gray-900 leading-relaxed break-words overflow-wrap-anywhere markdown-content">${post.processed_content}</div>
         </div>
     `;
 
