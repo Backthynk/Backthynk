@@ -56,3 +56,19 @@ get_clean_dirs() {
 get_clean_individual_files() {
     jq -r '.app.clean_individual_files[]?' "$CONFIG_FILE" 2>/dev/null
 }
+
+get_fclean_dirs() {
+    jq -r '.app.fclean_dirs[]?' "$CONFIG_FILE" 2>/dev/null
+}
+
+get_js_priority_files() {
+    jq -r '.build.js_files.priority_order[]?' "$CONFIG_FILE" 2>/dev/null
+}
+
+get_js_last_files() {
+    jq -r '.build.js_files.last_files[]?' "$CONFIG_FILE" 2>/dev/null
+}
+
+get_compressed_dirs() {
+    jq -r '.build.compressed_dirs[]?' "$CONFIG_FILE" 2>/dev/null
+}

@@ -39,44 +39,31 @@ echo -e "${CYAN}=====================================================${NC}"
 TOTAL_SIZE=0
 TOTAL_SAVINGS=0
 
-# 3rd party resources (from cache)
-TAILWIND_SIZE=$(get_cached_size "tailwind")
-FONTAWESOME_SIZE=$(get_cached_size "fontawesome")
-MARKED_SIZE=$(get_cached_size "marked")
-DOMPURIFY_SIZE=$(get_cached_size "dompurify")
-
-if [ "$TAILWIND_SIZE" -gt 0 ] 2>/dev/null; then
-    printf "${YELLOW}Tailwind CSS (CDN):${NC}      %8s ${GRAY}(external)${NC}\n" "$(numfmt --to=iec-i --suffix=B-i --suffix=B "$TAILWIND_SIZE")"
-    TOTAL_SIZE=$((TOTAL_SIZE + TAILWIND_SIZE))
-else
-    printf "${YELLOW}Tailwind CSS (CDN):${NC}      %8s ${GRAY}(external)${NC}\n" "unavailable"
-fi
-
-if [ "$FONTAWESOME_SIZE" -gt 0 ] 2>/dev/null; then
-    printf "${YELLOW}Font Awesome (CDN):${NC}      %8s ${GRAY}(external)${NC}\n" "$(numfmt --to=iec-i --suffix=B-i --suffix=B "$FONTAWESOME_SIZE")"
-    TOTAL_SIZE=$((TOTAL_SIZE + FONTAWESOME_SIZE))
-else
-    printf "${YELLOW}Font Awesome (CDN):${NC}      %8s ${GRAY}(external)${NC}\n" "unavailable"
-fi
-
-if [ "$MARKED_SIZE" -gt 0 ] 2>/dev/null; then
-    printf "${YELLOW}Marked.js (CDN):${NC}         %8s ${GRAY}(external)${NC}\n" "$(numfmt --to=iec-i --suffix=B-i --suffix=B "$MARKED_SIZE")"
-    TOTAL_SIZE=$((TOTAL_SIZE + MARKED_SIZE))
-fi
-
-if [ "$DOMPURIFY_SIZE" -gt 0 ] 2>/dev/null; then
-    printf "${YELLOW}DOMPurify (CDN):${NC}         %8s ${GRAY}(external)${NC}\n" "$(numfmt --to=iec-i --suffix=B-i --suffix=B "$DOMPURIFY_SIZE")"
-    TOTAL_SIZE=$((TOTAL_SIZE + DOMPURIFY_SIZE))
-fi
+# 3rd party resources (from cache) - dynamically get all CDN resources
+while IFS=' ' read -r name url; do
+    if [ -n "$name" ] && [ -n "$url" ]; then
+        cdn_size=$(get_cached_size "$name")
+        if [ "$cdn_size" -gt 0 ] 2>/dev/null; then
+            # Capitalize first letter for display
+            display_name=$(echo "$name" | sed 's/^./\U&/' | sed 's/js/.js/' | sed 's/purify/Purify/')
+            printf "${YELLOW}%s (CDN):${NC}%*s %8s ${GRAY}(external)${NC}\n" "$display_name" $((20 - ${#display_name})) "" "$(numfmt --to=iec-i --suffix=B "$cdn_size")"
+            TOTAL_SIZE=$((TOTAL_SIZE + cdn_size))
+        else
+            display_name=$(echo "$name" | sed 's/^./\U&/' | sed 's/js/.js/' | sed 's/purify/Purify/')
+            printf "${YELLOW}%s (CDN):${NC}%*s %8s ${GRAY}(external)${NC}\n" "$display_name" $((20 - ${#display_name})) "" "unavailable"
+        fi
+    fi
+done < <(jq -r '.urls.cdn | to_entries[] | "\(.key) \(.value)"' "$SCRIPT_DIR/_script.json" 2>/dev/null)
 
 # Local JavaScript bundle (gzipped if available, otherwise regular)
 if [ -f "${BUNDLE_OUTPUT}.gz" ]; then
     JS_GZ_SIZE=$(du -sb "${BUNDLE_OUTPUT}.gz" | awk '{print $1}')
-    JS_ORIG=$(find "$(dirname "$BUNDLE_OUTPUT")/.." -name "*.js" ! -path "*/compressed/*" -exec du -sb {} + 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo 0)
-    if [ -n "$JS_ORIG" ] && [ "$JS_ORIG" -gt 0 ] 2>/dev/null; then
-        SAVINGS=$((JS_ORIG - JS_GZ_SIZE))
-        PERCENT=$((SAVINGS * 100 / JS_ORIG))
-        printf "${GREEN}JavaScript (gzipped):${NC}    %8s ${GRAY}(-%d%%, saved %s)${NC}\n" "$(numfmt --to=iec-i --suffix=B-i --suffix=B "$JS_GZ_SIZE")" "$PERCENT" "$(numfmt --to=iec-i --suffix=B-i --suffix=B "$SAVINGS")"
+    # Compare with the uncompressed bundle file, not original source files
+    if [ -f "$BUNDLE_OUTPUT" ]; then
+        JS_ORIG_SIZE=$(du -sb "$BUNDLE_OUTPUT" | awk '{print $1}')
+        SAVINGS=$((JS_ORIG_SIZE - JS_GZ_SIZE))
+        PERCENT=$((SAVINGS * 100 / JS_ORIG_SIZE))
+        printf "${GREEN}JavaScript (gzipped):${NC}    %8s ${GRAY}(-%d%%, saved %s)${NC}\n" "$(numfmt --to=iec-i --suffix=B "$JS_GZ_SIZE")" "$PERCENT" "$(numfmt --to=iec-i --suffix=B "$SAVINGS")"
         TOTAL_SAVINGS=$((TOTAL_SAVINGS + SAVINGS))
     else
         printf "${GREEN}JavaScript (gzipped):${NC}    %8s\n" "$(numfmt --to=iec-i --suffix=B "$JS_GZ_SIZE")"
@@ -84,6 +71,7 @@ if [ -f "${BUNDLE_OUTPUT}.gz" ]; then
     TOTAL_SIZE=$((TOTAL_SIZE + JS_GZ_SIZE))
 elif [ -f "$BUNDLE_OUTPUT" ]; then
     JS_SIZE=$(du -sb "$BUNDLE_OUTPUT" | awk '{print $1}')
+    # For bundled JS, compare with original source files
     JS_ORIG=$(find "$(dirname "$BUNDLE_OUTPUT")/.." -name "*.js" ! -path "*/compressed/*" -exec du -sb {} + 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo 0)
     if [ -n "$JS_ORIG" ] && [ "$JS_ORIG" -gt 0 ] 2>/dev/null; then
         SAVINGS=$((JS_ORIG - JS_SIZE))
@@ -118,10 +106,18 @@ if [ -d "$CSS_COMPRESSED_DIR" ]; then
     done
 
     if [ $CSS_GZ_TOTAL -gt 0 ]; then
-        CSS_ORIG=$(find "$CSS_DIR" -name "*.css" ! -path "*/compressed/*" -exec du -sb {} + 2>/dev/null | awk '{sum+=$1} END {print sum}' || echo 0)
-        if [ -n "$CSS_ORIG" ] && [ "$CSS_ORIG" -gt 0 ] 2>/dev/null; then
-            SAVINGS=$((CSS_ORIG - CSS_GZ_TOTAL))
-            PERCENT=$((SAVINGS * 100 / CSS_ORIG))
+        # Compare with the uncompressed CSS files in the same directory
+        CSS_ORIG_TOTAL=0
+        for cssfile in "$CSS_COMPRESSED_DIR"/*.css; do
+            if [ -f "$cssfile" ] && [[ "$cssfile" != *.gz ]]; then
+                CSS_SIZE=$(du -sb "$cssfile" | awk '{print $1}')
+                CSS_ORIG_TOTAL=$((CSS_ORIG_TOTAL + CSS_SIZE))
+            fi
+        done
+
+        if [ $CSS_ORIG_TOTAL -gt 0 ]; then
+            SAVINGS=$((CSS_ORIG_TOTAL - CSS_GZ_TOTAL))
+            PERCENT=$((SAVINGS * 100 / CSS_ORIG_TOTAL))
             printf "${GREEN}CSS (gzipped):${NC}           %8s ${GRAY}(-%d%%, saved %s)${NC}\n" "$(numfmt --to=iec-i --suffix=B $CSS_GZ_TOTAL)" "$PERCENT" "$(numfmt --to=iec-i --suffix=B $SAVINGS)"
             TOTAL_SAVINGS=$((TOTAL_SAVINGS + SAVINGS))
         else

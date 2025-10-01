@@ -32,15 +32,6 @@ cache_cdn_resource() {
 
     log_substep "Downloading and caching $name from CDN..."
 
-    # For Tailwind CDN, follow redirects to get the actual file
-    if [[ "$url" == *"cdn.tailwindcss.com"* ]] && [[ "$url" != *".js" ]]; then
-        # Get the actual redirected URL first
-        local actual_url=$(curl -sI "$url" 2>/dev/null | grep -i "location:" | awk '{print $2}' | tr -d '\r\n')
-        if [ -n "$actual_url" ]; then
-            url="$actual_url"
-        fi
-    fi
-
     # Try HEAD request first to get size
     local size=$(curl -sI "$url" 2>/dev/null | grep -i content-length | awk '{print $2}' | tr -d '\r\n')
     if [ -n "$size" ] && [ "$size" -gt 0 ] 2>/dev/null; then
@@ -80,28 +71,12 @@ get_cached_size() {
 # Cache CDN resources from _script.json
 log_substep "Caching CDN resources from configuration..."
 
-# Cache Tailwind CSS
-TAILWIND_CDN=$(jq -r '.css_extraction.tailwind.cdn_url // .urls.cdn.tailwind // empty' "$SCRIPT_DIR/_script.json" 2>/dev/null)
-if [ -n "$TAILWIND_CDN" ]; then
-    cache_cdn_resource "$TAILWIND_CDN" "tailwind"
-fi
-
-# Cache Font Awesome CSS
-FONTAWESOME_CDN=$(jq -r '.css_extraction.fontawesome.cdn_url // .urls.cdn.fontawesome // empty' "$SCRIPT_DIR/_script.json" 2>/dev/null)
-if [ -n "$FONTAWESOME_CDN" ]; then
-    cache_cdn_resource "$FONTAWESOME_CDN" "fontawesome"
-fi
-
-# Cache other CDN resources
-MARKED_CDN=$(jq -r '.urls.cdn.marked // empty' "$SCRIPT_DIR/_script.json" 2>/dev/null)
-if [ -n "$MARKED_CDN" ]; then
-    cache_cdn_resource "$MARKED_CDN" "marked"
-fi
-
-DOMPURIFY_CDN=$(jq -r '.urls.cdn.dompurify // empty' "$SCRIPT_DIR/_script.json" 2>/dev/null)
-if [ -n "$DOMPURIFY_CDN" ]; then
-    cache_cdn_resource "$DOMPURIFY_CDN" "dompurify"
-fi
+# Dynamically cache all CDN resources from configuration
+jq -r '.urls.cdn | to_entries[] | "\(.key) \(.value)"' "$SCRIPT_DIR/_script.json" 2>/dev/null | while read -r name url; do
+    if [ -n "$name" ] && [ -n "$url" ]; then
+        cache_cdn_resource "$url" "$name"
+    fi
+done
 
 # Export functions and cache directory for other scripts
 export CACHE_DIR

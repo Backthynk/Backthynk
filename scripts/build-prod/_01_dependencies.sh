@@ -22,6 +22,8 @@ REQUIRED_DEPS=(
     "cat"      # For file concatenation
     "gzip"     # For compression
     "jq"       # For JSON processing
+    "node"     # For Tailwind CSS build
+    "npm"      # For Tailwind CSS dependencies
 )
 
 # Optional minification tools (checked and reported but not required)
@@ -55,5 +57,20 @@ fi
 # Export available tools for other scripts to use
 export TERSER_AVAILABLE=$(command -v terser &> /dev/null && echo "true" || echo "false")
 export ESBUILD_AVAILABLE=$(command -v esbuild &> /dev/null && echo "true" || echo "false")
+
+# Check and setup Tailwind CSS dependencies
+TAILWIND_DIR="scripts/tailwind-build"
+if [ -d "$TAILWIND_DIR" ]; then
+    log_substep "Checking Tailwind CSS setup..."
+    if [ ! -d "$TAILWIND_DIR/node_modules" ]; then
+        log_substep "Installing Tailwind CSS dependencies..."
+        (cd "$TAILWIND_DIR" && npm install --silent)
+        log_substep "✓ Tailwind CSS dependencies installed"
+    else
+        log_substep "✓ Tailwind CSS dependencies already installed"
+    fi
+else
+    log_warning "Tailwind CSS build directory not found at $TAILWIND_DIR"
+fi
 
 log_success "Dependency check complete"

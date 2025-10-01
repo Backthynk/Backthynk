@@ -11,6 +11,11 @@ log_step "Processing HTML templates..."
 # Get paths from configuration
 TEMPLATES_DIR=$(jq -r '.paths.templates_root' "$SCRIPT_DIR/_script.json")
 TEMPLATES_COMPRESSED_DIR=$(jq -r '.build.compressed_dirs[] | select(contains("templates"))' "$SCRIPT_DIR/_script.json")
+JS_BUNDLE_PATH=$(jq -r '.build.assets.js_bundle_path' "$SCRIPT_DIR/_script.json")
+CSS_BUNDLE_PATH=$(jq -r '.build.assets.css_bundle_path' "$SCRIPT_DIR/_script.json")
+JS_START_TAG=$(jq -r '.build.html_processing.js_script_tags_start' "$SCRIPT_DIR/_script.json")
+JS_END_TAG=$(jq -r '.build.html_processing.js_script_tags_end' "$SCRIPT_DIR/_script.json")
+TAILWIND_CDN_PATTERN=$(jq -r '.build.html_processing.tailwind_cdn_pattern' "$SCRIPT_DIR/_script.json")
 
 if [ ! -d "$TEMPLATES_DIR" ]; then
     log_warning "Templates directory not found: $TEMPLATES_DIR"
@@ -30,12 +35,13 @@ for htmlfile in "$TEMPLATES_DIR"/*.html; do
         sed 's/^[[:space:]]\+//g' | \
         sed '/^[[:space:]]*$/d' | \
         sed 's/[[:space:]]\+/ /g' | \
-        sed '/<script src="\/static\/js\/constants\.js"><\/script>/,/<script src="\/static\/js\/main\.js"><\/script>/{
-            /<script src="\/static\/js\/constants\.js"><\/script>/c\
-<script src="/static/js/compressed/bundle.js"></script>
-            /<script src="\/static\/js\/.*\.js"><\/script>/d
-        }' | \
-        sed 's|/static/css/\([^"]*\)\.css|/static/css/compressed/bundle.css|g' > "$output_file"
+        sed "/<script src=\"\/static\/js\/${JS_START_TAG}\"><\/script>/,/<script src=\"\/static\/js\/${JS_END_TAG}\"><\/script>/{
+            /<script src=\"\/static\/js\/${JS_START_TAG}\"><\/script>/c\\
+<script src=\"${JS_BUNDLE_PATH}\"></script>
+            /<script src=\"\/static\/js\/.*\.js\"><\/script>/d
+        }" | \
+        sed "s|/static/css/\([^\"]*\)\.css|${CSS_BUNDLE_PATH}|g" | \
+        sed "/<script src=\"${TAILWIND_CDN_PATTERN//\//\\/}\/.*\"><\/script>/d" > "$output_file"
 
         # Calculate savings
         ORIGINAL_SIZE=$(du -sb "$htmlfile" | awk '{print $1}')

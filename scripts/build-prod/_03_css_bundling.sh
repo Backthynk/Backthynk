@@ -38,6 +38,32 @@ select_minifier() {
 
 log_step "Processing CSS files..."
 
+# Ensure cache directory exists
+CACHE_DIR="scripts/.cache"
+mkdir -p "$CACHE_DIR"
+
+# Generate optimized Tailwind CSS first
+TAILWIND_DIR="scripts/tailwind-build"
+TAILWIND_TEMP="$CACHE_DIR/tailwind-optimized.css"
+
+if [ -d "$TAILWIND_DIR" ]; then
+    log_substep "Generating optimized Tailwind CSS..."
+
+    # Generate Tailwind directly to cache for bundling
+    (cd "$TAILWIND_DIR" && npx tailwindcss -i ./tailwind-input.css -o "../../$TAILWIND_TEMP" --minify > /dev/null 2>&1)
+
+    if [ -f "$TAILWIND_TEMP" ]; then
+        TAILWIND_SIZE=$(du -h "$TAILWIND_TEMP" | cut -f1)
+        log_substep "✓ Generated optimized Tailwind CSS ($TAILWIND_SIZE)"
+    else
+        log_warning "Failed to generate Tailwind CSS, continuing without it"
+        TAILWIND_TEMP=""
+    fi
+else
+    log_warning "Tailwind build directory not found, skipping Tailwind generation"
+    TAILWIND_TEMP=""
+fi
+
 # Extract minimal CSS first (if CSS extraction tool exists)
 CSS_TOOL_BINARY=$(jq -r '.makefile.css_tool_build_command | split(" ") | .[2]' "$SCRIPT_DIR/_script.json" 2>/dev/null || echo "")
 if [ -n "$CSS_TOOL_BINARY" ] && [ -f "$CSS_TOOL_BINARY" ]; then
@@ -63,9 +89,17 @@ if [ -d "$CSS_DIR" ] && [ -n "$(find "$CSS_DIR" -name "*.css" 2>/dev/null)" ]; t
 
     log_substep "Combining and minifying CSS files..."
 
-    # Combine all CSS files into one
+    # Add Tailwind CSS first if available
+    if [ -f "$TAILWIND_TEMP" ]; then
+        log_substep "  Adding optimized Tailwind CSS..."
+        echo "/* === Tailwind CSS (optimized) === */" >> "$COMBINED_CSS"
+        cat "$TAILWIND_TEMP" >> "$COMBINED_CSS"
+        echo "" >> "$COMBINED_CSS"
+    fi
+
+    # Combine all other CSS files
     for cssfile in "$CSS_DIR"/*.css; do
-        if [ -f "$cssfile" ] && [ "$(basename "$cssfile")" != "compressed" ]; then
+        if [ -f "$cssfile" ] && [ "$(basename "$cssfile")" != "compressed" ] && [ "$(basename "$cssfile")" != "tailwind.css" ]; then
             log_substep "  Adding $(basename "$cssfile")..."
             echo "/* === $(basename "$cssfile") === */" >> "$COMBINED_CSS"
             cat "$cssfile" >> "$COMBINED_CSS"

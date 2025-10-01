@@ -1,4 +1,4 @@
-.PHONY: help build build-prod run serve-dev serve-prod clean test test-verbose dev-generate-posts dev-list-categories extract-css
+.PHONY: help build build-prod run serve-dev serve-prod clean fclean test test-verbose dev-generate-posts dev-list-categories extract-css
 
 # Default target
 help:
@@ -21,6 +21,9 @@ serve-prod:
 
 clean:
 	@./scripts/makefile/clean.sh
+
+fclean: clean
+	@./scripts/makefile/fclean.sh
 
 # Test targets
 test:
