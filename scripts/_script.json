@@ -2,7 +2,7 @@
   "css_extraction": {
     "tailwind": {
       "cdn_url": "https://cdn.tailwindcss.com/3.4.17",
-      "full_css_url": "https://unpkg.com/tailwindcss@2.0.1/dist/tailwind.min.css",
+      "full_css_url": "https://unpkg.com/tailwindcss@3.4.17/dist/tailwind.min.css",
       "output_file": "web/static/css/tailwind-minimal.css",
       "cache_file": "scripts/extract-css/tailwind-full.css"
     },
@@ -47,8 +47,6 @@
       "bundle_output": "web/static/js/compressed/bundle.js"
     },
     "minification": {
-      "terser_available": true,
-      "esbuild_available": true,
       "fallback_api": "https://www.toptal.com/developers/javascript-minifier/api/raw"
     }
   },
@@ -70,7 +68,9 @@
   "urls": {
     "cdn": {
       "marked": "https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js",
-      "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"
+      "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js",
+      "tailwind": "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
+      "fontawesome": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     }
   },
   "colors": {
@@ -89,27 +89,20 @@
     "production_env": "BACKTHYNK_ENV=production",
     "build_command": "go build -o {binary_name} ./cmd/server/",
     "clean_files": [
-      "backthynk",
-      "scripts/extract-css-tool"
+      "backthynk"
     ],
     "clean_dirs": [
       "web/static/js/compressed",
       "web/static/css/compressed",
-      "web/templates/compressed"
+      "web/templates/compressed",
+      "scripts/.cache"
     ],
-    "clean_individual_files": [
-      "web/static/css/tailwind-minimal.css",
-      "web/static/css/fontawesome-minimal.css",
-      "scripts/purgecss",
-      "scripts/tailwind-full.css",
-      "scripts/css-extraction-cache.json",
-      "scripts/temp_content.html"
-    ]
+    "clean_individual_files": []
   },
   "makefile": {
     "go_test_command": "go test ./... -short",
     "go_test_verbose_command": "go test ./... -v -short"
   },
   "version": "1.0.0",
-  "updated": "2025-01-30"
+  "updated": "2025-10-01"
 }
