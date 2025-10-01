@@ -331,6 +331,9 @@ function togglePostActionMenu(postId) {
     }
 }
 
+// Make function globally accessible for onclick handlers
+window.togglePostActionMenu = togglePostActionMenu;
+
 // Close menus when clicking outside
 document.addEventListener('click', function(e) {
     if (!e.target.closest('[id^="post-action-menu-"]') && !e.target.closest('button[onclick*="togglePostActionMenu"]')) {
@@ -367,6 +370,9 @@ function showMoveModal(postId) {
         menu.classList.add('hidden');
     });
 }
+
+// Make function globally accessible for onclick handlers
+window.showMoveModal = showMoveModal;
 
 function populateMoveCategoryDropdown(currentCategoryId) {
     const select = document.getElementById('move-category');
@@ -540,6 +546,9 @@ async function confirmDeletePost(postId) {
     }
 }
 
+// Make function globally accessible for onclick handlers
+window.confirmDeletePost = confirmDeletePost;
+
 async function updateCategoryStatsDisplay(stats) {
     if (!currentCategory) return;
 
@@ -647,6 +656,9 @@ function navigateToCategoryFromPost(categoryId) {
         selectCategory(category); // Programmatic selection from post navigation
     }
 }
+
+// Make function globally accessible for onclick handlers
+window.navigateToCategoryFromPost = navigateToCategoryFromPost;
 
 // Function to update display for "All categories" view
 async function updateAllCategoriesDisplay() {
@@ -775,3 +787,6 @@ function scrollAttachments(button, direction) {
         behavior: 'smooth'
     });
 }
+
+// Make function globally accessible for onclick handlers
+window.scrollAttachments = scrollAttachments;

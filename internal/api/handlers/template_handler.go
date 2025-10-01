@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/core/services"
 	"html/template"
 	"net/http"
@@ -25,15 +26,21 @@ type PageData struct {
 
 func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
-	
+
 	pageData := PageData{
 		Title:       "Backthynk - Personal Micro Blog",
 		Description: "Personal micro blog platform",
 		URL:         r.Host + path,
 	}
-	
+
+	// Use compressed template in production mode
+	templatePath := "web/templates/index.html"
+	if config.IsProduction() {
+		templatePath = "web/templates/compressed/index.html"
+	}
+
 	// Parse and execute template
-	h.renderTemplate(w, "web/templates/index.html", pageData)
+	h.renderTemplate(w, templatePath, pageData)
 }
 
 func (h *TemplateHandler) renderTemplate(w http.ResponseWriter, templatePath string, data PageData) {

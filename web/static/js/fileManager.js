@@ -25,6 +25,9 @@ function removeFileFromSelection(fileId) {
     updateFilePreview();
 }
 
+// Make function globally accessible for onclick handlers
+window.removeFileFromSelection = removeFileFromSelection;
+
 function updateFilePreview() {
     const container = document.getElementById('file-preview-container');
     container.innerHTML = '';
@@ -97,6 +100,9 @@ function removePastedFile(index) {
         updatePastedFilesDisplay();
     }
 }
+
+// Make function globally accessible for onclick handlers
+window.removePastedFile = removePastedFile;
 
 // Modal file management functions
 async function addModalFileToSelection(file) {

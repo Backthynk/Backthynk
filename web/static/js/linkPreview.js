@@ -115,6 +115,9 @@ function removeLinkPreview(previewId) {
     updateLinkPreviewDisplay();
 }
 
+// Make function globally accessible for onclick handlers
+window.removeLinkPreview = removeLinkPreview;
+
 // Create link preview element for post display
 function createPostLinkPreviewElement(preview) {
     const hasImage = preview.image_url && preview.image_url.trim() !== '';
@@ -354,6 +357,9 @@ function removeModalLinkPreview(previewId) {
 
     updateModalLinkPreviewDisplay();
 }
+
+// Make function globally accessible for onclick handlers
+window.removeModalLinkPreview = removeModalLinkPreview;
 
 // Navigate modal link previews
 function navigateModalLinkPreview(direction) {

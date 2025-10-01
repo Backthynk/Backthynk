@@ -397,6 +397,9 @@ function navigateToCategory(categoryId) {
     }
 }
 
+// Make function globally accessible for onclick handlers
+window.navigateToCategory = navigateToCategory;
+
 // Function to get all descendant categories recursively
 async function getAllDescendantCategories(parentId) {
     const descendants = [];

@@ -29,6 +29,9 @@ function openImageGallery(startIndex = 0) {
     nextBtn.style.display = currentImageGallery.length > 1 ? 'block' : 'none';
 }
 
+// Make function globally accessible for onclick handlers
+window.openImageGallery = openImageGallery;
+
 function updateImageViewer() {
     const img = document.getElementById('viewer-image');
     const filename = document.getElementById('viewer-filename');

@@ -1,31 +1,4 @@
 {
-  "css_extraction": {
-    "tailwind": {
-      "cdn_url": "https://cdn.tailwindcss.com/3.4.17",
-      "full_css_url": "https://unpkg.com/tailwindcss@3.4.17/dist/tailwind.min.css",
-      "output_file": "web/static/css/tailwind-minimal.css",
-      "cache_file": "scripts/extract-css/tailwind-full.css"
-    },
-    "fontawesome": {
-      "cdn_url": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
-      "font_url": "https://use.fontawesome.com/releases/v6.0.0/webfonts/fa-solid-900.woff2",
-      "output_file": "web/static/css/fontawesome-minimal.css",
-      "font_output": "web/static/fonts/fa-solid-900.woff2"
-    },
-    "purgecss": {
-      "temp_content_file": "scripts/extract-css/temp_content.html"
-    },
-    "scan_patterns": [
-      "web/**/*.html",
-      "web/**/*.js"
-    ],
-    "exclude_patterns": [
-      "**/compressed/**",
-      "**/node_modules/**"
-    ],
-    "cache_file": "scripts/extract-css/css-extraction-cache.json",
-    "extract_css_dir": "scripts/extract-css"
-  },
   "build": {
     "compressed_dirs": [
       "web/static/js/compressed",
@@ -69,7 +42,7 @@
     "cdn": {
       "marked": "https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js",
       "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js",
-      "tailwind": "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4",
+      "tailwind": "https://cdn.tailwindcss.com/3.4.17",
       "fontawesome": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     }
   },
