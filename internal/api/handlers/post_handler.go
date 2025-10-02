@@ -108,7 +108,7 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process content on-the-fly for the response
-	if h.options.Features.Markdown.Enabled {
+	if h.options != nil && h.options.Features.Markdown.Enabled {
 		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 
@@ -168,7 +168,7 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process content on-the-fly for the response
-	if h.options.Features.Markdown.Enabled {
+	if h.options != nil && h.options.Features.Markdown.Enabled {
 		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 

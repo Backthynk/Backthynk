@@ -75,58 +75,12 @@ func setupCircularTest() (*circularTestSetup, error) {
 	}
 
 	// Setup test options
-	options := &config.OptionsConfig{
-		Core: struct {
-			MaxContentLength int `json:"maxContentLength"`
-			MaxFileSizeMB    int `json:"maxFileSizeMB"`
-			MaxFilesPerPost  int `json:"maxFilesPerPost"`
-		}{
-			MaxContentLength: 1000,
-			MaxFileSizeMB:    10,
-			MaxFilesPerPost:  5,
-		},
-		Features: struct {
-			Activity struct {
-				Enabled      bool `json:"enabled"`
-				PeriodMonths int  `json:"periodMonths"`
-			} `json:"activity"`
-			DetailedStats struct {
-				Enabled bool `json:"enabled"`
-			} `json:"detailedStats"`
-			RetroactivePosting struct {
-				Enabled    bool   `json:"enabled"`
-				TimeFormat string `json:"timeFormat"`
-			} `json:"retroactivePosting"`
-			Markdown struct {
-				Enabled bool `json:"enabled"`
-			} `json:"markdown"`
-		}{
-			Activity: struct {
-				Enabled      bool `json:"enabled"`
-				PeriodMonths int  `json:"periodMonths"`
-			}{
-				Enabled:      true,
-				PeriodMonths: 4,
-			},
-			DetailedStats: struct {
-				Enabled bool `json:"enabled"`
-			}{
-				Enabled: true,
-			},
-			RetroactivePosting: struct {
-				Enabled    bool   `json:"enabled"`
-				TimeFormat string `json:"timeFormat"`
-			}{
-				Enabled:    true,
-				TimeFormat: "24h",
-			},
-			Markdown: struct {
-				Enabled bool `json:"enabled"`
-			}{
-				Enabled: false,
-			},
-		},
-	}
+	options := config.NewTestOptionsConfig().
+		WithMaxContentLength(1000).
+		WithMaxFileSizeMB(10).
+		WithMaxFilesPerPost(5).
+		WithRetroactivePostingEnabled(true).
+		WithMarkdownEnabled(false)
 
 	// Setup handlers
 	categoryHandler := NewCategoryHandler(categoryService)

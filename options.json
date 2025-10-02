@@ -17,7 +17,7 @@
       "timeFormat": "24h"
     },
     "markdown": {
-      "enabled": true
+      "enabled": false
     }
   }
 }
