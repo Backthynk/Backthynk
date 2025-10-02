@@ -118,7 +118,7 @@ function removeLinkPreview(previewId) {
 // Make function globally accessible for onclick handlers
 window.removeLinkPreview = removeLinkPreview;
 
-// Create link preview element for post display
+// Create link preview element for post display (deprecated - use createPostLinkPreviewsContainer)
 function createPostLinkPreviewElement(preview) {
     const hasImage = preview.image_url && preview.image_url.trim() !== '';
 
@@ -126,7 +126,7 @@ function createPostLinkPreviewElement(preview) {
         <a href="${escapeHtml(preview.url)}"
            target="_blank"
            rel="noopener noreferrer"
-           class="block border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 hover:bg-gray-50 transition-all">
+           class="block border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 hover:bg-gray-50 transition-all flex-shrink-0 w-full">
             <div class="flex">
                 ${hasImage ? `
                     <div class="flex-shrink-0 w-32 h-24">
@@ -156,6 +156,82 @@ function createPostLinkPreviewElement(preview) {
         </a>
     `;
 }
+
+// Create link preview container for posts with navigation
+function createPostLinkPreviewsContainer(linkPreviews, postId) {
+    if (!linkPreviews || linkPreviews.length === 0) {
+        return '';
+    }
+
+    return `
+        <div class="mb-4 mt-4">
+            <div class="flex items-center justify-between mb-2">
+                <label class="block text-sm font-medium text-gray-700">Link Previews</label>
+                <div class="flex items-center space-x-2">
+                    <button type="button" class="post-link-prev p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="navigatePostLinkPreview(${postId}, -1)">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <span class="post-link-counter text-xs text-gray-500">1 / ${linkPreviews.length}</span>
+                    <button type="button" class="post-link-next p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" ${linkPreviews.length === 1 ? 'disabled' : ''} onclick="navigatePostLinkPreview(${postId}, 1)">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="relative overflow-hidden">
+                <div class="flex transition-transform duration-300 ease-in-out" data-post-link-list>
+                    ${linkPreviews.map(preview => createPostLinkPreviewElement(preview)).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Post link preview navigation state (indexed by post ID)
+const postLinkPreviewState = {};
+
+// Navigate post link previews
+function navigatePostLinkPreview(postId, direction) {
+    const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+    if (!postElement) return;
+
+    const list = postElement.querySelector('[data-post-link-list]');
+    const counter = postElement.querySelector('.post-link-counter');
+    const prevBtn = postElement.querySelector('.post-link-prev');
+    const nextBtn = postElement.querySelector('.post-link-next');
+
+    if (!list || !counter) return;
+
+    const totalPreviews = list.children.length;
+    if (totalPreviews === 0) return;
+
+    // Initialize state if not exists
+    if (!postLinkPreviewState[postId]) {
+        postLinkPreviewState[postId] = { currentIndex: 0 };
+    }
+
+    const state = postLinkPreviewState[postId];
+
+    // Update index
+    if (direction === -1 && state.currentIndex > 0) {
+        state.currentIndex--;
+    } else if (direction === 1 && state.currentIndex < totalPreviews - 1) {
+        state.currentIndex++;
+    }
+
+    // Update display
+    const translateX = -state.currentIndex * 100;
+    list.style.transform = `translateX(${translateX}%)`;
+
+    // Update counter
+    counter.textContent = `${state.currentIndex + 1} / ${totalPreviews}`;
+
+    // Update navigation buttons
+    if (prevBtn) prevBtn.disabled = state.currentIndex === 0;
+    if (nextBtn) nextBtn.disabled = state.currentIndex === totalPreviews - 1;
+}
+
+// Make function globally accessible for onclick handlers
+window.navigatePostLinkPreview = navigatePostLinkPreview;
 
 // Initialize link preview functionality
 function initializeLinkPreview() {

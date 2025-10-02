@@ -37,7 +37,7 @@ func (s *PostService) Create(categoryID int, content string, customTimestamp *in
 	}
 
 	// Process content on-the-fly for the response
-	post.ProcessedContent = utils.ProcessMarkdown(post.Content)
+	post.Content = utils.ProcessMarkdown(post.Content)
 	
 	// Update cache
 	s.cache.UpdatePostCount(categoryID, 1)
@@ -146,7 +146,7 @@ func (s *PostService) GetByCategory(categoryID int, recursive bool, limit, offse
 
 	// Process content on-the-fly for each post
 	for i := range posts {
-		posts[i].ProcessedContent = utils.ProcessMarkdown(posts[i].Content)
+		posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
 	}
 
 	return posts, nil
@@ -160,7 +160,7 @@ func (s *PostService) GetAllPosts(limit, offset int) ([]models.PostWithAttachmen
 
 	// Process content on-the-fly for each post
 	for i := range posts {
-		posts[i].ProcessedContent = utils.ProcessMarkdown(posts[i].Content)
+		posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
 	}
 
 	return posts, nil

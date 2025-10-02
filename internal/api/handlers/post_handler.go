@@ -4,6 +4,7 @@ import (
 	"backthynk/internal/config"
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/services"
+	"backthynk/internal/core/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -86,7 +87,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	for _, preview := range req.LinkPreviews {
 		h.fileService.SaveLinkPreview(post.ID, preview)
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(post)
@@ -105,6 +106,10 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+
+	// Process content on-the-fly for the response
+	post.Content = utils.ProcessMarkdown(post.Content)
+
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(post)
@@ -159,6 +164,10 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to retrieve updated post", http.StatusInternalServerError)
 		return
 	}
+
+	// Process content on-the-fly for the response
+	post.Content = utils.ProcessMarkdown(post.Content)
+
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(post)

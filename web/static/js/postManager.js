@@ -228,27 +228,20 @@ function createPostElement(post) {
         </div>
     `;
 
-    // Content with markdown formatting
-    const contentHtml = `
-        <div class="mb-4 post-content">
-            <div class="text-gray-900 leading-relaxed break-words overflow-wrap-anywhere markdown-content">${post.processed_content}</div>
-        </div>
-    `;
+    // Content with markdown formatting - create element to avoid HTML escaping
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'mb-4 post-content';
+    contentDiv.innerHTML = `<div class="markdown-body">${post.content}</div>`;
+    const contentHtml = contentDiv.innerHTML;
 
-    // Link previews
-    let linkPreviewsHtml = '';
-    if (linkPreviews.length > 0) {
-        linkPreviewsHtml = `
-            <div class="mb-4 space-y-3">
-                ${linkPreviews.map(preview => createPostLinkPreviewElement(preview)).join('')}
-            </div>
-        `;
-    }
+    // Priority logic: Show attachments if available, otherwise show link previews
+    // If there are attachments, do NOT show link previews
+    const linkPreviewsHtml = totalAttachments > 0 ? '' : createPostLinkPreviewsContainer(linkPreviews, post.id);
 
     // Enhanced attachments display
     let attachmentsHtml = '';
     if (totalAttachments > 0) {
-        attachmentsHtml = '<div class="border-t pt-4 space-y-4">';
+        attachmentsHtml = '<div class="border-t pt-3 mt-4">';
 
         // Combine all attachments for a unified display
         const allAttachments = [...images, ...otherFiles];
