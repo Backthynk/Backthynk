@@ -191,7 +191,14 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
     try {
         const urlObj = new URL(url);
         let shortened = urlObj.hostname;
-        
+
+        // Add port if present and not default (80 for http, 443 for https)
+        if (urlObj.port &&
+            !((urlObj.protocol === 'http:' && urlObj.port === '80') ||
+              (urlObj.protocol === 'https:' && urlObj.port === '443'))) {
+            shortened += ':' + urlObj.port;
+        }
+
         // Add path if there's room
         if (urlObj.pathname !== '/' && shortened.length < maxLength - 5) {
             const pathPart = urlObj.pathname.substring(0, maxLength - shortened.length - 3);
@@ -200,12 +207,12 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
                 shortened += '...';
             }
         }
-        
+
         // If still too long, truncate hostname
         if (shortened.length > maxLength) {
             shortened = shortened.substring(0, maxLength - 3) + '...';
         }
-        
+
         return shortened;
     } catch (e) {
         // If URL parsing fails, just truncate the original
@@ -214,8 +221,8 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
 }
 
 function formatTextWithUrls(text) {
-    // URL regex - same as used in link preview
-    const urlRegex = /https?:\/\/[^\s\)]+/g;
+    // URL regex - matches any URL starting with http(s):// until the next space
+    const urlRegex = /https?:\/\/\S+/g;
 
     // Replace URLs with formatted links
     return text.replace(urlRegex, (url) => {

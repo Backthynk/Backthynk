@@ -457,8 +457,32 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get the full post data with attachments and link previews
             const fullPost = await apiRequest(`/posts/${post.id}`);
 
-            // Add the new post to the beginning of current posts
-            currentPosts.unshift(fullPost);
+            // Insert the new post in the correct chronological position
+            // Posts are sorted by created timestamp descending (newest first)
+            let insertIndex = 0;
+            for (let i = 0; i < currentPosts.length; i++) {
+                if (fullPost.created >= currentPosts[i].created) {
+                    insertIndex = i;
+                    break;
+                }
+                insertIndex = i + 1;
+            }
+
+            // Get current post count BEFORE incrementing
+            const postCount = currentCategory.recursiveMode ?
+                (currentCategory.recursive_post_count || 0) :
+                (currentCategory.post_count || 0);
+
+            // Get the fetch limit to determine if we're showing all posts
+            const fetchLimit = window.AppConstants.UI_CONFIG.defaultPostsPerPage;
+
+            // Insert the post if:
+            // 1. It should appear within currently loaded posts (insertIndex < currentPosts.length), OR
+            // 2. We haven't loaded all posts yet (currentPosts.length < fetchLimit), OR
+            // 3. We have fewer posts loaded than the total count (which means we can show more)
+            if (insertIndex < currentPosts.length || currentPosts.length < fetchLimit || currentPosts.length <= postCount) {
+                currentPosts.splice(insertIndex, 0, fullPost);
+            }
 
             // Re-render posts with the new post included
             renderPosts(currentPosts, true);

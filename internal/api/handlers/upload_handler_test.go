@@ -57,6 +57,7 @@ func setupUploadTest(t *testing.T) (*uploadTestSetup, func()) {
 		}{
 			DatabaseFilename: "test.db",
 			UploadsSubdir:    filepath.Base(uploadsDir),
+			StoragePath:      filepath.Dir(uploadsDir), // Set parent directory so files are created in temp dir
 		},
 	}
 	config.SetServiceConfigForTest(serviceConfig)

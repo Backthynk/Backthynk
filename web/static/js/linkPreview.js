@@ -2,8 +2,8 @@
 let currentLinkPreviews = [];
 let linkPreviewCounter = 0;
 
-// URL detection regex
-const URL_REGEX = /https?:\/\/[^\s\)]+/g;
+// URL detection regex - matches any URL starting with http(s):// until the next space
+const URL_REGEX = /https?:\/\/\S+/g;
 
 // Extract URLs from text
 function extractURLsFromText(text) {

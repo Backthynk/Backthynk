@@ -228,10 +228,31 @@ function createPostElement(post) {
         </div>
     `;
 
-    // Content with markdown formatting - create element to avoid HTML escaping
+    // Check if content is link-only (only contains a single URL and whitespace)
+    const urlRegex = /https?:\/\/\S+/g;
+    const urlMatches = post.content.match(urlRegex);
+    const isLinkOnly = urlMatches && urlMatches.length === 1 && post.content.trim() === urlMatches[0];
+    const shouldHideContent = isLinkOnly && linkPreviews.length > 0;
+
+    // Content with markdown formatting or link conversion
     const contentDiv = document.createElement('div');
     contentDiv.className = 'mb-4 post-content';
-    contentDiv.innerHTML = `<div class="markdown-body">${post.content}</div>`;
+
+    // Hide content if it's link-only and we have a link preview
+    if (shouldHideContent) {
+        contentDiv.style.display = 'none';
+    }
+
+    // Check if markdown is enabled via body class
+    const isMarkdownEnabled = !document.body.classList.contains('markdown-disabled');
+
+    // If markdown is disabled, convert URLs to clickable links
+    let processedContent = post.content;
+    if (!isMarkdownEnabled) {
+        processedContent = formatTextWithUrls(post.content);
+    }
+
+    contentDiv.innerHTML = `<div class="markdown-body">${processedContent}</div>`;
     const contentHtml = contentDiv.innerHTML;
 
     // Priority logic: Show attachments if available, otherwise show link previews
