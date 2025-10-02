@@ -167,24 +167,65 @@ function createModalFilePreviewElement(id, file, type) {
     const fileDiv = document.createElement('div');
     const fileSizeText = formatFileSize(file.size);
     const tooltipText = `${file.name} • ${fileSizeText}`;
+    const isImage = file.type.startsWith('image/');
 
-    fileDiv.className = 'relative group flex-shrink-0 w-20 h-20 border border-gray-200 rounded-lg overflow-hidden bg-white hover:border-gray-300 transition-colors';
-    fileDiv.title = tooltipText;
-
-    const preview = generateFilePreview(file);
     const removeHandler = type === 'pasted' ? `removeModalPastedFile(${id})` : `removeModalFileFromSelection(${id})`;
+    const fileExtension = file.name.split('.').pop() || 'FILE';
 
-    fileDiv.innerHTML = `
-        ${preview}
-        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1 opacity-0 hover:opacity-100 transition-opacity">
-            <p class="text-white text-xs truncate leading-tight">${file.name}</p>
-            <p class="text-white/80 text-xs">${fileSizeText}</p>
-        </div>
-        <button type="button" onclick="${removeHandler}"
-                class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600">
-            <i class="fas fa-times text-xs"></i>
-        </button>
-    `;
+    // Set the fileDiv to be a flex column container with fixed width
+    fileDiv.className = 'flex flex-col flex-shrink-0';
+
+    if (isImage) {
+        const objectUrl = URL.createObjectURL(file);
+        fileDiv.innerHTML = `
+            <div class="relative w-20 h-20 group cursor-pointer" onclick="openModalImagePreview('${file.name}', '${objectUrl}'); event.stopPropagation();" title="${tooltipText}">
+                <img src="${objectUrl}"
+                     alt="${file.name}"
+                     class="w-full h-full object-cover rounded-lg border hover:opacity-90 transition-opacity"
+                     onload="URL.revokeObjectURL(this.src)">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
+                    <div class="absolute bottom-0 left-0 right-0 p-1">
+                        <p class="text-white text-xs truncate leading-tight">${file.name}</p>
+                        <p class="text-white/80 text-xs">${fileSizeText}</p>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="${removeHandler}; event.stopPropagation();"
+                    class="text-xs text-red-600 hover:text-red-800 mt-1 block text-center">
+                Delete
+            </button>
+        `;
+    } else {
+        const fileIcon = getFileIcon(fileExtension);
+        fileDiv.innerHTML = `
+            <div class="relative w-20 h-20 group cursor-pointer" title="${tooltipText}">
+                <div class="w-full h-full bg-gray-100 border rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
+                    <i class="fas ${fileIcon} text-2xl text-gray-600 mb-1"></i>
+                    <span class="text-xs text-gray-500 font-medium">${fileExtension.toUpperCase()}</span>
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
+                    <div class="absolute bottom-0 left-0 right-0 p-1">
+                        <p class="text-white text-xs truncate leading-tight">${file.name}</p>
+                        <p class="text-white/80 text-xs">${fileSizeText}</p>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="${removeHandler}; event.stopPropagation();"
+                    class="text-xs text-red-600 hover:text-red-800 mt-1 block text-center">
+                Delete
+            </button>
+        `;
+    }
+
+    // Add click event listener for images
+    if (isImage) {
+        fileDiv.addEventListener('click', function(e) {
+            if (!e.target.closest('button')) {
+                const objectUrl = URL.createObjectURL(file);
+                openModalImagePreview(file.name, objectUrl);
+            }
+        });
+    }
 
     return fileDiv;
 }
@@ -200,7 +241,7 @@ function generateFilePreview(file) {
 
     if (isImage) {
         const objectUrl = URL.createObjectURL(file);
-        return `<img src="${objectUrl}" class="w-full h-full object-cover" onload="URL.revokeObjectURL(this.src)">`;
+        return `<img src="${objectUrl}" class="w-full h-full object-cover rounded-lg border" onload="URL.revokeObjectURL(this.src)">`;
     } else if (isPDF) {
         return `<div class="w-full h-full bg-red-50 flex flex-col items-center justify-center">
             <i class="fas fa-file-pdf text-red-500 text-lg mb-1"></i>
@@ -325,17 +366,32 @@ function removeModalPastedFile(index) {
 // Modal attachment navigation functions
 function updateModalNavigationButtons() {
     const container = document.getElementById('modal-file-preview-list');
-    const leftBtn = document.getElementById('modal-scroll-left');
-    const rightBtn = document.getElementById('modal-scroll-right');
+    const leftBtn = document.getElementById('modal-file-prev');
+    const rightBtn = document.getElementById('modal-file-next');
+    const counter = document.getElementById('modal-file-counter');
 
-    if (!container || !leftBtn || !rightBtn) return;
+    if (!container || !leftBtn || !rightBtn || !counter) return;
+
+    // Calculate total file count
+    const totalFiles = modalSelectedFiles.size + (window.modalPastedFiles ? window.modalPastedFiles.length : 0);
+
+    // Update counter
+    if (totalFiles === 0) {
+        counter.textContent = '0 / 0';
+        leftBtn.disabled = true;
+        rightBtn.disabled = true;
+        return;
+    }
+
+    // For now, we'll show the total count. In a future enhancement, we could track visible items
+    counter.textContent = `${totalFiles} / ${totalFiles}`;
 
     function updateButtonVisibility() {
         const canScrollLeft = container.scrollLeft > 0;
         const canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth);
 
-        leftBtn.style.display = canScrollLeft ? 'flex' : 'none';
-        rightBtn.style.display = canScrollRight ? 'flex' : 'none';
+        leftBtn.disabled = !canScrollLeft;
+        rightBtn.disabled = !canScrollRight;
     }
 
     // Remove existing listener to avoid duplicates
@@ -355,3 +411,33 @@ function scrollModalAttachments(direction) {
         behavior: 'smooth'
     });
 }
+
+// Function to open modal image preview using the existing image viewer
+function openModalImagePreview(filename, url) {
+    // Set up single image for viewer
+    window.currentImageGallery = [{
+        url: url,
+        filename: filename
+    }];
+    window.currentImageIndex = 0;
+
+    const modal = document.getElementById('image-viewer-modal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Update the viewer with our image
+    const img = document.getElementById('viewer-image');
+    const filenameElement = document.getElementById('viewer-filename');
+    const counter = document.getElementById('viewer-counter');
+
+    img.src = url;
+    filenameElement.textContent = filename;
+    counter.textContent = ''; // Single image, no counter
+
+    // Hide navigation buttons for single image
+    document.getElementById('viewer-prev').style.display = 'none';
+    document.getElementById('viewer-next').style.display = 'none';
+}
+
+// Make function globally accessible
+window.openModalImagePreview = openModalImagePreview;

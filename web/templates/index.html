@@ -340,7 +340,7 @@
     <!-- Category Modal -->
     <div id="category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all">
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all modal-mobile-full">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-900">Create Category</h3>
@@ -391,7 +391,7 @@
     <!-- Edit Category Modal -->
     <div id="edit-category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all">
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all modal-mobile-full">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-900">Edit Category</h3>
@@ -440,7 +440,7 @@
     </div>
 
     <!-- Modern Image Viewer Modal -->
-    <div id="image-viewer-modal" class="fixed inset-0 bg-black z-50 hidden">
+    <div id="image-viewer-modal" class="fixed inset-0 bg-black z-[9998] hidden">
         <div class="absolute inset-0 flex items-center justify-center">
             <img id="viewer-image" class="max-w-full max-h-full object-contain">
         </div>
@@ -470,7 +470,7 @@
     <!-- Move Post Modal -->
     <div id="move-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all">
+            <div class="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md transform transition-all modal-mobile-full">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-900">Move Post</h3>
@@ -513,7 +513,7 @@
 
     <!-- Custom Confirmation Modal -->
     <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-lg shadow-xl border border-gray-200 max-w-lg w-full mx-4 max-h-[90vh] flex flex-col transform transition-all">
+        <div class="bg-white rounded-lg shadow-xl border border-gray-200 max-w-lg w-full mx-4 max-h-[90vh] flex flex-col transform transition-all modal-mobile-full">
             <!-- Header -->
             <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
                 <div class="flex items-center">
@@ -569,17 +569,6 @@
                             <i class="fas fa-folder text-xs mr-2 flex-shrink-0"></i>
                             <span class="truncate">Publishing to: <span id="modal-category-name" class="font-medium text-gray-700"></span></span>
                         </div>
-
-                        <!-- Retroactive Date/Time in Header -->
-                        <div id="modal-retroactive-header" class="flex items-center space-x-2 ml-4" style="display: none;">
-                            <div class="flex items-center space-x-1">
-                                <i class="fas fa-clock text-xs text-gray-400"></i>
-                                <input type="datetime-local" id="modal-post-datetime" class="text-sm border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" style="min-width: 160px;">
-                            </div>
-                            <button type="button" id="modal-set-current-time" class="text-xs text-blue-600 hover:text-blue-800 px-1 py-1 rounded hover:bg-blue-50">
-                                <i class="fas fa-sync text-xs"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -634,35 +623,52 @@
 
                             <!-- Horizontal File Preview Container -->
                             <div id="modal-file-preview-container" class="mt-3" style="display: none;">
-                                <div class="relative group">
-                                    <button class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollModalAttachments(-1)" style="display: none;" id="modal-scroll-left">
-                                        <i class="fas fa-chevron-left text-sm text-gray-600"></i>
-                                    </button>
-                                    <button class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollModalAttachments(1)" style="display: none;" id="modal-scroll-right">
-                                        <i class="fas fa-chevron-right text-sm text-gray-600"></i>
-                                    </button>
-                                    <div class="flex items-center space-x-2 overflow-x-auto pb-2 scroll-smooth" id="modal-file-preview-list">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Attachments</label>
+                                    <div class="flex items-center space-x-2">
+                                        <button type="button" id="modal-file-prev" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="scrollModalAttachments(-1)">
+                                            <i class="fas fa-chevron-left text-xs"></i>
+                                        </button>
+                                        <span id="modal-file-counter" class="text-xs text-gray-500">1 / 1</span>
+                                        <button type="button" id="modal-file-next" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="scrollModalAttachments(1)">
+                                            <i class="fas fa-chevron-right text-xs"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="relative overflow-hidden">
+                                    <div class="flex items-center space-x-2 overflow-x-auto pb-2" id="modal-file-preview-list">
                                         <!-- File previews will appear here horizontally -->
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </form>
+
+                </div>
+
+                <!-- Retroactive Posting Section -->
+                <div id="modal-retroactive-section" class="px-4 py-3 bg-gray-50 border-t border-gray-200" style="display: none;">
+                    <div class="space-y-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fas fa-clock text-sm text-gray-600"></i>
+                            <h4 class="text-sm font-medium text-gray-700">Custom Post Date & Time</h4>
+                        </div>
+                        <p class="text-xs text-gray-500">Set a specific date and time for this post. This allows you to backdate posts or schedule them for a specific moment.</p>
+                        <div class="flex items-center space-x-3">
+                            <input type="datetime-local" id="modal-post-datetime" class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Select date and time">
+                            <button type="button" id="modal-set-current-time" class="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+                                <i class="fas fa-sync text-xs mr-1"></i>
+                                Now
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Footer -->
                 <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 rounded-b-lg flex-shrink-0">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4 text-sm text-gray-500">
-                            <div class="flex items-center">
-                                <i class="fas fa-image text-xs mr-1"></i>
-                                <span class="hidden sm:inline">Media</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-link text-xs mr-1"></i>
-                                <span class="hidden sm:inline">Links</span>
-                            </div>
-                            <div id="modal-file-size-display" class="text-xs font-medium" style="display: none;">
+                        <div class="flex items-center">
+                            <div id="modal-file-size-display" class="text-xs font-medium text-gray-500" style="display: none;">
                                 <!-- Total file size will appear here -->
                             </div>
                         </div>

@@ -256,14 +256,19 @@ function createPostElement(post) {
 
         attachmentsHtml += `
             <div>
-                <h4 class="text-sm font-medium text-gray-700 mb-3">Attachments (${totalAttachments})</h4>
-                <div class="relative group">
-                    <button class="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollAttachments(this, -1)" style="display: none;">
-                        <i class="fas fa-chevron-left text-sm text-gray-600"></i>
-                    </button>
-                    <button class="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 w-8 h-8 bg-white/90 hover:bg-white rounded-full shadow-md border flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity" onclick="scrollAttachments(this, 1)" style="display: none;">
-                        <i class="fas fa-chevron-right text-sm text-gray-600"></i>
-                    </button>
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="text-sm font-medium text-gray-700">Attachments</h4>
+                    <div class="flex items-center space-x-2">
+                        <button type="button" class="post-attachment-prev p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="scrollAttachments(this, -1)">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <span class="post-attachment-counter text-xs text-gray-500">${totalAttachments} / ${totalAttachments}</span>
+                        <button type="button" class="post-attachment-next p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="scrollAttachments(this, 1)">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="relative overflow-hidden">
                     <div class="flex items-center space-x-3 overflow-x-auto pb-2 scroll-smooth" data-attachment-container>
                         ${allAttachments.map((attachment, idx) => {
                             const isImage = attachment.file_type.startsWith('image/');
@@ -760,8 +765,8 @@ function incrementCategoryPostCount(categoryId, delta) {
 // Attachment navigation functions
 function setupAttachmentNavigation(postElement) {
     const container = postElement.querySelector('[data-attachment-container]');
-    const leftBtn = postElement.querySelector('button[onclick*="scrollAttachments"][onclick*="-1"]');
-    const rightBtn = postElement.querySelector('button[onclick*="scrollAttachments"][onclick*="1"]');
+    const leftBtn = postElement.querySelector('.post-attachment-prev');
+    const rightBtn = postElement.querySelector('.post-attachment-next');
 
     if (!container || !leftBtn || !rightBtn) return;
 
@@ -769,8 +774,8 @@ function setupAttachmentNavigation(postElement) {
         const canScrollLeft = container.scrollLeft > 0;
         const canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth);
 
-        leftBtn.style.display = canScrollLeft ? 'flex' : 'none';
-        rightBtn.style.display = canScrollRight ? 'flex' : 'none';
+        leftBtn.disabled = !canScrollLeft;
+        rightBtn.disabled = !canScrollRight;
     }
 
     container.addEventListener('scroll', updateButtonVisibility);
@@ -778,11 +783,12 @@ function setupAttachmentNavigation(postElement) {
 }
 
 function scrollAttachments(button, direction) {
-    const container = button.parentNode.querySelector('[data-attachment-container]');
-    if (!container) return;
+    // Find the container by traversing up to find the attachment section
+    const attachmentSection = button.closest('div').parentNode.querySelector('[data-attachment-container]');
+    if (!attachmentSection) return;
 
     const scrollAmount = 200; // pixels to scroll
-    container.scrollBy({
+    attachmentSection.scrollBy({
         left: direction * scrollAmount,
         behavior: 'smooth'
     });

@@ -149,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Category modal events
     document.getElementById('add-category-btn').onclick = showCategoryModal;
-    document.getElementById('cancel-category').onclick = hideCategoryModal;
+    document.getElementById('cancel-category').onclick = handleCategoryModalClose;
 
     // Add real-time validation for category name
     document.getElementById('category-name').addEventListener('input', function(e) {
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Edit category modal events
-    document.getElementById('cancel-edit-category').onclick = hideEditCategoryModal;
+    document.getElementById('cancel-edit-category').onclick = handleEditCategoryModalClose;
 
     // Add description character counters
     document.getElementById('category-description').addEventListener('input', function() {
@@ -543,6 +543,10 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         const imageModal = document.getElementById('image-viewer-modal');
         const createPostModal = document.getElementById('create-post-modal');
+        const categoryModal = document.getElementById('category-modal');
+        const editCategoryModal = document.getElementById('edit-category-modal');
+        const moveModal = document.getElementById('move-modal');
+        const confirmationModal = document.getElementById('confirmation-modal');
 
         if (!imageModal.classList.contains('hidden')) {
             switch(e.key) {
@@ -562,13 +566,44 @@ document.addEventListener('DOMContentLoaded', function() {
                     handleModalClose();
                     break;
             }
+        } else if (!categoryModal.classList.contains('hidden')) {
+            switch(e.key) {
+                case 'Escape':
+                    handleCategoryModalClose();
+                    break;
+            }
+        } else if (!editCategoryModal.classList.contains('hidden')) {
+            switch(e.key) {
+                case 'Escape':
+                    handleEditCategoryModalClose();
+                    break;
+            }
+        } else if (!moveModal.classList.contains('hidden')) {
+            switch(e.key) {
+                case 'Escape':
+                    hideMoveModal();
+                    break;
+            }
+        } else if (!confirmationModal.classList.contains('hidden')) {
+            switch(e.key) {
+                case 'Escape':
+                    // For confirmation modal, escape should trigger cancel
+                    document.getElementById('confirmation-cancel').click();
+                    break;
+            }
         }
     });
 
     // Close modal when clicking outside
     document.getElementById('category-modal').onclick = function(e) {
         if (e.target === this) {
-            hideCategoryModal();
+            handleCategoryModalClose();
+        }
+    };
+
+    document.getElementById('edit-category-modal').onclick = function(e) {
+        if (e.target === this) {
+            handleEditCategoryModalClose();
         }
     };
 
@@ -585,18 +620,105 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
+    document.getElementById('move-modal').onclick = function(e) {
+        if (e.target === this) {
+            hideMoveModal();
+        }
+    };
+
+    document.getElementById('confirmation-modal').onclick = function(e) {
+        if (e.target === this) {
+            // For confirmation modal, clicking outside should trigger cancel
+            document.getElementById('confirmation-cancel').click();
+        }
+    };
+
 });
 
-// Add this to handle window resize events for activity heatmap
+// Mobile keyboard optimization for modals
+if (typeof window !== 'undefined' && window.visualViewport) {
+    // Modern browsers with Visual Viewport API
+    function handleViewportChange() {
+        const viewport = window.visualViewport;
+        const modals = document.querySelectorAll('.modal-mobile-full');
+
+        modals.forEach(modal => {
+            if (!modal.closest('.hidden')) {
+                // Modal is visible, adjust for keyboard
+                const keyboardHeight = window.innerHeight - viewport.height;
+                if (keyboardHeight > 0) {
+                    // Keyboard is open
+                    modal.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
+                    modal.classList.add('keyboard-open');
+                } else {
+                    // Keyboard is closed
+                    modal.style.removeProperty('--keyboard-height');
+                    modal.classList.remove('keyboard-open');
+                }
+            }
+        });
+    }
+
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+}
+
+// Fallback for older browsers - detect keyboard by viewport height change
+let initialViewportHeight = window.innerHeight;
+function handleLegacyKeyboard() {
+    const currentHeight = window.innerHeight;
+    const heightDiff = initialViewportHeight - currentHeight;
+    const modals = document.querySelectorAll('.modal-mobile-full');
+
+    modals.forEach(modal => {
+        if (!modal.closest('.hidden')) {
+            if (heightDiff > 150) { // Keyboard likely open
+                modal.classList.add('keyboard-open');
+                // Scroll focused input into view
+                const focused = modal.querySelector('input:focus, textarea:focus');
+                if (focused) {
+                    setTimeout(() => {
+                        focused.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                }
+            } else {
+                modal.classList.remove('keyboard-open');
+            }
+        }
+    });
+}
+
+// Add focus handlers for better input experience on mobile
+document.addEventListener('focusin', function(e) {
+    if (e.target.matches('.modal-mobile-full input, .modal-mobile-full textarea')) {
+        // Small delay to allow keyboard to appear
+        setTimeout(() => {
+            e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+});
+
+// Add this to handle window resize events for activity heatmap and header responsiveness
 window.addEventListener('resize', function() {
-    if (currentCategory && document.getElementById('activity-container').style.display !== 'none') {
-        // Debounce resize events with longer delay to prevent excessive API calls
-        clearTimeout(window.resizeTimeout);
-        window.resizeTimeout = setTimeout(function() {
+    // Debounce resize events with longer delay to prevent excessive API calls
+    clearTimeout(window.resizeTimeout);
+    window.resizeTimeout = setTimeout(function() {
+        // Update activity heatmap if needed
+        if (currentCategory && document.getElementById('activity-container').style.display !== 'none') {
             // Only regenerate if we have cached data to avoid unnecessary API calls
             if (currentActivityCache) {
                 generateHeatmapFromCache(currentActivityCache);
             }
-        }, 500);
-    }
+        }
+
+        // Update header breadcrumb for mobile/desktop responsiveness
+        if (currentCategory && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
+            // Re-render the header with responsive breadcrumb
+            updateCategoryStatsDisplay();
+        }
+
+        // Handle legacy keyboard detection for older browsers
+        if (!window.visualViewport) {
+            handleLegacyKeyboard();
+        }
+    }, 300);
 });

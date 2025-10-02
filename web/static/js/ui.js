@@ -16,13 +16,13 @@ async function showCreatePost() {
     // Focus on content area
     document.getElementById('modal-post-content').focus();
 
-    // Check if retroactive posting is enabled and show in header
+    // Check if retroactive posting is enabled and show section
     try {
         const settings = window.currentSettings;
-        const retroactiveHeader = document.getElementById('modal-retroactive-header');
+        const retroactiveSection = document.getElementById('modal-retroactive-section');
 
         if (settings && settings.retroactivePostingEnabled) {
-            retroactiveHeader.style.display = 'flex';
+            retroactiveSection.style.display = 'block';
             // Set default value to current time
             const now = new Date();
             const formatted = now.getFullYear() + '-' +
@@ -35,12 +35,12 @@ async function showCreatePost() {
             // Store the original default value to detect if user changed it
             dateTimeInput.dataset.originalValue = formatted;
         } else {
-            retroactiveHeader.style.display = 'none';
+            retroactiveSection.style.display = 'none';
         }
     } catch (error) {
         console.error('Failed to load settings for retroactive posting:', error);
-        // Hide the header container on error
-        document.getElementById('modal-retroactive-header').style.display = 'none';
+        // Hide the section container on error
+        document.getElementById('modal-retroactive-section').style.display = 'none';
     }
 
     // Initialize link preview after showing the modal
@@ -93,6 +93,22 @@ function hideCategoryModal() {
     document.getElementById('category-form').reset();
     document.getElementById('category-description').value = '';
     updateDescriptionCounter('category-description', 'description-counter');
+}
+
+function handleCategoryModalClose() {
+    if (hasCategoryContent()) {
+        if (confirm('You have unsaved content. Are you sure you want to close?')) {
+            hideCategoryModal();
+        }
+    } else {
+        hideCategoryModal();
+    }
+}
+
+function hasCategoryContent() {
+    const name = document.getElementById('category-name').value.trim();
+    const description = document.getElementById('category-description').value.trim();
+    return name.length > 0 || description.length > 0;
 }
 
 function showEditCategoryModal() {
@@ -177,6 +193,33 @@ function hideEditCategoryModal() {
     document.getElementById('edit-category-form').reset();
     document.getElementById('edit-category-description').value = '';
     updateDescriptionCounter('edit-category-description', 'edit-description-counter');
+}
+
+function handleEditCategoryModalClose() {
+    if (hasEditCategoryContentChanged()) {
+        if (confirm('You have unsaved content. Are you sure you want to close?')) {
+            hideEditCategoryModal();
+        }
+    } else {
+        hideEditCategoryModal();
+    }
+}
+
+function hasEditCategoryContentChanged() {
+    if (!currentCategory) return false;
+
+    const name = document.getElementById('edit-category-name').value.trim();
+    const description = document.getElementById('edit-category-description').value.trim();
+    const parentId = document.getElementById('edit-category-parent').value || null;
+
+    const currentParentId = currentCategory.parent_id ? currentCategory.parent_id.toString() : null;
+    const newParentId = parentId ? parentId.toString() : null;
+
+    const nameChanged = name !== currentCategory.name;
+    const descriptionChanged = description !== (currentCategory.description || '');
+    const parentChanged = currentParentId !== newParentId;
+
+    return nameChanged || descriptionChanged || parentChanged;
 }
 
 function populateCategorySelect() {

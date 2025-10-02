@@ -373,6 +373,24 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
         }
     }
 
+    // Check if we're on mobile (768px and below)
+    const isMobile = window.innerWidth <= 768;
+
+    if (isMobile) {
+        // On mobile, show "... > Current Category" format
+        const currentElement = pathElements[pathElements.length - 1];
+
+        if (pathElements.length > 1) {
+            // Has parent categories - show "... > Current Category"
+            const parentElement = pathElements[pathElements.length - 2];
+            return `<span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors" onclick="navigateToCategory(${parentElement.id})">...</span> <span class="text-gray-400">></span> <span class="text-gray-900">${currentElement.name}</span>`;
+        } else {
+            // Root category - show "... > Current Category" where ... goes to All Categories
+            return `<span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors" onclick="navigateToAllCategories()">...</span> <span class="text-gray-400">></span> <span class="text-gray-900">${currentElement.name}</span>`;
+        }
+    }
+
+    // On desktop, show full breadcrumb path
     return pathElements.map((element, index) => {
         if (index === pathElements.length - 1) {
             // Last element (current category) - not clickable
@@ -397,8 +415,19 @@ function navigateToCategory(categoryId) {
     }
 }
 
-// Make function globally accessible for onclick handlers
+// Function to navigate to all categories (used on mobile breadcrumb)
+function navigateToAllCategories() {
+    // Use router to navigate to root/all categories
+    if (typeof router !== 'undefined' && router.navigate) {
+        router.navigate('/');
+    } else {
+        deselectCategory(); // Fallback if router not available
+    }
+}
+
+// Make functions globally accessible for onclick handlers
 window.navigateToCategory = navigateToCategory;
+window.navigateToAllCategories = navigateToAllCategories;
 
 // Function to get all descendant categories recursively
 async function getAllDescendantCategories(parentId) {

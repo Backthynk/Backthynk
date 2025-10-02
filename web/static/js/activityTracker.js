@@ -372,6 +372,7 @@ async function changeActivityPeriod(direction) {
 }
 
 
+
 // Get activity intensity level (same as before but using constants)
 function getIntensityLevel(count) {
     if (count === 0) return window.AppConstants.ACTIVITY_LEVELS.none;
