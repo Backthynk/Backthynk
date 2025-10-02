@@ -6,12 +6,8 @@ func NewTestOptionsConfig() *OptionsConfig {
 	return &OptionsConfig{
 		Core: struct {
 			MaxContentLength int `json:"maxContentLength"`
-			MaxFileSizeMB    int `json:"maxFileSizeMB"`
-			MaxFilesPerPost  int `json:"maxFilesPerPost"`
 		}{
 			MaxContentLength: 10000,
-			MaxFileSizeMB:    5,
-			MaxFilesPerPost:  25,
 		},
 		Features: struct {
 			Activity struct {
@@ -28,6 +24,12 @@ func NewTestOptionsConfig() *OptionsConfig {
 			Markdown struct {
 				Enabled bool `json:"enabled"`
 			} `json:"markdown"`
+			FileUpload struct {
+				Enabled           bool     `json:"enabled"`
+				MaxFileSizeMB     int      `json:"maxFileSizeMB"`
+				MaxFilesPerPost   int      `json:"maxFilesPerPost"`
+				AllowedExtensions []string `json:"allowedExtensions"`
+			} `json:"fileUpload"`
 		}{
 			Activity: struct {
 				Enabled      bool `json:"enabled"`
@@ -53,6 +55,17 @@ func NewTestOptionsConfig() *OptionsConfig {
 			}{
 				Enabled: false,
 			},
+			FileUpload: struct {
+				Enabled           bool     `json:"enabled"`
+				MaxFileSizeMB     int      `json:"maxFileSizeMB"`
+				MaxFilesPerPost   int      `json:"maxFilesPerPost"`
+				AllowedExtensions []string `json:"allowedExtensions"`
+			}{
+				Enabled:           true,
+				MaxFileSizeMB:     5,
+				MaxFilesPerPost:   25,
+				AllowedExtensions: []string{"jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "txt", "zip", "mp4", "mov", "avi"},
+			},
 		},
 	}
 }
@@ -65,13 +78,25 @@ func (o *OptionsConfig) WithMaxContentLength(val int) *OptionsConfig {
 
 // WithMaxFileSizeMB sets the MaxFileSizeMB for tests
 func (o *OptionsConfig) WithMaxFileSizeMB(val int) *OptionsConfig {
-	o.Core.MaxFileSizeMB = val
+	o.Features.FileUpload.MaxFileSizeMB = val
 	return o
 }
 
 // WithMaxFilesPerPost sets the MaxFilesPerPost for tests
 func (o *OptionsConfig) WithMaxFilesPerPost(val int) *OptionsConfig {
-	o.Core.MaxFilesPerPost = val
+	o.Features.FileUpload.MaxFilesPerPost = val
+	return o
+}
+
+// WithFileUploadEnabled sets the FileUpload.Enabled feature for tests
+func (o *OptionsConfig) WithFileUploadEnabled(enabled bool) *OptionsConfig {
+	o.Features.FileUpload.Enabled = enabled
+	return o
+}
+
+// WithAllowedExtensions sets the FileUpload.AllowedExtensions for tests
+func (o *OptionsConfig) WithAllowedExtensions(extensions []string) *OptionsConfig {
+	o.Features.FileUpload.AllowedExtensions = extensions
 	return o
 }
 

@@ -9,11 +9,14 @@ func TestNewTestOptionsConfig(t *testing.T) {
 	if options.Core.MaxContentLength != 10000 {
 		t.Errorf("Expected MaxContentLength 10000, got %d", options.Core.MaxContentLength)
 	}
-	if options.Core.MaxFileSizeMB != 5 {
-		t.Errorf("Expected MaxFileSizeMB 5, got %d", options.Core.MaxFileSizeMB)
+	if options.Features.FileUpload.MaxFileSizeMB != 5 {
+		t.Errorf("Expected MaxFileSizeMB 5, got %d", options.Features.FileUpload.MaxFileSizeMB)
 	}
-	if options.Core.MaxFilesPerPost != 25 {
-		t.Errorf("Expected MaxFilesPerPost 25, got %d", options.Core.MaxFilesPerPost)
+	if options.Features.FileUpload.MaxFilesPerPost != 25 {
+		t.Errorf("Expected MaxFilesPerPost 25, got %d", options.Features.FileUpload.MaxFilesPerPost)
+	}
+	if !options.Features.FileUpload.Enabled {
+		t.Error("Expected FileUpload to be enabled by default")
 	}
 	if !options.Features.Activity.Enabled {
 		t.Error("Expected Activity to be enabled by default")
@@ -40,16 +43,20 @@ func TestOptionsConfigChaining(t *testing.T) {
 		WithMaxFilesPerPost(5).
 		WithActivityEnabled(false).
 		WithRetroactivePostingEnabled(true).
-		WithMarkdownEnabled(false)
+		WithMarkdownEnabled(false).
+		WithFileUploadEnabled(false)
 
 	if options.Core.MaxContentLength != 1000 {
 		t.Errorf("Expected MaxContentLength 1000, got %d", options.Core.MaxContentLength)
 	}
-	if options.Core.MaxFileSizeMB != 10 {
-		t.Errorf("Expected MaxFileSizeMB 10, got %d", options.Core.MaxFileSizeMB)
+	if options.Features.FileUpload.MaxFileSizeMB != 10 {
+		t.Errorf("Expected MaxFileSizeMB 10, got %d", options.Features.FileUpload.MaxFileSizeMB)
 	}
-	if options.Core.MaxFilesPerPost != 5 {
-		t.Errorf("Expected MaxFilesPerPost 5, got %d", options.Core.MaxFilesPerPost)
+	if options.Features.FileUpload.MaxFilesPerPost != 5 {
+		t.Errorf("Expected MaxFilesPerPost 5, got %d", options.Features.FileUpload.MaxFilesPerPost)
+	}
+	if options.Features.FileUpload.Enabled {
+		t.Error("Expected FileUpload to be disabled")
 	}
 	if options.Features.Activity.Enabled {
 		t.Error("Expected Activity to be disabled")

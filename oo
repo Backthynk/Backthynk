@@ -1,0 +1,483 @@
+[0;34m▶[0m Running backend unit tests with verbose output...
+?   	backthynk/cmd/server	[no test files]
+?   	backthynk/internal/api	[no test files]
+=== RUN   TestCategoryHandler_GetCategories
+--- PASS: TestCategoryHandler_GetCategories (0.36s)
+=== RUN   TestCategoryHandler_GetCategory
+=== RUN   TestCategoryHandler_GetCategory/Valid_category_ID
+=== RUN   TestCategoryHandler_GetCategory/Invalid_category_ID_format
+=== RUN   TestCategoryHandler_GetCategory/Non-existent_category_ID
+--- PASS: TestCategoryHandler_GetCategory (0.16s)
+    --- PASS: TestCategoryHandler_GetCategory/Valid_category_ID (0.00s)
+    --- PASS: TestCategoryHandler_GetCategory/Invalid_category_ID_format (0.00s)
+    --- PASS: TestCategoryHandler_GetCategory/Non-existent_category_ID (0.00s)
+=== RUN   TestCategoryHandler_GetCategoriesByParent
+=== RUN   TestCategoryHandler_GetCategoriesByParent/Get_root_categories_(no_parent_id)
+=== RUN   TestCategoryHandler_GetCategoriesByParent/Get_children_of_parent1
+=== RUN   TestCategoryHandler_GetCategoriesByParent/Get_children_of_parent2
+=== RUN   TestCategoryHandler_GetCategoriesByParent/Invalid_parent_id_format
+=== RUN   TestCategoryHandler_GetCategoriesByParent/Non-existent_parent
+--- PASS: TestCategoryHandler_GetCategoriesByParent (0.24s)
+    --- PASS: TestCategoryHandler_GetCategoriesByParent/Get_root_categories_(no_parent_id) (0.00s)
+    --- PASS: TestCategoryHandler_GetCategoriesByParent/Get_children_of_parent1 (0.00s)
+    --- PASS: TestCategoryHandler_GetCategoriesByParent/Get_children_of_parent2 (0.00s)
+    --- PASS: TestCategoryHandler_GetCategoriesByParent/Invalid_parent_id_format (0.00s)
+    --- PASS: TestCategoryHandler_GetCategoriesByParent/Non-existent_parent (0.00s)
+=== RUN   TestCategoryHandler_CreateCategory
+=== RUN   TestCategoryHandler_CreateCategory/Valid_category_creation
+=== RUN   TestCategoryHandler_CreateCategory/Valid_category_with_parent
+=== RUN   TestCategoryHandler_CreateCategory/Missing_name
+=== RUN   TestCategoryHandler_CreateCategory/Empty_name
+=== RUN   TestCategoryHandler_CreateCategory/Invalid_JSON
+--- PASS: TestCategoryHandler_CreateCategory (0.21s)
+    --- PASS: TestCategoryHandler_CreateCategory/Valid_category_creation (0.02s)
+    --- PASS: TestCategoryHandler_CreateCategory/Valid_category_with_parent (0.03s)
+    --- PASS: TestCategoryHandler_CreateCategory/Missing_name (0.00s)
+    --- PASS: TestCategoryHandler_CreateCategory/Empty_name (0.00s)
+    --- PASS: TestCategoryHandler_CreateCategory/Invalid_JSON (0.00s)
+=== RUN   TestCategoryHandler_UpdateCategory
+=== RUN   TestCategoryHandler_UpdateCategory/Valid_update
+=== RUN   TestCategoryHandler_UpdateCategory/Update_with_parent
+=== RUN   TestCategoryHandler_UpdateCategory/Invalid_category_ID
+=== RUN   TestCategoryHandler_UpdateCategory/Non-existent_category
+=== RUN   TestCategoryHandler_UpdateCategory/Empty_name
+--- PASS: TestCategoryHandler_UpdateCategory (0.21s)
+    --- PASS: TestCategoryHandler_UpdateCategory/Valid_update (0.01s)
+    --- PASS: TestCategoryHandler_UpdateCategory/Update_with_parent (0.02s)
+    --- PASS: TestCategoryHandler_UpdateCategory/Invalid_category_ID (0.00s)
+    --- PASS: TestCategoryHandler_UpdateCategory/Non-existent_category (0.00s)
+    --- PASS: TestCategoryHandler_UpdateCategory/Empty_name (0.00s)
+=== RUN   TestCategoryHandler_DeleteCategory
+=== RUN   TestCategoryHandler_DeleteCategory/Delete_parent_category_(should_cascade)
+=== RUN   TestCategoryHandler_DeleteCategory/Invalid_category_ID
+=== RUN   TestCategoryHandler_DeleteCategory/Non-existent_category
+--- PASS: TestCategoryHandler_DeleteCategory (0.19s)
+    --- PASS: TestCategoryHandler_DeleteCategory/Delete_parent_category_(should_cascade) (0.02s)
+    --- PASS: TestCategoryHandler_DeleteCategory/Invalid_category_ID (0.00s)
+    --- PASS: TestCategoryHandler_DeleteCategory/Non-existent_category (0.00s)
+=== RUN   TestCategoryHandler_CircularReferenceProtection
+--- PASS: TestCategoryHandler_CircularReferenceProtection (0.20s)
+=== RUN   TestCategoryHandler_ConcurrentOperations
+--- PASS: TestCategoryHandler_ConcurrentOperations (0.45s)
+=== RUN   TestCategoryHandler_DataConsistency
+--- PASS: TestCategoryHandler_DataConsistency (0.25s)
+=== RUN   TestCircularReference_SimpleLoop
+--- PASS: TestCircularReference_SimpleLoop (0.19s)
+=== RUN   TestCircularReference_ComplexLoop
+=== RUN   TestCircularReference_ComplexLoop/GetCategories
+=== RUN   TestCircularReference_ComplexLoop/GetCategoriesByParent
+=== RUN   TestCircularReference_ComplexLoop/GetCategory
+--- PASS: TestCircularReference_ComplexLoop (0.21s)
+    --- PASS: TestCircularReference_ComplexLoop/GetCategories (0.00s)
+    --- PASS: TestCircularReference_ComplexLoop/GetCategoriesByParent (0.00s)
+    --- PASS: TestCircularReference_ComplexLoop/GetCategory (0.00s)
+=== RUN   TestCircularReference_SelfReference
+--- PASS: TestCircularReference_SelfReference (0.17s)
+=== RUN   TestCircularReference_PostOperationsWithCircularCategories
+=== RUN   TestCircularReference_PostOperationsWithCircularCategories/GetPostsByCategory_Recursive
+=== RUN   TestCircularReference_PostOperationsWithCircularCategories/CreatePost
+=== RUN   TestCircularReference_PostOperationsWithCircularCategories/MovePost
+=== RUN   TestCircularReference_PostOperationsWithCircularCategories/DeletePost
+--- PASS: TestCircularReference_PostOperationsWithCircularCategories (0.33s)
+    --- PASS: TestCircularReference_PostOperationsWithCircularCategories/GetPostsByCategory_Recursive (0.00s)
+    --- PASS: TestCircularReference_PostOperationsWithCircularCategories/CreatePost (0.02s)
+    --- PASS: TestCircularReference_PostOperationsWithCircularCategories/MovePost (0.01s)
+    --- PASS: TestCircularReference_PostOperationsWithCircularCategories/DeletePost (0.02s)
+=== RUN   TestCircularReference_CategoryDeletionWithCircularReference
+--- PASS: TestCircularReference_CategoryDeletionWithCircularReference (0.30s)
+=== RUN   TestCircularReference_StressTestWithManyOperations
+    circular_reference_test.go:769: Stress test passed: 100 operations completed successfully with circular reference
+--- PASS: TestCircularReference_StressTestWithManyOperations (5.34s)
+=== RUN   TestConcurrentCategoryCreation
+--- PASS: TestConcurrentCategoryCreation (2.50s)
+=== RUN   TestConcurrentPostCreation
+--- PASS: TestConcurrentPostCreation (2.16s)
+=== RUN   TestConcurrentPostMoves
+--- PASS: TestConcurrentPostMoves (1.08s)
+=== RUN   TestConcurrentCategoryUpdates
+--- PASS: TestConcurrentCategoryUpdates (1.10s)
+=== RUN   TestConcurrentMixedOperations
+    concurrent_operations_test.go:619: Mixed operations completed. Final state: 2 categories
+--- PASS: TestConcurrentMixedOperations (10.38s)
+=== RUN   TestConcurrentOperationsWithTimeout
+=== RUN   TestConcurrentOperationsWithTimeout/Concurrent_Creates_With_Timeout
+=== RUN   TestConcurrentOperationsWithTimeout/Rapid_Category_Hierarchy_Changes
+--- PASS: TestConcurrentOperationsWithTimeout (10.07s)
+    --- PASS: TestConcurrentOperationsWithTimeout/Concurrent_Creates_With_Timeout (6.41s)
+    --- PASS: TestConcurrentOperationsWithTimeout/Rapid_Category_Hierarchy_Changes (3.46s)
+=== RUN   TestEventDispatcher_ConcurrentSubscribeAndDispatch
+    event_dispatcher_test.go:140: Subscriptions added: 50
+    event_dispatcher_test.go:141: Events received: 3264
+--- PASS: TestEventDispatcher_ConcurrentSubscribeAndDispatch (0.19s)
+=== RUN   TestEventDispatcher_HandlerErrors
+2025/10/02 15:00:58 Warning: event handler failed for category.created: simulated handler error
+2025/10/02 15:00:58 Warning: event handler failed for category.created: simulated handler error
+2025/10/02 15:00:58 Warning: event handler failed for category.created: simulated handler error
+--- PASS: TestEventDispatcher_HandlerErrors (0.20s)
+=== RUN   TestEventDispatcher_ProductionLikeScenario
+--- PASS: TestEventDispatcher_ProductionLikeScenario (0.36s)
+=== RUN   TestEventDispatcher_ConcurrentOperationsWithSubscriptions
+    event_dispatcher_test.go:335: Expected events: 100, Actual events: 100
+--- PASS: TestEventDispatcher_ConcurrentOperationsWithSubscriptions (3.13s)
+=== RUN   TestEventDispatcher_AggressiveRaceConditionTest
+    event_dispatcher_test.go:393: Events received: 167604
+    event_dispatcher_test.go:394: Expected handlers: 1000, dispatches: 1000
+--- PASS: TestEventDispatcher_AggressiveRaceConditionTest (0.20s)
+=== RUN   TestEventDispatcher_SliceReallocRace
+    event_dispatcher_test.go:442: Successfully added 1000 subscribers while dispatching
+--- PASS: TestEventDispatcher_SliceReallocRace (0.22s)
+=== RUN   TestEventDispatcher_SlowHandlers
+    event_dispatcher_test.go:484: Dispatching took 501.995013ms
+    event_dispatcher_test.go:485: Handlers started: 5, completed: 10
+--- PASS: TestEventDispatcher_SlowHandlers (0.69s)
+=== RUN   TestEventDispatcher_HandlerPanic
+2025/10/02 15:01:03 Warning: event handler panicked for category.created: handler panic!
+--- PASS: TestEventDispatcher_HandlerPanic (0.18s)
+=== RUN   TestEventDispatcher_MemoryLeakWithManySubscriptions
+    event_dispatcher_test.go:567: Dispatching to 10000 handlers took 354.628µs
+--- PASS: TestEventDispatcher_MemoryLeakWithManySubscriptions (0.18s)
+=== RUN   TestAsyncEventDispatcher_NonBlocking
+    event_dispatcher_test.go:620: Async dispatch took 9.935µs
+    event_dispatcher_test.go:621: Handlers started: 5, completed: 5
+--- PASS: TestAsyncEventDispatcher_NonBlocking (0.48s)
+=== RUN   TestAsyncEventDispatcher_PanicHandling
+2025/10/02 15:01:04 Warning: event handler panicked for category.created: async handler panic!
+--- PASS: TestAsyncEventDispatcher_PanicHandling (0.05s)
+=== RUN   TestPostHandler_CreatePostWithLinkPreviews
+=== RUN   TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_single_link_preview
+=== RUN   TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_multiple_link_previews
+=== RUN   TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_link_preview_missing_some_fields
+=== RUN   TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_empty_link_previews_array
+=== RUN   TestPostHandler_CreatePostWithLinkPreviews/Valid_post_without_link_previews_field
+--- PASS: TestPostHandler_CreatePostWithLinkPreviews (0.37s)
+    --- PASS: TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_single_link_preview (0.04s)
+    --- PASS: TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_multiple_link_previews (0.07s)
+    --- PASS: TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_link_preview_missing_some_fields (0.03s)
+    --- PASS: TestPostHandler_CreatePostWithLinkPreviews/Valid_post_with_empty_link_previews_array (0.02s)
+    --- PASS: TestPostHandler_CreatePostWithLinkPreviews/Valid_post_without_link_previews_field (0.01s)
+=== RUN   TestLinkPreviewHandler_GetLinkPreviewsByPost
+=== RUN   TestLinkPreviewHandler_GetLinkPreviewsByPost/Valid_post_ID_with_link_previews
+=== RUN   TestLinkPreviewHandler_GetLinkPreviewsByPost/Invalid_post_ID_format
+=== RUN   TestLinkPreviewHandler_GetLinkPreviewsByPost/Non-existent_post_ID
+--- PASS: TestLinkPreviewHandler_GetLinkPreviewsByPost (0.21s)
+    --- PASS: TestLinkPreviewHandler_GetLinkPreviewsByPost/Valid_post_ID_with_link_previews (0.00s)
+    --- PASS: TestLinkPreviewHandler_GetLinkPreviewsByPost/Invalid_post_ID_format (0.00s)
+    --- PASS: TestLinkPreviewHandler_GetLinkPreviewsByPost/Non-existent_post_ID (0.00s)
+=== RUN   TestLinkPreviewHandler_FetchLinkPreview
+=== RUN   TestLinkPreviewHandler_FetchLinkPreview/Valid_URL
+=== RUN   TestLinkPreviewHandler_FetchLinkPreview/Invalid_URL
+=== RUN   TestLinkPreviewHandler_FetchLinkPreview/Missing_URL
+=== RUN   TestLinkPreviewHandler_FetchLinkPreview/Invalid_JSON
+--- PASS: TestLinkPreviewHandler_FetchLinkPreview (0.63s)
+    --- PASS: TestLinkPreviewHandler_FetchLinkPreview/Valid_URL (0.63s)
+    --- PASS: TestLinkPreviewHandler_FetchLinkPreview/Invalid_URL (0.00s)
+    --- PASS: TestLinkPreviewHandler_FetchLinkPreview/Missing_URL (0.00s)
+    --- PASS: TestLinkPreviewHandler_FetchLinkPreview/Invalid_JSON (0.00s)
+=== RUN   TestPostHandler_CreatePost
+=== RUN   TestPostHandler_CreatePost/Valid_post_creation
+=== RUN   TestPostHandler_CreatePost/Valid_post_with_link_previews
+=== RUN   TestPostHandler_CreatePost/Valid_post_with_custom_timestamp
+=== RUN   TestPostHandler_CreatePost/Missing_content
+=== RUN   TestPostHandler_CreatePost/Empty_content
+=== RUN   TestPostHandler_CreatePost/Missing_category_id
+=== RUN   TestPostHandler_CreatePost/Invalid_category_id
+=== RUN   TestPostHandler_CreatePost/Content_too_long
+=== RUN   TestPostHandler_CreatePost/Invalid_custom_timestamp_(too_old)
+=== RUN   TestPostHandler_CreatePost/Invalid_JSON
+--- PASS: TestPostHandler_CreatePost (0.28s)
+    --- PASS: TestPostHandler_CreatePost/Valid_post_creation (0.02s)
+    --- PASS: TestPostHandler_CreatePost/Valid_post_with_link_previews (0.03s)
+    --- PASS: TestPostHandler_CreatePost/Valid_post_with_custom_timestamp (0.01s)
+    --- PASS: TestPostHandler_CreatePost/Missing_content (0.00s)
+    --- PASS: TestPostHandler_CreatePost/Empty_content (0.00s)
+    --- PASS: TestPostHandler_CreatePost/Missing_category_id (0.00s)
+    --- PASS: TestPostHandler_CreatePost/Invalid_category_id (0.00s)
+    --- PASS: TestPostHandler_CreatePost/Content_too_long (0.00s)
+    --- PASS: TestPostHandler_CreatePost/Invalid_custom_timestamp_(too_old) (0.00s)
+    --- PASS: TestPostHandler_CreatePost/Invalid_JSON (0.00s)
+=== RUN   TestPostHandler_GetPost
+=== RUN   TestPostHandler_GetPost/Valid_post_ID
+=== RUN   TestPostHandler_GetPost/Invalid_post_ID_format
+=== RUN   TestPostHandler_GetPost/Non-existent_post_ID
+--- PASS: TestPostHandler_GetPost (0.22s)
+    --- PASS: TestPostHandler_GetPost/Valid_post_ID (0.00s)
+    --- PASS: TestPostHandler_GetPost/Invalid_post_ID_format (0.00s)
+    --- PASS: TestPostHandler_GetPost/Non-existent_post_ID (0.00s)
+=== RUN   TestPostHandler_DeletePost
+=== RUN   TestPostHandler_DeletePost/Valid_post_deletion
+=== RUN   TestPostHandler_DeletePost/Invalid_post_ID_format
+=== RUN   TestPostHandler_DeletePost/Non-existent_post_ID
+--- PASS: TestPostHandler_DeletePost (0.23s)
+    --- PASS: TestPostHandler_DeletePost/Valid_post_deletion (0.02s)
+    --- PASS: TestPostHandler_DeletePost/Invalid_post_ID_format (0.00s)
+    --- PASS: TestPostHandler_DeletePost/Non-existent_post_ID (0.00s)
+=== RUN   TestPostHandler_MovePost
+=== RUN   TestPostHandler_MovePost/Valid_post_move
+=== RUN   TestPostHandler_MovePost/Invalid_post_ID_format
+=== RUN   TestPostHandler_MovePost/Non-existent_post
+=== RUN   TestPostHandler_MovePost/Invalid_category_id
+=== RUN   TestPostHandler_MovePost/Missing_category_id
+=== RUN   TestPostHandler_MovePost/Invalid_JSON
+--- PASS: TestPostHandler_MovePost (0.26s)
+    --- PASS: TestPostHandler_MovePost/Valid_post_move (0.03s)
+    --- PASS: TestPostHandler_MovePost/Invalid_post_ID_format (0.00s)
+    --- PASS: TestPostHandler_MovePost/Non-existent_post (0.00s)
+    --- PASS: TestPostHandler_MovePost/Invalid_category_id (0.00s)
+    --- PASS: TestPostHandler_MovePost/Missing_category_id (0.00s)
+    --- PASS: TestPostHandler_MovePost/Invalid_JSON (0.00s)
+=== RUN   TestPostHandler_GetPostsByCategory
+=== RUN   TestPostHandler_GetPostsByCategory/Get_posts_from_parent_category_(non-recursive)
+=== RUN   TestPostHandler_GetPostsByCategory/Get_posts_from_parent_category_(recursive)
+=== RUN   TestPostHandler_GetPostsByCategory/Get_posts_from_child_category
+=== RUN   TestPostHandler_GetPostsByCategory/Get_all_posts_(category_0)
+=== RUN   TestPostHandler_GetPostsByCategory/Get_posts_with_metadata
+=== RUN   TestPostHandler_GetPostsByCategory/Get_posts_with_limit
+=== RUN   TestPostHandler_GetPostsByCategory/Get_posts_with_offset
+=== RUN   TestPostHandler_GetPostsByCategory/Invalid_category_ID_format
+=== RUN   TestPostHandler_GetPostsByCategory/Non-existent_category
+--- PASS: TestPostHandler_GetPostsByCategory (0.27s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_posts_from_parent_category_(non-recursive) (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_posts_from_parent_category_(recursive) (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_posts_from_child_category (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_all_posts_(category_0) (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_posts_with_metadata (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_posts_with_limit (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Get_posts_with_offset (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Invalid_category_ID_format (0.00s)
+    --- PASS: TestPostHandler_GetPostsByCategory/Non-existent_category (0.00s)
+=== RUN   TestPostHandler_ConcurrentOperations
+--- PASS: TestPostHandler_ConcurrentOperations (0.49s)
+=== RUN   TestPostHandler_DataConsistency
+--- PASS: TestPostHandler_DataConsistency (0.31s)
+=== RUN   TestPostHandler_EventDispatchingWithFeatures
+--- PASS: TestPostHandler_EventDispatchingWithFeatures (0.22s)
+=== RUN   TestUploadFile_Success
+--- PASS: TestUploadFile_Success (0.25s)
+=== RUN   TestUploadFile_DisabledFeature
+--- PASS: TestUploadFile_DisabledFeature (0.22s)
+=== RUN   TestUploadFile_DisallowedExtension
+--- PASS: TestUploadFile_DisallowedExtension (0.21s)
+=== RUN   TestUploadFile_AllowedExtension
+--- PASS: TestUploadFile_AllowedExtension (0.27s)
+=== RUN   TestUploadFile_ExceedsMaxSize
+--- PASS: TestUploadFile_ExceedsMaxSize (0.21s)
+=== RUN   TestUploadFile_WithinMaxSize
+--- PASS: TestUploadFile_WithinMaxSize (0.24s)
+=== RUN   TestUploadFile_InvalidPostID
+--- PASS: TestUploadFile_InvalidPostID (0.21s)
+=== RUN   TestUploadFile_MissingPostID
+--- PASS: TestUploadFile_MissingPostID (0.19s)
+=== RUN   TestUploadFile_MissingFile
+--- PASS: TestUploadFile_MissingFile (0.25s)
+=== RUN   TestServeFile_Success
+--- PASS: TestServeFile_Success (0.25s)
+=== RUN   TestIsExtensionAllowed
+--- PASS: TestIsExtensionAllowed (0.22s)
+PASS
+ok  	backthynk/internal/api/handlers	48.022s
+?   	backthynk/internal/api/middleware	[no test files]
+=== RUN   TestNewTestOptionsConfig
+--- PASS: TestNewTestOptionsConfig (0.00s)
+=== RUN   TestOptionsConfigChaining
+--- PASS: TestOptionsConfigChaining (0.00s)
+PASS
+ok  	backthynk/internal/config	(cached)
+=== RUN   TestCategoryCache_HandleHierarchyChange
+=== RUN   TestCategoryCache_HandleHierarchyChange/MoveCategoryToNewParent
+=== RUN   TestCategoryCache_HandleHierarchyChange/MoveCategoryToRoot
+--- PASS: TestCategoryCache_HandleHierarchyChange (0.00s)
+    --- PASS: TestCategoryCache_HandleHierarchyChange/MoveCategoryToNewParent (0.00s)
+    --- PASS: TestCategoryCache_HandleHierarchyChange/MoveCategoryToRoot (0.00s)
+=== RUN   TestCategoryCache_getDescendantPostCountUnlocked
+=== RUN   TestCategoryCache_getDescendantPostCountUnlocked/Root_category_includes_all_descendants
+=== RUN   TestCategoryCache_getDescendantPostCountUnlocked/Child_with_descendants
+=== RUN   TestCategoryCache_getDescendantPostCountUnlocked/Leaf_category_only_itself
+=== RUN   TestCategoryCache_getDescendantPostCountUnlocked/Child_with_no_descendants
+--- PASS: TestCategoryCache_getDescendantPostCountUnlocked (0.00s)
+    --- PASS: TestCategoryCache_getDescendantPostCountUnlocked/Root_category_includes_all_descendants (0.00s)
+    --- PASS: TestCategoryCache_getDescendantPostCountUnlocked/Child_with_descendants (0.00s)
+    --- PASS: TestCategoryCache_getDescendantPostCountUnlocked/Leaf_category_only_itself (0.00s)
+    --- PASS: TestCategoryCache_getDescendantPostCountUnlocked/Child_with_no_descendants (0.00s)
+=== RUN   TestCategoryCache_UpdatePostCount
+--- PASS: TestCategoryCache_UpdatePostCount (0.00s)
+=== RUN   TestCategoryCache_PostCountPreservationDuringHierarchyChange
+=== RUN   TestCategoryCache_PostCountPreservationDuringHierarchyChange/PostCountsPreservedAfterMove
+--- PASS: TestCategoryCache_PostCountPreservationDuringHierarchyChange (0.00s)
+    --- PASS: TestCategoryCache_PostCountPreservationDuringHierarchyChange/PostCountsPreservedAfterMove (0.00s)
+PASS
+ok  	backthynk/internal/core/cache	(cached)
+?   	backthynk/internal/core/events	[no test files]
+?   	backthynk/internal/core/models	[no test files]
+=== RUN   TestCategoryDeletionWithPostsAndAttachments
+--- PASS: TestCategoryDeletionWithPostsAndAttachments (0.96s)
+=== RUN   TestCategoryDeletionCacheConsistency
+--- PASS: TestCategoryDeletionCacheConsistency (1.00s)
+=== RUN   TestCategoryDeletionFileCleanupWithMissingFiles
+--- PASS: TestCategoryDeletionFileCleanupWithMissingFiles (0.64s)
+PASS
+ok  	backthynk/internal/core/services	(cached)
+?   	backthynk/internal/core/utils	[no test files]
+=== RUN   TestNewHandler
+--- PASS: TestNewHandler (0.00s)
+=== RUN   TestRegisterRoutesEnabled
+--- PASS: TestRegisterRoutesEnabled (0.00s)
+=== RUN   TestRegisterRoutesDisabled
+--- PASS: TestRegisterRoutesDisabled (0.00s)
+=== RUN   TestGetActivityPeriodInvalidCategoryID
+--- PASS: TestGetActivityPeriodInvalidCategoryID (0.00s)
+=== RUN   TestGetActivityPeriodValidRequest
+--- PASS: TestGetActivityPeriodValidRequest (0.00s)
+=== RUN   TestGetActivityPeriodQueryParameters
+=== RUN   TestGetActivityPeriodQueryParameters/Basic_request
+=== RUN   TestGetActivityPeriodQueryParameters/With_recursive_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/With_period_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/With_period_months_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/With_start_date_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/With_end_date_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/With_all_parameters
+=== RUN   TestGetActivityPeriodQueryParameters/Invalid_period_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/Invalid_period_months_parameter
+=== RUN   TestGetActivityPeriodQueryParameters/Zero_period_months_parameter
+--- PASS: TestGetActivityPeriodQueryParameters (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/Basic_request (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/With_recursive_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/With_period_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/With_period_months_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/With_start_date_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/With_end_date_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/With_all_parameters (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/Invalid_period_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/Invalid_period_months_parameter (0.00s)
+    --- PASS: TestGetActivityPeriodQueryParameters/Zero_period_months_parameter (0.00s)
+=== RUN   TestGetActivityPeriodDefaultValues
+--- PASS: TestGetActivityPeriodDefaultValues (0.00s)
+=== RUN   TestGetActivityPeriodMethodNotAllowed
+--- PASS: TestGetActivityPeriodMethodNotAllowed (0.00s)
+=== RUN   TestGetActivityPeriodRecursiveParameter
+--- PASS: TestGetActivityPeriodRecursiveParameter (0.00s)
+=== RUN   TestGetActivityPeriodGlobalStats
+--- PASS: TestGetActivityPeriodGlobalStats (0.00s)
+=== RUN   TestActivityPeriodResponseStructure
+--- PASS: TestActivityPeriodResponseStructure (0.00s)
+=== RUN   TestPostMoveRecursiveParentActivityUpdate
+=== RUN   TestPostMoveRecursiveParentActivityUpdate/MoveFromGrandchildToAnotherParent
+=== RUN   TestPostMoveRecursiveParentActivityUpdate/MoveWithinHierarchy
+=== RUN   TestPostMoveRecursiveParentActivityUpdate/MultiplePostsComplexMoves
+--- PASS: TestPostMoveRecursiveParentActivityUpdate (0.00s)
+    --- PASS: TestPostMoveRecursiveParentActivityUpdate/MoveFromGrandchildToAnotherParent (0.00s)
+    --- PASS: TestPostMoveRecursiveParentActivityUpdate/MoveWithinHierarchy (0.00s)
+    --- PASS: TestPostMoveRecursiveParentActivityUpdate/MultiplePostsComplexMoves (0.00s)
+=== RUN   TestPostMoveRecursiveActivityDayTracking
+--- PASS: TestPostMoveRecursiveActivityDayTracking (0.00s)
+=== RUN   TestServiceBasicFunctionality
+=== RUN   TestServiceBasicFunctionality/DisabledService
+=== RUN   TestServiceBasicFunctionality/EnabledService
+=== RUN   TestServiceBasicFunctionality/PostMoved
+--- PASS: TestServiceBasicFunctionality (0.00s)
+    --- PASS: TestServiceBasicFunctionality/DisabledService (0.00s)
+    --- PASS: TestServiceBasicFunctionality/EnabledService (0.00s)
+    --- PASS: TestServiceBasicFunctionality/PostMoved (0.00s)
+=== RUN   TestUpdateActivity
+--- PASS: TestUpdateActivity (0.00s)
+=== RUN   TestCalculatePeriodDates
+=== RUN   TestCalculatePeriodDates/Current_period
+=== RUN   TestCalculatePeriodDates/Past_period
+=== RUN   TestCalculatePeriodDates/Far_past_period
+--- PASS: TestCalculatePeriodDates (0.00s)
+    --- PASS: TestCalculatePeriodDates/Current_period (0.00s)
+    --- PASS: TestCalculatePeriodDates/Past_period (0.00s)
+    --- PASS: TestCalculatePeriodDates/Far_past_period (0.00s)
+=== RUN   TestCalculateMaxPeriods
+=== RUN   TestCalculateMaxPeriods/No_first_post
+=== RUN   TestCalculateMaxPeriods/Recent_first_post
+=== RUN   TestCalculateMaxPeriods/Old_first_post
+--- PASS: TestCalculateMaxPeriods (0.00s)
+    --- PASS: TestCalculateMaxPeriods/No_first_post (0.00s)
+    --- PASS: TestCalculateMaxPeriods/Recent_first_post (0.00s)
+    --- PASS: TestCalculateMaxPeriods/Old_first_post (0.00s)
+=== RUN   TestGetActivityPeriodBasic
+--- PASS: TestGetActivityPeriodBasic (0.00s)
+=== RUN   TestUpdateRecursiveActivity
+--- PASS: TestUpdateRecursiveActivity (0.00s)
+=== RUN   TestCategoryUpdatedEvent
+=== RUN   TestCategoryUpdatedEvent/EventHandlingBasic
+=== RUN   TestCategoryUpdatedEvent/EventHandlingWithCache
+    service_test.go:494: Category 1 recursive posts: 1
+    service_test.go:500: Category 2 total posts: 1, recursive posts: 1
+--- PASS: TestCategoryUpdatedEvent (0.00s)
+    --- PASS: TestCategoryUpdatedEvent/EventHandlingBasic (0.00s)
+    --- PASS: TestCategoryUpdatedEvent/EventHandlingWithCache (0.00s)
+PASS
+ok  	backthynk/internal/features/activity	(cached)
+=== RUN   TestNewStatsHandler
+--- PASS: TestNewStatsHandler (0.00s)
+=== RUN   TestStatsRegisterRoutesEnabled
+--- PASS: TestStatsRegisterRoutesEnabled (0.00s)
+=== RUN   TestStatsRegisterRoutesDisabled
+--- PASS: TestStatsRegisterRoutesDisabled (0.00s)
+=== RUN   TestGetCategoryStatsInvalidCategoryID
+--- PASS: TestGetCategoryStatsInvalidCategoryID (0.00s)
+=== RUN   TestGetCategoryStatsValidRequest
+--- PASS: TestGetCategoryStatsValidRequest (0.00s)
+=== RUN   TestGetCategoryStatsRecursiveParameter
+--- PASS: TestGetCategoryStatsRecursiveParameter (0.00s)
+=== RUN   TestGetCategoryStatsGlobalStats
+--- PASS: TestGetCategoryStatsGlobalStats (0.00s)
+=== RUN   TestGetCategoryStatsNonExistentCategory
+--- PASS: TestGetCategoryStatsNonExistentCategory (0.00s)
+=== RUN   TestGetCategoryStatsMethodNotAllowed
+--- PASS: TestGetCategoryStatsMethodNotAllowed (0.00s)
+=== RUN   TestGetCategoryStatsQueryParameterParsing
+=== RUN   TestGetCategoryStatsQueryParameterParsing/No_recursive_parameter
+=== RUN   TestGetCategoryStatsQueryParameterParsing/Recursive_true
+=== RUN   TestGetCategoryStatsQueryParameterParsing/Recursive_false
+=== RUN   TestGetCategoryStatsQueryParameterParsing/Recursive_invalid_value
+=== RUN   TestGetCategoryStatsQueryParameterParsing/Multiple_query_parameters
+--- PASS: TestGetCategoryStatsQueryParameterParsing (0.00s)
+    --- PASS: TestGetCategoryStatsQueryParameterParsing/No_recursive_parameter (0.00s)
+    --- PASS: TestGetCategoryStatsQueryParameterParsing/Recursive_true (0.00s)
+    --- PASS: TestGetCategoryStatsQueryParameterParsing/Recursive_false (0.00s)
+    --- PASS: TestGetCategoryStatsQueryParameterParsing/Recursive_invalid_value (0.00s)
+    --- PASS: TestGetCategoryStatsQueryParameterParsing/Multiple_query_parameters (0.00s)
+=== RUN   TestStatsResponseStructure
+--- PASS: TestStatsResponseStructure (0.00s)
+=== RUN   TestServiceBasicFunctionality
+=== RUN   TestServiceBasicFunctionality/DisabledService
+=== RUN   TestServiceBasicFunctionality/EnabledService
+--- PASS: TestServiceBasicFunctionality (0.00s)
+    --- PASS: TestServiceBasicFunctionality/DisabledService (0.00s)
+    --- PASS: TestServiceBasicFunctionality/EnabledService (0.00s)
+=== RUN   TestGetStats
+--- PASS: TestGetStats (0.00s)
+=== RUN   TestGetStatsDisabled
+--- PASS: TestGetStatsDisabled (0.00s)
+=== RUN   TestGetGlobalStats
+--- PASS: TestGetGlobalStats (0.00s)
+=== RUN   TestGetGlobalStatsDisabled
+--- PASS: TestGetGlobalStatsDisabled (0.00s)
+=== RUN   TestHandleEventDisabled
+--- PASS: TestHandleEventDisabled (0.00s)
+=== RUN   TestNewService
+--- PASS: TestNewService (0.00s)
+=== RUN   TestNewServiceDisabled
+--- PASS: TestNewServiceDisabled (0.00s)
+=== RUN   TestStatsStructure
+--- PASS: TestStatsStructure (0.00s)
+=== RUN   TestCategoryStatsStructure
+--- PASS: TestCategoryStatsStructure (0.00s)
+=== RUN   TestServiceConcurrentAccess
+--- PASS: TestServiceConcurrentAccess (0.00s)
+=== RUN   TestServicePostFileTracking
+--- PASS: TestServicePostFileTracking (0.00s)
+=== RUN   TestCategoryDeletionWithParentRecursiveUpdates
+--- PASS: TestCategoryDeletionWithParentRecursiveUpdates (0.00s)
+=== RUN   TestCategoryDeletedEventHandling
+--- PASS: TestCategoryDeletedEventHandling (0.00s)
+=== RUN   TestCategoryDeletionUpdatesParentRecursiveStatsWithEvent
+--- PASS: TestCategoryDeletionUpdatesParentRecursiveStatsWithEvent (0.00s)
+=== RUN   TestCategoryDeletionWithPostDeletedEvents
+--- PASS: TestCategoryDeletionWithPostDeletedEvents (0.00s)
+PASS
+ok  	backthynk/internal/features/detailedstats	(cached)
+?   	backthynk/internal/storage	[no test files]
+[0;32m✓[0m All tests completed

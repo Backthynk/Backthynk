@@ -34,8 +34,6 @@ type ServiceConfig struct {
 type OptionsConfig struct {
 	Core struct {
 		MaxContentLength int `json:"maxContentLength"`
-		MaxFileSizeMB    int `json:"maxFileSizeMB"`
-		MaxFilesPerPost  int `json:"maxFilesPerPost"`
 	} `json:"core"`
 	Features struct {
 		Activity struct {
@@ -52,6 +50,12 @@ type OptionsConfig struct {
 		Markdown struct {
 			Enabled bool `json:"enabled"`
 		} `json:"markdown"`
+		FileUpload struct {
+			Enabled           bool     `json:"enabled"`
+			MaxFileSizeMB     int      `json:"maxFileSizeMB"`
+			MaxFilesPerPost   int      `json:"maxFilesPerPost"`
+			AllowedExtensions []string `json:"allowedExtensions"`
+		} `json:"fileUpload"`
 	} `json:"features"`
 }
 

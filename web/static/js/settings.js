@@ -55,13 +55,23 @@ async function loadSettings() {
 }
 
 function populateSettingsForm() {
-    document.getElementById('maxFileSizeMB').value = currentSettings.maxFileSizeMB || window.AppConstants.DEFAULT_SETTINGS.maxFileSizeMB;
     document.getElementById('maxContentLength').value = currentSettings.maxContentLength || window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
-    document.getElementById('maxFilesPerPost').value = currentSettings.maxFilesPerPost || window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
     document.getElementById('markdownEnabled').checked = currentSettings.markdownEnabled !== undefined ? currentSettings.markdownEnabled : false;
+
+    // File upload settings
+    document.getElementById('fileUploadEnabled').checked = currentSettings.fileUploadEnabled !== undefined ? currentSettings.fileUploadEnabled : true;
+    document.getElementById('maxFileSizeMB').value = currentSettings.maxFileSizeMB || window.AppConstants.DEFAULT_SETTINGS.maxFileSizeMB;
+    document.getElementById('maxFilesPerPost').value = currentSettings.maxFilesPerPost || window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
+
+    // Allowed extensions
+    if (currentSettings.allowedFileExtensions && Array.isArray(currentSettings.allowedFileExtensions)) {
+        document.getElementById('allowedFileExtensions').value = currentSettings.allowedFileExtensions.join(', ');
+    } else {
+        document.getElementById('allowedFileExtensions').value = 'jpg, jpeg, png, gif, webp, pdf, doc, docx, xls, xlsx, txt, zip, mp4, mov, avi';
+    }
 
     // Set time format
     const timeFormat = currentSettings.retroactivePostingTimeFormat || window.AppConstants.DEFAULT_SETTINGS.retroactivePostingTimeFormat;
@@ -72,15 +82,24 @@ function populateSettingsForm() {
 }
 
 function getSettingsFromForm() {
+    // Parse allowed extensions
+    const extensionsStr = document.getElementById('allowedFileExtensions').value;
+    const allowedFileExtensions = extensionsStr
+        .split(',')
+        .map(ext => ext.trim().toLowerCase())
+        .filter(ext => ext.length > 0);
+
     return {
-        maxFileSizeMB: parseInt(document.getElementById('maxFileSizeMB').value),
         maxContentLength: parseInt(document.getElementById('maxContentLength').value),
-        maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
         activityEnabled: document.getElementById('activityEnabled').checked,
         fileStatsEnabled: document.getElementById('fileStatsEnabled').checked,
         retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked,
         retroactivePostingTimeFormat: document.getElementById('retroactivePostingTimeFormat').value,
-        markdownEnabled: document.getElementById('markdownEnabled').checked
+        markdownEnabled: document.getElementById('markdownEnabled').checked,
+        fileUploadEnabled: document.getElementById('fileUploadEnabled').checked,
+        maxFileSizeMB: parseInt(document.getElementById('maxFileSizeMB').value),
+        maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
+        allowedFileExtensions: allowedFileExtensions
     };
 }
 
@@ -247,7 +266,27 @@ function updateMarkdownCSS(enabled) {
     console.log('Markdown enabled:', enabled, 'Body has markdown-disabled class:', document.body.classList.contains('markdown-disabled'));
 }
 
+// Toggle file upload details visibility based on enabled state
+function toggleFileUploadDetails() {
+    const fileUploadEnabled = document.getElementById('fileUploadEnabled').checked;
+    const detailsSection = document.getElementById('fileUploadDetails');
+
+    if (fileUploadEnabled) {
+        detailsSection.style.display = 'block';
+    } else {
+        detailsSection.style.display = 'none';
+    }
+}
+
 // Initialize settings when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
+
+    // Add file upload toggle listener
+    const fileUploadCheckbox = document.getElementById('fileUploadEnabled');
+    if (fileUploadCheckbox) {
+        fileUploadCheckbox.addEventListener('change', toggleFileUploadDetails);
+        // Initialize visibility on load
+        setTimeout(() => toggleFileUploadDetails(), 100);
+    }
 });

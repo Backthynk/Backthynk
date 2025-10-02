@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -112,6 +113,8 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 
+	// Filter attachments by allowed extensions
+	h.filterAttachments(post)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(post)
@@ -140,26 +143,26 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid post ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	var req struct {
 		CategoryID int `json:"category_id"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	
+
 	if req.CategoryID <= 0 {
 		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
 		return
 	}
-	
+
 	if err := h.postService.Move(postID, req.CategoryID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Return updated post
 	post, err := h.fileService.GetPostWithAttachments(postID)
 	if err != nil {
@@ -172,6 +175,8 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 
+	// Filter attachments by allowed extensions
+	h.filterAttachments(post)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(post)
@@ -184,30 +189,30 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Invalid category ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	// Parse query params
 	limitStr := r.URL.Query().Get("limit")
 	offsetStr := r.URL.Query().Get("offset")
 	withMeta := r.URL.Query().Get("with_meta") == "true"
 	recursive := r.URL.Query().Get("recursive") == "true"
-	
+
 	limit := config.DefaultPostLimit
 	if limitStr != "" {
 		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= config.MaxPostLimit {
 			limit = l
 		}
 	}
-	
+
 	offset := 0
 	if offsetStr != "" {
 		if o, err := strconv.Atoi(offsetStr); err == nil && o >= 0 {
 			offset = o
 		}
 	}
-	
+
 	var posts []models.PostWithAttachments
 	var totalCount int
-	
+
 	if categoryID == 0 { // All categories
 		posts, err = h.postService.GetAllPosts(limit, offset)
 		if withMeta {
@@ -226,12 +231,17 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 			}
 		}
 	}
-	
+
 	if err != nil {
 		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
 		return
 	}
-	
+
+	// Filter attachments for all posts
+	for i := range posts {
+		h.filterAttachments(&posts[i])
+	}
+
 	if withMeta {
 		response := map[string]interface{}{
 			"posts":       posts,
@@ -246,4 +256,34 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(posts)
 	}
+}
+
+// filterAttachments filters attachments based on allowed extensions when file upload is enabled
+func (h *PostHandler) filterAttachments(post *models.PostWithAttachments) {
+	if !h.options.Features.FileUpload.Enabled || len(h.options.Features.FileUpload.AllowedExtensions) == 0 {
+		return
+	}
+
+	var filteredAttachments []models.Attachment
+	for _, att := range post.Attachments {
+		ext := filepath.Ext(att.Filename)
+		if ext != "" {
+			ext = ext[1:] // Remove the leading dot
+		}
+
+		// Check if extension is allowed
+		allowed := false
+		for _, allowedExt := range h.options.Features.FileUpload.AllowedExtensions {
+			if ext == allowedExt {
+				allowed = true
+				break
+			}
+		}
+
+		if allowed {
+			filteredAttachments = append(filteredAttachments, att)
+		}
+	}
+
+	post.Attachments = filteredAttachments
 }

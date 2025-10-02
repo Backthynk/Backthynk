@@ -16,11 +16,13 @@ async function showCreatePost() {
     // Focus on content area
     document.getElementById('modal-post-content').focus();
 
-    // Check if retroactive posting is enabled and show section
+    // Check settings for features
     try {
         const settings = window.currentSettings;
         const retroactiveSection = document.getElementById('modal-retroactive-section');
+        const attachmentsSection = document.getElementById('modal-attachments-section');
 
+        // Handle retroactive posting
         if (settings && settings.retroactivePostingEnabled) {
             retroactiveSection.style.setProperty('display', 'block', 'important');
 
@@ -62,9 +64,16 @@ async function showCreatePost() {
         } else {
             retroactiveSection.style.setProperty('display', 'none', 'important');
         }
+
+        // Handle file upload
+        if (settings && settings.fileUploadEnabled !== false) {
+            attachmentsSection.style.display = 'block';
+        } else {
+            attachmentsSection.style.display = 'none';
+        }
     } catch (error) {
-        console.error('Failed to load settings for retroactive posting:', error);
-        // Hide the section container on error
+        console.error('Failed to load settings:', error);
+        // Hide optional sections on error
         document.getElementById('modal-retroactive-section').style.setProperty('display', 'none', 'important');
     }
 
