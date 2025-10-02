@@ -198,6 +198,16 @@ button:active {
     overflow-wrap: anywhere;
 }
 
+/* Preserve whitespace when markdown is disabled (plain text mode) */
+body.markdown-disabled .markdown-body {
+    white-space: pre-wrap !important;
+}
+
+/* Normal whitespace handling for markdown mode (HTML already has proper spacing) */
+body:not(.markdown-disabled) .markdown-body {
+    white-space: normal !important;
+}
+
 .post-content a {
     word-break: break-all;
     display: inline;

@@ -230,13 +230,21 @@ async function refreshUIWithNewSettings() {
 // Update markdown CSS visibility
 function updateMarkdownCSS(enabled) {
     const markdownCSS = document.getElementById('markdown-css');
-    if (markdownCSS) {
-        if (enabled) {
+
+    // Always update body class regardless of markdownCSS element existence
+    if (enabled) {
+        document.body.classList.remove('markdown-disabled');
+        if (markdownCSS) {
             markdownCSS.removeAttribute('disabled');
-        } else {
+        }
+    } else {
+        document.body.classList.add('markdown-disabled');
+        if (markdownCSS) {
             markdownCSS.setAttribute('disabled', 'disabled');
         }
     }
+
+    console.log('Markdown enabled:', enabled, 'Body has markdown-disabled class:', document.body.classList.contains('markdown-disabled'));
 }
 
 // Initialize settings when the page loads
