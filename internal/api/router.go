@@ -32,7 +32,7 @@ func NewRouter(
 	uploadHandler := handlers.NewUploadHandler(fileService, opts)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
-	templateHandler := handlers.NewTemplateHandler(categoryService)
+	templateHandler := handlers.NewTemplateHandler(categoryService, opts)
 	
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()

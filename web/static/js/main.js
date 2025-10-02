@@ -127,6 +127,11 @@ async function initializeApp() {
     // Check file statistics system status (now uses cached settings)
     checkFileStatsEnabled();
 
+    // Update markdown CSS based on settings
+    if (window.currentSettings && typeof updateMarkdownCSS === 'function') {
+        updateMarkdownCSS(window.currentSettings.markdownEnabled !== undefined ? window.currentSettings.markdownEnabled : false);
+    }
+
     if (window.location.pathname === "/" || router.isCategoryPath(window.location.pathname)){
         // Load initial data
         fetchCategories();

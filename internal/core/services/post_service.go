@@ -1,6 +1,7 @@
 package services
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/core/cache"
 	"backthynk/internal/core/events"
 	"backthynk/internal/core/models"
@@ -12,6 +13,7 @@ type PostService struct {
 	db         *storage.DB
 	cache      *cache.CategoryCache
 	dispatcher *events.Dispatcher
+	options    *config.OptionsConfig
 }
 
 func NewPostService(db *storage.DB, cache *cache.CategoryCache, dispatcher *events.Dispatcher) *PostService {
@@ -19,6 +21,7 @@ func NewPostService(db *storage.DB, cache *cache.CategoryCache, dispatcher *even
 		db:         db,
 		cache:      cache,
 		dispatcher: dispatcher,
+		options:    config.GetOptionsConfig(),
 	}
 }
 
@@ -37,8 +40,10 @@ func (s *PostService) Create(categoryID int, content string, customTimestamp *in
 	}
 
 	// Process content on-the-fly for the response
-	post.Content = utils.ProcessMarkdown(post.Content)
-	
+	if s.options.Features.Markdown.Enabled {
+		post.Content = utils.ProcessMarkdown(post.Content)
+	}
+
 	// Update cache
 	s.cache.UpdatePostCount(categoryID, 1)
 	
@@ -145,8 +150,10 @@ func (s *PostService) GetByCategory(categoryID int, recursive bool, limit, offse
 	}
 
 	// Process content on-the-fly for each post
-	for i := range posts {
-		posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
+	if s.options.Features.Markdown.Enabled {
+		for i := range posts {
+			posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
+		}
 	}
 
 	return posts, nil
@@ -159,8 +166,10 @@ func (s *PostService) GetAllPosts(limit, offset int) ([]models.PostWithAttachmen
 	}
 
 	// Process content on-the-fly for each post
-	for i := range posts {
-		posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
+	if s.options.Features.Markdown.Enabled {
+		for i := range posts {
+			posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
+		}
 	}
 
 	return posts, nil

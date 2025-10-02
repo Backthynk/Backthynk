@@ -61,6 +61,7 @@ function populateSettingsForm() {
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
+    document.getElementById('markdownEnabled').checked = currentSettings.markdownEnabled !== undefined ? currentSettings.markdownEnabled : false;
 
     // Set time format
     const timeFormat = currentSettings.retroactivePostingTimeFormat || window.AppConstants.DEFAULT_SETTINGS.retroactivePostingTimeFormat;
@@ -78,7 +79,8 @@ function getSettingsFromForm() {
         activityEnabled: document.getElementById('activityEnabled').checked,
         fileStatsEnabled: document.getElementById('fileStatsEnabled').checked,
         retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked,
-        retroactivePostingTimeFormat: document.getElementById('retroactivePostingTimeFormat').value
+        retroactivePostingTimeFormat: document.getElementById('retroactivePostingTimeFormat').value,
+        markdownEnabled: document.getElementById('markdownEnabled').checked
     };
 }
 
@@ -140,6 +142,9 @@ async function saveSettings() {
         if (typeof checkFileStatsEnabled === 'function') {
             await checkFileStatsEnabled();
         }
+
+        // Update markdown CSS visibility
+        updateMarkdownCSS(savedSettings.markdownEnabled);
 
         showSuccess(window.AppConstants.USER_MESSAGES.success.settingsSaved);
 
@@ -219,6 +224,18 @@ async function refreshUIWithNewSettings() {
     // Refresh file upload text
     if (typeof updateFileUploadText === 'function') {
         await updateFileUploadText();
+    }
+}
+
+// Update markdown CSS visibility
+function updateMarkdownCSS(enabled) {
+    const markdownCSS = document.getElementById('markdown-css');
+    if (markdownCSS) {
+        if (enabled) {
+            markdownCSS.removeAttribute('disabled');
+        } else {
+            markdownCSS.setAttribute('disabled', 'disabled');
+        }
     }
 }
 

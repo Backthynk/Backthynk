@@ -93,6 +93,9 @@ func setupLinkPreviewTest() (*linkPreviewTestSetup, error) {
 				Enabled    bool   `json:"enabled"`
 				TimeFormat string `json:"timeFormat"`
 			} `json:"retroactivePosting"`
+			Markdown struct {
+				Enabled bool `json:"enabled"`
+			} `json:"markdown"`
 		}{
 			Activity: struct {
 				Enabled      bool `json:"enabled"`
@@ -112,6 +115,11 @@ func setupLinkPreviewTest() (*linkPreviewTestSetup, error) {
 			}{
 				Enabled:    true,
 				TimeFormat: "24h",
+			},
+			Markdown: struct {
+				Enabled bool `json:"enabled"`
+			}{
+				Enabled: false,
 			},
 		},
 	}

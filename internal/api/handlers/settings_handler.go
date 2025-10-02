@@ -26,6 +26,7 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		"retroactivePostingTimeFormat": options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":           options.Features.Activity.Enabled,
 		"fileStatsEnabled":          options.Features.DetailedStats.Enabled,
+		"markdownEnabled":           options.Features.Markdown.Enabled,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -69,6 +70,9 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 			options.Features.RetroactivePosting.TimeFormat = val
 		}
 	}
+	if val, ok := req["markdownEnabled"].(bool); ok {
+		options.Features.Markdown.Enabled = val
+	}
 	
 	// Validate settings
 	if err := h.validateSettings(options); err != nil {
@@ -97,6 +101,7 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":                  options.Features.Activity.Enabled,
 		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
+		"markdownEnabled":                  options.Features.Markdown.Enabled,
 	}
 	
 	w.Header().Set("Content-Type", "application/json")

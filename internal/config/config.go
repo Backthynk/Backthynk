@@ -49,6 +49,9 @@ type OptionsConfig struct {
 			Enabled    bool   `json:"enabled"`
 			TimeFormat string `json:"timeFormat"`
 		} `json:"retroactivePosting"`
+		Markdown struct {
+			Enabled bool `json:"enabled"`
+		} `json:"markdown"`
 	} `json:"features"`
 }
 

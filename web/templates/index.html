@@ -48,7 +48,9 @@
     </script>
     {{end}}
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" integrity="sha512-BrOPA520KmDMqieeM7XFe6a3u3Sb3F1JBaQnrIAmWg3EYrciJ+Qqe6ZcKCdfPv26rGcgTrJnZ/IdQEct8h3Zhw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {{if .MarkdownEnabled}}
+    <link id="markdown-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" integrity="sha512-BrOPA520KmDMqieeM7XFe6a3u3Sb3F1JBaQnrIAmWg3EYrciJ+Qqe6ZcKCdfPv26rGcgTrJnZ/IdQEct8h3Zhw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {{end}}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="/static/css/main.css" rel="stylesheet">
 </head>
@@ -320,6 +322,26 @@
                                         If disabled while the server is running, the UI will be updated but server-side caching continues until restart.
                                     </p>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Display Settings -->
+                    <div class="border-b pb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Display Settings</h3>
+
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <label for="markdownEnabled" class="text-sm font-medium text-gray-700">
+                                    Markdown Rendering
+                                </label>
+                                <p class="text-sm text-gray-500 mt-1">Enable markdown processing and styling for post content. When disabled, posts display as plain text. (Adds-up 26kb in the website bundle)</p>
+                            </div>
+                            <div class="ml-4">
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="markdownEnabled" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
                             </div>
                         </div>
                     </div>

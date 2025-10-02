@@ -13,8 +13,11 @@
       "enabled": true
     },
     "retroactivePosting": {
-      "enabled": true,
+      "enabled": false,
       "timeFormat": "24h"
+    },
+    "markdown": {
+      "enabled": true
     }
   }
 }

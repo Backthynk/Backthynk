@@ -100,7 +100,7 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid post ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	post, err := h.fileService.GetPostWithAttachments(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -108,9 +108,11 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process content on-the-fly for the response
-	post.Content = utils.ProcessMarkdown(post.Content)
+	if h.options.Features.Markdown.Enabled {
+		post.Content = utils.ProcessMarkdown(post.Content)
+	}
 
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(post)
 }
@@ -166,9 +168,11 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process content on-the-fly for the response
-	post.Content = utils.ProcessMarkdown(post.Content)
+	if h.options.Features.Markdown.Enabled {
+		post.Content = utils.ProcessMarkdown(post.Content)
+	}
 
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(post)
 }

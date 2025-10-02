@@ -10,27 +10,33 @@ import (
 
 type TemplateHandler struct {
 	categoryService *services.CategoryService
+	options         *config.OptionsConfig
 }
 
-func NewTemplateHandler(categoryService *services.CategoryService) *TemplateHandler {
-	return &TemplateHandler{categoryService: categoryService}
+func NewTemplateHandler(categoryService *services.CategoryService, options *config.OptionsConfig) *TemplateHandler {
+	return &TemplateHandler{
+		categoryService: categoryService,
+		options:         options,
+	}
 }
 
 type PageData struct {
-	Title       string
-	Description string
-	URL         string
-	Category    interface{}
-	Breadcrumb  string
+	Title           string
+	Description     string
+	URL             string
+	Category        interface{}
+	Breadcrumb      string
+	MarkdownEnabled bool
 }
 
 func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
 	pageData := PageData{
-		Title:       "Backthynk - Personal Micro Blog",
-		Description: "Personal micro blog platform",
-		URL:         r.Host + path,
+		Title:           "Backthynk - Personal Micro Blog",
+		Description:     "Personal micro blog platform",
+		URL:             r.Host + path,
+		MarkdownEnabled: h.options.Features.Markdown.Enabled,
 	}
 
 	// Use compressed template in production mode
