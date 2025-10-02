@@ -2,8 +2,7 @@
   "core": {
     "maxContentLength": 10000,
     "maxFileSizeMB": 5,
-    "maxFilesPerPost": 25,
-    "retroactivePostingEnabled": true
+    "maxFilesPerPost": 25
   },
   "features": {
     "activity": {
@@ -12,6 +11,10 @@
     },
     "detailedStats": {
       "enabled": true
+    },
+    "retroactivePosting": {
+      "enabled": true,
+      "timeFormat": "24h"
     }
   }
 }

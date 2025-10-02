@@ -16,17 +16,18 @@ func NewSettingsHandler() *SettingsHandler {
 
 func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	options := config.GetOptionsConfig()
-	
+
 	// Convert to frontend format
 	response := map[string]interface{}{
 		"maxFileSizeMB":             options.Core.MaxFileSizeMB,
 		"maxContentLength":          options.Core.MaxContentLength,
 		"maxFilesPerPost":           options.Core.MaxFilesPerPost,
-		"retroactivePostingEnabled": options.Core.RetroactivePostingEnabled,
+		"retroactivePostingEnabled": options.Features.RetroactivePosting.Enabled,
+		"retroactivePostingTimeFormat": options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":           options.Features.Activity.Enabled,
 		"fileStatsEnabled":          options.Features.DetailedStats.Enabled,
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -51,16 +52,22 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	if val, ok := req["maxFilesPerPost"].(float64); ok {
 		options.Core.MaxFilesPerPost = int(val)
 	}
-	if val, ok := req["retroactivePostingEnabled"].(bool); ok {
-		options.Core.RetroactivePostingEnabled = val
-	}
-	
+
 	// Update feature settings
 	if val, ok := req["activityEnabled"].(bool); ok {
 		options.Features.Activity.Enabled = val
 	}
 	if val, ok := req["fileStatsEnabled"].(bool); ok {
 		options.Features.DetailedStats.Enabled = val
+	}
+	if val, ok := req["retroactivePostingEnabled"].(bool); ok {
+		options.Features.RetroactivePosting.Enabled = val
+	}
+	if val, ok := req["retroactivePostingTimeFormat"].(string); ok {
+		// Validate time format
+		if val == "12h" || val == "24h" {
+			options.Features.RetroactivePosting.TimeFormat = val
+		}
 	}
 	
 	// Validate settings
@@ -83,12 +90,13 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	
 	// Return in frontend format
 	response := map[string]interface{}{
-		"maxFileSizeMB":             options.Core.MaxFileSizeMB,
-		"maxContentLength":          options.Core.MaxContentLength,
-		"maxFilesPerPost":           options.Core.MaxFilesPerPost,
-		"retroactivePostingEnabled": options.Core.RetroactivePostingEnabled,
-		"activityEnabled":           options.Features.Activity.Enabled,
-		"fileStatsEnabled":          options.Features.DetailedStats.Enabled,
+		"maxFileSizeMB":                    options.Core.MaxFileSizeMB,
+		"maxContentLength":                 options.Core.MaxContentLength,
+		"maxFilesPerPost":                  options.Core.MaxFilesPerPost,
+		"retroactivePostingEnabled":        options.Features.RetroactivePosting.Enabled,
+		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
+		"activityEnabled":                  options.Features.Activity.Enabled,
+		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
 	}
 	
 	w.Header().Set("Content-Type", "application/json")

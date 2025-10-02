@@ -41,7 +41,8 @@ const DEFAULT_SETTINGS = {
     maxFilesPerPost: 20,
     activityEnabled: true,
     fileStatsEnabled: true,
-    retroactivePostingEnabled: false
+    retroactivePostingEnabled: false,
+    retroactivePostingTimeFormat: '24h'
 };
 
 // Validation Limits

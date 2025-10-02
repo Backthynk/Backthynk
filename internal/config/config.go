@@ -33,10 +33,9 @@ type ServiceConfig struct {
 
 type OptionsConfig struct {
 	Core struct {
-		MaxContentLength          int  `json:"maxContentLength"`
-		MaxFileSizeMB             int  `json:"maxFileSizeMB"`
-		MaxFilesPerPost           int  `json:"maxFilesPerPost"`
-		RetroactivePostingEnabled bool `json:"retroactivePostingEnabled"`
+		MaxContentLength int `json:"maxContentLength"`
+		MaxFileSizeMB    int `json:"maxFileSizeMB"`
+		MaxFilesPerPost  int `json:"maxFilesPerPost"`
 	} `json:"core"`
 	Features struct {
 		Activity struct {
@@ -44,8 +43,12 @@ type OptionsConfig struct {
 			PeriodMonths int  `json:"periodMonths"`
 		} `json:"activity"`
 		DetailedStats struct {
-			Enabled        bool `json:"enabled"`
+			Enabled bool `json:"enabled"`
 		} `json:"detailedStats"`
+		RetroactivePosting struct {
+			Enabled    bool   `json:"enabled"`
+			TimeFormat string `json:"timeFormat"`
+		} `json:"retroactivePosting"`
 	} `json:"features"`
 }
 

@@ -9,6 +9,15 @@ function initializeSettings() {
     document.getElementById('cancel-settings-btn').addEventListener('click', cancelSettings);
     document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
     document.getElementById('reset-settings-btn').addEventListener('click', resetToDefaults);
+    document.getElementById('retroactivePostingEnabled').addEventListener('change', toggleRetroactiveTimeFormatVisibility);
+}
+
+function toggleRetroactiveTimeFormatVisibility() {
+    const enabled = document.getElementById('retroactivePostingEnabled').checked;
+    const timeFormatContainer = document.getElementById('retroactivePostingTimeFormatContainer');
+    if (timeFormatContainer) {
+        timeFormatContainer.style.display = enabled ? 'block' : 'none';
+    }
 }
 
 async function showSettingsPageEvent() {
@@ -52,6 +61,13 @@ function populateSettingsForm() {
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
+
+    // Set time format
+    const timeFormat = currentSettings.retroactivePostingTimeFormat || window.AppConstants.DEFAULT_SETTINGS.retroactivePostingTimeFormat;
+    document.getElementById('retroactivePostingTimeFormat').value = timeFormat;
+
+    // Toggle time format visibility based on retroactive posting enabled state
+    toggleRetroactiveTimeFormatVisibility();
 }
 
 function getSettingsFromForm() {
@@ -61,7 +77,8 @@ function getSettingsFromForm() {
         maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
         activityEnabled: document.getElementById('activityEnabled').checked,
         fileStatsEnabled: document.getElementById('fileStatsEnabled').checked,
-        retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked
+        retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked,
+        retroactivePostingTimeFormat: document.getElementById('retroactivePostingTimeFormat').value
     };
 }
 

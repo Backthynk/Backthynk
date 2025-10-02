@@ -78,15 +78,13 @@ func setupConcurrentTest() (*concurrentTestSetup, error) {
 	// Setup test options
 	options := &config.OptionsConfig{
 		Core: struct {
-			MaxContentLength          int  `json:"maxContentLength"`
-			MaxFileSizeMB             int  `json:"maxFileSizeMB"`
-			MaxFilesPerPost           int  `json:"maxFilesPerPost"`
-			RetroactivePostingEnabled bool `json:"retroactivePostingEnabled"`
+			MaxContentLength int `json:"maxContentLength"`
+			MaxFileSizeMB    int `json:"maxFileSizeMB"`
+			MaxFilesPerPost  int `json:"maxFilesPerPost"`
 		}{
-			MaxContentLength:          1000,
-			MaxFileSizeMB:             10,
-			MaxFilesPerPost:           5,
-			RetroactivePostingEnabled: true,
+			MaxContentLength: 1000,
+			MaxFileSizeMB:    10,
+			MaxFilesPerPost:  5,
 		},
 		Features: struct {
 			Activity struct {
@@ -94,8 +92,12 @@ func setupConcurrentTest() (*concurrentTestSetup, error) {
 				PeriodMonths int  `json:"periodMonths"`
 			} `json:"activity"`
 			DetailedStats struct {
-				Enabled        bool `json:"enabled"`
+				Enabled bool `json:"enabled"`
 			} `json:"detailedStats"`
+			RetroactivePosting struct {
+				Enabled    bool   `json:"enabled"`
+				TimeFormat string `json:"timeFormat"`
+			} `json:"retroactivePosting"`
 		}{
 			Activity: struct {
 				Enabled      bool `json:"enabled"`
@@ -105,9 +107,16 @@ func setupConcurrentTest() (*concurrentTestSetup, error) {
 				PeriodMonths: 4,
 			},
 			DetailedStats: struct {
-				Enabled        bool `json:"enabled"`
+				Enabled bool `json:"enabled"`
 			}{
 				Enabled: true,
+			},
+			RetroactivePosting: struct {
+				Enabled    bool   `json:"enabled"`
+				TimeFormat string `json:"timeFormat"`
+			}{
+				Enabled:    true,
+				TimeFormat: "24h",
 			},
 		},
 	}

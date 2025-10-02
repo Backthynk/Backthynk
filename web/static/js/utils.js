@@ -57,6 +57,64 @@ function formatDateTimeMMDDYY(timestamp) {
     return `${month}/${day}/${year} ${hours}:${minutes}:${seconds}`;
 }
 
+// Parse date/time in 12h format (MM/DD/YYYY HH:MM AM/PM)
+function parseDateTime12h(dateTimeString) {
+    try {
+        // Expected format: MM/DD/YYYY HH:MM AM/PM
+        const parts = dateTimeString.trim().split(' ');
+        if (parts.length !== 3) return null;
+
+        const dateParts = parts[0].split('/');
+        if (dateParts.length !== 3) return null;
+
+        const timeParts = parts[1].split(':');
+        if (timeParts.length !== 2) return null;
+
+        const month = parseInt(dateParts[0], 10) - 1; // 0-indexed
+        const day = parseInt(dateParts[1], 10);
+        const year = parseInt(dateParts[2], 10);
+        let hours = parseInt(timeParts[0], 10);
+        const minutes = parseInt(timeParts[1], 10);
+        const ampm = parts[2].toUpperCase();
+
+        // Convert to 24h format
+        if (ampm === 'PM' && hours !== 12) {
+            hours += 12;
+        } else if (ampm === 'AM' && hours === 12) {
+            hours = 0;
+        }
+
+        return new Date(year, month, day, hours, minutes);
+    } catch (e) {
+        return null;
+    }
+}
+
+// Parse date/time in 24h format (DD/MM/YYYY HH:MM)
+function parseDateTime24h(dateTimeString) {
+    try {
+        // Expected format: DD/MM/YYYY HH:MM
+        const parts = dateTimeString.trim().split(' ');
+        if (parts.length !== 2) return null;
+
+        const dateParts = parts[0].split('/');
+        if (dateParts.length !== 3) return null;
+
+        const timeParts = parts[1].split(':');
+        if (timeParts.length !== 2) return null;
+
+        const day = parseInt(dateParts[0], 10);
+        const month = parseInt(dateParts[1], 10) - 1; // 0-indexed
+        const year = parseInt(dateParts[2], 10);
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = parseInt(timeParts[1], 10);
+
+        return new Date(year, month, day, hours, minutes);
+    } catch (e) {
+        return null;
+    }
+}
+
 function showError(message) {
     if (window.showError && window.showError !== showError) {
         window.showError(message);

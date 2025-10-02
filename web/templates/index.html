@@ -261,6 +261,18 @@
                                 </label>
                             </div>
                         </div>
+
+                        <div id="retroactivePostingTimeFormatContainer" style="display: none;">
+                            <label for="retroactivePostingTimeFormat" class="text-sm font-medium text-gray-700">
+                                Time Format
+                            </label>
+                            <select id="retroactivePostingTimeFormat"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="24h">DD/MM/YYYY HH:MM (24h format)</option>
+                                <option value="12h">MM/DD/YYYY HH:MM AM/PM (12h format)</option>
+                            </select>
+                            <p class="text-sm text-gray-500 mt-1">Choose the date and time format for entering custom post timestamps</p>
+                        </div>
                     </div>
 
                     <!-- Performance Settings -->
@@ -655,7 +667,7 @@
                         </div>
                         <p class="text-xs text-gray-500">Set a specific date and time for this post. This allows you to backdate posts or schedule them for a specific moment.</p>
                         <div class="flex items-center space-x-3">
-                            <input type="datetime-local" id="modal-post-datetime" class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Select date and time">
+                            <input type="text" id="modal-post-datetime" class="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter date and time">
                             <button type="button" id="modal-set-current-time" class="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
                                 <i class="fas fa-sync text-xs mr-1"></i>
                                 Now

@@ -66,7 +66,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	
 	// Validate custom timestamp if provided
 	if req.CustomTimestamp != nil {
-		if !h.options.Core.RetroactivePostingEnabled {
+		if !h.options.Features.RetroactivePosting.Enabled {
 			http.Error(w, "Retroactive posting is disabled", http.StatusBadRequest)
 			return
 		}

@@ -393,7 +393,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const userChangedDate = dateTimeInput.dataset.originalValue !== dateTimeInput.value;
 
                 if (userChangedDate) {
-                    const customDate = new Date(dateTimeInput.value);
+                    const timeFormat = dateTimeInput.dataset.timeFormat || '24h';
+                    let customDate;
+
+                    if (timeFormat === '12h') {
+                        // Parse MM/DD/YYYY HH:MM AM/PM format
+                        customDate = parseDateTime12h(dateTimeInput.value);
+                    } else {
+                        // Parse DD/MM/YYYY HH:MM format
+                        customDate = parseDateTime24h(dateTimeInput.value);
+                    }
+
+                    if (!customDate || isNaN(customDate.getTime())) {
+                        showError('Invalid date format');
+                        return;
+                    }
+
                     const minDate = new Date(window.AppConstants.MIN_RETROACTIVE_POST_TIMESTAMP);
                     const now = new Date();
 
@@ -523,14 +538,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalSetCurrentTimeBtn = document.getElementById('modal-set-current-time');
     if (modalSetCurrentTimeBtn) {
         modalSetCurrentTimeBtn.addEventListener('click', function() {
+            const dateTimeInput = document.getElementById('modal-post-datetime');
+            const timeFormat = dateTimeInput.dataset.timeFormat || '24h';
             const now = new Date();
-            // Format to datetime-local format (YYYY-MM-DDTHH:mm)
-            const formatted = now.getFullYear() + '-' +
-                              String(now.getMonth() + 1).padStart(2, '0') + '-' +
-                              String(now.getDate()).padStart(2, '0') + 'T' +
-                              String(now.getHours()).padStart(2, '0') + ':' +
-                              String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('modal-post-datetime').value = formatted;
+            let formatted;
+
+            if (timeFormat === '12h') {
+                // Format: MM/DD/YYYY HH:MM AM/PM
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const year = now.getFullYear();
+                let hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12; // Convert to 12-hour format
+
+                formatted = `${month}/${day}/${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+            } else {
+                // Format: DD/MM/YYYY HH:MM (24h)
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+
+                formatted = `${day}/${month}/${year} ${hours}:${minutes}`;
+            }
+
+            dateTimeInput.value = formatted;
+            dateTimeInput.dataset.originalValue = formatted;
         });
     }
 
