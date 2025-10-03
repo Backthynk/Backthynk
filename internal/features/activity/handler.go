@@ -46,7 +46,14 @@ func (h *Handler) GetActivityPeriod(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	periodMonths := 4 // Default
+	// Get period months from options config, fallback to query param or default
+	periodMonths := 4 // Default fallback
+	options := config.GetOptionsConfig()
+	if options != nil && options.Features.Activity.PeriodMonths > 0 {
+		periodMonths = options.Features.Activity.PeriodMonths
+	}
+
+	// Allow override via query parameter
 	if monthsStr := query.Get("period_months"); monthsStr != "" {
 		if m, err := strconv.Atoi(monthsStr); err == nil && m > 0 {
 			periodMonths = m

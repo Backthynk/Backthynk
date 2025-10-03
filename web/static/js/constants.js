@@ -114,7 +114,6 @@ const UI_CONFIG = {
     postsVirtualScrollHeight: 250,
 
     // Activity Tracker
-    activityPeriodMonths: 4,
     heatmapSquaresPerRow: 10,
     currentActivityPeriod: 0,
 

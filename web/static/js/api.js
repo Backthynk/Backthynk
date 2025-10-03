@@ -311,10 +311,13 @@ async function uploadFile(postId, file) {
 
 async function fetchActivityData(categoryId, recursive, period) {
     try {
+        const settings = window.currentSettings || await loadAppSettings();
+        const periodMonths = settings.activityPeriodMonths || 4;
+
         const params = new URLSearchParams({
             recursive: recursive.toString(),
             period: period.toString(),
-            period_months: window.AppConstants.UI_CONFIG.activityPeriodMonths.toString()
+            period_months: periodMonths.toString()
         });
 
         const response = await fetch(`/api/activity/${categoryId}?${params}`, {

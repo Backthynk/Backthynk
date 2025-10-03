@@ -152,3 +152,8 @@ func IsProduction() bool {
 func SetServiceConfigForTest(config *ServiceConfig) {
 	serviceConfig = config
 }
+
+// SetOptionsConfigForTest sets the options config for testing purposes
+func SetOptionsConfigForTest(config *OptionsConfig) {
+	optionsConfig = config
+}

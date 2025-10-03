@@ -18,10 +18,11 @@ type Service struct {
 }
 
 type CategoryActivity struct {
-	Days      map[string]int // YYYY-MM-DD -> count
-	Recursive map[string]int // Recursive activity
-	Stats     ActivityStats
-	mu        sync.RWMutex
+	Days       map[string]int     // YYYY-MM-DD -> count
+	Recursive  map[string]int     // Recursive activity
+	Timestamps map[string][]int64 // YYYY-MM-DD -> list of timestamps for that day
+	Stats      ActivityStats
+	mu         sync.RWMutex
 }
 
 type ActivityStats struct {
@@ -81,18 +82,20 @@ func (s *Service) refreshCategory(categoryID int, posts []storage.PostData) {
 	if !s.enabled {
 		return
 	}
-	
+
 	activity := &CategoryActivity{
-		Days:      make(map[string]int),
-		Recursive: make(map[string]int),
-		Stats:     ActivityStats{},
+		Days:       make(map[string]int),
+		Recursive:  make(map[string]int),
+		Timestamps: make(map[string][]int64),
+		Stats:      ActivityStats{},
 	}
-	
+
 	for _, post := range posts {
 		date := time.Unix(post.Created/1000, 0).Format("2006-01-02")
 		activity.Days[date]++
+		activity.Timestamps[date] = append(activity.Timestamps[date], post.Created)
 		activity.Stats.TotalPosts++
-		
+
 		if activity.Stats.FirstPostTime == 0 || post.Created < activity.Stats.FirstPostTime {
 			activity.Stats.FirstPostTime = post.Created
 		}
@@ -100,16 +103,16 @@ func (s *Service) refreshCategory(categoryID int, posts []storage.PostData) {
 			activity.Stats.LastPostTime = post.Created
 		}
 	}
-	
+
 	activity.Stats.TotalActiveDays = len(activity.Days)
-	
+
 	// Initialize recursive with direct data
 	for date, count := range activity.Days {
 		activity.Recursive[date] = count
 	}
 	activity.Stats.RecursivePosts = activity.Stats.TotalPosts
 	activity.Stats.RecursiveActiveDays = activity.Stats.TotalActiveDays
-	
+
 	s.mu.Lock()
 	s.activity[categoryID] = activity
 	s.mu.Unlock()
@@ -126,9 +129,10 @@ func (s *Service) calculateRecursiveActivity(categoryID int) {
 	
 	if !ok {
 		activity = &CategoryActivity{
-			Days:      make(map[string]int),
-			Recursive: make(map[string]int),
-			Stats:     ActivityStats{},
+			Days:       make(map[string]int),
+			Recursive:  make(map[string]int),
+			Timestamps: make(map[string][]int64),
+			Stats:      ActivityStats{},
 		}
 		s.mu.Lock()
 		s.activity[categoryID] = activity
@@ -176,19 +180,20 @@ func (s *Service) calculateRecursiveActivity(categoryID int) {
 
 func (s *Service) updateActivity(categoryID int, timestamp int64, delta int) {
 	date := time.Unix(timestamp/1000, 0).Format("2006-01-02")
-	
+
 	s.mu.Lock()
 	activity, ok := s.activity[categoryID]
 	if !ok {
 		activity = &CategoryActivity{
-			Days:      make(map[string]int),
-			Recursive: make(map[string]int),
-			Stats:     ActivityStats{},
+			Days:       make(map[string]int),
+			Recursive:  make(map[string]int),
+			Timestamps: make(map[string][]int64),
+			Stats:      ActivityStats{},
 		}
 		s.activity[categoryID] = activity
 	}
 	s.mu.Unlock()
-	
+
 	activity.mu.Lock()
 
 	// Update direct activity
@@ -197,8 +202,38 @@ func (s *Service) updateActivity(categoryID int, timestamp int64, delta int) {
 
 	if newCount <= 0 {
 		delete(activity.Days, date)
+		delete(activity.Timestamps, date)
 	} else {
 		activity.Days[date] = newCount
+	}
+
+	// Update timestamp tracking
+	if delta > 0 {
+		// Adding posts
+		for i := 0; i < delta; i++ {
+			activity.Timestamps[date] = append(activity.Timestamps[date], timestamp)
+		}
+	} else if delta < 0 {
+		// Removing posts
+		timestamps := activity.Timestamps[date]
+		// Remove matching timestamps (most recent occurrences)
+		toRemove := -delta
+		for i := len(timestamps) - 1; i >= 0 && toRemove > 0; i-- {
+			if timestamps[i] == timestamp {
+				timestamps = append(timestamps[:i], timestamps[i+1:]...)
+				toRemove--
+			}
+		}
+		// If no exact matches found, remove the last ones
+		for toRemove > 0 && len(timestamps) > 0 {
+			timestamps = timestamps[:len(timestamps)-1]
+			toRemove--
+		}
+		if len(timestamps) > 0 {
+			activity.Timestamps[date] = timestamps
+		} else {
+			delete(activity.Timestamps, date)
+		}
 	}
 
 	// Update stats
@@ -208,6 +243,21 @@ func (s *Service) updateActivity(categoryID int, timestamp int64, delta int) {
 		activity.Stats.TotalActiveDays++
 	} else if oldCount > 0 && newCount <= 0 {
 		activity.Stats.TotalActiveDays--
+	}
+
+	// Recalculate FirstPostTime and LastPostTime from all timestamps
+	activity.Stats.FirstPostTime = 0
+	activity.Stats.LastPostTime = 0
+
+	for _, timestamps := range activity.Timestamps {
+		for _, ts := range timestamps {
+			if activity.Stats.FirstPostTime == 0 || ts < activity.Stats.FirstPostTime {
+				activity.Stats.FirstPostTime = ts
+			}
+			if ts > activity.Stats.LastPostTime {
+				activity.Stats.LastPostTime = ts
+			}
+		}
 	}
 
 	activity.mu.Unlock()
@@ -263,9 +313,10 @@ func (s *Service) updateRecursiveActivity(categoryID int, date string, delta int
 		if !ok {
 			// Create activity record for parent if it doesn't exist
 			parentActivity = &CategoryActivity{
-				Days:      make(map[string]int),
-				Recursive: make(map[string]int),
-				Stats:     ActivityStats{},
+				Days:       make(map[string]int),
+				Recursive:  make(map[string]int),
+				Timestamps: make(map[string][]int64),
+				Stats:      ActivityStats{},
 			}
 			s.activity[parentID] = parentActivity
 		}

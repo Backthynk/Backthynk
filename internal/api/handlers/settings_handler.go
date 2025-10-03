@@ -25,6 +25,7 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		"retroactivePostingEnabled":        options.Features.RetroactivePosting.Enabled,
 		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":                  options.Features.Activity.Enabled,
+		"activityPeriodMonths":             options.Features.Activity.PeriodMonths,
 		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
 		"markdownEnabled":                  options.Features.Markdown.Enabled,
 		"fileUploadEnabled":                options.Features.FileUpload.Enabled,
@@ -63,6 +64,9 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	// Update feature settings
 	if val, ok := req["activityEnabled"].(bool); ok {
 		options.Features.Activity.Enabled = val
+	}
+	if val, ok := req["activityPeriodMonths"].(float64); ok {
+		options.Features.Activity.PeriodMonths = int(val)
 	}
 	if val, ok := req["fileStatsEnabled"].(bool); ok {
 		options.Features.DetailedStats.Enabled = val
@@ -127,6 +131,7 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 		"retroactivePostingEnabled":        options.Features.RetroactivePosting.Enabled,
 		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":                  options.Features.Activity.Enabled,
+		"activityPeriodMonths":             options.Features.Activity.PeriodMonths,
 		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
 		"markdownEnabled":                  options.Features.Markdown.Enabled,
 		"fileUploadEnabled":                options.Features.FileUpload.Enabled,

@@ -52,9 +52,13 @@ async function generateActivityHeatmap() {
     } catch (error) {
         console.error('Failed to generate activity heatmap:', error);
         // Fallback to empty heatmap with valid dates
+        const settings = window.currentSettings || await loadAppSettings();
+        const periodMonths = settings.activityPeriodMonths || 4;
+        const periodDays = periodMonths * 30;
+
         const now = new Date();
         const endDate = now.toISOString().split('T')[0];
-        const startDate = new Date(now.getTime() - (120 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]; // 120 days ago
+        const startDate = new Date(now.getTime() - (periodDays * 24 * 60 * 60 * 1000)).toISOString().split('T')[0];
 
         const fallbackData = {
             days: [],
@@ -71,7 +75,7 @@ async function generateActivityHeatmap() {
 }
 
 // Fetch activity data from efficient backend API
-async function fetchActivityPeriod(categoryId, recursive = false, period = 0, periodMonths = 4) {
+async function fetchActivityPeriod(categoryId, recursive = false, period = 0) {
     return await fetchActivityData(categoryId, recursive, period);
 }
 
@@ -357,6 +361,9 @@ async function changeActivityPeriod(direction) {
     await generateActivityHeatmap();
 }
 
+// Make function globally accessible for onclick handlers
+window.changeActivityPeriod = changeActivityPeriod;
+
 
 
 // Get activity intensity level (same as before but using constants)
@@ -414,5 +421,3 @@ function addHeatmapTooltips() {
         });
     });
 }
-
-

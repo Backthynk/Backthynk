@@ -411,6 +411,9 @@ function scrollModalAttachments(direction) {
     });
 }
 
+// Make function globally accessible for onclick handlers
+window.scrollModalAttachments = scrollModalAttachments;
+
 // Function to open modal image preview using the existing image viewer
 function openModalImagePreview(filename, url) {
     // Set up single image for viewer
