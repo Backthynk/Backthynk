@@ -117,7 +117,9 @@ func (l *Logger) setupZapLogger() error {
 	warningFileCore := zapcore.NewCore(
 		encoder,
 		zapcore.AddSync(l.warningFile),
-		zapcore.WarnLevel,
+		zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return lvl == zapcore.WarnLevel
+		}),
 	)
 	cores = append(cores, warningFileCore)
 
@@ -125,7 +127,9 @@ func (l *Logger) setupZapLogger() error {
 		warningConsoleCore := zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(os.Stdout),
-			zapcore.WarnLevel,
+			zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+				return lvl == zapcore.WarnLevel
+			}),
 		)
 		cores = append(cores, warningConsoleCore)
 	}
@@ -134,7 +138,9 @@ func (l *Logger) setupZapLogger() error {
 	errorFileCore := zapcore.NewCore(
 		encoder,
 		zapcore.AddSync(l.errorFile),
-		zapcore.ErrorLevel,
+		zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+			return lvl >= zapcore.ErrorLevel
+		}),
 	)
 	cores = append(cores, errorFileCore)
 
@@ -142,7 +148,9 @@ func (l *Logger) setupZapLogger() error {
 		errorConsoleCore := zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(os.Stderr),
-			zapcore.ErrorLevel,
+			zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
+				return lvl >= zapcore.ErrorLevel
+			}),
 		)
 		cores = append(cores, errorConsoleCore)
 	}
