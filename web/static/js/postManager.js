@@ -206,7 +206,12 @@ function createPostElement(post) {
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
                 ${clickableCategoryBreadcrumb}
-                <span class="text-sm text-gray-600 font-mono">${formatDateTimeMMDDYY(post.created)}</span>
+                <span class="relative group/time text-sm text-gray-600 font-mono cursor-default">
+                    ${formatRelativeDate(post.created)}
+                    <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover/time:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                        ${formatFullDateTime(post.created)}
+                    </div>
+                </span>
             </div>
             <div class="relative opacity-0 group-hover:opacity-100 transition-all">
                 <button onclick="togglePostActionMenu(${post.id})" class="text-gray-400 hover:text-gray-600 p-1 rounded transition-all">
@@ -636,7 +641,7 @@ async function updateCategoryStatsDisplay(stats) {
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
             </p>
             ${currentCategory.description && currentCategory.description.trim() ? `
-                <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-xs">
+                <div class="absolute left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-md">
                     ${currentCategory.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
                 </div>
             ` : ''}

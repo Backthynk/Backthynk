@@ -33,6 +33,7 @@ func NewRouter(
 	uploadHandler := handlers.NewUploadHandler(fileService, opts)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
+	logsHandler := handlers.NewLogsHandler()
 	templateHandler := handlers.NewTemplateHandler(categoryService, opts, serviceConfig)
 	
 	// API routes
@@ -61,6 +62,9 @@ func NewRouter(
 	// Settings
 	api.HandleFunc("/settings", settingsHandler.GetSettings).Methods("GET")
 	api.HandleFunc("/settings", settingsHandler.UpdateSettings).Methods("PUT")
+
+	// Logs
+	api.HandleFunc("/logs", logsHandler.GetLogs).Methods("GET")
 	
 	// Feature routes (registered only if enabled)
 	if detailedStats != nil {

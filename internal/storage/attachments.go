@@ -1,8 +1,11 @@
 package storage
 
 import (
+	"backthynk/internal/core/logger"
 	"backthynk/internal/core/models"
 	"fmt"
+
+	"go.uber.org/zap"
 )
 
 func (db *DB) CreateAttachment(postID int, filename, filePath, fileType string, fileSize int64) (*models.Attachment, error) {
@@ -11,14 +14,16 @@ func (db *DB) CreateAttachment(postID int, filename, filePath, fileType string, 
 		postID, filename, filePath, fileType, fileSize,
 	)
 	if err != nil {
+		logger.Error("Failed to create attachment", zap.Int("post_id", postID), zap.String("filename", filename), zap.Error(err))
 		return nil, fmt.Errorf("failed to create attachment: %w", err)
 	}
-	
+
 	id, err := result.LastInsertId()
 	if err != nil {
+		logger.Error("Failed to get last insert ID after attachment creation", zap.Int("post_id", postID), zap.String("filename", filename), zap.Error(err))
 		return nil, fmt.Errorf("failed to get last insert id: %w", err)
 	}
-	
+
 	return &models.Attachment{
 		ID:       int(id),
 		PostID:   postID,
@@ -35,20 +40,22 @@ func (db *DB) GetAttachmentsByPost(postID int) ([]models.Attachment, error) {
 		postID,
 	)
 	if err != nil {
+		logger.Error("Failed to query attachments", zap.Int("post_id", postID), zap.Error(err))
 		return nil, fmt.Errorf("failed to query attachments: %w", err)
 	}
 	defer rows.Close()
-	
+
 	var attachments []models.Attachment
 	for rows.Next() {
 		var attachment models.Attachment
 		err := rows.Scan(&attachment.ID, &attachment.PostID, &attachment.Filename, &attachment.FilePath, &attachment.FileType, &attachment.FileSize)
 		if err != nil {
+			logger.Error("Failed to scan attachment", zap.Int("post_id", postID), zap.Error(err))
 			return nil, fmt.Errorf("failed to scan attachment: %w", err)
 		}
 		attachments = append(attachments, attachment)
 	}
-	
+
 	return attachments, nil
 }
 

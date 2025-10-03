@@ -3,8 +3,8 @@ package activity
 import (
 	"backthynk/internal/core/cache"
 	"backthynk/internal/core/events"
+	"backthynk/internal/core/logger"
 	"backthynk/internal/storage"
-	"log"
 	"sync"
 	"time"
 )
@@ -48,9 +48,9 @@ func (s *Service) Initialize() error {
 	if !s.enabled {
 		return nil
 	}
-	
-	log.Println("Initializing activity cache...")
-	
+
+	logger.Info("Initializing activity cache")
+
 	// Load all posts for activity calculation
 	posts, err := s.db.GetAllPostsHeader()
 	if err != nil {
@@ -73,8 +73,8 @@ func (s *Service) Initialize() error {
 	for _, cat := range categories {
 		s.calculateRecursiveActivity(cat.ID)
 	}
-	
-	log.Println("Activity cache initialized")
+
+	logger.Info("Activity cache initialized")
 	return nil
 }
 

@@ -1,8 +1,10 @@
 package events
 
 import (
-	"log"
+	"backthynk/internal/core/logger"
 	"sync"
+
+	"go.uber.org/zap"
 )
 
 type Handler func(event Event) error
@@ -54,11 +56,11 @@ func (d *Dispatcher) Dispatch(event Event) {
 func (d *Dispatcher) executeHandler(handler Handler, event Event) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("Warning: event handler panicked for %s: %v", event.Type, r)
+			logger.Warning("Event handler panicked", zap.String("event_type", string(event.Type)), zap.Any("panic", r))
 		}
 	}()
 
 	if err := handler(event); err != nil {
-		log.Printf("Warning: event handler failed for %s: %v", event.Type, err)
+		logger.Warning("Event handler failed", zap.String("event_type", string(event.Type)), zap.Error(err))
 	}
 }

@@ -28,8 +28,8 @@ const (
 	 to set for the amount of file you can add to a post, when enabled.
 	 ::-> Don't worry you don't really need to touch that.
 	*/
-	MinFilesPerPost      = 1 
-	
+	MinFilesPerPost      = 1
+
 	MaxFilesPerPost      = 50
 
 	MinTitleLength       = 1 //page title
@@ -51,6 +51,9 @@ const (
 	RouteStatic   = "static"
 	RouteUploads  = "uploads"
 	RouteSettings = "settings"
+
+	// Logging
+	MaxLogFileSizeKB = 1024 // 1MB
 )
 
 type ServiceConfig struct {
@@ -63,6 +66,10 @@ type ServiceConfig struct {
 		UploadsSubdir    string `json:"uploadsSubdir"`
 		StoragePath      string `json:"storagePath"`
 	} `json:"files"`
+	Logging struct {
+		DisplayLogs       bool `json:"displayLogs"`
+		EnableRequestLogs bool `json:"enableRequestLogs"`
+	} `json:"logging"`
 }
 
 type OptionsConfig struct {

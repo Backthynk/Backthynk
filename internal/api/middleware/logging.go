@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log"
+	"backthynk/internal/core/logger"
 	"net/http"
 	"time"
 )
@@ -26,21 +26,18 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 func Logging(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		wrapped := &responseWriter{
 			ResponseWriter: w,
 			status:         http.StatusOK,
 		}
-		
+
 		next.ServeHTTP(wrapped, r)
-		
-		log.Printf(
-			"%s %s %d %d %v",
-			r.Method,
-			r.RequestURI,
-			wrapped.status,
-			wrapped.size,
-			time.Since(start),
-		)
+
+		// Use the logger system if available
+		l := logger.GetLogger()
+		if l != nil {
+			l.LogRequest(r.Method, r.RequestURI, wrapped.status, wrapped.size, time.Since(start))
+		}
 	})
 }

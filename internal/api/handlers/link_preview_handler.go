@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"backthynk/internal/config"
+	"backthynk/internal/core/logger"
 	"backthynk/internal/core/services"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	"golang.org/x/net/html"
 )
 
@@ -90,31 +92,36 @@ func extractMetadata(urlStr string) (*LinkPreviewResponse, error) {
 	client := &http.Client{
 		Timeout: config.LinkPreviewHTTPTimeout,
 	}
-	
+
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
+		logger.Error("Failed to create link preview request", zap.String("url", urlStr), zap.Error(err))
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (compatible; LinkPreviewBot/1.0)")
-	
+
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.Error("Failed to fetch URL for link preview", zap.String("url", urlStr), zap.Error(err))
 		return nil, fmt.Errorf("failed to fetch URL: %w", err)
 	}
 	defer resp.Body.Close()
-	
+
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "text/html") {
+		logger.Warning("URL is not HTML content", zap.String("url", urlStr), zap.String("content_type", contentType))
 		return nil, fmt.Errorf(config.ErrURLNotHTML)
 	}
-	
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
+		logger.Error("Failed to read response body for link preview", zap.String("url", urlStr), zap.Error(err))
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
-	
+
 	doc, err := html.Parse(strings.NewReader(string(body)))
 	if err != nil {
+		logger.Error("Failed to parse HTML for link preview", zap.String("url", urlStr), zap.Error(err))
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
 	

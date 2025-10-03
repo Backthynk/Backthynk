@@ -3,6 +3,7 @@ package services
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/core/events"
+	"backthynk/internal/core/logger"
 	"backthynk/internal/core/models"
 	"backthynk/internal/storage"
 	"encoding/json"
@@ -12,6 +13,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 type FileService struct {
@@ -34,35 +37,39 @@ func (s *FileService) UploadFile(postID int, file io.Reader, filename string, fi
 	timestamp := time.Now().Unix()
 	storedFilename := fmt.Sprintf("%d_%s", timestamp, filename)
 	filePath := filepath.Join(s.uploadPath, storedFilename)
-	
+
 	// Ensure upload directory exists
 	if err := os.MkdirAll(s.uploadPath, config.DirectoryPermissions); err != nil {
+		logger.Error("Failed to create upload directory", zap.String("path", s.uploadPath), zap.Error(err))
 		return nil, fmt.Errorf("failed to create upload directory: %w", err)
 	}
-	
+
 	// Save file
 	dst, err := os.Create(filePath)
 	if err != nil {
+		logger.Error("Failed to create file for upload", zap.String("path", filePath), zap.String("filename", filename), zap.Error(err))
 		return nil, fmt.Errorf("failed to create file: %w", err)
 	}
 	defer dst.Close()
-	
+
 	written, err := io.Copy(dst, file)
 	if err != nil {
 		os.Remove(filePath)
+		logger.Error("Failed to save file", zap.String("filename", filename), zap.Int("post_id", postID), zap.Error(err))
 		return nil, fmt.Errorf("failed to save file: %w", err)
 	}
-	
+
 	// Detect file type
 	fileType := mime.TypeByExtension(filepath.Ext(filename))
 	if fileType == "" {
 		fileType = "application/octet-stream"
 	}
-	
+
 	// Save to database
 	attachment, err := s.db.CreateAttachment(postID, filename, storedFilename, fileType, written)
 	if err != nil {
 		os.Remove(filePath)
+		logger.Error("Failed to save attachment info to database", zap.String("filename", filename), zap.Int("post_id", postID), zap.Error(err))
 		return nil, fmt.Errorf("failed to save attachment info: %w", err)
 	}
 	
@@ -126,11 +133,13 @@ func (s *FileService) SaveLinkPreview(postID int, preview interface{}) error {
 			// Use JSON marshaling/unmarshaling to convert
 			jsonData, err := json.Marshal(preview)
 			if err != nil {
+				logger.Error("Failed to marshal link preview", zap.Int("post_id", postID), zap.Error(err))
 				return fmt.Errorf("failed to marshal preview: %w", err)
 			}
 
 			var previewMap map[string]interface{}
 			if err := json.Unmarshal(jsonData, &previewMap); err != nil {
+				logger.Error("Failed to unmarshal link preview", zap.Int("post_id", postID), zap.Error(err))
 				return fmt.Errorf("failed to unmarshal preview: %w", err)
 			}
 
@@ -144,6 +153,7 @@ func (s *FileService) SaveLinkPreview(postID int, preview interface{}) error {
 			}
 			return s.db.CreateLinkPreview(linkPreview)
 		}
+		logger.Warning("Unsupported link preview type", zap.Int("post_id", postID), zap.String("type", fmt.Sprintf("%T", preview)))
 		return fmt.Errorf("unsupported preview type: %T", preview)
 	}
 }

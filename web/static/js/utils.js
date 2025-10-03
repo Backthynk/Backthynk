@@ -29,17 +29,37 @@ function formatRelativeDate(timestamp) {
     const diffHours = Math.floor(diffMs / window.AppConstants.UI_CONFIG.hoursInMs);
     const diffMinutes = Math.floor(diffMs / window.AppConstants.UI_CONFIG.minutesInMs);
 
-    if (diffMinutes < 1) return window.AppConstants.UI_TEXT.now;
-    if (diffMinutes < 60) return `${diffMinutes}${window.AppConstants.UI_TEXT.minutesAgo}`;
-    if (diffHours < 24) return `${diffHours}${window.AppConstants.UI_TEXT.hoursAgo}`;
-    if (diffDays < window.AppConstants.UI_CONFIG.weekInDays) return `${diffDays}${window.AppConstants.UI_TEXT.daysAgo}`;
+    if (diffMinutes < 1) return 'now';
+    if (diffMinutes < 60) return `${diffMinutes}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return diffDays === 1 ? '1d' : `${diffDays}d`;
 
-    // More than a week ago
+    // More than 6 days ago - show date
     if (date.getFullYear() === now.getFullYear()) {
         return date.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, { month: 'short', day: 'numeric' });
     } else {
         return date.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, { month: 'short', day: 'numeric', year: 'numeric' });
     }
+}
+
+function formatFullDateTime(timestamp) {
+    // Format full date time for tooltip
+    const date = new Date(timestamp);
+
+    // Detect user's 12/24 hour preference from their locale
+    const testFormat = date.toLocaleTimeString(window.AppConstants.LOCALE_SETTINGS.default);
+    const is24Hour = !testFormat.match(/AM|PM/i);
+
+    const timeOptions = is24Hour
+        ? { hour: '2-digit', minute: '2-digit', hour12: false }
+        : { hour: 'numeric', minute: '2-digit', hour12: true };
+
+    const dateOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+
+    const time = date.toLocaleTimeString(window.AppConstants.LOCALE_SETTINGS.default, timeOptions);
+    const dateStr = date.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, dateOptions);
+
+    return `${time} - ${dateStr}`;
 }
 
 function formatDateTimeMMDDYY(timestamp) {

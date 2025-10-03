@@ -2,12 +2,6 @@ Todo now:
 
 1. Finish to clean the front-end code, list the last bugs and fix them.
 
-2. Ajouter footer categories en option
-
-3. Ajouter un object post dans options qui va englober :
-    - maxContentLength
-    - timeDisplay with different time display option
-    
 4. Refaire le systeme de warning/error dans des fichiers qui peuvent etre consultes via une route speciale avec limit dans l'url parameters pour obtenir les N dernieres lignes
 
 5. Ajouter un moyen simple de lancer l'application sur docker (en mode production)

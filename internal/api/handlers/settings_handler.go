@@ -2,10 +2,13 @@ package handlers
 
 import (
 	"backthynk/internal/config"
+	"backthynk/internal/core/logger"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+
+	"go.uber.org/zap"
 )
 
 type SettingsHandler struct{}
@@ -119,6 +122,7 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 
 	serviceConfig := config.GetServiceConfig()
 	if err := os.WriteFile(serviceConfig.Files.ConfigFilename, data, config.FilePermissions); err != nil {
+		logger.Error("Failed to save settings", zap.Error(err))
 		http.Error(w, fmt.Sprintf(config.ErrFmtFailedToSaveSettings, err), http.StatusInternalServerError)
 		return
 	}
@@ -146,22 +150,41 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 
 func (h *SettingsHandler) validateSettings(options *config.OptionsConfig) error {
 	if options.Features.FileUpload.MaxFileSizeMB < config.MinFileSizeMB || options.Features.FileUpload.MaxFileSizeMB > config.MaxFileSizeMB {
+		logger.Warning("Invalid max file size setting",
+			zap.Int("value", options.Features.FileUpload.MaxFileSizeMB),
+			zap.Int("min", config.MinFileSizeMB),
+			zap.Int("max", config.MaxFileSizeMB))
 		return fmt.Errorf(config.ErrValidationMaxFileSizeRange)
 	}
 
 	if options.Core.MaxContentLength < config.MinContentLength || options.Core.MaxContentLength > config.MaxContentLength {
+		logger.Warning("Invalid max content length setting",
+			zap.Int("value", options.Core.MaxContentLength),
+			zap.Int("min", config.MinContentLength),
+			zap.Int("max", config.MaxContentLength))
 		return fmt.Errorf(config.ErrValidationMaxContentLengthRange)
 	}
 
 	if options.Features.FileUpload.MaxFilesPerPost < config.MinFilesPerPost || options.Features.FileUpload.MaxFilesPerPost > config.MaxFilesPerPost {
+		logger.Warning("Invalid max files per post setting",
+			zap.Int("value", options.Features.FileUpload.MaxFilesPerPost),
+			zap.Int("min", config.MinFilesPerPost),
+			zap.Int("max", config.MaxFilesPerPost))
 		return fmt.Errorf(config.ErrValidationMaxFilesPerPostRange)
 	}
 
 	if len(options.Metadata.Title) < config.MinTitleLength || len(options.Metadata.Title) > config.MaxTitleLength {
+		logger.Warning("Invalid site title length",
+			zap.Int("length", len(options.Metadata.Title)),
+			zap.Int("min", config.MinTitleLength),
+			zap.Int("max", config.MaxTitleLength))
 		return fmt.Errorf(config.ErrValidationSiteTitleRange)
 	}
 
 	if len(options.Metadata.Description) > config.MaxDescriptionLength {
+		logger.Warning("Site description too long",
+			zap.Int("length", len(options.Metadata.Description)),
+			zap.Int("max", config.MaxDescriptionLength))
 		return fmt.Errorf(config.ErrValidationSiteDescriptionMax)
 	}
 
