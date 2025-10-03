@@ -224,7 +224,7 @@ async function showHomePage() {
     // Get site title from settings or use default
     const settings = await loadAppSettings();
     const siteTitle = settings?.siteTitle || window.AppConstants.APP_NAME;
-    document.title = `${siteTitle} - ${window.AppConstants.APP_TAGLINE}`;
+    document.title = `${siteTitle}`;
 
     // If there's a current category, deselect it to show all posts
     if (typeof currentCategory !== 'undefined' && currentCategory && currentCategory.id !== window.AppConstants?.ALL_CATEGORIES_ID) {

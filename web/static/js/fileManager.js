@@ -182,7 +182,7 @@ function createModalFilePreviewElement(id, file, type) {
                 <img src="${objectUrl}"
                      alt="${file.name}"
                      class="w-full h-full object-cover rounded-lg border hover:opacity-90 transition-opacity"
-                     onload="URL.revokeObjectURL(this.src)">
+                     onload="window.URL.revokeObjectURL(this.src)">
                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
                     <div class="absolute bottom-0 left-0 right-0 p-1">
                         <p class="text-white text-xs truncate leading-tight">${file.name}</p>
@@ -241,7 +241,7 @@ function generateFilePreview(file) {
 
     if (isImage) {
         const objectUrl = URL.createObjectURL(file);
-        return `<img src="${objectUrl}" class="w-full h-full object-cover rounded-lg border" onload="URL.revokeObjectURL(this.src)">`;
+        return `<img src="${objectUrl}" class="w-full h-full object-cover rounded-lg border" onload="window.URL.revokeObjectURL(this.src)">`;
     } else if (isPDF) {
         return `<div class="w-full h-full bg-red-50 flex flex-col items-center justify-center">
             <i class="fas fa-file-pdf text-red-500 text-lg mb-1"></i>

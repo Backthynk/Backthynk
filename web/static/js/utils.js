@@ -36,9 +36,9 @@ function formatRelativeDate(timestamp) {
 
     // More than a week ago
     if (date.getFullYear() === now.getFullYear()) {
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return date.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, { month: 'short', day: 'numeric' });
     } else {
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        return date.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, { month: 'short', day: 'numeric', year: 'numeric' });
     }
 }
 

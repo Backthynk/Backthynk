@@ -159,7 +159,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add real-time validation for category name
     document.getElementById('category-name').addEventListener('input', function(e) {
         const name = e.target.value.trim();
-        const submitBtn = document.querySelector('#category-form button[type="submit"]');
+        const submitBtn = document.querySelector('button[form="category-form"]');
+
+        if (!submitBtn) return;
 
         // Check if name is valid (letters, numbers, and single spaces only)
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
@@ -286,7 +288,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Edit category form validation and submission
     document.getElementById('edit-category-name').addEventListener('input', function(e) {
         const name = e.target.value.trim();
-        const submitBtn = document.querySelector('#edit-category-form button[type="submit"]');
+        const submitBtn = document.querySelector('button[form="edit-category-form"]');
+
+        if (!submitBtn) return;
 
         // Check if name is valid (letters, numbers, and single spaces only)
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
@@ -468,19 +472,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 insertIndex = i + 1;
             }
 
-            // Get current post count BEFORE incrementing
-            const postCount = currentCategory.recursiveMode ?
-                (currentCategory.recursive_post_count || 0) :
-                (currentCategory.post_count || 0);
+            // Determine if we should insert the post in the UI
+            // Only insert if the post belongs chronologically within the currently loaded posts
+            // OR if we have space to show more posts (haven't reached the limit)
+            const shouldInsertPost = insertIndex < currentPosts.length ||
+                                    (insertIndex === currentPosts.length && !hasMorePosts);
 
-            // Get the fetch limit to determine if we're showing all posts
-            const fetchLimit = window.AppConstants.UI_CONFIG.defaultPostsPerPage;
-
-            // Insert the post if:
-            // 1. It should appear within currently loaded posts (insertIndex < currentPosts.length), OR
-            // 2. We haven't loaded all posts yet (currentPosts.length < fetchLimit), OR
-            // 3. We have fewer posts loaded than the total count (which means we can show more)
-            if (insertIndex < currentPosts.length || currentPosts.length < fetchLimit || currentPosts.length <= postCount) {
+            if (shouldInsertPost) {
                 currentPosts.splice(insertIndex, 0, fullPost);
             }
 
@@ -673,7 +671,12 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     document.getElementById('image-viewer-modal').onclick = function(e) {
-        if (e.target === this) {
+        // Close if clicking the modal backdrop or the image container div, but not the image itself or buttons
+        const isBackdrop = e.target === this || e.target.classList.contains('absolute');
+        const isImage = e.target.id === 'viewer-image';
+        const isButton = e.target.closest('button');
+
+        if (isBackdrop && !isImage && !isButton) {
             closeImageViewer();
         }
     };

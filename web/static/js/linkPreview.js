@@ -16,24 +16,7 @@ function extractURLsFromText(text) {
 
 // Local implementation of fetchLinkPreview to avoid dependency issues
 async function fetchLinkPreviewLocal(url) {
-    try {
-        const response = await fetch('/api/link-preview', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ url })
-        });
-
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(error);
-        }
-
-        return response.json().catch(() => ({}));
-    } catch (error) {
-        throw error;
-    }
+    return await fetchLinkPreview(url);
 }
 
 // Update link preview display in the form

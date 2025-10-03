@@ -72,23 +72,7 @@ async function generateActivityHeatmap() {
 
 // Fetch activity data from efficient backend API
 async function fetchActivityPeriod(categoryId, recursive = false, period = 0, periodMonths = 4) {
-    const params = new URLSearchParams({
-        recursive: recursive.toString(),
-        period: period.toString(),
-        period_months: window.AppConstants.UI_CONFIG.activityPeriodMonths.toString()
-    });
-
-    const response = await fetch(`/api/activity/${categoryId}?${params}`, {
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
-
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return await response.json();
+    return await fetchActivityData(categoryId, recursive, period);
 }
 
 // Update category breadcrumb display
@@ -135,9 +119,11 @@ function generateHeatmapFromCache(activityData) {
 
     // Convert activity days array to map for O(1) lookups
     const activityMap = {};
-    activityData.days.forEach(day => {
-        activityMap[day.date] = day.count;
-    });
+    if (activityData.days && Array.isArray(activityData.days)) {
+        activityData.days.forEach(day => {
+            activityMap[day.date] = day.count;
+        });
+    }
 
     // Update period label
     const periodLabel = currentActivityPeriod === 0
@@ -284,7 +270,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
             if (i < days.length) {
                 const day = days[i];
                 const colorClass = getColorClass(day.intensity);
-                const dayName = new Date(day.date + 'T00:00:00Z').toLocaleDateString('en-US', {
+                const dayName = new Date(day.date + 'T00:00:00Z').toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
                     weekday: 'long',
                     month: 'long',
                     day: 'numeric',
@@ -342,8 +328,8 @@ function formatPeriodLabel(startDate, endDate, period) {
         return 'No activity period';
     }
 
-    const startMonth = start.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
-    const endMonth = end.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const startMonth = start.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, { month: 'short', year: 'numeric', timeZone: 'UTC' });
+    const endMonth = end.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, { month: 'short', year: 'numeric', timeZone: 'UTC' });
 
     return `${startMonth} – ${endMonth}`;
 }

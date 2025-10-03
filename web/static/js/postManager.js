@@ -541,7 +541,10 @@ async function confirmDeletePost(postId) {
             showSuccess('');
 
             // Decrement post count locally for immediate feedback
-            incrementCategoryPostCount(currentCategory.id, -1);
+            // Use the post's actual category_id, not currentCategory.id (which could be 0 for "All Categories")
+            if (post && post.category_id) {
+                incrementCategoryPostCount(post.category_id, -1);
+            }
 
             // Update the display
             await updateCategoryStatsDisplay();
@@ -559,7 +562,7 @@ async function confirmDeletePost(postId) {
             }
 
         } catch (error) {
-            console.log(error)
+            console.error(error)
             showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToDeletePost, error.message));
         }
     }
@@ -570,6 +573,12 @@ window.confirmDeletePost = confirmDeletePost;
 
 async function updateCategoryStatsDisplay(stats) {
     if (!currentCategory) return;
+
+    // Handle "All Categories" view separately
+    if (currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
+        await updateAllCategoriesDisplay();
+        return;
+    }
 
     // Ensure currentCategory has all properties by finding it in categories array
     const fullCategory = categories.find(cat => cat.id === currentCategory.id);
@@ -701,7 +710,7 @@ async function updateAllCategoriesDisplay() {
     }, null);
 
     const creationDate = oldestCategory ?
-        new Date(oldestCategory.created).toLocaleDateString('en-US', {
+        new Date(oldestCategory.created).toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -756,20 +765,29 @@ function incrementCategoryPostCount(categoryId, delta) {
 
     // Update all parent categories' recursive counts by walking up the tree
     let currentCat = category;
+    const affectedCategoryIds = [categoryId]; // Track all affected category IDs
+
     while (currentCat && currentCat.parent_id) {
         const parent = categories.find(cat => cat.id === currentCat.parent_id);
         if (parent) {
             parent.recursive_post_count = (parent.recursive_post_count || 0) + delta;
+            affectedCategoryIds.push(parent.id);
             currentCat = parent;
         } else {
             break;
         }
     }
 
-    // Update currentCategory if it matches
-    if (currentCategory && currentCategory.id === categoryId) {
-        currentCategory.post_count = (currentCategory.post_count || 0) + delta;
-        currentCategory.recursive_post_count = (currentCategory.recursive_post_count || 0) + delta;
+    // Update currentCategory if it's affected (either the category itself or an ancestor)
+    if (currentCategory && affectedCategoryIds.includes(currentCategory.id)) {
+        if (currentCategory.id === categoryId) {
+            // Direct match - update both counts
+            currentCategory.post_count = (currentCategory.post_count || 0) + delta;
+            currentCategory.recursive_post_count = (currentCategory.recursive_post_count || 0) + delta;
+        } else {
+            // Parent category - only update recursive count
+            currentCategory.recursive_post_count = (currentCategory.recursive_post_count || 0) + delta;
+        }
     }
 
     // Re-render categories to show updated counts

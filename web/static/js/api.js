@@ -64,8 +64,14 @@ async function apiRequest(endpoint, options = {}) {
         throw new Error(error);
     }
 
+    // Check if response has content before trying to parse JSON
+    const text = await response.text();
+    if (!text || text.trim() === '') {
+        return null;
+    }
+
     try {
-        const data = await response.json();
+        const data = JSON.parse(text);
         return data || null;
     } catch (error) {
         console.error('Failed to parse JSON response:', error);
@@ -299,6 +305,80 @@ async function uploadFile(postId, file) {
         return response.json();
     } catch (error) {
         console.error('Failed to load file:', error);
+        throw error;
+    }
+}
+
+async function fetchActivityData(categoryId, recursive, period) {
+    try {
+        const params = new URLSearchParams({
+            recursive: recursive.toString(),
+            period: period.toString(),
+            period_months: window.AppConstants.UI_CONFIG.activityPeriodMonths.toString()
+        });
+
+        const response = await fetch(`/api/activity/${categoryId}?${params}`, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Failed to fetch activity data:', error);
+        throw error;
+    }
+}
+
+async function fetchLinkPreview(url) {
+    try {
+        const response = await fetch('/api/link-preview', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error);
+        }
+
+        return response.json().catch(() => ({}));
+    } catch (error) {
+        console.error('Failed to fetch link preview:', error);
+        throw error;
+    }
+}
+
+async function saveSettings(newSettings) {
+    try {
+        const response = await fetch('/api/settings', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newSettings)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || `HTTP error! status: ${response.status}`);
+        }
+
+        const savedSettings = await response.json();
+
+        // Clear settings cache
+        clearSettingsCache();
+
+        return savedSettings;
+    } catch (error) {
+        console.error('Failed to save settings:', error);
         throw error;
     }
 }

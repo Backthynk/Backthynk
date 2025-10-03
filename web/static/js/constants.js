@@ -13,13 +13,6 @@ const RESERVED_ROUTES = [
     'settings'
 ];
 
-// URL Configuration
-const URL_SETTINGS = {
-    spaceReplacement: '_', // Replace spaces with underscores in URLs
-    allowedChars: /^[a-zA-Z0-9\s_-]+$/ // Allowed characters in category names for URLs
-};
-
-
 // Special Category IDs
 const ALL_CATEGORIES_ID = 0; // Category ID 0 represents "all categories"
 
@@ -385,9 +378,6 @@ window.AppConstants = {
 
     // Routes
     RESERVED_ROUTES,
-
-    // URL Settings
-    URL_SETTINGS,
 
     // Category Constants
     ALL_CATEGORIES_ID,

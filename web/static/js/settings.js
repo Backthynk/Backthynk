@@ -84,6 +84,9 @@ function populateSettingsForm() {
 
     // Toggle time format visibility based on retroactive posting enabled state
     toggleRetroactiveTimeFormatVisibility();
+
+    // Toggle file upload details visibility based on checkbox state
+    toggleFileUploadDetails();
 }
 
 function getSettingsFromForm() {
@@ -150,9 +153,7 @@ async function saveSettings() {
 
         const response = await fetch('/api/settings', {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newSettings)
         });
 
@@ -162,11 +163,15 @@ async function saveSettings() {
         }
 
         const savedSettings = await response.json();
+
+        // Clear settings cache
+        if (typeof clearSettingsCache === 'function') {
+            clearSettingsCache();
+        }
         currentSettings = savedSettings;
         originalSettings = { ...savedSettings };
 
-        // Clear settings cache and refresh UI components
-        clearSettingsCache();
+        // Refresh UI components
         refreshUIWithNewSettings();
 
         // Check activity and file stats status in case they changed
@@ -282,8 +287,6 @@ function updateMarkdownCSS(enabled) {
             markdownCSS.setAttribute('disabled', 'disabled');
         }
     }
-
-    console.log('Markdown enabled:', enabled, 'Body has markdown-disabled class:', document.body.classList.contains('markdown-disabled'));
 }
 
 // Toggle file upload details visibility based on enabled state
