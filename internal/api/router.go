@@ -19,6 +19,7 @@ func NewRouter(
 	detailedStats *detailedstats.Service,
 	activityService *activity.Service,
 	opts *config.OptionsConfig,
+	serviceConfig *config.ServiceConfig,
 ) http.Handler {
 	r := mux.NewRouter()
 	
@@ -32,7 +33,7 @@ func NewRouter(
 	uploadHandler := handlers.NewUploadHandler(fileService, opts)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
-	templateHandler := handlers.NewTemplateHandler(categoryService, opts)
+	templateHandler := handlers.NewTemplateHandler(categoryService, opts, serviceConfig)
 	
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()

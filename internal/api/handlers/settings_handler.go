@@ -20,6 +20,8 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	// Convert to frontend format
 	response := map[string]interface{}{
 		"maxContentLength":                 options.Core.MaxContentLength,
+		"siteTitle":                        options.Metadata.Title,
+		"siteDescription":                  options.Metadata.Description,
 		"retroactivePostingEnabled":        options.Features.RetroactivePosting.Enabled,
 		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":                  options.Features.Activity.Enabled,
@@ -48,6 +50,14 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	// Update core settings
 	if val, ok := req["maxContentLength"].(float64); ok {
 		options.Core.MaxContentLength = int(val)
+	}
+
+	// Update metadata settings
+	if val, ok := req["siteTitle"].(string); ok {
+		options.Metadata.Title = val
+	}
+	if val, ok := req["siteDescription"].(string); ok {
+		options.Metadata.Description = val
 	}
 
 	// Update feature settings
@@ -111,6 +121,8 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	// Return in frontend format
 	response := map[string]interface{}{
 		"maxContentLength":                 options.Core.MaxContentLength,
+		"siteTitle":                        options.Metadata.Title,
+		"siteDescription":                  options.Metadata.Description,
 		"retroactivePostingEnabled":        options.Features.RetroactivePosting.Enabled,
 		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":                  options.Features.Activity.Enabled,
@@ -137,6 +149,14 @@ func (h *SettingsHandler) validateSettings(options *config.OptionsConfig) error 
 
 	if options.Features.FileUpload.MaxFilesPerPost < 1 || options.Features.FileUpload.MaxFilesPerPost > 50 {
 		return fmt.Errorf("maxFilesPerPost must be between 1 and 50")
+	}
+
+	if len(options.Metadata.Title) == 0 || len(options.Metadata.Title) > 100 {
+		return fmt.Errorf("siteTitle must be between 1 and 100 characters")
+	}
+
+	if len(options.Metadata.Description) > 160 {
+		return fmt.Errorf("siteDescription must not exceed 160 characters")
 	}
 
 	return nil

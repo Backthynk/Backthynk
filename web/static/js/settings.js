@@ -56,6 +56,8 @@ async function loadSettings() {
 
 function populateSettingsForm() {
     document.getElementById('maxContentLength').value = currentSettings.maxContentLength || window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
+    document.getElementById('siteTitle').value = currentSettings.siteTitle || 'Backthynk';
+    document.getElementById('siteDescription').value = currentSettings.siteDescription || 'Personal micro blog platform';
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
@@ -77,6 +79,9 @@ function populateSettingsForm() {
     const timeFormat = currentSettings.retroactivePostingTimeFormat || window.AppConstants.DEFAULT_SETTINGS.retroactivePostingTimeFormat;
     document.getElementById('retroactivePostingTimeFormat').value = timeFormat;
 
+    // Update character counters
+    updateSiteDescriptionCounter();
+
     // Toggle time format visibility based on retroactive posting enabled state
     toggleRetroactiveTimeFormatVisibility();
 }
@@ -91,6 +96,8 @@ function getSettingsFromForm() {
 
     return {
         maxContentLength: parseInt(document.getElementById('maxContentLength').value),
+        siteTitle: document.getElementById('siteTitle').value.trim(),
+        siteDescription: document.getElementById('siteDescription').value.trim(),
         activityEnabled: document.getElementById('activityEnabled').checked,
         fileStatsEnabled: document.getElementById('fileStatsEnabled').checked,
         retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked,
@@ -116,6 +123,14 @@ function validateSettings(settings) {
 
     if (settings.maxFilesPerPost < window.AppConstants.VALIDATION_LIMITS.minFilesPerPost || settings.maxFilesPerPost > window.AppConstants.VALIDATION_LIMITS.maxFilesPerPost) {
         errors.push(formatMessage(window.AppConstants.USER_MESSAGES.validation.filesPerPostValidation, window.AppConstants.VALIDATION_LIMITS.minFilesPerPost, window.AppConstants.VALIDATION_LIMITS.maxFilesPerPost));
+    }
+
+    if (!settings.siteTitle || settings.siteTitle.length === 0 || settings.siteTitle.length > 100) {
+        errors.push('Site title must be between 1 and 100 characters');
+    }
+
+    if (settings.siteDescription.length > 160) {
+        errors.push('Site description must not exceed 160 characters');
     }
 
     return errors;
@@ -164,6 +179,11 @@ async function saveSettings() {
 
         // Update markdown CSS visibility
         updateMarkdownCSS(savedSettings.markdownEnabled);
+
+        // Update page title with new metadata
+        if (savedSettings.siteTitle) {
+            updatePageTitle(savedSettings.siteTitle);
+        }
 
         showSuccess(window.AppConstants.USER_MESSAGES.success.settingsSaved);
 
@@ -278,6 +298,26 @@ function toggleFileUploadDetails() {
     }
 }
 
+// Update site description character counter
+function updateSiteDescriptionCounter() {
+    const descriptionField = document.getElementById('siteDescription');
+    const counter = document.getElementById('site-description-counter');
+    if (descriptionField && counter) {
+        counter.textContent = descriptionField.value.length;
+    }
+}
+
+// Update page title dynamically
+function updatePageTitle(siteTitle) {
+    const currentRoute = window.router?.getCurrentRoute();
+    if (currentRoute === '/settings') {
+        document.title = `${siteTitle} - Settings`;
+    } else if (currentRoute === '/' || !currentRoute) {
+        document.title = `${siteTitle} - Personal Micro Blog`;
+    }
+    // Category titles will be updated by the router
+}
+
 // Initialize settings when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeSettings();
@@ -288,5 +328,11 @@ document.addEventListener('DOMContentLoaded', function() {
         fileUploadCheckbox.addEventListener('change', toggleFileUploadDetails);
         // Initialize visibility on load
         setTimeout(() => toggleFileUploadDetails(), 100);
+    }
+
+    // Add site description counter listener
+    const descriptionField = document.getElementById('siteDescription');
+    if (descriptionField) {
+        descriptionField.addEventListener('input', updateSiteDescriptionCounter);
     }
 });

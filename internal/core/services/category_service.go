@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type CategoryService struct {
@@ -157,6 +158,51 @@ func (s *CategoryService) Update(id int, name, description string, parentID *int
 	})
 	
 	return cat, nil
+}
+
+func (s *CategoryService) FindByNameAndParent(name string, parentID *int) *models.Category {
+	allCategories := s.cache.GetAll()
+	nameLower := strings.ToLower(name)
+
+	for _, cat := range allCategories {
+		if strings.ToLower(cat.Name) == nameLower {
+			// Check if parent matches
+			if (parentID == nil && cat.ParentID == nil) ||
+				(parentID != nil && cat.ParentID != nil && *parentID == *cat.ParentID) {
+				return cat
+			}
+		}
+	}
+	return nil
+}
+
+func (s *CategoryService) GetCategoryBreadcrumb(categoryID int) string {
+	cat, ok := s.cache.Get(categoryID)
+	if !ok {
+		return ""
+	}
+
+	// Build breadcrumb from ancestors
+	ancestors := s.cache.GetAncestors(categoryID)
+
+	// Reverse ancestors to get root -> parent order
+	breadcrumb := ""
+	for i := len(ancestors) - 1; i >= 0; i-- {
+		if ancestorCat, ok := s.cache.Get(ancestors[i]); ok {
+			if breadcrumb != "" {
+				breadcrumb += " > "
+			}
+			breadcrumb += ancestorCat.Name
+		}
+	}
+
+	// Add current category
+	if breadcrumb != "" {
+		breadcrumb += " > "
+	}
+	breadcrumb += cat.Name
+
+	return breadcrumb
 }
 
 func (s *CategoryService) Delete(id int) error {

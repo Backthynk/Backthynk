@@ -35,6 +35,10 @@ type OptionsConfig struct {
 	Core struct {
 		MaxContentLength int `json:"maxContentLength"`
 	} `json:"core"`
+	Metadata struct {
+		Title       string `json:"title"`
+		Description string `json:"description"`
+	} `json:"metadata"`
 	Features struct {
 		Activity struct {
 			Enabled      bool `json:"enabled"`

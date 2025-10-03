@@ -166,6 +166,16 @@ class Router {
         if (typeof selectCategory === 'function') {
             await selectCategory(category, false); // fromUserClick = false (programmatic)
         }
+
+        // Update page title for category using breadcrumb (matches backend behavior)
+        const settings = await loadAppSettings();
+        const siteTitle = settings?.siteTitle || window.AppConstants.APP_NAME;
+        if (category && category.id) {
+            const breadcrumb = typeof getCategoryBreadcrumb === 'function'
+                ? getCategoryBreadcrumb(category.id)
+                : category.name;
+            document.title = `${breadcrumb}`;
+        }
     }
 
     // Navigate to category by category object
@@ -211,7 +221,10 @@ async function showHomePage() {
     if (mainContainer) mainContainer.style.display = 'block';
     if (settingsPage) settingsPage.classList.add('hidden');
 
-    document.title = `${window.AppConstants.APP_NAME} - ${window.AppConstants.APP_TAGLINE}`
+    // Get site title from settings or use default
+    const settings = await loadAppSettings();
+    const siteTitle = settings?.siteTitle || window.AppConstants.APP_NAME;
+    document.title = `${siteTitle} - ${window.AppConstants.APP_TAGLINE}`;
 
     // If there's a current category, deselect it to show all posts
     if (typeof currentCategory !== 'undefined' && currentCategory && currentCategory.id !== window.AppConstants?.ALL_CATEGORIES_ID) {
@@ -229,8 +242,6 @@ async function showSettingsPage() {
     if (mainContainer) mainContainer.style.display = 'none';
     if (settingsPage) settingsPage.classList.remove('hidden');
 
-    document.title = `${window.AppConstants.APP_NAME} - Settings`;
-
     // Load and populate settings
     try {
         if (typeof loadSettings === 'function') {
@@ -239,6 +250,11 @@ async function showSettingsPage() {
         if (typeof populateSettingsForm === 'function') {
             populateSettingsForm();
         }
+
+        // Get site title from settings or use default
+        const settings = await loadAppSettings();
+        const siteTitle = settings?.siteTitle || window.AppConstants.APP_NAME;
+        document.title = `${siteTitle} - Settings`;
     } catch (error) {
         console.error('Failed to load settings:', error);
         if (typeof showError === 'function') {

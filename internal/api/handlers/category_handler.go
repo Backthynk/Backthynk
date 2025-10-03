@@ -140,11 +140,11 @@ func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Invalid category ID", http.StatusBadRequest)
 		return
 	}
-	
+
 	if err := h.service.Delete(id); err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	
+
 	w.WriteHeader(http.StatusNoContent)
 }

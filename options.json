@@ -2,6 +2,10 @@
   "core": {
     "maxContentLength": 10000
   },
+  "metadata": {
+    "title": "Backthynk",
+    "description": "Personal micro blog platform"
+  },
   "features": {
     "activity": {
       "enabled": true,

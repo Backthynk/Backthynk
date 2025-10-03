@@ -94,6 +94,12 @@ func (c *CategoryCache) updateRecursiveCountsUnlocked(categoryID int, delta int)
 	}
 }
 
+func (c *CategoryCache) GetAncestors(categoryID int) []int {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.getAncestorsUnlocked(categoryID)
+}
+
 func (c *CategoryCache) getAncestorsUnlocked(categoryID int) []int {
 	var ancestors []int
 	current := categoryID

@@ -87,6 +87,7 @@ func main() {
 		detailedStatsService,
 		activityService,
 		opts,
+		config.GetServiceConfig(),
 	)
 	
 	// Start server
