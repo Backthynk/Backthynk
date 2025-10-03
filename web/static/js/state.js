@@ -17,19 +17,19 @@ let fileStatsEnabled = true; // Global file statistics system state
 
 // Local storage for last selected category
 function saveLastCategory(categoryId) {
-    localStorage.setItem('lastSelectedCategory', categoryId);
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.lastCategory, categoryId);
 }
 
 function getLastCategory() {
-    return localStorage.getItem('lastSelectedCategory');
+    return localStorage.getItem(window.AppConstants.STORAGE_KEYS.lastCategory);
 }
 
 function saveExpandedCategories() {
-    localStorage.setItem('expandedCategories', JSON.stringify([...expandedCategories]));
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.expandedCategories, JSON.stringify([...expandedCategories]));
 }
 
 function loadExpandedCategories() {
-    const saved = localStorage.getItem('expandedCategories');
+    const saved = localStorage.getItem(window.AppConstants.STORAGE_KEYS.expandedCategories);
     if (saved) {
         expandedCategories = new Set(JSON.parse(saved));
     }

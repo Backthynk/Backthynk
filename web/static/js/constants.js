@@ -19,14 +19,6 @@ const URL_SETTINGS = {
     allowedChars: /^[a-zA-Z0-9\s_-]+$/ // Allowed characters in category names for URLs
 };
 
-// SEO Templates
-const SEO_TEMPLATES = {
-    pageTitle: '{categoryName} - {appName}',
-    defaultTitle: '{appName} - {tagline}',
-    settingsTitle: 'Settings - {appName}',
-    categoryDescription: 'Posts in {breadcrumb} category',
-    loadingTitle: 'Loading {categoryName}...'
-};
 
 // Special Category IDs
 const ALL_CATEGORIES_ID = 0; // Category ID 0 represents "all categories"
@@ -54,18 +46,17 @@ const VALIDATION_LIMITS = {
     minFilesPerPost: 1,
     maxFilesPerPost: 50,
     maxCategoryNameLength: 30,
-    maxCategoryDescriptionLength: 280
+    maxCategoryDescriptionLength: 280,
+    maxSiteTitleLength: 100,
+    maxSiteDescriptionLength: 160
 };
 
 // User Messages
 const USER_MESSAGES = {
     // Success messages
     success: {
-        categoryCreated: 'created successfully!',
-        categoryUpdated: 'updated successfully!',
         categoryDeleted: 'deleted successfully!',
-        postCreated: 'Post created successfully!',
-        postDeleted: 'Post deleted successfully!',
+        postMoved: 'Post successfully moved to',
         settingsSaved: 'Settings saved successfully!'
     },
 
@@ -79,12 +70,14 @@ const USER_MESSAGES = {
         pleaseSelectCategory: 'Please select a category first',
         contentRequired: 'Content is required',
         contentTooLong: 'Content exceeds maximum length of {0} characters',
+        contentExceedsMax: 'Content exceeds maximum length',
         maxFilesExceeded: 'Maximum {0} files allowed per post',
         fileSizeExceeded: 'File "{0}" exceeds maximum file size of {1}MB',
         failedToLoadSettings: 'Failed to load settings: {0}',
         failedToSaveSettings: 'Failed to save settings: {0}',
         failedToDeleteCategory: 'Failed to delete category: {0}',
-        failedToDeletePost: 'Failed to delete post: {0}'
+        failedToDeletePost: 'Failed to delete post: {0}',
+        selectCategoryToMove: 'Please select a category to move the post to.'
     },
 
     // Validation messages
@@ -98,7 +91,16 @@ const USER_MESSAGES = {
     info: {
         savingSettings: 'Saving settings...',
         settingsResetInfo: 'Settings reset to defaults (not saved yet). Storage path is not changed as it requires server restart.',
-        resetSettingsConfirm: 'Are you sure you want to reset all settings to their default values?'
+        resetSettingsConfirm: 'Are you sure you want to reset all settings to their default values?',
+        loadingMorePosts: 'Loading more posts...',
+        noActivityData: 'No activity data available'
+    },
+
+    // Confirmation messages
+    confirm: {
+        unsavedContent: 'You have unsaved content. Are you sure you want to close?',
+        deleteCategory: 'Are you sure you want to delete',
+        undoWarning: '\n\nThis action cannot be undone.'
     },
 
     // File upload text template
@@ -114,8 +116,6 @@ const UI_CONFIG = {
     maxPostLimit: 100,
     defaultOffset: 0,
 
-    // Pagination & Batch Processing
-    batchProcessLimit: 100,
     virtualScrollBuffer: 5,
     defaultItemHeight: 200,
     postsVirtualScrollHeight: 250,
@@ -131,9 +131,6 @@ const UI_CONFIG = {
     virtualScrollThreshold: 50, // posts count to enable virtual scrolling
     categoryBatchLimit: 100,
 
-    // File Management
-    maxImagePreviewWidth: 12, // w-12 (48px)
-    maxImagePreviewHeight: 12, // h-12 (48px)
     maxFilenameDisplay: 200, // pixels
 
     // Link Preview
@@ -263,6 +260,122 @@ const UI_TEXT = {
 // Retroactive Posting Constants
 const MIN_RETROACTIVE_POST_TIMESTAMP = 946684800000; // 01/01/2000 00:00:00 UTC in milliseconds
 
+// Locale Settings
+const LOCALE_SETTINGS = {
+    default: 'en-US'
+};
+
+// Date and Time Formats
+const DATE_FORMAT = {
+    monthStyle: 'short',
+    timezone: 'UTC',
+    format12h: 'MM/DD/YYYY HH:MM AM/PM',
+    format24h: 'DD/MM/YYYY HH:MM'
+};
+
+const TIME_FORMAT = {
+    am: 'AM',
+    pm: 'PM'
+};
+
+// Local Storage Keys
+const STORAGE_KEYS = {
+    lastCategory: 'lastSelectedCategory',
+    expandedCategories: 'expandedCategories',
+    recursiveStates: 'recursiveToggleStates',
+    categorySortPref: 'categorySortPreference'
+};
+
+// File Extensions
+const FILE_EXTENSIONS = {
+    // Code files
+    code: ['.js', '.py', '.java', '.cpp', '.c', '.cs', '.php', '.rb', '.go', '.rs', '.ts', '.jsx', '.tsx', '.vue', '.swift', '.kt', '.scala', '.sh', '.bat', '.ps1', '.r', '.m', '.h', '.hpp', '.css', '.scss', '.sass', '.less', '.html', '.xml', '.json', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.sql'],
+
+    // Archive files
+    archive: ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz'],
+
+    // Document files
+    document: ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.rtf', '.odt', '.ods', '.odp'],
+
+    // Image files
+    image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.tiff', '.tif'],
+
+    // Video files
+    video: ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v'],
+
+    // Audio files
+    audio: ['.mp3', '.wav', '.ogg', '.m4a', '.flac', '.aac', '.wma']
+};
+
+// Default allowed file extensions for uploads
+const DEFAULT_ALLOWED_EXTENSIONS = 'jpg, jpeg, png, gif, webp, pdf, doc, docx, xls, xlsx, txt, zip, mp4, mov, avi';
+
+// Language to Extension Mapping
+const FILE_LANGUAGE_MAP = {
+    js: 'JavaScript',
+    py: 'Python',
+    java: 'Java',
+    cpp: 'C++',
+    c: 'C',
+    cs: 'C#',
+    go: 'Go',
+    rs: 'Rust'
+};
+
+// Video Format Mapping
+const VIDEO_FORMAT_MAP = {
+    mp4: 'MP4',
+    webm: 'WEBM',
+    avi: 'AVI',
+    mov: 'MOV',
+    mkv: 'MKV',
+    flv: 'FLV',
+    wmv: 'WMV',
+    m4v: 'M4V'
+};
+
+// Audio Format Mapping
+const AUDIO_FORMAT_MAP = {
+    mp3: 'MP3',
+    wav: 'WAV',
+    ogg: 'OGG',
+    m4a: 'M4A',
+    flac: 'FLAC',
+    aac: 'AAC',
+    wma: 'WMA'
+};
+
+// File Icon Mapping
+const FILE_ICON_MAP = {
+    // Programming/Code files
+    code: { extensions: ['js', 'ts', 'jsx', 'tsx', 'vue', 'react', 'html', 'htm', 'xml', 'py', 'python', 'c', 'cpp', 'cc', 'h', 'hpp', 'cs', 'csharp', 'php', 'go', 'rs', 'rust', 'swift', 'kt', 'kotlin', 'dart', 'm', 'mm', 'scala', 'clj', 'clojure', 'hs', 'haskell', 'lua', 'perl', 'pl'], icon: 'fa-code' },
+    palette: { extensions: ['css', 'scss', 'sass', 'less'], icon: 'fa-palette' },
+    coffee: { extensions: ['java', 'jar'], icon: 'fa-coffee' },
+    gem: { extensions: ['rb', 'ruby'], icon: 'fa-gem' },
+    chartLine: { extensions: ['r'], icon: 'fa-chart-line' },
+    terminal: { extensions: ['sh', 'bash', 'zsh', 'fish', 'bat', 'cmd', 'ps1', 'powershell'], icon: 'fa-terminal' },
+
+    // Documents
+    pdf: { extensions: ['pdf'], icon: 'fa-file-pdf' },
+    word: { extensions: ['doc', 'docx'], icon: 'fa-file-word' },
+    excel: { extensions: ['xls', 'xlsx'], icon: 'fa-file-excel' },
+    powerpoint: { extensions: ['ppt', 'pptx'], icon: 'fa-file-powerpoint' },
+    text: { extensions: ['txt', 'text', 'rtf', 'odt', 'ods', 'odp', 'md', 'markdown', 'rst'], icon: 'fa-file-alt' },
+
+    // Media
+    image: { extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico', 'tiff', 'tif'], icon: 'fa-image' },
+    audio: { extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a'], icon: 'fa-file-audio' },
+    video: { extensions: ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v'], icon: 'fa-file-video' },
+
+    // Archives
+    archive: { extensions: ['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz'], icon: 'fa-file-archive' },
+
+    // Data/Config
+    config: { extensions: ['json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg', 'conf'], icon: 'fa-cog' },
+    table: { extensions: ['csv', 'tsv'], icon: 'fa-table' },
+    database: { extensions: ['sql', 'db', 'sqlite'], icon: 'fa-database' }
+};
+
 // Export all constants
 window.AppConstants = {
     // Application Info
@@ -275,9 +388,6 @@ window.AppConstants = {
 
     // URL Settings
     URL_SETTINGS,
-
-    // SEO Templates
-    SEO_TEMPLATES,
 
     // Category Constants
     ALL_CATEGORIES_ID,
@@ -297,6 +407,22 @@ window.AppConstants = {
 
     // UI Text
     UI_TEXT,
+
+    // Locale and Formatting
+    LOCALE_SETTINGS,
+    DATE_FORMAT,
+    TIME_FORMAT,
+
+    // Storage
+    STORAGE_KEYS,
+
+    // File Management
+    FILE_EXTENSIONS,
+    DEFAULT_ALLOWED_EXTENSIONS,
+    FILE_LANGUAGE_MAP,
+    VIDEO_FORMAT_MAP,
+    AUDIO_FORMAT_MAP,
+    FILE_ICON_MAP,
 
     // Other
     MIN_RETROACTIVE_POST_TIMESTAMP

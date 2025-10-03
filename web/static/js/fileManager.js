@@ -282,8 +282,7 @@ function generateFilePreview(file) {
 }
 
 function isCodeFile(filename) {
-    const codeExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.h', '.css', '.html', '.php', '.rb', '.go', '.rs', '.swift', '.kt', '.scala', '.sql', '.json', '.xml', '.yaml', '.yml', '.sh', '.bash', '.ps1', '.r', '.m', '.vue', '.svelte'];
-    return codeExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+    return window.AppConstants.FILE_EXTENSIONS.code.some(ext => filename.toLowerCase().endsWith(ext));
 }
 
 function isArchiveFile(type) {
@@ -308,18 +307,18 @@ function getCodeLanguage(filename) {
 }
 
 function getVideoFormat(type) {
-    if (type.includes('mp4')) return 'MP4';
-    if (type.includes('webm')) return 'WEBM';
-    if (type.includes('avi')) return 'AVI';
-    if (type.includes('mov')) return 'MOV';
+    const typeLower = type.toLowerCase();
+    for (const [format, label] of Object.entries(window.AppConstants.VIDEO_FORMAT_MAP)) {
+        if (typeLower.includes(format)) return label;
+    }
     return 'VIDEO';
 }
 
 function getAudioFormat(type) {
-    if (type.includes('mp3')) return 'MP3';
-    if (type.includes('wav')) return 'WAV';
-    if (type.includes('ogg')) return 'OGG';
-    if (type.includes('m4a')) return 'M4A';
+    const typeLower = type.toLowerCase();
+    for (const [format, label] of Object.entries(window.AppConstants.AUDIO_FORMAT_MAP)) {
+        if (typeLower.includes(format)) return label;
+    }
     return 'AUDIO';
 }
 

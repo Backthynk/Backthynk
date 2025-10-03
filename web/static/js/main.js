@@ -72,7 +72,7 @@ function initializeAutoResizeTextarea() {
 // Handle modal close with content warning
 function handleModalClose() {
     if (hasModalContent()) {
-        if (confirm('You have unsaved content. Are you sure you want to close?')) {
+        if (confirm(window.AppConstants.USER_MESSAGES.confirm.unsavedContent)) {
             hideCreatePost();
         }
     } else {
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check content length against settings
         const settings = window.currentSettings;
         if (settings && content.length > settings.maxContentLength) {
-            showError(`Content exceeds maximum length of ${settings.maxContentLength} characters`);
+            showError(window.AppConstants.USER_MESSAGES.error.contentTooLong.replace('{0}', settings.maxContentLength));
             return;
         }
 
@@ -579,7 +579,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const year = now.getFullYear();
                 let hours = now.getHours();
                 const minutes = String(now.getMinutes()).padStart(2, '0');
-                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const ampm = hours >= 12 ? window.AppConstants.TIME_FORMAT.pm : window.AppConstants.TIME_FORMAT.am;
                 hours = hours % 12 || 12; // Convert to 12-hour format
 
                 formatted = `${month}/${day}/${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;

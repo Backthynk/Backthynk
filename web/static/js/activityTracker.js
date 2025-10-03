@@ -219,7 +219,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
     // Handle empty days array
     if (days.length === 0) {
-        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>No activity data available</p></div>';
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
         return;
     }
 
@@ -228,7 +228,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
     // Check if dates are valid
     if (!startDate || !endDate) {
-        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>No activity data available</p></div>';
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
         return;
     }
 
@@ -237,7 +237,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
     // Check if dates are valid after parsing
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>No activity data available</p></div>';
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
         return;
     }
 
@@ -246,9 +246,9 @@ function renderHeatmapGrid(days, startDate, endDate) {
     const current = new Date(start);
 
     while (current <= end) {
-        const monthLabel = current.toLocaleDateString('en-US', {
-            month: 'short',
-            timeZone: 'UTC'
+        const monthLabel = current.toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
+            month: window.AppConstants.DATE_FORMAT.monthStyle,
+            timeZone: window.AppConstants.DATE_FORMAT.timezone
         });
         monthsSet.add(monthLabel);
         current.setUTCMonth(current.getUTCMonth() + 1);

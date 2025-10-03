@@ -56,8 +56,8 @@ async function loadSettings() {
 
 function populateSettingsForm() {
     document.getElementById('maxContentLength').value = currentSettings.maxContentLength || window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
-    document.getElementById('siteTitle').value = currentSettings.siteTitle || 'Backthynk';
-    document.getElementById('siteDescription').value = currentSettings.siteDescription || 'Personal micro blog platform';
+    document.getElementById('siteTitle').value = currentSettings.siteTitle || window.AppConstants.APP_NAME;
+    document.getElementById('siteDescription').value = currentSettings.siteDescription || window.AppConstants.APP_DESCRIPTION;
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
@@ -72,7 +72,7 @@ function populateSettingsForm() {
     if (currentSettings.allowedFileExtensions && Array.isArray(currentSettings.allowedFileExtensions)) {
         document.getElementById('allowedFileExtensions').value = currentSettings.allowedFileExtensions.join(', ');
     } else {
-        document.getElementById('allowedFileExtensions').value = 'jpg, jpeg, png, gif, webp, pdf, doc, docx, xls, xlsx, txt, zip, mp4, mov, avi';
+        document.getElementById('allowedFileExtensions').value = window.AppConstants.DEFAULT_ALLOWED_EXTENSIONS;
     }
 
     // Set time format
@@ -125,12 +125,12 @@ function validateSettings(settings) {
         errors.push(formatMessage(window.AppConstants.USER_MESSAGES.validation.filesPerPostValidation, window.AppConstants.VALIDATION_LIMITS.minFilesPerPost, window.AppConstants.VALIDATION_LIMITS.maxFilesPerPost));
     }
 
-    if (!settings.siteTitle || settings.siteTitle.length === 0 || settings.siteTitle.length > 100) {
-        errors.push('Site title must be between 1 and 100 characters');
+    if (!settings.siteTitle || settings.siteTitle.length === 0 || settings.siteTitle.length > window.AppConstants.VALIDATION_LIMITS.maxSiteTitleLength) {
+        errors.push(`Site title must be between 1 and ${window.AppConstants.VALIDATION_LIMITS.maxSiteTitleLength} characters`);
     }
 
-    if (settings.siteDescription.length > 160) {
-        errors.push('Site description must not exceed 160 characters');
+    if (settings.siteDescription.length > window.AppConstants.VALIDATION_LIMITS.maxSiteDescriptionLength) {
+        errors.push(`Site description must not exceed ${window.AppConstants.VALIDATION_LIMITS.maxSiteDescriptionLength} characters`);
     }
 
     return errors;

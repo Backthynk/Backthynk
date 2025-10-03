@@ -195,7 +195,7 @@ class Router {
         if (window.location.pathname !== '/') return false;
 
         // Check if there's a cached category selection
-        const lastCategoryId = localStorage.getItem('lastSelectedCategory');
+        const lastCategoryId = localStorage.getItem(window.AppConstants.STORAGE_KEYS.lastCategory);
         if (lastCategoryId && categories && categories.length > 0) {
             const category = categories.find(cat => cat.id === parseInt(lastCategoryId));
             if (category) {

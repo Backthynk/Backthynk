@@ -40,7 +40,7 @@ async function showCreatePost() {
                 const year = now.getFullYear();
                 let hours = now.getHours();
                 const minutes = String(now.getMinutes()).padStart(2, '0');
-                const ampm = hours >= 12 ? 'PM' : 'AM';
+                const ampm = hours >= 12 ? window.AppConstants.TIME_FORMAT.pm : window.AppConstants.TIME_FORMAT.am;
                 hours = hours % 12 || 12; // Convert to 12-hour format
 
                 formatted = `${month}/${day}/${year} ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
@@ -131,7 +131,7 @@ function hideCategoryModal() {
 
 function handleCategoryModalClose() {
     if (hasCategoryContent()) {
-        if (confirm('You have unsaved content. Are you sure you want to close?')) {
+        if (confirm(window.AppConstants.USER_MESSAGES.confirm.unsavedContent)) {
             hideCategoryModal();
         }
     } else {
@@ -231,7 +231,7 @@ function hideEditCategoryModal() {
 
 function handleEditCategoryModalClose() {
     if (hasEditCategoryContentChanged()) {
-        if (confirm('You have unsaved content. Are you sure you want to close?')) {
+        if (confirm(window.AppConstants.USER_MESSAGES.confirm.unsavedContent)) {
             hideEditCategoryModal();
         }
     } else {
@@ -369,7 +369,7 @@ function updateDescriptionCounter(textareaId, counterId) {
 
 function getCategoryFullBreadcrumb(category) {
     if (!category || category.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        return 'All Categories';
+        return window.AppConstants.UI_TEXT.allCategories;
     }
 
     const path = [];

@@ -256,11 +256,11 @@ async function deselectCategory() {
     // Create "all categories" state
     currentCategory = {
         id: window.AppConstants.ALL_CATEGORIES_ID,
-        name: "All categories",
+        name: window.AppConstants.UI_TEXT.allCategories,
         recursiveMode: false
     };
 
-    localStorage.removeItem('lastSelectedCategory');
+    localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastCategory);
     renderCategories();
 
     // Update UI
@@ -302,25 +302,25 @@ async function toggleRecursiveMode(category) {
 
 // Functions to manage recursive toggle state per category
 function saveRecursiveToggleState(categoryId, recursiveMode) {
-    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
     recursiveStates[categoryId] = recursiveMode;
-    localStorage.setItem('recursiveToggleStates', JSON.stringify(recursiveStates));
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.recursiveStates, JSON.stringify(recursiveStates));
 }
 
 function loadRecursiveToggleState(categoryId) {
-    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
     return recursiveStates[categoryId] || false;
 }
 
 function removeRecursiveToggleState(categoryId) {
-    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
     delete recursiveStates[categoryId];
-    localStorage.setItem('recursiveToggleStates', JSON.stringify(recursiveStates));
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.recursiveStates, JSON.stringify(recursiveStates));
 }
 
 function cleanupRecursiveToggleStates() {
     // Clean up states for categories that no longer exist
-    const recursiveStates = JSON.parse(localStorage.getItem('recursiveToggleStates') || '{}');
+    const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
     const existingCategoryIds = new Set(categories.map(cat => cat.id.toString()));
 
     const cleanedStates = {};
@@ -330,7 +330,7 @@ function cleanupRecursiveToggleStates() {
         }
     }
 
-    localStorage.setItem('recursiveToggleStates', JSON.stringify(cleanedStates));
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.recursiveStates, JSON.stringify(cleanedStates));
 }
 
 // Helper function to build category breadcrumb path
@@ -492,7 +492,7 @@ async function deleteCategory(category) {
     const allDescendants = await getAllDescendantCategories(category.id);
     const totalSubcategories = allDescendants.length;
 
-    let message = `Are you sure you want to delete "${category.name}"?`;
+    let message = `${window.AppConstants.USER_MESSAGES.confirm.deleteCategory} "${category.name}"?`;
 
     if (totalSubcategories > 0) {
         message += `\n\nThis will also delete **${totalSubcategories}** subcategory(ies)`;
@@ -503,7 +503,7 @@ async function deleteCategory(category) {
         message += '.';
     }
 
-    message += '\n\nThis action cannot be undone.';
+    message += window.AppConstants.USER_MESSAGES.confirm.undoWarning;
 
     // Build details HTML for subcategories list only
     let detailsHtml = '';
@@ -539,7 +539,7 @@ async function deleteCategory(category) {
 
             if (currentCategory && currentCategory.id === category.id) {
                 currentCategory = null;
-                localStorage.removeItem('lastSelectedCategory');
+                localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastCategory);
                 document.getElementById('timeline-title').textContent = '';
                 document.getElementById('new-post-btn').style.display = 'none';
                 document.getElementById('settings-btn').style.display = 'block';
@@ -555,13 +555,13 @@ async function deleteCategory(category) {
 
 // Category sorting functionality
 function getSortPreference() {
-    const stored = localStorage.getItem('categorySortPreference');
+    const stored = localStorage.getItem(window.AppConstants.STORAGE_KEYS.categorySortPref);
     return stored ? JSON.parse(stored) : { field: 'name', ascending: true };
 }
 
 function setSortPreference(field, ascending) {
     const preference = { field, ascending };
-    localStorage.setItem('categorySortPreference', JSON.stringify(preference));
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.categorySortPref, JSON.stringify(preference));
 }
 
 function sortCategories(categoriesArray) {

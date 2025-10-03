@@ -170,7 +170,7 @@ function addLoadingIndicator(container) {
         loadingDiv.innerHTML = `
             <div class="text-gray-500">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
-                Loading more posts...
+                ${window.AppConstants.USER_MESSAGES.info.loadingMorePosts}
             </div>
         `;
         container.appendChild(loadingDiv);
@@ -425,7 +425,7 @@ document.getElementById('move-form').addEventListener('submit', async function(e
 
     const newCategoryId = parseInt(document.getElementById('move-category').value);
     if (!newCategoryId) {
-        showError('Please select a category to move the post to.');
+        showError(window.AppConstants.USER_MESSAGES.error.selectCategoryToMove);
         return;
     }
 
@@ -446,7 +446,7 @@ document.getElementById('move-form').addEventListener('submit', async function(e
         const newCategory = categories.find(cat => cat.id === newCategoryId);
         const newCategoryName = newCategory ? newCategory.name : 'selected category';
 
-        showSuccess(`Post successfully moved to ${newCategoryName}`);
+        showSuccess(`${window.AppConstants.USER_MESSAGES.success.postMoved} ${newCategoryName}`);
 
         // Remove the post from current view if it no longer belongs here
         let shouldRemoveFromView = false;
@@ -607,7 +607,7 @@ async function updateCategoryStatsDisplay(stats) {
 
     // Format the creation date
     const creationDate = currentCategory.created ?
-        new Date(currentCategory.created).toLocaleDateString('en-US', {
+        new Date(currentCategory.created).toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -717,7 +717,7 @@ async function updateAllCategoriesDisplay() {
 
     document.getElementById('timeline-title').innerHTML = `
         <div class="group">
-            <h2 class="text-xl font-bold text-gray-900">All categories</h2>
+            <h2 class="text-xl font-bold text-gray-900">${window.AppConstants.UI_TEXT.allCategories}</h2>
             <p class="text-xs text-gray-500 mt-0.5 relative">
                 <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
