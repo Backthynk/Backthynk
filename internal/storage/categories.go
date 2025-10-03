@@ -21,7 +21,7 @@ func (db *DB) CreateCategory(name string, parentID *int, description string) (*m
 	}
 	
 	// Validate character restrictions
-	validNameRegex := regexp.MustCompile(`^[a-zA-Z0-9_-]+(?:\s[a-zA-Z0-9_-]+)*$`)
+	validNameRegex := regexp.MustCompile(config.CategoryNamePattern)
 	if !validNameRegex.MatchString(name) {
 		return nil, fmt.Errorf("category name can only contain letters, numbers, hyphens, underscores, and single spaces")
 	}

@@ -40,7 +40,7 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var req map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
@@ -109,12 +109,13 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 	// Save to file
 	data, err := json.MarshalIndent(options, "", "  ")
 	if err != nil {
-		http.Error(w, "Failed to marshal settings", http.StatusInternalServerError)
+		http.Error(w, config.ErrFailedToMarshalSettings, http.StatusInternalServerError)
 		return
 	}
 
-	if err := os.WriteFile("options.json", data, config.FilePermissions); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to save settings: %v", err), http.StatusInternalServerError)
+	serviceConfig := config.GetServiceConfig()
+	if err := os.WriteFile(serviceConfig.Files.ConfigFilename, data, config.FilePermissions); err != nil {
+		http.Error(w, fmt.Sprintf(config.ErrFmtFailedToSaveSettings, err), http.StatusInternalServerError)
 		return
 	}
 
@@ -139,24 +140,24 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *SettingsHandler) validateSettings(options *config.OptionsConfig) error {
-	if options.Features.FileUpload.MaxFileSizeMB < 1 || options.Features.FileUpload.MaxFileSizeMB > 10240 {
-		return fmt.Errorf("maxFileSizeMB must be between 1 and 10240")
+	if options.Features.FileUpload.MaxFileSizeMB < config.MinFileSizeMB || options.Features.FileUpload.MaxFileSizeMB > config.MaxFileSizeMB {
+		return fmt.Errorf(config.ErrValidationMaxFileSizeRange)
 	}
 
-	if options.Core.MaxContentLength < 100 || options.Core.MaxContentLength > 50000 {
-		return fmt.Errorf("maxContentLength must be between 100 and 50000")
+	if options.Core.MaxContentLength < config.MinContentLength || options.Core.MaxContentLength > config.MaxContentLength {
+		return fmt.Errorf(config.ErrValidationMaxContentLengthRange)
 	}
 
-	if options.Features.FileUpload.MaxFilesPerPost < 1 || options.Features.FileUpload.MaxFilesPerPost > 50 {
-		return fmt.Errorf("maxFilesPerPost must be between 1 and 50")
+	if options.Features.FileUpload.MaxFilesPerPost < config.MinFilesPerPost || options.Features.FileUpload.MaxFilesPerPost > config.MaxFilesPerPost {
+		return fmt.Errorf(config.ErrValidationMaxFilesPerPostRange)
 	}
 
-	if len(options.Metadata.Title) == 0 || len(options.Metadata.Title) > 100 {
-		return fmt.Errorf("siteTitle must be between 1 and 100 characters")
+	if len(options.Metadata.Title) < config.MinTitleLength || len(options.Metadata.Title) > config.MaxTitleLength {
+		return fmt.Errorf(config.ErrValidationSiteTitleRange)
 	}
 
-	if len(options.Metadata.Description) > 160 {
-		return fmt.Errorf("siteDescription must not exceed 160 characters")
+	if len(options.Metadata.Description) > config.MaxDescriptionLength {
+		return fmt.Errorf(config.ErrValidationSiteDescriptionMax)
 	}
 
 	return nil

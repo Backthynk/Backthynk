@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"backthynk/internal/config"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -29,7 +30,7 @@ func (h *Handler) GetActivityPeriod(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	categoryID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
 		return
 	}
 	
@@ -63,7 +64,7 @@ func (h *Handler) GetActivityPeriod(w http.ResponseWriter, r *http.Request) {
 	
 	response, err := h.service.GetActivityPeriod(req)
 	if err != nil {
-		http.Error(w, "Failed to get activity data: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, config.ErrFailedToGetActivity+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	

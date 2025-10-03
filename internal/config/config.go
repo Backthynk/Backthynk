@@ -2,21 +2,55 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
+	"time"
 )
 
 const (
-	// Limits
+	// Category Limits
 	MaxCategoryDepth             = 2
 	MaxCategoryNameLength        = 30
 	MaxCategoryDescriptionLength = 280
-	DefaultPostLimit             = 20
-	MaxPostLimit                 = 100
-	MinRetroactivePostTimestamp  = 946684800000 // 01/01/2000
+
+	// Post Limits
+	DefaultPostLimit            = 20
+	MaxPostLimit                = 100
+	MinRetroactivePostTimestamp = 946684800000 // 01/01/2000
+
+	// Validation Limits
+	MinFileSizeMB        = 1
+	MaxFileSizeMB        = 10240
+	MinContentLength     = 100
+	MaxContentLength     = 50000
+
+	/* Not quite clear but MinFilesPerPost is the minimum's maximum value
+	 to set for the amount of file you can add to a post, when enabled.
+	 ::-> Don't worry you don't really need to touch that.
+	*/
+	MinFilesPerPost      = 1 
 	
+	MaxFilesPerPost      = 50
+
+	MinTitleLength       = 1 //page title
+	MaxTitleLength       = 100 //page title
+	MaxDescriptionLength = 160 //page description : meta
+
+	// HTTP Timeouts
+	LinkPreviewHTTPTimeout = 10 * time.Second
+
 	// Permissions
 	DirectoryPermissions = 0755
 	FilePermissions      = 0644
+
+	// Patterns
+	CategoryNamePattern = `^[a-zA-Z0-9_-]+(?:\s[a-zA-Z0-9_-]+)*$`
+
+	// Route Names
+	RouteAPI      = "api"
+	RouteStatic   = "static"
+	RouteUploads  = "uploads"
+	RouteSettings = "settings"
 )
 
 type ServiceConfig struct {
@@ -84,16 +118,20 @@ func LoadServiceConfig() error {
 }
 
 func LoadOptionsConfig() error {
-	data, err := os.ReadFile("options.json")
+	if serviceConfig == nil {
+		return fmt.Errorf("service config must be loaded before options config")
+	}
+
+	data, err := os.ReadFile(serviceConfig.Files.ConfigFilename)
 	if err != nil {
 		return err
 	}
-	
+
 	var config OptionsConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return err
 	}
-	
+
 	optionsConfig = &config
 	return nil
 }

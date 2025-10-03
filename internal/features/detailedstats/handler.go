@@ -1,6 +1,7 @@
 package detailedstats
 
 import (
+	"backthynk/internal/config"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -36,7 +37,7 @@ func (h *Handler) GetCategoryStats(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	categoryID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
 		return
 	}
 	

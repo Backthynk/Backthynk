@@ -43,37 +43,37 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		LinkPreviews    []PostLinkPreview   `json:"link_previews,omitempty"`
 		CustomTimestamp *int64              `json:"custom_timestamp,omitempty"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
-	
+
 	if req.Content == "" {
-		http.Error(w, "Content is required", http.StatusBadRequest)
+		http.Error(w, config.ErrContentRequired, http.StatusBadRequest)
 		return
 	}
-	
+
 	if req.CategoryID <= 0 {
-		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
+		http.Error(w, config.ErrValidCategoryIDRequired, http.StatusBadRequest)
 		return
 	}
 	
 	// Validate content length
 	if len(req.Content) > h.options.Core.MaxContentLength {
-		http.Error(w, fmt.Sprintf("Content exceeds maximum length of %d characters", h.options.Core.MaxContentLength), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf(config.ErrFmtContentExceedsMaxLength, h.options.Core.MaxContentLength), http.StatusBadRequest)
 		return
 	}
 	
 	// Validate custom timestamp if provided
 	if req.CustomTimestamp != nil {
 		if !h.options.Features.RetroactivePosting.Enabled {
-			http.Error(w, "Retroactive posting is disabled", http.StatusBadRequest)
+			http.Error(w, config.ErrRetroactivePostingDisabled, http.StatusBadRequest)
 			return
 		}
-		
+
 		if *req.CustomTimestamp < config.MinRetroactivePostTimestamp {
-			http.Error(w, "Custom timestamp cannot be earlier than 01/01/2000", http.StatusBadRequest)
+			http.Error(w, config.ErrTimestampTooEarly, http.StatusBadRequest)
 			return
 		}
 	}
@@ -98,7 +98,7 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidPostID, http.StatusBadRequest)
 		return
 	}
 
@@ -124,7 +124,7 @@ func (h *PostHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidPostID, http.StatusBadRequest)
 		return
 	}
 	
@@ -140,7 +140,7 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	postID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidPostID, http.StatusBadRequest)
 		return
 	}
 
@@ -149,12 +149,12 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	if req.CategoryID <= 0 {
-		http.Error(w, "Valid category_id is required", http.StatusBadRequest)
+		http.Error(w, config.ErrValidCategoryIDRequired, http.StatusBadRequest)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	// Return updated post
 	post, err := h.fileService.GetPostWithAttachments(postID)
 	if err != nil {
-		http.Error(w, "Failed to retrieve updated post", http.StatusInternalServerError)
+		http.Error(w, config.ErrFailedToRetrievePost, http.StatusInternalServerError)
 		return
 	}
 
@@ -186,7 +186,7 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	categoryID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err != nil {
-		http.Error(w, "Failed to get posts", http.StatusInternalServerError)
+		http.Error(w, config.ErrFailedToGetPosts, http.StatusInternalServerError)
 		return
 	}
 

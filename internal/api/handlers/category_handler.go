@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/services"
 	"encoding/json"
@@ -29,28 +30,28 @@ func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
 		return
 	}
-	
+
 	category, err := h.service.Get(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(category)
 }
 
 func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.Request) {
 	parentIDStr := r.URL.Query().Get("parent_id")
-	
+
 	var parentID *int
 	if parentIDStr != "" {
 		id, err := strconv.Atoi(parentIDStr)
 		if err != nil {
-			http.Error(w, "Invalid parent_id", http.StatusBadRequest)
+			http.Error(w, config.ErrInvalidParentID, http.StatusBadRequest)
 			return
 		}
 		parentID = &id
@@ -77,14 +78,14 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		Description string `json:"description"`
 		ParentID    *int   `json:"parent_id"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
-	
+
 	if req.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
+		http.Error(w, config.ErrNameRequired, http.StatusBadRequest)
 		return
 	}
 	
@@ -103,23 +104,23 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
 		return
 	}
-	
+
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
 		ParentID    *int   `json:"parent_id"`
 	}
-	
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
-	
+
 	if req.Name == "" {
-		http.Error(w, "Name is required", http.StatusBadRequest)
+		http.Error(w, config.ErrNameRequired, http.StatusBadRequest)
 		return
 	}
 	
@@ -137,7 +138,7 @@ func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request)
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid category ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
 		return
 	}
 

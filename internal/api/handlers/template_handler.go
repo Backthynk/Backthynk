@@ -73,13 +73,13 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 func (h *TemplateHandler) renderTemplate(w http.ResponseWriter, templatePath string, data PageData) {
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
-		http.Error(w, "Template parsing error", http.StatusInternalServerError)
+		http.Error(w, config.ErrTemplateParsingError, http.StatusInternalServerError)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, "Template execution error", http.StatusInternalServerError)
+		http.Error(w, config.ErrTemplateExecutionError, http.StatusInternalServerError)
 		return
 	}
 }
@@ -124,7 +124,7 @@ func IsCategoryPath(path string) bool {
 		return false
 	}
 
-	reservedRoutes := []string{"api", "static", "uploads", "settings"}
+	reservedRoutes := []string{config.RouteAPI, config.RouteStatic, config.RouteUploads, config.RouteSettings}
 	for _, route := range reservedRoutes {
 		if strings.HasPrefix(path, "/"+route) {
 			return false

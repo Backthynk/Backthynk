@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/core/services"
 	"encoding/json"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	"golang.org/x/net/html"
@@ -41,15 +41,15 @@ func NewLinkPreviewHandler(fileService *services.FileService) *LinkPreviewHandle
 func FetchLinkPreview(w http.ResponseWriter, r *http.Request) {
 	var req LinkPreviewRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidRequestBody, http.StatusBadRequest)
 		return
 	}
-	
+
 	if _, err := url.ParseRequestURI(req.URL); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(LinkPreviewResponse{
 			URL:   req.URL,
-			Error: "Invalid URL",
+			Error: config.ErrInvalidURL,
 		})
 		return
 	}
@@ -72,13 +72,13 @@ func (h *LinkPreviewHandler) GetLinkPreviewsByPost(w http.ResponseWriter, r *htt
 	vars := mux.Vars(r)
 	postID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "Invalid post ID", http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidPostID, http.StatusBadRequest)
 		return
 	}
 
 	post, err := h.fileService.GetPostWithAttachments(postID)
 	if err != nil {
-		http.Error(w, "Post not found", http.StatusNotFound)
+		http.Error(w, config.ErrPostNotFound, http.StatusNotFound)
 		return
 	}
 
@@ -88,7 +88,7 @@ func (h *LinkPreviewHandler) GetLinkPreviewsByPost(w http.ResponseWriter, r *htt
 
 func extractMetadata(urlStr string) (*LinkPreviewResponse, error) {
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: config.LinkPreviewHTTPTimeout,
 	}
 	
 	req, err := http.NewRequest("GET", urlStr, nil)
@@ -105,7 +105,7 @@ func extractMetadata(urlStr string) (*LinkPreviewResponse, error) {
 	
 	contentType := resp.Header.Get("Content-Type")
 	if !strings.Contains(contentType, "text/html") {
-		return nil, fmt.Errorf("URL does not return HTML content")
+		return nil, fmt.Errorf(config.ErrURLNotHTML)
 	}
 	
 	body, err := io.ReadAll(resp.Body)
