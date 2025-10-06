@@ -163,13 +163,22 @@ const ACTIVITY_THRESHOLDS = {
     high: 5
 };
 
-// CSS Classes for Activity Levels
+// CSS Classes for Activity Levels (Light mode)
 const ACTIVITY_CLASSES = [
     'bg-gray-100',           // No activity
     'bg-green-200',          // Low activity
     'bg-green-300',          // Medium activity
     'bg-green-400',          // High activity
     'bg-green-500'           // Very high activity
+];
+
+// CSS Classes for Activity Levels (Dark mode) - GitHub dark theme colors
+const ACTIVITY_CLASSES_DARK = [
+    'dark:bg-gray-700',      // No activity - lighter to be visible on gray-800 background
+    'dark:bg-[#0e4429]',     // Low activity
+    'dark:bg-[#006d32]',     // Medium activity
+    'dark:bg-[#26a641]',     // High activity
+    'dark:bg-[#39d353]'      // Very high activity
 ];
 
 // Global UI Text Constants (for i18n support)
@@ -393,6 +402,7 @@ window.AppConstants = {
     ACTIVITY_LEVELS,
     ACTIVITY_THRESHOLDS,
     ACTIVITY_CLASSES,
+    ACTIVITY_CLASSES_DARK,
 
     // UI Text
     UI_TEXT,

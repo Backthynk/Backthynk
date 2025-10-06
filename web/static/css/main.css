@@ -1,3 +1,66 @@
+/* Dark Mode CSS Variables */
+:root {
+    /* Light mode colors (GitHub light) */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --bg-tertiary: #f9fafb;
+    --bg-canvas: #fafbfc;
+
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+
+    --border-primary: #d1d5db;
+    --border-secondary: #e5e7eb;
+    --border-tertiary: #f3f4f6;
+
+    --link-color: #3b82f6;
+    --link-hover: #2563eb;
+
+    --success: #059669;
+    --success-bg: #d1fae5;
+    --error: #dc2626;
+    --error-bg: #fee2e2;
+
+    /* Activity heatmap - GitHub green scale */
+    --activity-none: #ebedf0;
+    --activity-low: #9be9a8;
+    --activity-medium: #40c463;
+    --activity-high: #30a14e;
+    --activity-very-high: #216e39;
+}
+
+.dark {
+    /* Dark mode colors (GitHub dark) */
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --bg-canvas: #010409;
+
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --text-tertiary: #6e7681;
+
+    --border-primary: #30363d;
+    --border-secondary: #21262d;
+    --border-tertiary: #161b22;
+
+    --link-color: #58a6ff;
+    --link-hover: #79c0ff;
+
+    --success: #3fb950;
+    --success-bg: #1b4b2a;
+    --error: #f85149;
+    --error-bg: #6e1a1a;
+
+    /* Activity heatmap - GitHub dark green scale */
+    --activity-none: #161b22;
+    --activity-low: #0e4429;
+    --activity-medium: #006d32;
+    --activity-high: #26a641;
+    --activity-very-high: #39d353;
+}
+
 .file-preview {
     max-width: 100%;
     max-height: 400px;
@@ -62,8 +125,14 @@
     background: #e5e7eb;
     border-radius: 2px;
 }
+.dark #categories-tree::-webkit-scrollbar-thumb {
+    background: #374151;
+}
 #categories-tree::-webkit-scrollbar-thumb:hover {
     background: #d1d5db;
+}
+.dark #categories-tree::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
 }
 
 /* Heatmap hover effects */
@@ -77,6 +146,12 @@
     width: 12px;
     height: 12px;
     flex-shrink: 0;
+}
+
+/* Ensure heatmap colors are visible in dark mode */
+.dark .heatmap-square {
+    /* Dark mode colors are already applied via classes, but ensure visibility */
+    opacity: 1;
 }
 
 /* Responsive adjustments for activity heatmap */
@@ -185,6 +260,10 @@ button:active {
     background-color: rgb(249, 250, 251);
 }
 
+.dark .container {
+    background-color: rgb(17, 24, 39);
+}
+
 
 #timeline-header {
     position: sticky;
@@ -205,6 +284,11 @@ button:active {
     margin-right: calc(-100vw + 100%);
     padding-left: calc(100vw - 100%);
     padding-right: calc(100vw - 100%);
+}
+
+.dark #timeline-header.scrolled {
+    background: rgba(17, 24, 39, 0.75);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .timeline-content {
@@ -330,6 +414,10 @@ button:active {
     scrollbar-color: #e5e7eb transparent;
 }
 
+.dark #modal-file-preview-list {
+    scrollbar-color: #374151 transparent;
+}
+
 #modal-file-preview-list::-webkit-scrollbar {
     height: 4px;
 }
@@ -343,8 +431,16 @@ button:active {
     border-radius: 2px;
 }
 
+.dark #modal-file-preview-list::-webkit-scrollbar-thumb {
+    background: #374151;
+}
+
 #modal-file-preview-list::-webkit-scrollbar-thumb:hover {
     background: #d1d5db;
+}
+
+.dark #modal-file-preview-list::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
 }
 
 /* Auto-resizing textarea */

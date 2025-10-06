@@ -12,7 +12,7 @@
       "periodMonths": 4
     },
     "detailedStats": {
-      "enabled": false
+      "enabled": true
     },
     "retroactivePosting": {
       "enabled": true,

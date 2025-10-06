@@ -108,7 +108,7 @@ async function initializeApp() {
     const categoriesTree = document.getElementById('categories-tree');
     if (categoriesTree) {
         categoriesTree.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                 <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
                 <p>Loading categories...</p>
             </div>
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const postsContainer = document.getElementById('posts-container');
                 if (postsContainer) {
                     postsContainer.innerHTML = `
-                        <div class="text-center text-gray-500 py-8">
+                        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                             <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
                             <p>Loading posts...</p>
                         </div>

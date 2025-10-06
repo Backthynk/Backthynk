@@ -103,7 +103,7 @@ function renderPosts(posts, reset = true) {
 
         if (posts.length === 0) {
             container.innerHTML = `
-                <div class="text-center text-gray-500 py-8">
+                <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                     <i class="fas fa-inbox text-4xl mb-4"></i>
                     <p>${window.AppConstants.UI_TEXT.noPostsYet}</p>
                 </div>
@@ -168,7 +168,7 @@ function addLoadingIndicator(container) {
         const loadingDiv = document.createElement('div');
         loadingDiv.className = 'loading-indicator text-center py-4';
         loadingDiv.innerHTML = `
-            <div class="text-gray-500">
+            <div class="text-gray-500 dark:text-gray-400">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
                 ${window.AppConstants.USER_MESSAGES.info.loadingMorePosts}
             </div>
@@ -179,7 +179,7 @@ function addLoadingIndicator(container) {
 
 function createPostElement(post) {
     const div = document.createElement('div');
-    div.className = 'bg-white rounded-lg shadow-sm border p-6 mb-6 hover:shadow-md transition-shadow group max-w-full';
+    div.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 hover:shadow-md transition-shadow group max-w-full';
     div.setAttribute('data-post-id', post.id);
 
     const images = post.attachments ? post.attachments.filter(att => att.file_type.startsWith('image/')) : [];
@@ -198,7 +198,7 @@ function createPostElement(post) {
 
     // Make category breadcrumb clickable if we're showing it
     const clickableCategoryBreadcrumb = showCategoryBreadcrumb ?
-        `<span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 transition-colors" onclick="navigateToCategoryFromPost(${post.category_id})">${categoryBreadcrumb}</span>` :
+        `<span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors" onclick="navigateToCategoryFromPost(${post.category_id})">${categoryBreadcrumb}</span>` :
         '';
 
     // Redesigned header
@@ -206,7 +206,7 @@ function createPostElement(post) {
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
                 ${clickableCategoryBreadcrumb}
-                <span class="relative group/time text-sm text-gray-600 font-sans cursor-default">
+                <span class="relative group/time text-sm text-gray-600 dark:text-gray-400 font-sans cursor-default">
                     ${formatRelativeDate(post.created)}
                     <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover/time:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
                         ${formatFullDateTime(post.created)}
@@ -214,16 +214,16 @@ function createPostElement(post) {
                 </span>
             </div>
             <div class="relative opacity-0 group-hover:opacity-100 transition-all">
-                <button onclick="togglePostActionMenu(${post.id})" class="text-gray-400 hover:text-gray-600 p-1 rounded transition-all">
+                <button onclick="togglePostActionMenu(${post.id})" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded transition-all">
                     <i class="fas fa-ellipsis-h text-sm"></i>
                 </button>
-                <div id="post-action-menu-${post.id}" class="absolute right-0 top-full mt-1 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-50 hidden">
+                <div id="post-action-menu-${post.id}" class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
                     <div class="py-1">
-                        <button onclick="showMoveModal(${post.id})" class="flex items-center w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+                        <button onclick="showMoveModal(${post.id})" class="flex items-center w-full px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                             <i class="fas fa-exchange-alt text-xs mr-2"></i>
                             Move
                         </button>
-                        <button onclick="confirmDeletePost(${post.id})" class="flex items-center w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                        <button onclick="confirmDeletePost(${post.id})" class="flex items-center w-full px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                             <i class="fas fa-trash-alt text-xs mr-2"></i>
                             Delete
                         </button>
@@ -241,7 +241,7 @@ function createPostElement(post) {
 
     // Content with markdown formatting or link conversion
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'mb-4 post-content font-content';
+    contentDiv.className = 'mb-4 post-content font-content text-gray-900 dark:text-gray-100';
 
     // Hide content if it's link-only and we have a link preview
     if (shouldHideContent) {
@@ -256,9 +256,9 @@ function createPostElement(post) {
     let processedContent = post.content;
     if (!isMarkdownEnabled) {
         processedContent = formatTextWithUrls(post.content);
-        contentDiv.innerHTML = `<div>${processedContent}</div>`;
+        contentDiv.innerHTML = `<div class="text-gray-900 dark:text-gray-100">${processedContent}</div>`;
     } else {
-        contentDiv.innerHTML = `<div class="markdown-body">${processedContent}</div>`;
+        contentDiv.innerHTML = `<div class="markdown-body text-gray-900 dark:text-gray-100">${processedContent}</div>`;
     }
     const contentHtml = contentDiv.innerHTML;
 
@@ -278,13 +278,13 @@ function createPostElement(post) {
         attachmentsHtml += `
             <div>
                 <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-gray-700">Attachments</h4>
+                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</h4>
                     <div class="flex items-center space-x-2">
-                        <button type="button" class="post-attachment-prev p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="scrollAttachments(this, -1)">
+                        <button type="button" class="post-attachment-prev p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="scrollAttachments(this, -1)">
                             <i class="fas fa-chevron-left text-xs"></i>
                         </button>
-                        <span class="post-attachment-counter text-xs text-gray-500">${totalAttachments} / ${totalAttachments}</span>
-                        <button type="button" class="post-attachment-next p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="scrollAttachments(this, 1)">
+                        <span class="post-attachment-counter text-xs text-gray-500 dark:text-gray-400">${totalAttachments} / ${totalAttachments}</span>
+                        <button type="button" class="post-attachment-next p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="scrollAttachments(this, 1)">
                             <i class="fas fa-chevron-right text-xs"></i>
                         </button>
                     </div>
@@ -313,9 +313,9 @@ function createPostElement(post) {
                             } else {
                                 return `
                                     <div class="relative flex-shrink-0 w-20 h-20 group cursor-pointer" onclick="window.open('/uploads/${attachment.file_path}', '_blank')" title="${tooltipText}">
-                                        <div class="w-full h-full bg-gray-100 border rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
-                                            <i class="fas ${getFileIcon(fileExtension)} text-2xl text-gray-600 mb-1"></i>
-                                            <span class="text-xs text-gray-500 font-medium">${fileExtension.toUpperCase()}</span>
+                                        <div class="w-full h-full bg-gray-100 dark:bg-gray-800 border dark:border-gray-700 rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                                            <i class="fas ${getFileIcon(fileExtension)} text-2xl text-gray-600 dark:text-gray-400 mb-1"></i>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${fileExtension.toUpperCase()}</span>
                                         </div>
                                         <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-1 rounded-b-lg opacity-0 hover:opacity-100 transition-opacity">
                                             <p class="text-white text-xs truncate leading-tight">${attachment.filename}</p>
@@ -527,13 +527,13 @@ async function confirmDeletePost(postId) {
     let detailsHtml = '';
 
     if (attachments.length > 0) {
-        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Files to be deleted:</h4>';
-        detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
+        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Files to be deleted:</h4>';
+        detailsHtml += '<div class="bg-gray-50 dark:bg-gray-800 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">';
 
         attachments.forEach(file => {
             detailsHtml += `<li class="flex justify-between items-center">
                 <span>• ${file.filename}</span>
-                <span class="text-xs text-gray-400">${formatFileSize(file.file_size)}</span>
+                <span class="text-xs text-gray-400 dark:text-gray-500">${formatFileSize(file.file_size)}</span>
             </li>`;
         });
 
@@ -627,8 +627,8 @@ function updateCategoryStatsDisplay(stats) {
 
     document.getElementById('timeline-title').innerHTML = `
         <div class="group relative">
-            <h2 class="text-xl font-bold text-gray-900">${categoryBreadcrumb}</h2>
-            <p class="text-xs text-gray-500 mt-0.5 relative">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${categoryBreadcrumb}</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
                 <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
             </p>
@@ -663,7 +663,7 @@ function updateHeaderButtons() {
         if (currentCategory.recursiveMode) {
             recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors';
         } else {
-            recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition-colors';
+            recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors';
         }
     } else {
         recursiveToggleBtn.style.display = 'none';
@@ -720,8 +720,8 @@ function updateAllCategoriesDisplay(fileStats) {
 
     document.getElementById('timeline-title').innerHTML = `
         <div class="group">
-            <h2 class="text-xl font-bold text-gray-900">${window.AppConstants.UI_TEXT.allCategories}</h2>
-            <p class="text-xs text-gray-500 mt-0.5 relative">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${window.AppConstants.UI_TEXT.allCategories}</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
                 <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
             </p>

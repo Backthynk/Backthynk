@@ -37,7 +37,7 @@ function updateFilePreview() {
     const filesArray = Array.from(selectedFiles.entries());
     filesArray.forEach(([fileId, file]) => {
         const fileDiv = document.createElement('div');
-        fileDiv.className = 'flex items-center justify-between bg-gray-50 border border-gray-200 rounded p-3';
+        fileDiv.className = 'flex items-center justify-between bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-3';
 
         const isImage = file.type.startsWith('image/');
         let preview = '';
@@ -46,8 +46,8 @@ function updateFilePreview() {
             const objectUrl = URL.createObjectURL(file);
             preview = `<img src="${objectUrl}" class="w-12 h-12 object-cover rounded mr-3">`;
         } else {
-            preview = `<div class="w-12 h-12 bg-gray-200 rounded mr-3 flex items-center justify-center">
-                <i class="fas fa-file text-gray-500"></i>
+            preview = `<div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded mr-3 flex items-center justify-center">
+                <i class="fas fa-file text-gray-500 dark:text-gray-400"></i>
             </div>`;
         }
 
@@ -55,8 +55,8 @@ function updateFilePreview() {
             <div class="flex items-center">
                 ${preview}
                 <div>
-                    <p class="text-sm font-medium text-gray-900 truncate" style="max-width: ${window.AppConstants.UI_CONFIG.maxFilenameDisplay}px;">${file.name}</p>
-                    <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" style="max-width: ${window.AppConstants.UI_CONFIG.maxFilenameDisplay}px;">${file.name}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">${formatFileSize(file.size)}</p>
                 </div>
             </div>
             <button type="button" onclick="removeFileFromSelection(${fileId})" class="text-red-600 hover:text-red-800 p-1">
@@ -74,7 +74,7 @@ function updatePastedFilesDisplay() {
 
     if (window.pastedFiles && window.pastedFiles.length > 0) {
         const label = document.createElement('div');
-        label.className = 'text-sm font-medium text-gray-700 mb-2';
+        label.className = 'text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
         label.textContent = 'Pasted Images:';
         container.appendChild(label);
 
@@ -202,9 +202,9 @@ function createModalFilePreviewElement(id, file, type) {
         const fileIcon = getFileIcon(fileExtension);
         fileDiv.innerHTML = `
             <div class="relative w-20 h-20 group cursor-pointer" title="${tooltipText}">
-                <div class="w-full h-full bg-gray-100 border rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 transition-colors">
-                    <i class="fas ${fileIcon} text-2xl text-gray-600 mb-1"></i>
-                    <span class="text-xs text-gray-500 font-medium">${fileExtension.toUpperCase()}</span>
+                <div class="w-full h-full bg-gray-100 dark:bg-gray-800 border dark:border-gray-700 rounded-lg flex flex-col items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas ${fileIcon} text-2xl text-gray-600 dark:text-gray-400 mb-1"></i>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">${fileExtension.toUpperCase()}</span>
                 </div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
                     <div class="absolute bottom-0 left-0 right-0 p-1">
@@ -277,9 +277,9 @@ function generateFilePreview(file) {
             <span class="text-xs text-indigo-600 font-medium">DOC</span>
         </div>`;
     } else {
-        return `<div class="w-full h-full bg-gray-50 flex flex-col items-center justify-center">
-            <i class="fas fa-file text-gray-500 text-lg mb-1"></i>
-            <span class="text-xs text-gray-600 font-medium">FILE</span>
+        return `<div class="w-full h-full bg-gray-50 dark:bg-gray-800 flex flex-col items-center justify-center">
+            <i class="fas fa-file text-gray-500 dark:text-gray-400 text-lg mb-1"></i>
+            <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">FILE</span>
         </div>`;
     }
 }

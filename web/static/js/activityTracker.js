@@ -26,7 +26,7 @@ async function generateActivityHeatmap() {
 
     // Show loading indicator in the entire activity container (not just heatmap)
     activityContainer.innerHTML = `
-        <div class="text-center text-gray-500 py-16">
+        <div class="text-center text-gray-500 dark:text-gray-400 py-16">
             <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
             <p>Loading activity...</p>
         </div>
@@ -94,7 +94,7 @@ function updateActivityCategoryBreadcrumb() {
     if (!breadcrumbElement) return;
 
     if (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        breadcrumbElement.innerHTML = `<span class="text-xs font-semibold text-gray-700">${window.AppConstants.UI_TEXT.allCategories}</span>`;
+        breadcrumbElement.innerHTML = `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${window.AppConstants.UI_TEXT.allCategories}</span>`;
         return;
     }
 
@@ -116,11 +116,11 @@ function updateActivityCategoryBreadcrumb() {
     const breadcrumbHtml = breadcrumbPath.map((cat, index) => {
         const isLast = index === breadcrumbPath.length - 1;
         if (isLast) {
-            return `<span class="text-xs font-semibold text-gray-700">${cat.name}</span>`;
+            return `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${cat.name}</span>`;
         } else {
-            return `<span class="text-xs font-medium text-gray-600">${cat.name}</span>`;
+            return `<span class="text-xs font-medium text-gray-600 dark:text-gray-400">${cat.name}</span>`;
         }
-    }).join(' <span class="text-gray-400 mx-1">></span> ');
+    }).join(' <span class="text-gray-400 dark:text-gray-500 mx-1">></span> ');
 
     breadcrumbElement.innerHTML = breadcrumbHtml;
 }
@@ -138,11 +138,11 @@ function generateHeatmapFromCache(activityData) {
 
             <!-- Centered Date Range with Navigation -->
             <div class="flex items-center justify-center mb-4">
-                <button id="activity-prev" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
+                <button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
                     <i class="fas fa-chevron-left text-xs"></i>
                 </button>
-                <span id="activity-period" class="text-sm text-gray-600"></span>
-                <button id="activity-next" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 ml-3" onclick="changeActivityPeriod(1)">
+                <span id="activity-period" class="text-sm text-gray-600 dark:text-gray-400"></span>
+                <button id="activity-next" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 ml-3" onclick="changeActivityPeriod(1)">
                     <i class="fas fa-chevron-right text-xs"></i>
                 </button>
             </div>
@@ -161,7 +161,7 @@ function generateHeatmapFromCache(activityData) {
                 <div id="activity-legend" class="flex flex-col space-y-1">
                     <!-- Legend will be generated dynamically -->
                 </div>
-                <span id="activity-summary" class="text-gray-500"></span>
+                <span id="activity-summary" class="text-gray-500 dark:text-gray-400"></span>
             </div>
         `;
     }
@@ -257,7 +257,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
     // Handle empty days array
     if (days.length === 0) {
-        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
         return;
     }
 
@@ -266,7 +266,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
     // Check if dates are valid
     if (!startDate || !endDate) {
-        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
         return;
     }
 
@@ -275,7 +275,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
     // Check if dates are valid after parsing
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
+        document.getElementById('activity-heatmap').innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-4"><p>${window.AppConstants.USER_MESSAGES.info.noActivityData}</p></div>';
         return;
     }
 
@@ -314,7 +314,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
 
         html += '<div class="flex items-center relative">';
         if (monthLabel) {
-            html += `<div class="absolute -left-10 w-8 text-xs text-gray-400 text-right">${monthLabel}</div>`;
+            html += `<div class="absolute -left-10 w-8 text-xs text-gray-400 dark:text-gray-500 text-right">${monthLabel}</div>`;
         }
         html += '<div class="flex gap-1">';
 
@@ -330,7 +330,7 @@ function renderHeatmapGrid(days, startDate, endDate) {
                     timeZone: 'UTC'
                 });
 
-                html += `<div class="heatmap-square ${colorClass} rounded-sm cursor-pointer heatmap-cell hover:ring-1 hover:ring-gray-300 transition-all"
+                html += `<div class="heatmap-square ${colorClass} rounded-sm cursor-pointer heatmap-cell hover:ring-1 hover:ring-gray-300 dark:hover:ring-gray-600 transition-all"
                              data-date="${day.date}"
                              data-count="${day.count}"
                              data-day="${dayName}">
@@ -351,16 +351,18 @@ function updateActivityLegend() {
     if (!legendElement) return;
 
     const minColorClass = window.AppConstants.ACTIVITY_CLASSES[1]; // First actual activity level
+    const minColorClassDark = window.AppConstants.ACTIVITY_CLASSES_DARK[1];
     const maxColorClass = window.AppConstants.ACTIVITY_CLASSES[window.AppConstants.ACTIVITY_CLASSES.length - 1]; // Highest activity level
+    const maxColorClassDark = window.AppConstants.ACTIVITY_CLASSES_DARK[window.AppConstants.ACTIVITY_CLASSES_DARK.length - 1];
 
     legendElement.innerHTML = `
         <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 ${minColorClass} rounded-sm"></div>
-            <span class="text-gray-400">${window.AppConstants.UI_TEXT.less}</span>
+            <div class="w-2 h-2 ${minColorClass} ${minColorClassDark} rounded-sm"></div>
+            <span class="text-gray-400 dark:text-gray-500">${window.AppConstants.UI_TEXT.less}</span>
         </div>
         <div class="flex items-center space-x-2">
-            <div class="w-2 h-2 ${maxColorClass} rounded-sm"></div>
-            <span class="text-gray-400">${window.AppConstants.UI_TEXT.more}</span>
+            <div class="w-2 h-2 ${maxColorClass} ${maxColorClassDark} rounded-sm"></div>
+            <span class="text-gray-400 dark:text-gray-500">${window.AppConstants.UI_TEXT.more}</span>
         </div>
     `;
 }
@@ -409,7 +411,7 @@ async function changeActivityPeriod(direction) {
     const heatmapContainer = document.getElementById('activity-heatmap');
     if (heatmapContainer) {
         heatmapContainer.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                 <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                 <p class="text-sm">Loading...</p>
             </div>
@@ -436,7 +438,9 @@ function getIntensityLevel(count) {
 
 // Get color class for activity level (using constants)
 function getColorClass(intensity) {
-    return window.AppConstants.ACTIVITY_CLASSES[intensity] || window.AppConstants.ACTIVITY_CLASSES[0];
+    const lightClass = window.AppConstants.ACTIVITY_CLASSES[intensity] || window.AppConstants.ACTIVITY_CLASSES[0];
+    const darkClass = window.AppConstants.ACTIVITY_CLASSES_DARK[intensity] || window.AppConstants.ACTIVITY_CLASSES_DARK[0];
+    return `${lightClass} ${darkClass}`;
 }
 
 // Add tooltips (same as before)

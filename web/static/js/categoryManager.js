@@ -7,7 +7,7 @@ function renderCategories() {
 
     if (rootCategories.length === 0) {
         container.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                 <i class="fas fa-folder-plus text-4xl mb-4"></i>
                 <p>${window.AppConstants.UI_TEXT.noCategoriesYet}</p>
             </div>
@@ -43,7 +43,7 @@ function createCategoryElement(category, level = 0) {
     let expandButton = '';
     if (hasChildren) {
         expandButton = `
-            <button class="expand-btn flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200 mr-1" style="margin-left: ${level * 14}px;">
+            <button class="expand-btn flex-shrink-0 w-5 h-5 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-all duration-200 mr-1" style="margin-left: ${level * 14}px;">
                 <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'} text-xs"></i>
             </button>
         `;
@@ -54,16 +54,16 @@ function createCategoryElement(category, level = 0) {
     // Main category button with GitHub-style design
     const categoryButton = document.createElement('button');
     const isSelected = currentCategory?.id === category.id;
-    categoryButton.className = `category-btn flex-1 text-left px-2 py-1.5 rounded-md transition-all duration-200 min-w-0 group-hover:bg-gray-50 ${
+    categoryButton.className = `category-btn flex-1 text-left px-2 py-1.5 rounded-md transition-all duration-200 min-w-0 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 ${
         isSelected
-            ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500 font-medium'
-            : 'text-gray-700 hover:text-gray-900'
+            ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-l-2 border-blue-500 dark:border-blue-400 font-medium'
+            : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
     }`;
     categoryButton.dataset.categoryId = category.id; // Add data attribute for easy identification
 
     categoryButton.innerHTML = `
         <div class="flex items-center min-w-0">
-            <i class="fas fa-folder${isSelected ? '-open' : ''} mr-2 flex-shrink-0 text-xs ${isSelected ? 'text-blue-500' : 'text-gray-400'}"></i>
+            <i class="fas fa-folder${isSelected ? '-open' : ''} mr-2 flex-shrink-0 text-xs ${isSelected ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}"></i>
             <span class="text-sm truncate" title="${category.name}">${category.name}</span>
         </div>
     `;
@@ -140,7 +140,7 @@ function selectCategory(category, fromUserClick = false) {
     const postsContainer = document.getElementById('posts-container');
     if (postsContainer) {
         postsContainer.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                 <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
                 <p>Loading posts...</p>
             </div>
@@ -156,6 +156,7 @@ function selectCategory(category, fromUserClick = false) {
     // Update UI
     document.getElementById('new-post-btn').style.display = 'block';
     document.getElementById('settings-btn').style.display = 'none';
+    document.getElementById('theme-toggle-btn').style.display = 'none';
     document.getElementById('category-actions-dropdown').style.display = 'block';
 
     // Ensure all parent categories are expanded
@@ -256,7 +257,7 @@ function deselectCategory() {
     const postsContainer = document.getElementById('posts-container');
     if (postsContainer) {
         postsContainer.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
+            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                 <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
                 <p>Loading posts...</p>
             </div>
@@ -276,6 +277,7 @@ function deselectCategory() {
     // Update UI
     document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
+    document.getElementById('theme-toggle-btn').style.display = 'block';
     document.getElementById('category-actions-dropdown').style.display = 'none';
 
     // Update header immediately with cached post counts
@@ -416,10 +418,10 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
         if (pathElements.length > 1) {
             // Has parent categories - show "... > Current Category"
             const parentElement = pathElements[pathElements.length - 2];
-            return `<span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors" onclick="navigateToCategory(${parentElement.id})">...</span> <span class="text-gray-400">></span> <span class="text-gray-900">${currentElement.name}</span>`;
+            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToCategory(${parentElement.id})">...</span> <span class="text-gray-400 dark:text-gray-500">></span> <span class="text-gray-900 dark:text-gray-100">${currentElement.name}</span>`;
         } else {
             // Root category - show "... > Current Category" where ... goes to All Categories
-            return `<span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors" onclick="navigateToAllCategories()">...</span> <span class="text-gray-400">></span> <span class="text-gray-900">${currentElement.name}</span>`;
+            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToAllCategories()">...</span> <span class="text-gray-400 dark:text-gray-500">></span> <span class="text-gray-900 dark:text-gray-100">${currentElement.name}</span>`;
         }
     }
 
@@ -427,12 +429,12 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
     return pathElements.map((element, index) => {
         if (index === pathElements.length - 1) {
             // Last element (current category) - not clickable
-            return `<span class="text-gray-900">${element.name}</span>`;
+            return `<span class="text-gray-900 dark:text-gray-100">${element.name}</span>`;
         } else {
             // Parent elements - clickable
-            return `<span class="text-blue-600 hover:text-blue-800 cursor-pointer transition-colors" onclick="navigateToCategory(${element.id})">${element.name}</span>`;
+            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToCategory(${element.id})">${element.name}</span>`;
         }
-    }).join(' <span class="text-gray-400">></span> ');
+    }).join(' <span class="text-gray-400 dark:text-gray-500">></span> ');
 }
 
 // Function to navigate to a category when breadcrumb is clicked
@@ -543,8 +545,8 @@ async function deleteCategory(category) {
 
     // Subcategories list
     if (allDescendants.length > 0) {
-        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 mb-2">Subcategories to be deleted:</h4>';
-        detailsHtml += '<div class="bg-gray-50 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 space-y-1">';
+        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Subcategories to be deleted:</h4>';
+        detailsHtml += '<div class="bg-gray-50 dark:bg-gray-800 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">';
 
         allDescendants.forEach(subcat => {
             const breadcrumb = getCategoryBreadcrumb(subcat.id);
@@ -576,6 +578,7 @@ async function deleteCategory(category) {
                 document.getElementById('timeline-title').textContent = '';
                 document.getElementById('new-post-btn').style.display = 'none';
                 document.getElementById('settings-btn').style.display = 'block';
+                document.getElementById('theme-toggle-btn').style.display = 'block';
                 document.getElementById('recursive-toggle-btn').style.display = 'none';
                 document.getElementById('category-actions-dropdown').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';

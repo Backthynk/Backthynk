@@ -61,7 +61,7 @@ function updateLinkPreviewDisplay() {
 
     try {
         container.innerHTML = `
-            <label class="block text-sm font-medium text-gray-700 mb-2">Link Previews</label>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Link Previews</label>
             <div class="space-y-3">
                 ${currentLinkPreviews.map(preview => createLinkPreviewElement(preview)).join('')}
             </div>
@@ -76,7 +76,7 @@ function createLinkPreviewElement(preview) {
     const hasImage = preview.image_url && preview.image_url.trim() !== '';
 
     return `
-        <div class="border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors" data-preview-id="${preview.id}">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 transition-colors" data-preview-id="${preview.id}">
             <div class="flex">
                 ${hasImage ? `
                     <div class="flex-shrink-0 w-24 h-24">
@@ -89,15 +89,15 @@ function createLinkPreviewElement(preview) {
                 <div class="flex-1 p-3 min-w-0">
                     <div class="flex items-start justify-between">
                         <div class="flex-1 min-w-0">
-                            <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-1">
                                 ${escapeHtml(preview.title)}
                             </h4>
                             ${preview.description ? `
-                                <p class="text-xs text-gray-600 line-clamp-2 mb-2">
+                                <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
                                     ${escapeHtml(preview.description)}
                                 </p>
                             ` : ''}
-                            <div class="flex items-center text-xs text-gray-500">
+                            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-link mr-1"></i>
                                 <span class="truncate">
                                     ${preview.site_name ? escapeHtml(preview.site_name) : new URL(preview.url).hostname}
@@ -106,7 +106,7 @@ function createLinkPreviewElement(preview) {
                         </div>
                         <button type="button"
                                 onclick="removeLinkPreview(${preview.id})"
-                                class="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded">
+                                class="ml-2 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded">
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
@@ -133,7 +133,7 @@ function createPostLinkPreviewElement(preview) {
         <a href="${escapeHtml(preview.url)}"
            target="_blank"
            rel="noopener noreferrer"
-           class="block border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 hover:bg-gray-50 transition-all flex-shrink-0 w-full">
+           class="block border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all flex-shrink-0 w-full">
             <div class="flex">
                 ${hasImage ? `
                     <div class="flex-shrink-0 w-32 h-24">
@@ -144,15 +144,15 @@ function createPostLinkPreviewElement(preview) {
                     </div>
                 ` : ''}
                 <div class="flex-1 p-4 min-w-0">
-                    <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
+                    <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-2">
                         ${escapeHtml(preview.title)}
                     </h4>
                     ${preview.description ? `
-                        <p class="text-xs text-gray-600 line-clamp-3 mb-2">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 mb-2">
                             ${escapeHtml(preview.description)}
                         </p>
                     ` : ''}
-                    <div class="flex items-center text-xs text-gray-500">
+                    <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                         <i class="fas fa-external-link-alt mr-1"></i>
                         <span class="truncate">
                             ${preview.site_name ? escapeHtml(preview.site_name) : new URL(preview.url).hostname}
@@ -173,13 +173,13 @@ function createPostLinkPreviewsContainer(linkPreviews, postId) {
     return `
         <div class="mb-4 mt-4">
             <div class="flex items-center justify-between mb-2">
-                <label class="block text-sm font-medium text-gray-700">Link Previews</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link Previews</label>
                 <div class="flex items-center space-x-2">
-                    <button type="button" class="post-link-prev p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" disabled onclick="navigatePostLinkPreview(${postId}, -1)">
+                    <button type="button" class="post-link-prev p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="navigatePostLinkPreview(${postId}, -1)">
                         <i class="fas fa-chevron-left text-xs"></i>
                     </button>
-                    <span class="post-link-counter text-xs text-gray-500">1 / ${linkPreviews.length}</span>
-                    <button type="button" class="post-link-next p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30" ${linkPreviews.length === 1 ? 'disabled' : ''} onclick="navigatePostLinkPreview(${postId}, 1)">
+                    <span class="post-link-counter text-xs text-gray-500 dark:text-gray-400">1 / ${linkPreviews.length}</span>
+                    <button type="button" class="post-link-next p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" ${linkPreviews.length === 1 ? 'disabled' : ''} onclick="navigatePostLinkPreview(${postId}, 1)">
                         <i class="fas fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -387,7 +387,7 @@ function createModalLinkPreviewElement(preview) {
     const hasImage = preview.image_url && preview.image_url.trim() !== '';
 
     return `
-        <div class="border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors flex-shrink-0 w-full" data-preview-id="${preview.id}">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:border-gray-300 dark:hover:border-gray-600 transition-colors flex-shrink-0 w-full" data-preview-id="${preview.id}">
             <div class="flex">
                 ${hasImage ? `
                     <div class="flex-shrink-0 w-24 h-24">
@@ -400,15 +400,15 @@ function createModalLinkPreviewElement(preview) {
                 <div class="flex-1 p-3 min-w-0">
                     <div class="flex items-start justify-between">
                         <div class="flex-1 min-w-0">
-                            <h4 class="text-sm font-medium text-gray-900 line-clamp-2 mb-1">
+                            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 mb-1">
                                 ${escapeHtml(preview.title)}
                             </h4>
                             ${preview.description ? `
-                                <p class="text-xs text-gray-600 line-clamp-2 mb-2">
+                                <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
                                     ${escapeHtml(preview.description)}
                                 </p>
                             ` : ''}
-                            <div class="flex items-center text-xs text-gray-500">
+                            <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-link mr-1"></i>
                                 <span class="truncate">
                                     ${preview.site_name ? escapeHtml(preview.site_name) : new URL(preview.url).hostname}
@@ -417,7 +417,7 @@ function createModalLinkPreviewElement(preview) {
                         </div>
                         <button type="button"
                                 onclick="removeModalLinkPreview(${preview.id})"
-                                class="ml-2 p-1 text-gray-400 hover:text-gray-600 rounded">
+                                class="ml-2 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded">
                             <i class="fas fa-times text-xs"></i>
                         </button>
                     </div>
