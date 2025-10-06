@@ -36,6 +36,9 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		"maxFileSizeMB":                    options.Features.FileUpload.MaxFileSizeMB,
 		"maxFilesPerPost":                  options.Features.FileUpload.MaxFilesPerPost,
 		"allowedFileExtensions":            options.Features.FileUpload.AllowedExtensions,
+		
+		//version
+		"version": config.VERSION,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

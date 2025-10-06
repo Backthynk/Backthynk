@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strings"
 )
 
@@ -67,9 +68,10 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use compressed template in production mode
-	templatePath := "web/templates/index.html"
+	sharedCfg := config.GetSharedConfig()
+	templatePath := filepath.Join(sharedCfg.Paths.Source.Templates, "index.html")
 	if config.IsProduction() {
-		templatePath = "web/templates/compressed/index.html"
+		templatePath = filepath.Join(sharedCfg.Paths.Compressed.Templates, "index.html")
 	}
 
 	// Parse and execute template

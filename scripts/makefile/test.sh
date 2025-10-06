@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Test script for Backthynk backend unit tests
+# Test script for Backthynk server
 source "$(dirname "$0")/../common/load-config.sh"
 
-echo -e "${BLUE}▶${NC} Running backend unit tests..."
-eval "$GO_TEST_COMMAND"
-echo -e "${GREEN}✓${NC} All tests completed"
+echo -e "${BLUE}▶${NC} Running tests..."
+go test ./... -short

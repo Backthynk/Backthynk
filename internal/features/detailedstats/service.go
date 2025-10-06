@@ -3,7 +3,6 @@ package detailedstats
 import (
 	"backthynk/internal/core/cache"
 	"backthynk/internal/core/events"
-	"backthynk/internal/core/logger"
 	"backthynk/internal/storage"
 	"sync"
 )
@@ -48,8 +47,6 @@ func (s *Service) Initialize() error {
 		return nil
 	}
 
-	logger.Info("Initializing detailed stats cache")
-
 	// Load all file stats from database
 	fileStats, err := s.db.GetAllFileStats()
 	if err != nil {
@@ -91,7 +88,6 @@ func (s *Service) Initialize() error {
 		s.calculateRecursiveStats(cat.ID)
 	}
 
-	logger.Info("Detailed stats cache initialized")
 	return nil
 }
 

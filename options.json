@@ -3,8 +3,8 @@
     "maxContentLength": 1500
   },
   "metadata": {
-    "title": "Louis",
-    "description": "Jadore ma description"
+    "title": "Backthynk",
+    "description": "Self-hosted micro-blogging platform for people with messy thoughts."
   },
   "features": {
     "activity": {
@@ -15,7 +15,7 @@
       "enabled": true
     },
     "retroactivePosting": {
-      "enabled": true,
+      "enabled": false,
       "timeFormat": "24h"
     },
     "markdown": {
@@ -48,7 +48,17 @@
         "ogg",
         "flac",
         "m4a",
-        "json"
+        "json",
+        "csv",
+        "yaml",
+        "yml",
+        "md",
+        "xml",
+        "ppt",
+        "pptx",
+        "odt",
+        "ods",
+        "odp"
       ]
     }
   }

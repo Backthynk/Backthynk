@@ -1,6 +1,6 @@
 {
   "server": {
-    "port": "1369"
+    "port": "8081"
   },
   "files": {
     "configFilename": "options.json",

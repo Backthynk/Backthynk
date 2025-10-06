@@ -1,0 +1,30 @@
+{
+  "build": {
+    "js_files": {
+      "priority_order": [
+        "darkMode.js",
+        "constants.js",
+        "router.js",
+        "state.js",
+        "utils.js",
+        "alertSystem.js",
+        "api.js"
+      ],
+      "last_files": [
+        "main.js"
+      ]
+    },
+    "html_processing": {
+      "js_script_tags_start": "darkMode.js",
+      "js_script_tags_end": "main.js",
+      "tailwind_cdn_pattern": "https://cdn.tailwindcss.com",
+      "fontawesome_cdn_pattern": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome"
+    }
+  },
+  "development": {
+    "bulk_posts": {
+      "default_months_back": 36,
+      "max_posts_per_batch": 1000
+    }
+  }
+}

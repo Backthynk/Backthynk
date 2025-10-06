@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "backthynk",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "build_dir": "build",
+    "build_assets": "build/assets",
+    "build_bin": "build/bin",
+    "compressed": {
+      "js": "build/assets/js/compressed",
+      "css": "build/assets/css/compressed",
+      "templates": "build/assets/templates/compressed"
+    },
+    "source": {
+      "static": "web/static",
+      "templates": "web/templates",
+      "js": "web/static/js",
+      "css": "web/static/css"
+    }
+  }
+}

@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 const (
+	VERSION = "0.1.0"
+
 	// Category Limits
 	MaxCategoryDepth             = 2
 	MaxCategoryNameLength        = 30
@@ -104,22 +107,72 @@ type OptionsConfig struct {
 	} `json:"features"`
 }
 
+type SharedConfig struct {
+	App struct {
+		Name    string `json:"name"`
+		Version string `json:"version"`
+	} `json:"app"`
+	Paths struct {
+		BuildDir     string `json:"build_dir"`
+		BuildAssets  string `json:"build_assets"`
+		BuildBin     string `json:"build_bin"`
+		Compressed   struct {
+			JS        string `json:"js"`
+			CSS       string `json:"css"`
+			Templates string `json:"templates"`
+		} `json:"compressed"`
+		Source struct {
+			Static    string `json:"static"`
+			Templates string `json:"templates"`
+			JS        string `json:"js"`
+			CSS       string `json:"css"`
+		} `json:"source"`
+	} `json:"paths"`
+	URLs struct {
+		CDN map[string]interface{} `json:"cdn"`
+	} `json:"urls"`
+}
+
 var (
 	serviceConfig *ServiceConfig
 	optionsConfig *OptionsConfig
+	sharedConfig  *SharedConfig
 )
+
+func LoadSharedConfig() error {
+	// Smart path detection for .config.json
+	// If scripts/common/ exists at project root, use scripts/.config.json
+	// Otherwise, use build/.config.json
+	configPath := "build/.config.json"
+	if _, err := os.Stat("scripts/common"); err == nil {
+		configPath = "scripts/.config.json"
+	}
+
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to read shared config from %s: %w", configPath, err)
+	}
+
+	var config SharedConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		return fmt.Errorf("failed to parse shared config: %w", err)
+	}
+
+	sharedConfig = &config
+	return nil
+}
 
 func LoadServiceConfig() error {
 	data, err := os.ReadFile("service.json")
 	if err != nil {
 		return err
 	}
-	
+
 	var config ServiceConfig
 	if err := json.Unmarshal(data, &config); err != nil {
 		return err
 	}
-	
+
 	serviceConfig = &config
 	return nil
 }
@@ -154,6 +207,10 @@ func GetOptionsConfig() *OptionsConfig {
 	return optionsConfig
 }
 
+func GetSharedConfig() *SharedConfig {
+	return sharedConfig
+}
+
 func IsProduction() bool {
 	return os.Getenv("BACKTHYNK_ENV") == "production"
 }
@@ -166,4 +223,71 @@ func SetServiceConfigForTest(config *ServiceConfig) {
 // SetOptionsConfigForTest sets the options config for testing purposes
 func SetOptionsConfigForTest(config *OptionsConfig) {
 	optionsConfig = config
+}
+
+// ANSI color codes
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+	colorBlue   = "\033[34m"
+	colorPurple = "\033[35m"
+	colorCyan   = "\033[36m"
+	colorBold   = "\033[1m"
+)
+
+// PrintConfigPaths prints the configuration file paths with colors
+func PrintConfigPaths() {
+	mode := "development"
+	modeColor := colorGreen
+	if IsProduction() {
+		mode = "production"
+		modeColor = colorYellow
+	}
+
+	fmt.Printf("\n%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorBold, colorCyan, colorReset)
+	fmt.Printf("%s%s  Configuration Files%s\n", colorBold, colorCyan, colorReset)
+	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n\n", colorBold, colorCyan, colorReset)
+
+	fmt.Printf("%s%sMode:%s %s%s%s\n\n", colorBold, colorBlue, colorReset, modeColor, mode, colorReset)
+
+	// Backend configs
+	fmt.Printf("%s%sBackend Configuration:%s\n", colorBold, colorPurple, colorReset)
+
+	// Service config
+	serviceConfigPath, _ := filepath.Abs("service.json")
+	fmt.Printf("  %s├─%s service.json\n", colorCyan, colorReset)
+	fmt.Printf("  %s│%s  %s%s%s\n", colorCyan, colorReset, colorYellow, serviceConfigPath, colorReset)
+
+	// Options config
+	if serviceConfig != nil {
+		optionsConfigPath, _ := filepath.Abs(serviceConfig.Files.ConfigFilename)
+		fmt.Printf("  %s├─%s options.json\n", colorCyan, colorReset)
+		fmt.Printf("  %s│%s  %s%s%s\n", colorCyan, colorReset, colorYellow, optionsConfigPath, colorReset)
+	}
+
+	// Shared config
+	configPath := "build/.config.json"
+	if _, err := os.Stat("scripts/common"); err == nil {
+		configPath = "scripts/.config.json"
+	}
+	sharedConfigPath, _ := filepath.Abs(configPath)
+	fmt.Printf("  %s└─%s .config.json\n", colorCyan, colorReset)
+	fmt.Printf("    %s%s%s\n\n", colorYellow, sharedConfigPath, colorReset)
+
+	// Web resources
+	fmt.Printf("%s%sWeb Resources:%s\n", colorBold, colorPurple, colorReset)
+
+	if sharedConfig != nil {
+		webPath := sharedConfig.Paths.Source.Static
+		if IsProduction() {
+			webPath = sharedConfig.Paths.BuildAssets
+		}
+		absWebPath, _ := filepath.Abs(webPath)
+		fmt.Printf("  %s└─%s %s\n", colorCyan, colorReset, mode)
+		fmt.Printf("    %s%s%s\n", colorYellow, absWebPath, colorReset)
+	}
+
+
 }

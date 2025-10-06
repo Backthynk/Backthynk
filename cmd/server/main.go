@@ -15,7 +15,16 @@ import (
 )
 
 func main() {
+	// Ensure config files exist (interactive setup if needed)
+	if err := config.EnsureConfigFiles(); err != nil {
+		log.Fatal("Failed to setup configuration:", err)
+	}
+
 	// Load configuration
+	if err := config.LoadSharedConfig(); err != nil {
+		log.Fatal("Failed to load shared config:", err)
+	}
+
 	if err := config.LoadServiceConfig(); err != nil {
 		log.Fatal("Failed to load service config:", err)
 	}
@@ -23,6 +32,9 @@ func main() {
 	if err := config.LoadOptionsConfig(); err != nil {
 		log.Fatal("Failed to load options config:", err)
 	}
+
+	// Display configuration paths
+	config.PrintConfigPaths()
 
 	// Initialize logger
 	serviceConfig := config.GetServiceConfig()
@@ -35,33 +47,28 @@ func main() {
 	}
 	defer logger.GetLogger().Close()
 
-	logger.Info("Starting BackThynk server")
-
 	// Initialize database
 	db, err := storage.NewDB(serviceConfig.Files.StoragePath)
 	if err != nil {
-		logger.Errorf("Failed to initialize database: %v", err)
 		log.Fatal("Failed to initialize database:", err)
 	}
 	defer db.Close()
-	
+
 	// Initialize event dispatcher
 	dispatcher := events.NewAsyncDispatcher()
-	
+
 	// Initialize category cache
 	categoryCache := cache.NewCategoryCache()
-	
+
 	// Initialize core services
 	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
 	postService := services.NewPostService(db, categoryCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
-	
+
 	// Initialize category cache
 	if err := categoryService.InitializeCache(); err != nil {
-		logger.Errorf("Failed to initialize category cache: %v", err)
 		log.Fatal("Failed to initialize category cache:", err)
 	}
-	logger.Infof("Initialized category cache with %d categories", len(categoryCache.GetAll()))
 
 	// Initialize features
 	opts := config.GetOptionsConfig()
@@ -71,14 +78,13 @@ func main() {
 	if opts.Features.DetailedStats.Enabled {
 		detailedStatsService = detailedstats.NewService(db, categoryCache, true)
 		if err := detailedStatsService.Initialize(); err != nil {
-			logger.Warningf("Failed to initialize detailed stats: %v", err)
+			log.Fatal("Failed to initialize detailed stats:", err)
 		}
 		dispatcher.Subscribe(events.FileUploaded, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.FileDeleted, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.PostDeleted, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.PostMoved, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.CategoryUpdated, detailedStatsService.HandleEvent)
-		logger.Info("Detailed stats feature enabled")
 	}
 
 	// Activity feature
@@ -86,15 +92,14 @@ func main() {
 	if opts.Features.Activity.Enabled {
 		activityService = activity.NewService(db, categoryCache, true)
 		if err := activityService.Initialize(); err != nil {
-			logger.Warningf("Failed to initialize activity: %v", err)
+			log.Fatal("Failed to initialize activity:", err)
 		}
 		dispatcher.Subscribe(events.PostCreated, activityService.HandleEvent)
 		dispatcher.Subscribe(events.PostDeleted, activityService.HandleEvent)
 		dispatcher.Subscribe(events.PostMoved, activityService.HandleEvent)
 		dispatcher.Subscribe(events.CategoryUpdated, activityService.HandleEvent)
-		logger.Info("Activity tracking feature enabled")
 	}
-	
+
 	// Initialize API router
 	apiRouter := api.NewRouter(
 		categoryService,
@@ -105,11 +110,12 @@ func main() {
 		opts,
 		config.GetServiceConfig(),
 	)
-	
+
+	// Display startup info with features summary and RAM usage
+	config.PrintStartupInfo(serviceConfig.Server.Port, opts)
+
 	// Start server
-	logger.Infof("Server starting on :%s", serviceConfig.Server.Port)
 	if err := http.ListenAndServe(":"+serviceConfig.Server.Port, apiRouter); err != nil {
-		logger.Errorf("Server failed: %v", err)
 		log.Fatal("Server failed:", err)
 	}
 }
