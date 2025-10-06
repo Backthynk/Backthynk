@@ -31,7 +31,8 @@ for htmlfile in "$TEMPLATES_DIR"/*.html; do
         output_file="$TEMPLATES_COMPRESSED_DIR/$(basename "$htmlfile")"
 
         # Process HTML: minify and update asset references
-        sed 's/<!--.*-->//g' "$htmlfile" | \
+        # Remove multi-line HTML comments first, then process normally
+        perl -0777 -pe 's/<!--.*?-->//gs' "$htmlfile" | \
         sed 's/>[[:space:]]\+</></g' | \
         sed 's/^[[:space:]]\+//g' | \
         sed '/^[[:space:]]*$/d' | \

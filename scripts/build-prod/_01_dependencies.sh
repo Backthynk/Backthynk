@@ -24,6 +24,7 @@ REQUIRED_DEPS=(
     "jq"       # For JSON processing
     "node"     # For Tailwind CSS build
     "npm"      # For Tailwind CSS dependencies
+    "perl"    # For advanced text processing (CSS minification fallback
 )
 
 # Optional minification tools (checked and reported but not required)

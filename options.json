@@ -1,6 +1,6 @@
 {
   "core": {
-    "maxContentLength": 50000
+    "maxContentLength": 1500
   },
   "metadata": {
     "title": "Louis",
@@ -16,14 +16,14 @@
     },
     "retroactivePosting": {
       "enabled": true,
-      "timeFormat": "12h"
+      "timeFormat": "24h"
     },
     "markdown": {
-      "enabled": true
+      "enabled": false
     },
     "fileUpload": {
       "enabled": true,
-      "maxFileSizeMB": 5,
+      "maxFileSizeMB": 100,
       "maxFilesPerPost": 25,
       "allowedExtensions": [
         "jpg",
@@ -40,7 +40,15 @@
         "zip",
         "mp4",
         "mov",
-        "avi"
+        "avi",
+        "rar",
+        "7z",
+        "mp3",
+        "wav",
+        "ogg",
+        "flac",
+        "m4a",
+        "json"
       ]
     }
   }

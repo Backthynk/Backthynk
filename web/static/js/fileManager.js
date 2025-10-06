@@ -131,6 +131,9 @@ function removeModalFileFromSelection(fileId) {
     updateModalFilePreview();
 }
 
+// Expose to global scope for inline onclick handlers
+window.removeModalFileFromSelection = removeModalFileFromSelection;
+
 function updateModalFilePreview() {
     const container = document.getElementById('modal-file-preview-container');
     const list = document.getElementById('modal-file-preview-list');

@@ -6,55 +6,55 @@ const path = require('path');
 // Font Awesome 6 unicode mappings
 const ICON_UNICODES = {
   'fa-arrow-left': '\\f060',
+  'fa-chart-line': '\\f201',
   'fa-chevron-down': '\\f078',
   'fa-chevron-left': '\\f053',
   'fa-chevron-right': '\\f054',
-  'fa-ellipsis-h': '\\f141',
-  'fa-times': '\\f00d',
-  'fa-plus': '\\f067',
-  'fa-edit': '\\f044',
-  'fa-trash-alt': '\\f2ed',
-  'fa-save': '\\f0c7',
-  'fa-undo': '\\f0e2',
-  'fa-exchange-alt': '\\f362',
-  'fa-sync': '\\f021',
+  'fa-clock': '\\f017',
+  'fa-code': '\\f121',
+  'fa-coffee': '\\f0f4',
   'fa-cog': '\\f013',
-  'fa-sitemap': '\\f0e8',
+  'fa-database': '\\f1c0',
+  'fa-edit': '\\f044',
+  'fa-ellipsis-h': '\\f141',
+  'fa-exchange-alt': '\\f362',
+  'fa-exclamation-triangle': '\\f071',
+  'fa-external-link-alt': '\\f35d',
   'fa-file': '\\f15b',
   'fa-file-alt': '\\f15c',
-  'fa-file-pdf': '\\f1c1',
-  'fa-file-word': '\\f1c2',
-  'fa-file-excel': '\\f1c3',
-  'fa-file-powerpoint': '\\f1c4',
   'fa-file-archive': '\\f1c6',
   'fa-file-audio': '\\f1c7',
+  'fa-file-excel': '\\f1c3',
+  'fa-file-pdf': '\\f1c1',
+  'fa-file-powerpoint': '\\f1c4',
   'fa-file-video': '\\f1c8',
+  'fa-file-word': '\\f1c2',
   'fa-folder': '\\f07b',
   'fa-folder-open': '\\f07c',
   'fa-folder-plus': '\\f65e',
+  'fa-gem': '\\f3a5',
   'fa-image': '\\f03e',
-  'fa-paperclip': '\\f0c6',
+  'fa-inbox': '\\f01c',
+  'fa-link': '\\f0c1',
+  'fa-music': '\\f001',
+  'fa-palette': '\\f53f',
   'fa-paper-plane': '\\f1d8',
+  'fa-paperclip': '\\f0c6',
+  'fa-play-circle': '\\f144',
+  'fa-plus': '\\f067',
+  'fa-save': '\\f0c7',
+  'fa-sitemap': '\\f0e8',
   'fa-sort-alpha-down': '\\f15d',
   'fa-sort-alpha-up': '\\f15e',
   'fa-sort-numeric-down': '\\f162',
   'fa-sort-numeric-up': '\\f163',
   'fa-spinner': '\\f110',
-  'fa-exclamation-triangle': '\\f071',
-  'fa-inbox': '\\f01c',
-  'fa-clock': '\\f017',
-  'fa-link': '\\f0c1',
-  'fa-external-link-alt': '\\f35d',
-  'fa-code': '\\f121',
-  'fa-terminal': '\\f120',
-  'fa-database': '\\f1c0',
+  'fa-sync': '\\f021',
   'fa-table': '\\f0ce',
-  'fa-music': '\\f001',
-  'fa-play-circle': '\\f144',
-  'fa-coffee': '\\f0f4',
-  'fa-gem': '\\f3a5',
-  'fa-palette': '\\f53f',
-  'fa-chart-line': '\\f201'
+  'fa-terminal': '\\f120',
+  'fa-times': '\\f00d',
+  'fa-trash-alt': '\\f2ed',
+  'fa-undo': '\\f0e2'
 };
 
 // Scan files in the web directory for Font Awesome icon usage
@@ -80,22 +80,71 @@ function scanForIcons(webDir) {
     try {
       const content = fs.readFileSync(filePath, 'utf-8');
 
-      // Regex to match Font Awesome icon classes: fa-xxx or fa-xxx-yyy (but not partial matches or template literals)
-      const iconRegex = /(?:class=["'][^"']*\s|class=["'])fa-[a-z]+(?:-[a-z]+)*(?=\s|["'])/g;
-      const matches = content.match(iconRegex);
+      // Utility classes that are not actual icons (handled separately in CSS)
+      const utilityClasses = new Set(['fa-spin', 'fa-pulse', 'fa-fw', 'fa-li', 'fa-border', 'fa-pull-left', 'fa-pull-right',
+                                       'fa-stack', 'fa-stack-1x', 'fa-stack-2x', 'fa-inverse', 'fa-flip-horizontal',
+                                       'fa-flip-vertical', 'fa-rotate-90', 'fa-rotate-180', 'fa-rotate-270']);
 
-      if (matches) {
-        matches.forEach(match => {
-          // Extract just the fa-xxx part
-          const iconMatch = match.match(/fa-[a-z]+(?:-[a-z]+)*/);
-          if (iconMatch) {
-            const cleanIcon = iconMatch[0];
-            if (cleanIcon.startsWith('fa-') && cleanIcon.length > 3) {
-              usedIcons.add(cleanIcon);
+      // Multiple regex patterns to catch different icon usage patterns
+      const patterns = [
+        // class="fas fa-icon-name" or class="far fa-icon-name"
+        /(?:class=["'][^"']*\s|class=["'])fa-[a-z]+(?:-[a-z]+)*(?=\s|["'])/g,
+        // data-asc="fa-icon" or data-desc="fa-icon" or similar data attributes
+        /data-[a-z]+\s*=\s*["']fa-[a-z]+(?:-[a-z]+)*["']/g,
+        // icon: 'fa-icon-name' in JS objects
+        /icon:\s*['"]fa-[a-z]+(?:-[a-z]+)*['"]/g,
+        // Template literals with dynamic parts: fa-folder${...} captures fa-folder
+        /fa-[a-z]+(?:-[a-z]+)*(?=\$\{|['"`])/g,
+        // String concatenation: 'fa-icon' or "fa-icon"
+        /['"]fa-[a-z]+(?:-[a-z]+)*['"]/g
+      ];
+
+      patterns.forEach(pattern => {
+        const matches = content.match(pattern);
+        if (matches) {
+          matches.forEach(match => {
+            // Extract all fa-xxx patterns from the match
+            const iconMatches = match.match(/fa-[a-z]+(?:-[a-z]+)*/g);
+            if (iconMatches) {
+              iconMatches.forEach(icon => {
+                // Filter out utility classes and incomplete icons
+                if (icon.startsWith('fa-') && icon.length > 3 && !utilityClasses.has(icon)) {
+                  usedIcons.add(icon);
+                }
+              });
             }
+          });
+        }
+      });
+
+      // Special handling for dynamic template literals like:
+      // - fa-folder${isSelected ? '-open' : ''} -> captures fa-folder and fa-folder-open
+      // - fa-chevron-${isExpanded ? 'down' : 'right'} -> captures fa-chevron-down and fa-chevron-right
+      const patterns2 = [
+        // Pattern 1: fa-folder${...'-open'...}
+        /fa-([a-z]+(?:-[a-z]+)*)\$\{[^}]*['"]-([a-z]+(?:-[a-z]+)*)['"]/g,
+        // Pattern 2: fa-chevron-${...'down'...'right'...}
+        /fa-([a-z]+)-\$\{[^}]*['"]([a-z]+(?:-[a-z]+)*)['"][^}]*['"]([a-z]+(?:-[a-z]+)*)['"]/g
+      ];
+
+      patterns2.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+          if (match.length === 3) {
+            // Pattern 1: base icon + suffix
+            const baseIcon = `fa-${match[1]}`;
+            const suffixIcon = `fa-${match[1]}-${match[2]}`;
+            if (!utilityClasses.has(baseIcon)) usedIcons.add(baseIcon);
+            if (!utilityClasses.has(suffixIcon)) usedIcons.add(suffixIcon);
+          } else if (match.length === 4) {
+            // Pattern 2: base + two alternatives
+            const option1 = `fa-${match[1]}-${match[2]}`;
+            const option2 = `fa-${match[1]}-${match[3]}`;
+            if (!utilityClasses.has(option1)) usedIcons.add(option1);
+            if (!utilityClasses.has(option2)) usedIcons.add(option2);
           }
-        });
-      }
+        }
+      });
     } catch (error) {
       console.warn(`Warning: Could not read file ${filePath}: ${error.message}`);
     }
@@ -112,12 +161,7 @@ function scanForIcons(webDir) {
 
 // Generate CSS content for the discovered icons
 function generateIconCSS(usedIcons) {
-  let css = `/* Font Awesome Optimized Build */
-/* Generated automatically from icons found in web/ directory */
-/* Icons included: ${usedIcons.join(', ')} */
-
-
-/* Base Font Awesome styles */
+  let css = `/* Base Font Awesome styles */
 .fas, .far {
   font-family: "Font Awesome 6 Free";
   font-weight: 900;

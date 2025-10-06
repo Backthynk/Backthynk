@@ -23,6 +23,17 @@ async function generateActivityHeatmap() {
     // Let CSS handle responsive visibility (hidden on mobile, visible on desktop)
     document.getElementById('activity-container').style.display = '';
 
+    // Show loading indicator in activity heatmap
+    const heatmapContainer = document.getElementById('activity-heatmap');
+    if (heatmapContainer) {
+        heatmapContainer.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                <p class="text-sm">Loading activity...</p>
+            </div>
+        `;
+    }
+
     try {
         // Use efficient API that returns only non-zero activity days
         // For category ID 0, the backend will return global activity data
@@ -356,6 +367,17 @@ async function changeActivityPeriod(direction) {
     }
 
     currentActivityPeriod = newPeriod;
+
+    // Show loading indicator while fetching new period data
+    const heatmapContainer = document.getElementById('activity-heatmap');
+    if (heatmapContainer) {
+        heatmapContainer.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                <p class="text-sm">Loading activity...</p>
+            </div>
+        `;
+    }
 
     // Generate new heatmap (will fetch new data if needed)
     await generateActivityHeatmap();

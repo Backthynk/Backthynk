@@ -126,10 +126,10 @@ function toggleCategory(categoryId) {
     renderCategories();
 }
 
-async function selectCategory(category, fromUserClick = false) {
+function selectCategory(category, fromUserClick = false) {
     // If clicking on already selected category, deselect it (only for user clicks)
     if (fromUserClick && currentCategory && currentCategory.id === category.id) {
-        await deselectCategory();
+        deselectCategory();
         return;
     }
 
@@ -163,16 +163,26 @@ async function selectCategory(category, fromUserClick = false) {
     renderCategories();
     scrollToCategoryElement(category.id);
 
-    // Load posts
+    // Update header immediately with category name and post count from cached state (no await, synchronous)
+    updateCategoryStatsDisplay();
+
+    // Load posts immediately (don't await, let it run in parallel)
     loadPosts(category.id, currentCategory.recursiveMode);
 
     // Reset activity period
     currentActivityPeriod = 0;
     window.scrollTo(0, 0);
 
-    // Load stats and activity
-    const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
-    await updateCategoryStatsDisplay(stats);
+    // Fetch file stats in parallel if needed and update display when ready
+    if (fileStatsEnabled) {
+        fetchCategoryStats(category.id, currentCategory.recursiveMode).then(stats => {
+            updateCategoryStatsDisplay(stats);
+        }).catch(error => {
+            console.error('Failed to fetch file stats:', error);
+        });
+    }
+
+    // Load activity in parallel
     generateActivityHeatmap();
 }
 
@@ -238,7 +248,7 @@ function scrollToCategoryElement(categoryId) {
     }, 100); // Small delay to ensure DOM is updated and animations complete
 }
 
-async function deselectCategory() {
+function deselectCategory() {
     // Stop any ongoing loading
     isLoadingPosts = false;
 
@@ -268,6 +278,9 @@ async function deselectCategory() {
     document.getElementById('settings-btn').style.display = 'block';
     document.getElementById('category-actions-dropdown').style.display = 'none';
 
+    // Update header immediately with cached post counts
+    updateAllCategoriesDisplay();
+
     // Load all posts
     loadPosts(0, false);
 
@@ -275,12 +288,20 @@ async function deselectCategory() {
     currentActivityPeriod = 0;
     window.scrollTo(0, 0);
 
-    // Update display and generate activity
-    await updateAllCategoriesDisplay();
+    // Fetch file stats in parallel if needed and update display when ready
+    if (fileStatsEnabled) {
+        fetchCategoryStats(0, false).then(fileStats => {
+            updateAllCategoriesDisplay(fileStats);
+        }).catch(error => {
+            console.error('Failed to fetch file stats:', error);
+        });
+    }
+
+    // Generate activity in parallel
     generateActivityHeatmap();
 }
 
-async function toggleRecursiveMode(category) {
+function toggleRecursiveMode(category) {
     if (!currentCategory || currentCategory.id !== category.id) return;
 
     currentCategory.recursiveMode = !currentCategory.recursiveMode;
@@ -292,11 +313,23 @@ async function toggleRecursiveMode(category) {
     window.scrollTo(0, 0);
 
     renderCategories();
+
+    // Update header immediately with new post count from cached state (no await, synchronous)
+    updateCategoryStatsDisplay();
+
+    // Load posts immediately (don't await, let it run in parallel)
     loadPosts(category.id, currentCategory.recursiveMode);
 
-    const stats = await fetchCategoryStats(category.id, currentCategory.recursiveMode);
-    await updateCategoryStatsDisplay(stats);
+    // Fetch file stats in parallel if needed and update display when ready
+    if (fileStatsEnabled) {
+        fetchCategoryStats(category.id, currentCategory.recursiveMode).then(stats => {
+            updateCategoryStatsDisplay(stats);
+        }).catch(error => {
+            console.error('Failed to fetch file stats:', error);
+        });
+    }
 
+    // Load activity in parallel
     generateActivityHeatmap();
 }
 

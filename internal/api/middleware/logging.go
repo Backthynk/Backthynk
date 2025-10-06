@@ -32,6 +32,8 @@ func Logging(next http.Handler) http.Handler {
 			status:         http.StatusOK,
 		}
 
+		time.Sleep(time.Second)
+		
 		next.ServeHTTP(wrapped, r)
 
 		// Use the logger system if available

@@ -9,10 +9,10 @@ module.exports = {
       fontFamily: {
         // UI font - used for interface elements (buttons, headers, labels, etc.)
         sans: [
+          'Roboto',
+          '"Segoe UI"',
           '-apple-system',
           'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
           '"Helvetica Neue"',
           'Arial',
           'sans-serif',

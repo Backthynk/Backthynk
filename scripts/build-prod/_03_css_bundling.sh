@@ -21,9 +21,10 @@ select_minifier() {
             fi
         fi
 
-        # Fall back to sed-based CSS minification
-        log_substep "Using sed-based CSS minification..."
-        sed 's|/\*.*\*/||g' "$input_file" | \
+        # Fall back to perl/sed-based CSS minification
+        log_substep "Using perl/sed-based CSS minification..."
+        # Remove multi-line CSS comments first with perl, then minify with sed
+        perl -0777 -pe 's|/\*.*?\*/||gs' "$input_file" | \
         sed '/^[[:space:]]*$/d' | \
         tr -d '\n' | \
         sed 's/[[:space:]]\+/ /g' | \
@@ -140,25 +141,19 @@ log_substep "Combining and minifying CSS files..."
 # Add optimized CSS frameworks first
 if [ -f "$TAILWIND_TEMP" ]; then
     log_substep "  Adding optimized Tailwind CSS..."
-    echo "/* === Tailwind CSS (optimized) === */" >> "$COMBINED_CSS"
     cat "$TAILWIND_TEMP" >> "$COMBINED_CSS"
-    echo "" >> "$COMBINED_CSS"
 fi
 
 if [ -f "$FONTAWESOME_TEMP" ]; then
     log_substep "  Adding optimized Font Awesome CSS..."
-    echo "/* === Font Awesome CSS (optimized) === */" >> "$COMBINED_CSS"
     cat "$FONTAWESOME_TEMP" >> "$COMBINED_CSS"
-    echo "" >> "$COMBINED_CSS"
 fi
 
 # Combine all other CSS files
 for cssfile in "$CSS_DIR"/*.css; do
     if [ -f "$cssfile" ] && [ "$(basename "$cssfile")" != "compressed" ] && [ "$(basename "$cssfile")" != "tailwind.css" ]; then
         log_substep "  Adding $(basename "$cssfile")..."
-        echo "/* === $(basename "$cssfile") === */" >> "$COMBINED_CSS"
         cat "$cssfile" >> "$COMBINED_CSS"
-        echo "" >> "$COMBINED_CSS"
     fi
 done
 

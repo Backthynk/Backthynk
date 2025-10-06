@@ -492,7 +492,7 @@ document.addEventListener('DOMContentLoaded', function() {
             incrementCategoryPostCount(currentCategory.id, 1);
 
             // Update the display with the updated counts
-            await updateCategoryStatsDisplay();
+            updateCategoryStatsDisplay();
 
             // Show success message
             showSuccess('');

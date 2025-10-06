@@ -496,7 +496,7 @@ document.getElementById('move-form').addEventListener('submit', async function(e
 
         // Update the display with the updated counts
         if (currentCategory) {
-            await updateCategoryStatsDisplay();
+            updateCategoryStatsDisplay();
         }
 
         // Regenerate activity heatmap to reflect the moved post (with small delay for backend processing)
@@ -554,7 +554,7 @@ async function confirmDeletePost(postId) {
             }
 
             // Update the display
-            await updateCategoryStatsDisplay();
+            updateCategoryStatsDisplay();
 
             // Regenerate activity heatmap to reflect deleted post (with small delay for backend processing)
             setTimeout(generateActivityHeatmap, 100);
@@ -578,12 +578,12 @@ async function confirmDeletePost(postId) {
 // Make function globally accessible for onclick handlers
 window.confirmDeletePost = confirmDeletePost;
 
-async function updateCategoryStatsDisplay(stats) {
+function updateCategoryStatsDisplay(stats) {
     if (!currentCategory) return;
 
     // Handle "All Categories" view separately
     if (currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        await updateAllCategoriesDisplay();
+        updateAllCategoriesDisplay();
         return;
     }
 
@@ -603,17 +603,7 @@ async function updateCategoryStatsDisplay(stats) {
 
     let statsText = `${postCount} post${postCount !== 1 ? 's' : ''}`;
 
-    // If file stats are enabled but no stats provided, fetch them
-    if (fileStatsEnabled && !stats) {
-        try {
-            stats = await fetchCategoryStats(currentCategory.id, currentCategory.recursiveMode);
-        } catch (error) {
-            console.error('Failed to fetch category stats for display:', error);
-            stats = { file_count: 0, total_size: 0 };
-        }
-    }
-
-    // Only show files and size if file stats are enabled and there are files
+    // Only show files and size if file stats are enabled and stats are provided
     if (fileStatsEnabled && stats && stats.file_count > 0) {
         statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
     }
@@ -696,7 +686,7 @@ function navigateToCategoryFromPost(categoryId) {
 window.navigateToCategoryFromPost = navigateToCategoryFromPost;
 
 // Function to update display for "All categories" view
-async function updateAllCategoriesDisplay() {
+function updateAllCategoriesDisplay(fileStats) {
     // Calculate total post count by summing top-level categories' recursive post counts
     // This avoids double counting when there are parent-child relationships
     const totalPostCount = categories.reduce((total, category) => {
@@ -707,9 +697,6 @@ async function updateAllCategoriesDisplay() {
         }
         return total;
     }, 0);
-
-    // Get file stats from the API (still needed for file count and size)
-    const fileStats = await fetchCategoryStats(0, false);
 
     // Find the first category created (oldest)
     const oldestCategory = categories.reduce((oldest, current) => {
@@ -726,8 +713,8 @@ async function updateAllCategoriesDisplay() {
 
     let statsText = `${totalPostCount} post${totalPostCount !== 1 ? 's' : ''}`;
 
-    // Only show files and size if file stats are enabled and there are files
-    if (fileStatsEnabled && fileStats.file_count > 0) {
+    // Only show files and size if file stats are enabled and provided
+    if (fileStatsEnabled && fileStats && fileStats.file_count > 0) {
         statsText += ` • ${fileStats.file_count} file${fileStats.file_count !== 1 ? 's' : ''} • ${formatFileSize(fileStats.total_size)}`;
     }
 

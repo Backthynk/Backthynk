@@ -164,7 +164,7 @@ class Router {
 
         // Directly select the category without any intermediate steps
         if (typeof selectCategory === 'function') {
-            await selectCategory(category, false); // fromUserClick = false (programmatic)
+            selectCategory(category, false); // fromUserClick = false (programmatic)
         }
 
         // Update page title for category using breadcrumb (matches backend behavior)
@@ -229,7 +229,7 @@ async function showHomePage() {
     // If there's a current category, deselect it to show all posts
     if (typeof currentCategory !== 'undefined' && currentCategory && currentCategory.id !== window.AppConstants?.ALL_CATEGORIES_ID) {
         if (typeof deselectCategory === 'function') {
-            await deselectCategory();
+            deselectCategory();
         }
     }
 }
