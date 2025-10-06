@@ -45,6 +45,16 @@ mkdir -p "$BUILD_DIR"
 if [ -f "$SCRIPT_DIR/.config.json" ]; then
     log_substep "Copying .config.json..."
     cp "$SCRIPT_DIR/.config.json" "$BUILD_DIR/.config.json"
+
+    # Update paths for production (relative to build directory)
+    log_substep "Updating paths for production environment..."
+    sed -i 's|"build_dir": "build"|"build_dir": "."|g' "$BUILD_DIR/.config.json"
+    sed -i 's|"build/assets|"assets|g' "$BUILD_DIR/.config.json"
+    sed -i 's|"build/bin"|"bin"|g' "$BUILD_DIR/.config.json"
+    sed -i 's|"web/static"|"assets/static"|g' "$BUILD_DIR/.config.json"
+    sed -i 's|"web/templates"|"assets/templates"|g' "$BUILD_DIR/.config.json"
+    sed -i 's|"web/static/js"|"assets/js"|g' "$BUILD_DIR/.config.json"
+    sed -i 's|"web/static/css"|"assets/css"|g' "$BUILD_DIR/.config.json"
 else
     echo -e "${RED}Error: .config.json not found at $SCRIPT_DIR/.config.json${NC}" >&2
     exit 1

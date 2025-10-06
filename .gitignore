@@ -8,7 +8,7 @@ service.json
 
 
 # Build artifacts
-./build/
+/build
 
 # Build cache
 scripts/.cache/

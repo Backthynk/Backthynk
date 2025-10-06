@@ -6,12 +6,8 @@ Thank you for downloading Backthynk!
 Quick Start:
 ------------
 
-On Unix/Linux/Mac:
-  1. Run: make run
-     or: make help (to see all available commands)
-
-On Windows:
-  1. Double-click run.bat
+On Unix/Linux/Mac -> Run: make run
+On Windows -> Double-click run.bat
 
 The application will start a local server. Check the console output for the URL to access the web interface.
 
