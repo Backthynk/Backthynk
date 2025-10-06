@@ -9,8 +9,4 @@ Quick Start:
 On Unix/Linux/Mac -> Run: make run
 On Windows -> Double-click run.bat
 
-The application will start a local server. Check the console output for the URL to access the web interface.
-
-For more information, visit: https://github.com/Fantasim/backthynk
-
 Enjoy!

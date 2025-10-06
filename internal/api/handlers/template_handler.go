@@ -32,18 +32,23 @@ type PageData struct {
 	Category           interface{}
 	CategoryBreadcrumb string
 	MarkdownEnabled    bool
-	Dev 	   bool
+	Dev                bool
+	GithubURL          string
+	NewIssueURL        string
 }
 
 func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 	path := r.URL.Path
 
+	sharedCfg := config.GetSharedConfig()
 	pageData := PageData{
 		Title:           h.options.Metadata.Title,
 		Description:     h.options.Metadata.Description,
 		URL:             r.Host + path,
 		MarkdownEnabled: h.options.Features.Markdown.Enabled,
-		Dev: !config.IsProduction(),
+		Dev:             !config.IsProduction(),
+		GithubURL:       sharedCfg.URLs.GithubURL,
+		NewIssueURL:     sharedCfg.URLs.NewIssueURL,
 	}
 
 	// Check if this is a category path
@@ -68,7 +73,6 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use compressed template in production mode
-	sharedCfg := config.GetSharedConfig()
 	templatePath := filepath.Join(sharedCfg.Paths.Source.Templates, "index.html")
 	if config.IsProduction() {
 		templatePath = filepath.Join(sharedCfg.Paths.Compressed.Templates, "index.html")

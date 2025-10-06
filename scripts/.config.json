@@ -18,5 +18,9 @@
       "js": "web/static/js",
       "css": "web/static/css"
     }
+  },
+  "urls": {
+    "github_url": "https://github.com/Fantasim/backthynk",
+    "new_issue_url": "https://github.com/Fantasim/backthynk/issues/new"
   }
 }

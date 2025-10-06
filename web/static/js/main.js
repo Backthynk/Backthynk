@@ -167,6 +167,12 @@ async function initializeApp() {
 // Main initialization and event listeners
 document.addEventListener('DOMContentLoaded', function() {
 
+    // Set copyright year dynamically
+    const copyrightYearElement = document.getElementById('copyright-year');
+    if (copyrightYearElement) {
+        copyrightYearElement.textContent = new Date().getFullYear();
+    }
+
     // Initialize app asynchronously
     initializeApp();
     

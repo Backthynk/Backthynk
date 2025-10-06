@@ -129,7 +129,9 @@ type SharedConfig struct {
 		} `json:"source"`
 	} `json:"paths"`
 	URLs struct {
-		CDN map[string]interface{} `json:"cdn"`
+		CDN         map[string]interface{} `json:"cdn"`
+		GithubURL   string                 `json:"github_url"`
+		NewIssueURL string                 `json:"new_issue_url"`
 	} `json:"urls"`
 }
 
