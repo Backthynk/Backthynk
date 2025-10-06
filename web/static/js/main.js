@@ -104,8 +104,25 @@ async function updateFileUploadText() {
 // Centralized app initialization
 async function initializeApp() {
 
-    // Load and cache settings first - single API call
-    window.currentSettings = await initializeAppSettings();
+    // Show loading indicator for categories
+    const categoriesTree = document.getElementById('categories-tree');
+    if (categoriesTree) {
+        categoriesTree.innerHTML = `
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                <p>Loading categories...</p>
+            </div>
+        `;
+    }
+
+    // Load settings and categories in parallel for faster startup
+    const settingsPromise = initializeAppSettings();
+    const categoriesPromise = (window.location.pathname === "/" || router.isCategoryPath(window.location.pathname))
+        ? fetchCategories()
+        : Promise.resolve();
+
+    // Wait for settings to complete
+    window.currentSettings = await settingsPromise;
 
     // Set description max length attributes and counters from constants
     const maxDescLength = window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength;
@@ -135,10 +152,8 @@ async function initializeApp() {
     }
     */
 
-    if (window.location.pathname === "/" || router.isCategoryPath(window.location.pathname)){
-        // Load initial data
-        fetchCategories();
-    }
+    // Wait for categories to complete (if it was started)
+    await categoriesPromise;
 
     initializeStickyHeader();
 

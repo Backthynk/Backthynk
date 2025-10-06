@@ -21,18 +21,16 @@ async function generateActivityHeatmap() {
     isGeneratingActivity = true;
 
     // Let CSS handle responsive visibility (hidden on mobile, visible on desktop)
-    document.getElementById('activity-container').style.display = '';
+    const activityContainer = document.getElementById('activity-container');
+    activityContainer.style.display = '';
 
-    // Show loading indicator in activity heatmap
-    const heatmapContainer = document.getElementById('activity-heatmap');
-    if (heatmapContainer) {
-        heatmapContainer.innerHTML = `
-            <div class="text-center text-gray-500 py-8">
-                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                <p class="text-sm">Loading activity...</p>
-            </div>
-        `;
-    }
+    // Show loading indicator in the entire activity container (not just heatmap)
+    activityContainer.innerHTML = `
+        <div class="text-center text-gray-500 py-16">
+            <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+            <p>Loading activity...</p>
+        </div>
+    `;
 
     try {
         // Use efficient API that returns only non-zero activity days
@@ -129,6 +127,45 @@ function updateActivityCategoryBreadcrumb() {
 
 // Generate heatmap from cached activity data
 function generateHeatmapFromCache(activityData) {
+    // Restore the activity container structure if it was replaced by loading indicator
+    const activityContainer = document.getElementById('activity-container');
+    if (!activityContainer.querySelector('#activity-category-breadcrumb')) {
+        activityContainer.innerHTML = `
+            <!-- Category Breadcrumb -->
+            <div id="activity-category-breadcrumb" class="mb-4">
+                <!-- Breadcrumb will be generated dynamically -->
+            </div>
+
+            <!-- Centered Date Range with Navigation -->
+            <div class="flex items-center justify-center mb-4">
+                <button id="activity-prev" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
+                    <i class="fas fa-chevron-left text-xs"></i>
+                </button>
+                <span id="activity-period" class="text-sm text-gray-600"></span>
+                <button id="activity-next" class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 ml-3" onclick="changeActivityPeriod(1)">
+                    <i class="fas fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Heatmap with months on left, heatmap centered -->
+            <div class="relative mb-6">
+                <div class="flex justify-center">
+                    <div id="activity-heatmap" class="min-h-16">
+                        <!-- Heatmap will be generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend and Summary -->
+            <div class="flex items-center justify-between text-xs mt-6">
+                <div id="activity-legend" class="flex flex-col space-y-1">
+                    <!-- Legend will be generated dynamically -->
+                </div>
+                <span id="activity-summary" class="text-gray-500"></span>
+            </div>
+        `;
+    }
+
     // Update category breadcrumb
     updateActivityCategoryBreadcrumb();
 
@@ -368,13 +405,13 @@ async function changeActivityPeriod(direction) {
 
     currentActivityPeriod = newPeriod;
 
-    // Show loading indicator while fetching new period data
+    // Show loading indicator in heatmap only while fetching new period data
     const heatmapContainer = document.getElementById('activity-heatmap');
     if (heatmapContainer) {
         heatmapContainer.innerHTML = `
             <div class="text-center text-gray-500 py-8">
                 <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                <p class="text-sm">Loading activity...</p>
+                <p class="text-sm">Loading...</p>
             </div>
         `;
     }
