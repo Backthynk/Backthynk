@@ -116,12 +116,6 @@ function generateIconCSS(usedIcons) {
 /* Generated automatically from icons found in web/ directory */
 /* Icons included: ${usedIcons.join(', ')} */
 
-/*
-/* Global font family */
-* {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-}
-*/
 
 /* Base Font Awesome styles */
 .fas, .far {
@@ -145,7 +139,7 @@ function generateIconCSS(usedIcons) {
   font-style: normal;
   font-weight: 400;
   font-display: block;
-  src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-regular-400.woff2") format("woff2");
+  src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/webfonts/fa-regular-400.woff2") format("woff2");
 }
 
 @font-face {
@@ -153,7 +147,7 @@ function generateIconCSS(usedIcons) {
   font-style: normal;
   font-weight: 900;
   font-display: block;
-  src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/webfonts/fa-solid-900.woff2") format("woff2");
+  src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/webfonts/fa-solid-900.woff2") format("woff2");
 }
 
 /* Icon definitions */

@@ -206,7 +206,7 @@ function createPostElement(post) {
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
                 ${clickableCategoryBreadcrumb}
-                <span class="relative group/time text-sm text-gray-600 font-mono cursor-default">
+                <span class="relative group/time text-sm text-gray-600 font-sans cursor-default">
                     ${formatRelativeDate(post.created)}
                     <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover/time:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
                         ${formatFullDateTime(post.created)}
@@ -241,7 +241,7 @@ function createPostElement(post) {
 
     // Content with markdown formatting or link conversion
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'mb-4 post-content';
+    contentDiv.className = 'mb-4 post-content font-content';
 
     // Hide content if it's link-only and we have a link preview
     if (shouldHideContent) {
