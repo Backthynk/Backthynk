@@ -31,7 +31,7 @@ type PageData struct {
 	Category           interface{}
 	CategoryBreadcrumb string
 	MarkdownEnabled    bool
-	Development 	   bool
+	Dev 	   bool
 }
 
 func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
@@ -42,7 +42,7 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 		Description:     h.options.Metadata.Description,
 		URL:             r.Host + path,
 		MarkdownEnabled: h.options.Features.Markdown.Enabled,
-		Development: !config.IsProduction(),
+		Dev: !config.IsProduction(),
 	}
 
 	// Check if this is a category path

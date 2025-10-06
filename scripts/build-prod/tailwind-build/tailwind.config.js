@@ -4,9 +4,9 @@ module.exports = {
     "../../../web/templates/**/*.html",
     "../../../web/static/js/**/*.js"
   ],
+  darkMode: 'class',
   theme: {
     extend: {
-      darkMode: 'class',
       fontFamily: {
         // UI font - used for interface elements (buttons, headers, labels, etc.)
         sans: [

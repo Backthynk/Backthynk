@@ -7,6 +7,7 @@
     ],
     "js_files": {
       "priority_order": [
+        "darkMode.js",
         "constants.js",
         "router.js",
         "state.js",
@@ -32,7 +33,7 @@
       "fallback_api": "https://www.toptal.com/developers/javascript-minifier/api/raw"
     },
     "html_processing": {
-      "js_script_tags_start": "constants.js",
+      "js_script_tags_start": "darkMode.js",
       "js_script_tags_end": "main.js",
       "tailwind_cdn_pattern": "https://cdn.tailwindcss.com",
       "fontawesome_cdn_pattern": "https://cdnjs.cloudflare.com/ajax/libs/font-awesome"

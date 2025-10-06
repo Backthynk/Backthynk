@@ -48,6 +48,7 @@
     </script>
     {{end}}
     <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    {{if .Dev}}
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -79,6 +80,7 @@
             }
         }
     </script>
+    {{end}}
     {{if .MarkdownEnabled}}
     <link id="markdown-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" integrity="sha512-BrOPA520KmDMqieeM7XFe6a3u3Sb3F1JBaQnrIAmWg3EYrciJ+Qqe6ZcKCdfPv26rGcgTrJnZ/IdQEct8h3Zhw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     {{end}}
