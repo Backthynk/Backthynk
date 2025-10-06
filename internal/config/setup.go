@@ -34,7 +34,7 @@ func EnsureConfigFiles() error {
 
 	// Show setup header
 	fmt.Printf("\n%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorBold, colorCyan, colorReset)
-	fmt.Printf("%s%s  BackThynk Initial Setup%s\n", colorBold, colorCyan, colorReset)
+	fmt.Printf("%s%s  Initial Setup%s\n", colorBold, colorCyan, colorReset)
 	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n\n", colorBold, colorCyan, colorReset)
 
 	reader := bufio.NewReader(os.Stdin)
@@ -143,7 +143,7 @@ func createOptionsConfig() error {
 
 func promptStoragePath(reader *bufio.Reader) string {
 	fmt.Printf("%sStorage Path%s\n", colorYellow, colorReset)
-	fmt.Printf("This is where BackThynk will store its database and uploaded files.\n")
+	fmt.Printf("This is where the app will store its database and uploaded files.\n")
 	fmt.Printf("Press Tab for autocomplete, or Enter for default (.storage)\n\n")
 
 	for {
@@ -198,7 +198,7 @@ func promptStoragePath(reader *bufio.Reader) string {
 
 func promptPort(reader *bufio.Reader) string {
 	fmt.Printf("%sServer Port%s\n", colorYellow, colorReset)
-	fmt.Printf("Choose a port for the BackThynk server (1024-65535)\n")
+	fmt.Printf("Choose a port for the server (1024-65535)\n")
 	fmt.Printf("Press Enter for default (1369)\n\n")
 
 	for {

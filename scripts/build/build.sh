@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build Script for Backthynk
+# Build Script
 # Modular component-based build system
 
 set -e  # Exit on error
@@ -8,7 +8,7 @@ set -e  # Exit on error
 # Load configuration
 source "$(dirname "$0")/../common/load-config.sh"
 
-echo -e "${BOLD}${CYAN}Building production-optimized Backthynk v${APP_VERSION}...${NC}"
+echo -e "${BOLD}${CYAN}Building production-optimized v${APP_VERSION}...${NC}"
 
 # Start build timer
 BUILD_START=$(date +%s)
@@ -50,13 +50,21 @@ else
     exit 1
 fi
 
-# Copy .script.json
-if [ -f "$SCRIPT_CONFIG_FILE" ]; then
-    log_substep "Copying .script.json..."
-    cp "$SCRIPT_CONFIG_FILE" "$BUILD_DIR/.script.json"
+# Copy all template files to build directory
+log_step "Copying template files to build directory..."
+TEMPLATES_DIR="$COMPONENTS_DIR/templates"
+
+if [ -d "$TEMPLATES_DIR" ]; then
+    log_substep "Copying all files from templates directory..."
+    # Use rsync if available for better directory copying, otherwise use cp -r
+    if command -v rsync &> /dev/null; then
+        rsync -av --exclude='.*' "$TEMPLATES_DIR/" "$BUILD_DIR/"
+    else
+        cp -r "$TEMPLATES_DIR/"* "$BUILD_DIR/" 2>/dev/null || true
+    fi
+    log_substep "✓ Template files copied successfully"
 else
-    echo -e "${RED}Error: .script.json not found at $SCRIPT_CONFIG_FILE${NC}" >&2
-    exit 1
+    echo -e "${YELLOW}Warning: Templates directory not found at $TEMPLATES_DIR${NC}" >&2
 fi
 
 # Build optimized Go binaries

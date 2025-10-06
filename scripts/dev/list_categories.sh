@@ -1,16 +1,16 @@
 #!/bin/bash
 
-# Backthynk Categories Lister
+# Categories Lister
 # ============================
 #
-# This script lists all available categories in the Backthynk instance.
+# This script lists all available categories in the instance.
 # Useful for finding category IDs before running other development scripts.
 #
 # USAGE:
 #   ./scripts/dev/list_categories.sh
 #
 # REQUIREMENTS:
-#   - Server must be running (port configured in service.json or set BACKTHYNK_URL environment variable)
+#   - Server must be running (port configured in service.json or set APP_URL environment variable)
 #   - curl and jq must be installed
 
 set -e
@@ -22,8 +22,8 @@ source "$(dirname "$0")/../common/common.sh"
 check_dependencies curl jq
 load_config
 
-BACKTHYNK_URL=${BACKTHYNK_URL:-"http://localhost:$SERVER_PORT"}
-API_BASE="$BACKTHYNK_URL/api"
+APP_URL=${APP_URL:-"http://localhost:$SERVER_PORT"}
+API_BASE="$APP_URL/api"
 
 # Colors for output
 RED='\033[0;31m'
@@ -32,16 +32,16 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}Backthynk Categories${NC}"
+echo -e "${BLUE} Categories${NC}"
 echo "===================="
 echo ""
-echo -e "Server: ${YELLOW}$BACKTHYNK_URL${NC}"
+echo -e "Server: ${YELLOW}$APP_URL${NC}"
 echo ""
 
 # Check server connectivity
-if ! curl -s --max-time 5 "$BACKTHYNK_URL" > /dev/null; then
-    echo -e "${RED}Error: Cannot connect to server at $BACKTHYNK_URL${NC}"
-    echo "Make sure the server is running or set BACKTHYNK_URL environment variable"
+if ! curl -s --max-time 5 "$APP_URL" > /dev/null; then
+    echo -e "${RED}Error: Cannot connect to server at $APP_URL${NC}"
+    echo "Make sure the server is running or set APP_URL environment variable"
     exit 1
 fi
 

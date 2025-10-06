@@ -2,7 +2,7 @@
 
 # Default target
 help:
-	@printf "\033[1m\033[0;36mBackthynk Development Tools\033[0m\n"
+	@printf "\033[1m\033[0;36mDevelopment Tools\033[0m\n"
 	@printf "\033[0;36m===========================\033[0m\n"
 	@printf "\n"
 	@printf "\033[1mAvailable targets:\033[0m\n"

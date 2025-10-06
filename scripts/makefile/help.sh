@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Help script for Backthynk Development Makefile
+# Help script for Development Makefile
 source "$(dirname "$0")/../common/load-config.sh"
 
-echo -e "${BOLD}${CYAN}Backthynk Development Makefile${NC}"
+echo -e "${BOLD}${CYAN}Development Makefile${NC}"
 echo -e "${CYAN}==============================${NC}"
 echo ""
 echo -e "${BOLD}Available targets:${NC}"

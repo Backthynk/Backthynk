@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Common utilities for Backthynk scripts
+# Common utilities for scripts
 # Source this file in other scripts: source "$(dirname "$0")/../common/common.sh"
 
 # Configuration loader from service.json

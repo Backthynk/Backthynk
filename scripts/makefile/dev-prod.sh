@@ -9,6 +9,6 @@ if [ ! -d "$COMPRESSED_JS_DIR" ] || [ ! -d "$COMPRESSED_TEMPLATES_DIR" ]; then
     "$(dirname "$0")/../build/build.sh"
 fi
 
-echo -e "${BLUE}▶${NC} Starting Backthynk server with production assets..."
+echo -e "${BLUE}▶${NC} Starting server with production assets..."
 echo -e "${GRAY}  (using go run with production environment)${NC}"
 env $PRODUCTION_ENV_VAR go run ./cmd/server/main.go

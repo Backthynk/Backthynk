@@ -142,8 +142,7 @@ var (
 func LoadSharedConfig() error {
 	// Smart path detection for .config.json
 	// If scripts/common/ exists at project root, use scripts/.config.json
-	// Otherwise, use build/.config.json
-	configPath := "build/.config.json"
+	configPath := ".config.json"
 	if _, err := os.Stat("scripts/common"); err == nil {
 		configPath = "scripts/.config.json"
 	}
@@ -212,7 +211,7 @@ func GetSharedConfig() *SharedConfig {
 }
 
 func IsProduction() bool {
-	return os.Getenv("BACKTHYNK_ENV") == "production"
+	return os.Getenv("APP_ENV") == "production"
 }
 
 // SetServiceConfigForTest sets the service config for testing purposes
@@ -268,7 +267,7 @@ func PrintConfigPaths() {
 	}
 
 	// Shared config
-	configPath := "build/.config.json"
+	configPath := ".config.json"
 	if _, err := os.Stat("scripts/common"); err == nil {
 		configPath = "scripts/.config.json"
 	}

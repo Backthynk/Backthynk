@@ -50,10 +50,10 @@ export BOLD="\033[1m"
 export NC="\033[0m"
 
 # Load app configuration from shared config
-export APP_NAME=$(jq -r '.app.name // "backthynk"' "$SHARED_CONFIG_FILE")
+export APP_NAME=$(jq -r '.app.name // ""' "$SHARED_CONFIG_FILE")
 export APP_VERSION=$(jq -r '.app.version // "0.1.0"' "$SHARED_CONFIG_FILE")
 export BINARY_NAME="$APP_NAME"
-export PRODUCTION_ENV_VAR="BACKTHYNK_ENV=production"
+export PRODUCTION_ENV_VAR="APP_ENV=production"
 
 # Load paths from shared config
 export BUILD_DIR=$(jq -r '.paths.build_dir // "build"' "$SHARED_CONFIG_FILE")
