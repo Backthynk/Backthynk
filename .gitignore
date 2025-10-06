@@ -2,8 +2,13 @@
 .storage
 .claude
 
+#personal configuration files
+options.json
+service.json
+
+
 # Build artifacts
-build/
+./build/
 
 # Build cache
 scripts/.cache/

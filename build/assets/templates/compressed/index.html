@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{if .Title}}{{.Title}}{{else}}Backthynk - Personal Micro Blog{{end}}</title>
+<meta name="description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{if .URL}}{{.URL}}{{else}}{{end}}">
+<meta property="og:title" content="{{if .Title}}{{.Title}}{{else}}Backthynk - Personal Micro Blog{{end}}">
+<meta property="og:description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
+<meta property="twitter:card" content="summary">
+<meta property="twitter:url" content="{{if .URL}}{{.URL}}{{else}}{{end}}">
+<meta property="twitter:title" content="{{if .Title}}{{.Title}}{{else}}Backthynk - Personal Micro Blog{{end}}">
+<meta property="twitter:description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
+{{if .Category}}
+<script type="application/ld+json">
+{
+"@context": "https://schema.org",
+"@type": "WebPage",
+"name": "{{.Category.Name}}",
+"description": "{{if .Category.Description}}{{.Category.Description}}{{else}}Posts in {{.CategoryBreadcrumb}}{{end}}",
+"url": "{{.URL}}",
+"breadcrumb": {
+"@type": "BreadcrumbList",
+"itemListElement": [
+{
+"@type": "ListItem",
+"position": 1,
+"name": "Home",
+"item": "/"
+},
+{
+"@type": "ListItem",
+"position": 2,
+"name": "{{.Category.Name}}",
+"item": "{{.URL}}"
+}
+]
+}
+}
+</script>
+{{end}}
+{{if .Dev}}
+<script>
+tailwind.config = {
+darkMode: 'class',
+theme: {
+extend: {
+fontFamily: {
+sans: [
+'Roboto',
+'"Segoe UI"',
+'-apple-system',
+'BlinkMacSystemFont',
+'"Helvetica Neue"',
+'Arial',
+'sans-serif',
+'"Apple Color Emoji"',
+'"Segoe UI Emoji"',
+'"Segoe UI Symbol"'
+],
+content: [
+'Georgia',
+'Cambria',
+'"Times New Roman"',
+'Times',
+'serif'
+],
+}
+}
+}
+}
+</script>
+{{end}}
+{{if .MarkdownEnabled}}
+<link id="markdown-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" integrity="sha512-BrOPA520KmDMqieeM7XFe6a3u3Sb3F1JBaQnrIAmWg3EYrciJ+Qqe6ZcKCdfPv26rGcgTrJnZ/IdQEct8h3Zhw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+{{end}}
+<link href="/static/css/compressed/bundle.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-200">
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<div class="lg:col-span-1">
+<div class="sticky top-4 space-y-4">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 max-h-[50vh] flex flex-col">
+<div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+<h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Categories</h2>
+<button id="add-category-btn" class="flex items-center justify-center w-7 h-7 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all duration-200">
+<i class="fas fa-plus text-xs"></i>
+</button>
+</div>
+<div id="categories-tree" class="flex-1 overflow-y-auto px-2 py-1">
+</div>
+<div id="category-sort-footer" class="border-t border-gray-100 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900 flex-shrink-0" style="display: none;">
+<div class="flex items-center justify-between text-xs">
+<span class="text-gray-500 dark:text-gray-400 font-medium">Sort by:</span>
+<div class="flex items-center space-x-3">
+<button class="sort-option flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors" data-sort="name">
+<span>Name</span>
+<i class="fas fa-sort-alpha-down ml-1 sort-icon" data-asc="fa-sort-alpha-down" data-desc="fa-sort-alpha-up"></i>
+</button>
+<button class="sort-option flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors" data-sort="posts">
+<span>Posts</span>
+<i class="fas fa-sort-numeric-down ml-1 sort-icon" data-asc="fa-sort-numeric-down" data-desc="fa-sort-numeric-up"></i>
+</button>
+<button class="sort-option flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors" data-sort="created">
+<span>Created</span>
+<i class="fas fa-sort-numeric-down ml-1 sort-icon" data-asc="fa-sort-numeric-down" data-desc="fa-sort-numeric-up"></i>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div id="activity-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-3 py-3 hidden lg:block" style="display: none;">
+<div id="activity-category-breadcrumb" class="mb-4">
+</div>
+<div class="flex items-center justify-center mb-4">
+<button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
+<i class="fas fa-chevron-left text-xs"></i>
+</button>
+<span id="activity-period" class="text-sm text-gray-600 dark:text-gray-400"></span>
+<button id="activity-next" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 ml-3" onclick="changeActivityPeriod(1)">
+<i class="fas fa-chevron-right text-xs"></i>
+</button>
+</div>
+<div class="relative mb-6">
+<div class="flex justify-center">
+<div id="activity-heatmap" class="min-h-16">
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-xs mt-6">
+<div id="activity-legend" class="flex flex-col space-y-1">
+</div>
+<span id="activity-summary" class="text-gray-500 dark:text-gray-400"></span>
+</div>
+</div>
+</div>
+</div>
+<div class="lg:col-span-3">
+<div id="timeline-section">
+<div id="timeline-header" class="py-4 mb-6">
+<div class="timeline-content">
+<div class="flex items-center justify-between">
+<div id="timeline-title" class="flex-1 min-w-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]">
+<h2 class="text-xl font-bold text-gray-900 dark:text-gray-100"></h2>
+</div>
+<div class="flex items-center space-x-3">
+<button id="recursive-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" style="display: none;">
+<i class="fas fa-sitemap text-xs mr-1"></i>
+<span>Recursive</span>
+</button>
+<div id="category-actions-dropdown" class="relative" style="display: none;">
+<button id="category-actions-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+<i class="fas fa-ellipsis-h text-xs mr-1"></i>
+<span>Actions</span>
+<i class="fas fa-chevron-down text-xs ml-2"></i>
+</button>
+<div id="category-actions-menu" class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
+<div class="py-1">
+<button id="edit-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+<i class="fas fa-edit text-xs mr-3"></i>
+Edit category
+</button>
+<button id="delete-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+<i class="fas fa-trash-alt text-xs mr-3"></i>
+Delete category
+</button>
+</div>
+</div>
+</div>
+<button id="theme-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" title="Toggle dark mode">
+<i class="fas fa-lightbulb text-xs dark:hidden"></i>
+<i class="fas fa-moon text-xs hidden dark:inline-block"></i>
+</button>
+<button id="settings-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+<i class="fas fa-cog text-xs mr-1"></i>
+<span>Settings</span>
+</button>
+<button id="new-post-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" style="display: none;">
+<i class="fas fa-plus text-xs mr-1"></i>
+<span>New Post</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div id="posts-container" class="space-y-6">
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="settings-page" class="hidden">
+<div class="container mx-auto px-4 py-8 max-w-4xl">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h1>
+<p class="text-gray-600 dark:text-gray-400 mt-1">Configure your application preferences</p>
+</div>
+<button id="settings-back-btn" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+<i class="fas fa-arrow-left text-xs mr-2"></i>Back
+</button>
+</div>
+<div class="space-y-8">
+<div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">File Upload Settings</h3>
+<div class="grid gap-6">
+<div class="flex items-center justify-between">
+<div class="flex-1">
+<label for="fileUploadEnabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+Enable File Upload
+</label>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow uploading files and attachments to posts. When disabled, the attach file button will be hidden and upload API will be blocked.</p>
+</div>
+<div class="ml-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" id="fileUploadEnabled" class="sr-only peer">
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+</label>
+</div>
+</div>
+<div id="fileUploadDetails" class="space-y-6">
+<div>
+<label for="maxFileSizeMB" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+Maximum File Size (MB)
+<span class="text-gray-500 dark:text-gray-400 font-normal">• Min: 1MB • Max: 10,240MB (10GB)</span>
+</label>
+<input type="number" id="maxFileSizeMB" min="1" max="10240"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Maximum size allowed for individual file uploads</p>
+</div>
+<div>
+<label for="maxFilesPerPost" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+Maximum Files Per Post
+<span class="text-gray-500 dark:text-gray-400 font-normal">• Min: 1 • Max: 50</span>
+</label>
+<input type="number" id="maxFilesPerPost" min="1" max="50"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Maximum number of files that can be attached to a single post</p>
+</div>
+<div>
+<label for="allowedFileExtensions" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+Allowed File Extensions
+<span class="text-gray-500 dark:text-gray-400 font-normal">• Comma-separated list (e.g., jpg, png, pdf)</span>
+</label>
+<input type="text" id="allowedFileExtensions"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+placeholder="jpg, jpeg, png, gif, pdf, doc, docx, txt, zip">
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Only files with these extensions can be uploaded and displayed. Existing files with other extensions will remain accessible but won't be shown in the UI.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Content Settings</h3>
+<div class="mb-6">
+<label for="maxContentLength" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+Maximum Content Length (characters)
+<span class="text-gray-500 dark:text-gray-400 font-normal">• Min: 100 • Max: 50,000</span>
+</label>
+<input type="number" id="maxContentLength" min="100" max="50000"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Maximum number of characters allowed in post content</p>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex-1">
+<label for="retroactivePostingEnabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+Retroactive Posting
+</label>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Allow creating posts with custom timestamps for backdating content. Minimum date: 01/01/2000.</p>
+</div>
+<div class="ml-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" id="retroactivePostingEnabled" class="sr-only peer">
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+</label>
+</div>
+</div>
+<div id="retroactivePostingTimeFormatContainer" style="display: none;">
+<label for="retroactivePostingTimeFormat" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+Time Format
+</label>
+<select id="retroactivePostingTimeFormat"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+<option value="24h">DD/MM/YYYY HH:MM (24h format)</option>
+<option value="12h">MM/DD/YYYY HH:MM AM/PM (12h format)</option>
+</select>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Choose the date and time format for entering custom post timestamps</p>
+</div>
+</div>
+<div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Website Metadata</h3>
+<div class="mb-6">
+<label for="siteTitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+Site Title
+<span class="text-gray-500 dark:text-gray-400 font-normal">• Max: 100 characters</span>
+</label>
+<input type="text" id="siteTitle" maxlength="100"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100">
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">The main title of your website shown in browser tabs and search results</p>
+</div>
+<div>
+<label for="siteDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+Site Description
+<span class="text-gray-500 dark:text-gray-400 font-normal">• Max: 160 characters • Best for SEO: 150-160 characters</span>
+</label>
+<div class="relative">
+<textarea id="siteDescription" rows="2" maxlength="160"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none dark:bg-gray-700 dark:text-gray-100"></textarea>
+<div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-700 px-1">
+<span id="site-description-counter">0</span>/160
+</div>
+</div>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">A brief description of your website shown in search engine results</p>
+</div>
+</div>
+<div class="border-b border-gray-200 dark:border-gray-700 pb-6">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Performance Settings</h3>
+<div class="flex items-center justify-between">
+<div class="flex-1">
+<label for="activityEnabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+Activity Tracking
+</label>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enable activity heatmaps and statistics tracking. (Not visible on mobile)</p>
+</div>
+<div class="ml-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" id="activityEnabled" class="sr-only peer">
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+</label>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<div class="flex-1">
+<label for="fileStatsEnabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+Category Detailed
+</label>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enable file count and size tracking in category headers. Shows "• 5 files • 18.33 MB" when enabled.</p>
+</div>
+<div class="ml-4">
+<label class="relative inline-flex items-center cursor-pointer">
+<input type="checkbox" id="fileStatsEnabled" class="sr-only peer">
+<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+</label>
+</div>
+</div>
+<div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600">
+<div class="flex">
+<div class="flex-shrink-0">
+<i class="fas fa-exclamation-triangle text-yellow-400 dark:text-yellow-500"></i>
+</div>
+<div class="ml-3">
+<p class="text-sm text-yellow-700 dark:text-yellow-300">
+<strong>Note:</strong> Disabling these features requires a server restart to fully take effect.
+If disabled while the server is running, the UI will be updated but server-side caching continues until restart.
+</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-4">
+<button id="reset-settings-btn" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+<i class="fas fa-undo text-xs mr-2"></i>
+Reset to Defaults
+</button>
+<div class="flex space-x-3">
+<button id="cancel-settings-btn" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+Cancel
+</button>
+<button id="save-settings-btn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+<i class="fas fa-save text-xs mr-2"></i>Save Settings
+</button>
+</div>
+</div>
+</div>
+<div id="settings-status" class="mt-4 text-center hidden">
+</div>
+</div>
+</div>
+</div>
+<div id="category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+<div class="flex items-center justify-center min-h-screen px-4">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md transform transition-all modal-mobile-full">
+<div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Category</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add a new category to organize your posts</p>
+</div>
+<div class="px-6 py-4">
+<form id="category-form">
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Name <span class="text-red-500 dark:text-red-400">*</span></label>
+<input type="text" id="category-name" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+</div>
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Description</label>
+<div class="relative">
+<textarea id="category-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this category"></textarea>
+<div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-700 px-1">
+<span id="description-counter">0</span>/<span id="description-max-length">280</span>
+</div>
+</div>
+</div>
+<div class="mb-6">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Category</label>
+<select id="category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+<option value="">None (Root Category)</option>
+</select>
+</div>
+</form>
+</div>
+<div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+<div class="flex items-center justify-end space-x-3">
+<button type="button" id="cancel-category" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+Cancel
+</button>
+<button type="submit" form="category-form" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+<i class="fas fa-plus text-xs mr-2"></i>
+Create category
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="edit-category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+<div class="flex items-center justify-center min-h-screen px-4">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md transform transition-all modal-mobile-full">
+<div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Category</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Update category information</p>
+</div>
+<div class="px-6 py-4">
+<form id="edit-category-form">
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Name <span class="text-red-500 dark:text-red-400">*</span></label>
+<input type="text" id="edit-category-name" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+</div>
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Description</label>
+<div class="relative">
+<textarea id="edit-category-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this category"></textarea>
+<div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-700 px-1">
+<span id="edit-description-counter">0</span>/<span id="edit-description-max-length">280</span>
+</div>
+</div>
+</div>
+<div class="mb-6">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Category</label>
+<select id="edit-category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+<option value="">None (Root Category)</option>
+</select>
+</div>
+</form>
+</div>
+<div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+<div class="flex items-center justify-end space-x-3">
+<button type="button" id="cancel-edit-category" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+Cancel
+</button>
+<button type="submit" form="edit-category-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+<i class="fas fa-save text-xs mr-2"></i>
+Update category
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="image-viewer-modal" class="fixed inset-0 bg-black z-[9998] hidden">
+<div class="absolute inset-0 flex items-center justify-center">
+<img id="viewer-image" class="max-w-full max-h-full object-contain">
+</div>
+<div class="absolute top-4 right-4 flex space-x-2">
+<button id="viewer-close" class="bg-black bg-opacity-50 text-white rounded-full p-3 hover:bg-opacity-70 transition-all">
+<i class="fas fa-times text-xl"></i>
+</button>
+</div>
+<button id="viewer-prev" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-3 hover:bg-opacity-70 transition-all">
+<i class="fas fa-chevron-left text-xl"></i>
+</button>
+<button id="viewer-next" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-3 hover:bg-opacity-70 transition-all">
+<i class="fas fa-chevron-right text-xl"></i>
+</button>
+<div id="viewer-info" class="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+<div id="viewer-filename"></div>
+<div id="viewer-counter" class="text-sm opacity-75"></div>
+</div>
+</div>
+<div id="move-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+<div class="flex items-center justify-center min-h-screen px-4">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md transform transition-all modal-mobile-full">
+<div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Move Post</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Move this post to a different category</p>
+</div>
+<div class="px-6 py-4">
+<form id="move-form">
+<div class="mb-4">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Current Category</label>
+<div id="current-category-display" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-600 dark:text-gray-400">
+</div>
+</div>
+<div class="mb-6">
+<label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">New Category <span class="text-red-500 dark:text-red-400">*</span></label>
+<select id="move-category" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+<option value="">Select a category...</option>
+</select>
+</div>
+</form>
+</div>
+<div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
+<div class="flex items-center justify-end space-x-3">
+<button type="button" id="cancel-move" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+Cancel
+</button>
+<button type="submit" form="move-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+<i class="fas fa-exchange-alt text-xs mr-2"></i>
+Move Post
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-w-lg w-full mx-4 max-h-[90vh] flex flex-col transform transition-all modal-mobile-full">
+<div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+<div class="flex items-center">
+<div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+<i class="fas fa-exclamation-triangle text-red-500 dark:text-red-400"></i>
+</div>
+<div class="ml-4">
+<h3 id="confirmation-title" class="text-lg font-semibold text-gray-900 dark:text-gray-100">Confirm Action</h3>
+</div>
+</div>
+</div>
+<div class="px-6 py-4 flex-1 overflow-y-auto">
+<div class="mb-4">
+<p id="confirmation-message" class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line leading-relaxed"></p>
+</div>
+<div id="confirmation-details" style="display: none;">
+</div>
+</div>
+<div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg flex-shrink-0">
+<div class="flex items-center justify-end space-x-3">
+<button id="confirmation-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+Cancel
+</button>
+<button id="confirmation-confirm" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 dark:hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+<i class="fas fa-trash-alt text-xs mr-2"></i>
+<span>Confirm</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div id="create-post-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+<div class="flex items-center justify-center min-h-screen px-4 py-4 sm:px-4 sm:py-4">
+<div class="bg-white dark:bg-gray-800 rounded-lg sm:rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-2xl max-h-[90vh] sm:max-h-[90vh] flex flex-col transform transition-all modal-mobile-full">
+<div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+<div class="flex items-center justify-between mb-2">
+<h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Post</h3>
+<button id="close-post-modal" class="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all duration-200">
+<i class="fas fa-times text-lg"></i>
+</button>
+</div>
+<div class="flex items-center justify-between text-sm">
+<div id="modal-category-display" class="text-gray-500 dark:text-gray-400 flex items-center min-w-0 flex-1">
+<i class="fas fa-folder text-xs mr-2 flex-shrink-0"></i>
+<span class="truncate">Publishing to: <span id="modal-category-name" class="font-medium text-gray-700 dark:text-gray-300"></span></span>
+</div>
+</div>
+</div>
+<div class="px-4 py-4 flex-1 overflow-y-auto">
+<form id="modal-create-post-form">
+<div class="mb-4">
+<div class="flex justify-between items-center mb-2">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">What's on your mind?</label>
+<span id="modal-char-counter" class="text-sm text-gray-500 dark:text-gray-400">0 / 15,000</span>
+</div>
+<textarea
+id="modal-post-content"
+rows="4"
+class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 dark:bg-gray-700 dark:text-gray-100"
+placeholder="Share your thoughts..."
+style="min-height: 100px; max-height: 200px; overflow-y: auto;"
+></textarea>
+</div>
+<div id="modal-link-preview-container" class="mb-4" style="display: none;">
+<div class="flex items-center justify-between mb-2">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link Previews</label>
+<div class="flex items-center space-x-2">
+<button type="button" id="modal-link-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled>
+<i class="fas fa-chevron-left text-xs"></i>
+</button>
+<span id="modal-link-counter" class="text-xs text-gray-500 dark:text-gray-400">1 / 1</span>
+<button type="button" id="modal-link-next" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled>
+<i class="fas fa-chevron-right text-xs"></i>
+</button>
+</div>
+</div>
+<div class="relative overflow-hidden">
+<div id="modal-link-preview-list" class="flex transition-transform duration-300 ease-in-out">
+</div>
+</div>
+</div>
+<div id="modal-attachments-section" class="mb-4">
+<div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 hover:border-gray-400 dark:hover:border-gray-500 transition-colors text-center">
+<input type="file" id="modal-post-files" multiple class="hidden" accept="*/*">
+<button type="button" onclick="document.getElementById('modal-post-files').click()" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+<i class="fas fa-paperclip text-xs mr-2"></i>Attach Files
+</button>
+<p id="modal-file-upload-text" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Or drag and drop files here</p>
+</div>
+<div id="modal-file-preview-container" class="mt-3" style="display: none;">
+<div class="flex items-center justify-between mb-2">
+<label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</label>
+<div class="flex items-center space-x-2">
+<button type="button" id="modal-file-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="scrollModalAttachments(-1)">
+<i class="fas fa-chevron-left text-xs"></i>
+</button>
+<span id="modal-file-counter" class="text-xs text-gray-500 dark:text-gray-400">1 / 1</span>
+<button type="button" id="modal-file-next" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="scrollModalAttachments(1)">
+<i class="fas fa-chevron-right text-xs"></i>
+</button>
+</div>
+</div>
+<div class="relative overflow-hidden">
+<div class="flex items-center space-x-2 overflow-x-auto pb-2" id="modal-file-preview-list">
+</div>
+</div>
+</div>
+</div>
+</form>
+</div>
+<div id="modal-retroactive-section" class="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700" style="display: none;">
+<div class="space-y-3">
+<div class="flex items-center space-x-2">
+<i class="fas fa-clock text-sm text-gray-600 dark:text-gray-400"></i>
+<h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Custom Post Date & Time</h4>
+</div>
+<p class="text-xs text-gray-500 dark:text-gray-400">Set a specific date and time for this post. This allows you to backdate posts or schedule them for a specific moment.</p>
+<div class="flex items-center space-x-3">
+<input type="text" id="modal-post-datetime" class="flex-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-gray-100" placeholder="Enter date and time">
+<button type="button" id="modal-set-current-time" class="inline-flex items-center px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+<i class="fas fa-sync text-xs mr-1"></i>
+Now
+</button>
+</div>
+</div>
+</div>
+<div class="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg flex-shrink-0">
+<div class="flex items-center justify-between">
+<div class="flex items-center">
+<div id="modal-file-size-display" class="text-xs font-medium text-gray-500 dark:text-gray-400" style="display: none;">
+</div>
+</div>
+<div class="flex items-center space-x-3">
+<button type="button" id="modal-cancel-post" class="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+Cancel
+</button>
+<button type="submit" form="modal-create-post-form" id="modal-submit-post" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+<i class="fas fa-paper-plane text-xs mr-2"></i>Post
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="/static/js/compressed/bundle.js"></script>
+</body>
+</html>
