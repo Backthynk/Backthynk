@@ -248,16 +248,18 @@ function createPostElement(post) {
         contentDiv.style.display = 'none';
     }
 
-    // Check if markdown is enabled via body class
-    const isMarkdownEnabled = !document.body.classList.contains('markdown-disabled');
+    // Check if markdown CSS is loaded (indicates markdown is enabled)
+    const markdownCSS = document.getElementById('markdown-css');
+    const isMarkdownEnabled = markdownCSS !== null;
 
-    // If markdown is disabled, convert URLs to clickable links
+    // If markdown is disabled, convert URLs to clickable links and don't use markdown-body class
     let processedContent = post.content;
     if (!isMarkdownEnabled) {
         processedContent = formatTextWithUrls(post.content);
+        contentDiv.innerHTML = `<div>${processedContent}</div>`;
+    } else {
+        contentDiv.innerHTML = `<div class="markdown-body">${processedContent}</div>`;
     }
-
-    contentDiv.innerHTML = `<div class="markdown-body">${processedContent}</div>`;
     const contentHtml = contentDiv.innerHTML;
 
     // Priority logic: Show attachments if available, otherwise show link previews

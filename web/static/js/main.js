@@ -128,9 +128,12 @@ async function initializeApp() {
     checkFileStatsEnabled();
 
     // Update markdown CSS based on settings
+    //06/10/2025
+    /*
     if (window.currentSettings && typeof updateMarkdownCSS === 'function') {
         updateMarkdownCSS(window.currentSettings.markdownEnabled !== undefined ? window.currentSettings.markdownEnabled : false);
     }
+    */
 
     if (window.location.pathname === "/" || router.isCategoryPath(window.location.pathname)){
         // Load initial data

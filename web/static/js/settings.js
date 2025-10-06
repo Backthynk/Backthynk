@@ -61,7 +61,8 @@ function populateSettingsForm() {
     document.getElementById('activityEnabled').checked = currentSettings.activityEnabled !== undefined ? currentSettings.activityEnabled : window.AppConstants.DEFAULT_SETTINGS.activityEnabled;
     document.getElementById('fileStatsEnabled').checked = currentSettings.fileStatsEnabled !== undefined ? currentSettings.fileStatsEnabled : window.AppConstants.DEFAULT_SETTINGS.fileStatsEnabled;
     document.getElementById('retroactivePostingEnabled').checked = currentSettings.retroactivePostingEnabled !== undefined ? currentSettings.retroactivePostingEnabled : false;
-    document.getElementById('markdownEnabled').checked = currentSettings.markdownEnabled !== undefined ? currentSettings.markdownEnabled : false;
+    //06/10/2025
+    //document.getElementById('markdownEnabled').checked = currentSettings.markdownEnabled !== undefined ? currentSettings.markdownEnabled : false;
 
     // File upload settings
     document.getElementById('fileUploadEnabled').checked = currentSettings.fileUploadEnabled !== undefined ? currentSettings.fileUploadEnabled : true;
@@ -105,7 +106,8 @@ function getSettingsFromForm() {
         fileStatsEnabled: document.getElementById('fileStatsEnabled').checked,
         retroactivePostingEnabled: document.getElementById('retroactivePostingEnabled').checked,
         retroactivePostingTimeFormat: document.getElementById('retroactivePostingTimeFormat').value,
-        markdownEnabled: document.getElementById('markdownEnabled').checked,
+        //06/10/2025 disabled
+        //markdownEnabled: document.getElementById('markdownEnabled').checked,
         fileUploadEnabled: document.getElementById('fileUploadEnabled').checked,
         maxFileSizeMB: parseInt(document.getElementById('maxFileSizeMB').value),
         maxFilesPerPost: parseInt(document.getElementById('maxFilesPerPost').value),
@@ -183,7 +185,8 @@ async function saveSettings() {
         }
 
         // Update markdown CSS visibility
-        updateMarkdownCSS(savedSettings.markdownEnabled);
+        //06/10/2025
+        //updateMarkdownCSS(savedSettings.markdownEnabled);
 
         // Update page title with new metadata
         if (savedSettings.siteTitle) {

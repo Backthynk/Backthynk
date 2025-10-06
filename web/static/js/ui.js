@@ -101,6 +101,12 @@ function hideCreatePost() {
 
     // Reset link previews when hiding modal
     resetModalLinkPreviews();
+
+    // Reset character counter
+    const counter = document.getElementById('modal-char-counter');
+    if (counter && window.currentSettings) {
+        counter.textContent = `0 / ${window.currentSettings.maxContentLength}`;
+    }
 }
 
 function showCategoryModal() {

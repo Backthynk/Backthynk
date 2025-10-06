@@ -2,16 +2,40 @@
 let currentLinkPreviews = [];
 let linkPreviewCounter = 0;
 
-// URL detection regex - matches any URL starting with http(s):// until the next space
-const URL_REGEX = /https?:\/\/\S+/g;
+// URL detection regex - matches URLs with or without protocol
+// Matches: http://example.com, https://example.com, example.com/path, github.com/user
+const URL_WITH_PROTOCOL = /https?:\/\/[^\s]+/g;
+const URL_WITHOUT_PROTOCOL = /(?:^|\s)((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?:\/[^\s]*)?)/g;
 
 // Extract URLs from text
 function extractURLsFromText(text) {
-    const matches = text.match(URL_REGEX);
-    if (!matches) return [];
+    const urls = new Set();
 
-    // Remove duplicates
-    return [...new Set(matches)];
+    // First, find all URLs with explicit protocol
+    const withProtocol = text.match(URL_WITH_PROTOCOL);
+    if (withProtocol) {
+        withProtocol.forEach(url => urls.add(url));
+    }
+
+    // Then find URLs without protocol (like github.com/user)
+    // We need to ensure these don't overlap with URLs that already have protocol
+    let match;
+    const regex = new RegExp(URL_WITHOUT_PROTOCOL);
+    while ((match = regex.exec(text)) !== null) {
+        const url = match[1];
+
+        // Check if this URL is not already part of a URL with protocol
+        const position = match.index + match[0].indexOf(url);
+        const beforeUrl = text.substring(Math.max(0, position - 8), position);
+
+        // Skip if preceded by protocol
+        if (!beforeUrl.match(/https?:\/\/$/)) {
+            // Add https:// prefix for fetching
+            urls.add('https://' + url);
+        }
+    }
+
+    return Array.from(urls);
 }
 
 // Local implementation of fetchLinkPreview to avoid dependency issues

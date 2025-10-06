@@ -30,7 +30,8 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		"activityEnabled":                  options.Features.Activity.Enabled,
 		"activityPeriodMonths":             options.Features.Activity.PeriodMonths,
 		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
-		"markdownEnabled":                  options.Features.Markdown.Enabled,
+		//06/10/2025 force disable markdown
+		"markdownEnabled":                  false, //options.Features.Markdown.Enabled,
 		"fileUploadEnabled":                options.Features.FileUpload.Enabled,
 		"maxFileSizeMB":                    options.Features.FileUpload.MaxFileSizeMB,
 		"maxFilesPerPost":                  options.Features.FileUpload.MaxFilesPerPost,
@@ -83,9 +84,12 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 			options.Features.RetroactivePosting.TimeFormat = val
 		}
 	}
+	/*
+	//06/10/2025 force disable markdown
 	if val, ok := req["markdownEnabled"].(bool); ok {
 		options.Features.Markdown.Enabled = val
 	}
+	*/
 
 	// Update file upload settings
 	if val, ok := req["fileUploadEnabled"].(bool); ok {
@@ -137,7 +141,9 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 		"activityEnabled":                  options.Features.Activity.Enabled,
 		"activityPeriodMonths":             options.Features.Activity.PeriodMonths,
 		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
-		"markdownEnabled":                  options.Features.Markdown.Enabled,
+		//06/10/2025 force disable markdown
+		"markdownEnabled":                  false,
+		//"markdownEnabled":                  options.Features.Markdown.Enabled,
 		"fileUploadEnabled":                options.Features.FileUpload.Enabled,
 		"maxFileSizeMB":                    options.Features.FileUpload.MaxFileSizeMB,
 		"maxFilesPerPost":                  options.Features.FileUpload.MaxFilesPerPost,

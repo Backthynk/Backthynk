@@ -241,14 +241,47 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
 }
 
 function formatTextWithUrls(text) {
-    // URL regex - matches any URL starting with http(s):// until the next space
-    const urlRegex = /https?:\/\/\S+/g;
+    // Process URLs before HTML escaping to preserve special characters in URLs
+    // We'll use placeholders to protect the URLs from being escaped
 
-    // Replace URLs with formatted links
-    return text.replace(urlRegex, (url) => {
+    const urlPlaceholders = [];
+    let processedText = text;
+
+    // 1. Match and replace URLs with http(s):// protocol
+    const httpUrlRegex = /(https?:\/\/[^\s<>"]+)/g;
+    processedText = processedText.replace(httpUrlRegex, (url) => {
+        const placeholder = `__URL_PLACEHOLDER_${urlPlaceholders.length}__`;
         const shortUrl = shortenUrl(url);
-        return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors">${escapeHtml(shortUrl)}</a>`;
+        urlPlaceholders.push(`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors">${escapeHtml(shortUrl)}</a>`);
+        return placeholder;
     });
+
+    // 2. Match and replace email addresses
+    const emailRegex = /\b([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/g;
+    processedText = processedText.replace(emailRegex, (email) => {
+        const placeholder = `__URL_PLACEHOLDER_${urlPlaceholders.length}__`;
+        urlPlaceholders.push(`<a href="mailto:${escapeHtml(email)}" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors">${escapeHtml(email)}</a>`);
+        return placeholder;
+    });
+
+    // 3. Match and replace plain domain names (www.example.com or example.com)
+    const domainRegex = /\b(?<![@\/])(?:www\.)?([a-zA-Z0-9][-a-zA-Z0-9]{0,62}\.)+[a-zA-Z]{2,}\b(?!["\s]*@)/g;
+    processedText = processedText.replace(domainRegex, (domain) => {
+        const placeholder = `__URL_PLACEHOLDER_${urlPlaceholders.length}__`;
+        const url = domain.startsWith('www.') ? `https://${domain}` : `https://${domain}`;
+        urlPlaceholders.push(`<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold hover:underline transition-colors">${escapeHtml(domain)}</a>`);
+        return placeholder;
+    });
+
+    // Now escape the remaining text (non-URL content)
+    let escaped = escapeHtml(processedText);
+
+    // Replace placeholders with actual links
+    urlPlaceholders.forEach((link, index) => {
+        escaped = escaped.replace(`__URL_PLACEHOLDER_${index}__`, link);
+    });
+
+    return escaped;
 }
 
 function getFileIcon(fileExtension) {

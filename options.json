@@ -1,6 +1,6 @@
 {
   "core": {
-    "maxContentLength": 10000
+    "maxContentLength": 50000
   },
   "metadata": {
     "title": "Louis",
@@ -19,7 +19,7 @@
       "timeFormat": "12h"
     },
     "markdown": {
-      "enabled": false
+      "enabled": true
     },
     "fileUpload": {
       "enabled": true,

@@ -116,6 +116,13 @@ function generateIconCSS(usedIcons) {
 /* Generated automatically from icons found in web/ directory */
 /* Icons included: ${usedIcons.join(', ')} */
 
+/*
+/* Global font family */
+* {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+}
+*/
+
 /* Base Font Awesome styles */
 .fas, .far {
   font-family: "Font Awesome 6 Free";

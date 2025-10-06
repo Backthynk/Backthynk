@@ -140,6 +140,9 @@ func LoadOptionsConfig() error {
 	}
 
 	optionsConfig = &config
+	//06/10/2025
+	//Force disable markdown
+	optionsConfig.WithMarkdownEnabled(false)
 	return nil
 }
 

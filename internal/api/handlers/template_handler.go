@@ -46,18 +46,22 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 	// Check if this is a category path
 	if IsCategoryPath(path) {
 		category := h.resolveCategoryFromPath(path)
-		if category != nil {
-			// Set breadcrumb as title
-			pageData.Title = h.categoryService.GetCategoryBreadcrumb(category.ID)
-			pageData.CategoryBreadcrumb = pageData.Title
-
-			// Use category description if available, otherwise fallback to service description
-			if category.Description != "" {
-				pageData.Description = category.Description
-			}
-
-			pageData.Category = category
+		if category == nil {
+			// Category doesn't exist, redirect to home
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
 		}
+
+		// Set breadcrumb as title
+		pageData.Title = h.categoryService.GetCategoryBreadcrumb(category.ID)
+		pageData.CategoryBreadcrumb = pageData.Title
+
+		// Use category description if available, otherwise fallback to service description
+		if category.Description != "" {
+			pageData.Description = category.Description
+		}
+
+		pageData.Category = category
 	}
 
 	// Use compressed template in production mode

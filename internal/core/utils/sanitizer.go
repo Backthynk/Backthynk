@@ -1,11 +1,15 @@
 package utils
 
+/*
 import (
 	"bytes"
 	"regexp"
 	"strings"
+
+	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
@@ -25,6 +29,11 @@ func init() {
 		"div", "p", "br", "strong", "em", "u", "del", "s", "strike", "span", "section",
 	)
 
+	// Allow input elements for task lists
+	HTMLSanitizer.AllowElements("input")
+	HTMLSanitizer.AllowAttrs("type").Matching(regexp.MustCompile(`^checkbox$`)).OnElements("input")
+	HTMLSanitizer.AllowAttrs("checked", "disabled").OnElements("input")
+
 	// Allow headings
 	HTMLSanitizer.AllowElements("h1", "h2", "h3", "h4", "h5", "h6")
 
@@ -33,6 +42,10 @@ func init() {
 
 	// Allow blockquotes and code
 	HTMLSanitizer.AllowElements("blockquote", "code", "pre")
+
+	// Allow syntax highlighting elements
+	HTMLSanitizer.AllowAttrs("class", "style").OnElements("code", "pre", "span")
+	HTMLSanitizer.AllowElements("span")
 
 	// Allow definition lists
 	HTMLSanitizer.AllowElements("dl", "dt", "dd")
@@ -50,7 +63,9 @@ func init() {
 
 	// Allow links with GitHub's attributes
 	HTMLSanitizer.AllowElements("a")
-	HTMLSanitizer.AllowAttrs("href", "title", "target", "rel", "id", "aria-label", "data-footnote-ref", "data-footnote-backref").OnElements("a")
+	HTMLSanitizer.AllowAttrs("href", "title", "id", "aria-label", "data-footnote-ref", "data-footnote-backref").OnElements("a")
+	HTMLSanitizer.AllowAttrs("target").Matching(regexp.MustCompile(`^_blank$`)).OnElements("a")
+	HTMLSanitizer.AllowAttrs("rel").Matching(regexp.MustCompile(`^(nofollow|noopener|noreferrer|noopener noreferrer|noopener noreferrer nofollow)$`)).OnElements("a")
 
 	// Allow sup for footnotes
 	HTMLSanitizer.AllowElements("sup")
@@ -73,7 +88,18 @@ func ProcessMarkdown(markdown string) string {
 	// Note: extension.GFM already includes Table, Strikethrough, Linkify, and TaskList
 	md := goldmark.New(
 		goldmark.WithExtensions(
-			extension.GFM, // GitHub Flavored Markdown (includes autolink)
+			extension.GFM, // GitHub Flavored Markdown (includes autolink, tables, strikethrough, task lists)
+			extension.Footnote, // Footnote support
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("github"),
+				highlighting.WithGuessLanguage(true),
+				highlighting.WithFormatOptions(
+					chromahtml.WithLineNumbers(false),
+					chromahtml.TabWidth(4),
+					chromahtml.WithClasses(true),
+					chromahtml.ClassPrefix("pl-"), // This matches GitHub's prefix
+				),
+			),
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(), // Auto heading IDs
@@ -153,4 +179,9 @@ func autolinkURLs(html string) string {
 	})
 
 	return result
+}
+*/
+
+func ProcessMarkdown(markdown string) string {
+	return markdown
 }
