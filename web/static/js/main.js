@@ -101,19 +101,53 @@ async function updateFileUploadText() {
     modalFileUploadText.textContent = `Or drag and drop files here (max ${settings.maxFilesPerPost} files)`;
 }
 
+// Calculate and set dynamic category container height
+function updateCategoryContainerHeight() {
+    const categoriesContainer = document.getElementById('categories-container');
+    const footerContainer = document.getElementById("footer-links");
+    const activityContainer = document.getElementById('activity-container');
+
+    if (!categoriesContainer) return;
+
+    // Get viewport height
+    const viewportHeight = window.innerHeight;
+
+    // Always assume header is scrolled (worst case = 96px) for consistent sizing
+    const headerHeight = 96;
+
+    // Activity container: if visible, assume fixed height of 330px
+    let activityHeight = 0;
+    if (activityContainer && activityContainer.style.display !== 'none') {
+        activityHeight = 330;
+    }
+
+    // Get actual footer container height
+    let footerHeight = 0;
+    if (footerContainer) {
+        footerHeight = footerContainer.offsetHeight;
+    }
+
+    // Calculate spacing:
+    // - top: 1rem (16px) from sticky top-4
+    // - between containers: 1rem (16px) from space-y-4 (appears once per container)
+    const topSpacing = 16;
+    const containerSpacing = (activityHeight > 0 ? 16 : 0) + (footerHeight > 0 ? 16 : 0);
+
+    // Calculate maximum available height for the entire category container
+    const maxHeight = viewportHeight
+        - headerHeight
+        - topSpacing * 2
+        - activityHeight
+        - footerHeight
+        - containerSpacing
+
+    // Set max-height with a minimum of 200px to ensure usability
+    const finalHeight = Math.min(Math.max(maxHeight, 200), 800);
+    categoriesContainer.style.maxHeight = `${finalHeight}px`;
+}
+
 // Centralized app initialization
 async function initializeApp() {
-
-    // Show loading indicator for categories
-    const categoriesTree = document.getElementById('categories-tree');
-    if (categoriesTree) {
-        categoriesTree.innerHTML = `
-            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
-                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
-                <p>Loading categories...</p>
-            </div>
-        `;
-    }
 
     // Load settings and categories in parallel for faster startup
     const settingsPromise = initializeAppSettings();
@@ -162,6 +196,9 @@ async function initializeApp() {
     initializeAutoResizeTextarea();
     updateFileUploadText();
     initializeSortFooter();
+
+    // Calculate initial category container height
+    updateCategoryContainerHeight();
 }
 
 // Main initialization and event listeners
@@ -807,6 +844,9 @@ window.addEventListener('resize', function() {
             // Re-render the header with responsive breadcrumb
             updateCategoryStatsDisplay();
         }
+
+        // Recalculate category container height on resize
+        updateCategoryContainerHeight();
 
         // Handle legacy keyboard detection for older browsers
         if (!window.visualViewport) {

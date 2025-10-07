@@ -66,10 +66,21 @@ export SOURCE_STATIC=$(jq -r '.paths.source.static // "web/static"' "$SHARED_CON
 export SOURCE_TEMPLATES=$(jq -r '.paths.source.templates // "web/templates"' "$SHARED_CONFIG_FILE")
 export SOURCE_JS=$(jq -r '.paths.source.js // "web/static/js"' "$SHARED_CONFIG_FILE")
 export SOURCE_CSS=$(jq -r '.paths.source.css // "web/static/css"' "$SHARED_CONFIG_FILE")
+export SOURCE_IMAGES=$(jq -r '.paths.source.images // "web/static/images"' "$SHARED_CONFIG_FILE")
 
-# Build command
-export BUILD_COMMAND="go build -o $BUILD_BIN/unix/$BINARY_NAME-v$APP_VERSION ./cmd/server/"
-export BUILD_COMMAND_WINDOWS="GOOS=windows GOARCH=amd64 go build -o $BUILD_BIN/windows/$BINARY_NAME-v$APP_VERSION.exe ./cmd/server/"
+# Release directory structure
+export RELEASES_DIR="$PROJECT_ROOT/releases"
+
+# Platforms to build
+# For cross-compilation with CGO, you need platform-specific C compilers
+# Uncomment additional platforms only if you have the required toolchains
+export BUILD_PLATFORMS=(
+    "linux-amd64:GOOS=linux GOARCH=amd64"
+    # "linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc"
+    # "macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang"
+    # "macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang"
+    # "windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc"
+)
 
 # Helper functions for getting build configuration
 get_js_priority_files() {

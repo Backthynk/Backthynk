@@ -1,4 +1,5 @@
 @echo off
-REM Run the Backthynk application on Windows
+REM Backthynk v__VERSION__ - __PLATFORM__
+REM Run the Backthynk application
 set APP_ENV=production
-bin\windows\backthynk-latest.exe
+bin\backthynk-latest.exe

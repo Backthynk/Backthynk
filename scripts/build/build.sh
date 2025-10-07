@@ -31,69 +31,17 @@ source "$COMPONENTS_DIR/_04_js_bundling.sh"
 # Component 05: Process HTML templates
 source "$COMPONENTS_DIR/_05_html_processing.sh"
 
+# Component 05a: Copy image assets
+source "$COMPONENTS_DIR/_05a_copy_images.sh"
+
 # Component 06: Apply gzip compression
 source "$COMPONENTS_DIR/_06_gzip_compression.sh"
 
 # Component 07: Cache CDN packages
 source "$COMPONENTS_DIR/_07_cdn_caching.sh"
 
-# Copy required config files to build directory
-log_step "Copying configuration files to build directory..."
-mkdir -p "$BUILD_DIR"
-
-# Copy .config.json
-if [ -f "$SCRIPT_DIR/.config.json" ]; then
-    log_substep "Copying .config.json..."
-    cp "$SCRIPT_DIR/.config.json" "$BUILD_DIR/.config.json"
-
-    # Update paths for production (relative to build directory)
-    log_substep "Updating paths for production environment..."
-    sed -i 's|"build_dir": "build"|"build_dir": "."|g' "$BUILD_DIR/.config.json"
-    sed -i 's|"build/assets|"assets|g' "$BUILD_DIR/.config.json"
-    sed -i 's|"build/bin"|"bin"|g' "$BUILD_DIR/.config.json"
-    sed -i 's|"web/static"|"assets/static"|g' "$BUILD_DIR/.config.json"
-    sed -i 's|"web/templates"|"assets/templates"|g' "$BUILD_DIR/.config.json"
-    sed -i 's|"web/static/js"|"assets/js"|g' "$BUILD_DIR/.config.json"
-    sed -i 's|"web/static/css"|"assets/css"|g' "$BUILD_DIR/.config.json"
-else
-    echo -e "${RED}Error: .config.json not found at $SCRIPT_DIR/.config.json${NC}" >&2
-    exit 1
-fi
-
-# Copy all template files to build directory
-log_step "Copying template files to build directory..."
-TEMPLATES_DIR="$COMPONENTS_DIR/templates"
-
-if [ -d "$TEMPLATES_DIR" ]; then
-    log_substep "Copying all files from templates directory..."
-    # Use rsync if available for better directory copying, otherwise use cp -r
-    if command -v rsync &> /dev/null; then
-        rsync -av --exclude='.*' "$TEMPLATES_DIR/" "$BUILD_DIR/"
-    else
-        cp -r "$TEMPLATES_DIR/"* "$BUILD_DIR/" 2>/dev/null || true
-    fi
-    log_substep "✓ Template files copied successfully"
-else
-    echo -e "${YELLOW}Warning: Templates directory not found at $TEMPLATES_DIR${NC}" >&2
-fi
-
-# Build optimized Go binaries
-log_step "Building optimized Go binaries..."
-log_substep "Creating build directories..."
-mkdir -p "$BUILD_BIN/unix"
-mkdir -p "$BUILD_BIN/windows"
-
-log_substep "Building Unix binary (v${APP_VERSION})..."
-CGO_ENABLED=1 eval "$BUILD_COMMAND"
-
-log_substep "Creating latest symlink..."
-ln -sf "$BINARY_NAME-v$APP_VERSION" "$BUILD_BIN/unix/$BINARY_NAME-latest"
-
-log_substep "Building Windows binary (v${APP_VERSION})..."
-CGO_ENABLED=0 eval "$BUILD_COMMAND_WINDOWS"
-
-log_substep "Creating Windows latest copy..."
-cp "$BUILD_BIN/windows/$BINARY_NAME-v$APP_VERSION.exe" "$BUILD_BIN/windows/$BINARY_NAME-latest.exe"
+# Component 07a: Build cross-platform binaries
+source "$COMPONENTS_DIR/_07a_cross_platform_build.sh"
 
 # Component 08: Generate bundle size report
 source "$COMPONENTS_DIR/_08_bundle_reporting.sh"

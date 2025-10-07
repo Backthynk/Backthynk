@@ -8,7 +8,6 @@ function initializeSettings() {
     document.getElementById('settings-back-btn').addEventListener('click', hideSettingsPage);
     document.getElementById('cancel-settings-btn').addEventListener('click', cancelSettings);
     document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
-    document.getElementById('reset-settings-btn').addEventListener('click', resetToDefaults);
     document.getElementById('retroactivePostingEnabled').addEventListener('change', toggleRetroactiveTimeFormatVisibility);
 }
 
@@ -217,16 +216,6 @@ function cancelSettings() {
         window.router.navigate('/');
     } else {
         hideSettingsPage();
-    }
-}
-
-function resetToDefaults() {
-    if (confirm(window.AppConstants.USER_MESSAGES.info.resetSettingsConfirm)) {
-        document.getElementById('maxFileSizeMB').value = window.AppConstants.DEFAULT_SETTINGS.maxFileSizeMB;
-        document.getElementById('maxContentLength').value = window.AppConstants.DEFAULT_SETTINGS.maxContentLength;
-        document.getElementById('maxFilesPerPost').value = window.AppConstants.DEFAULT_SETTINGS.maxFilesPerPost;
-        // Storage path is not reset as it's read-only
-        showSettingsStatus(window.AppConstants.USER_MESSAGES.info.settingsResetInfo, 'info');
     }
 }
 

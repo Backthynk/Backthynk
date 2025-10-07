@@ -1,12 +1,18 @@
-Getting Started with Backthynk
-================================
+Getting Started with Backthynk v__VERSION__
+============================================
+
+Platform: __PLATFORM__
 
 Thank you for downloading Backthynk!
 
 Quick Start:
 ------------
 
-On Unix/Linux/Mac -> Run: make run
-On Windows -> Double-click run.bat
+__INSTRUCTIONS__
+
+The server will start at: http://localhost:8080
+
+For more information, visit:
+https://github.com/Backthynk/backthynk
 
 Enjoy!

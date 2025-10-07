@@ -120,13 +120,6 @@ elif [ -d "$CSS_DIR" ]; then
     fi
 fi
 
-# Images size (if any)
-if [ -d "$STATIC_ROOT/images" ]; then
-    IMG_SIZE=$(du -sb "$STATIC_ROOT/images" | awk '{print $1}')
-    printf "${GREEN}Images:${NC}                  %8s\n" "$(numfmt --to=iec-i --suffix=B $IMG_SIZE)"
-    TOTAL_SIZE=$((TOTAL_SIZE + IMG_SIZE))
-fi
-
 # HTML size calculation
 if [ -d "$TEMPLATES_COMPRESSED_DIR" ]; then
     HTML_SIZE=$(find "$TEMPLATES_COMPRESSED_DIR" -name "*.html" -exec cat {} \; 2>/dev/null | wc -c || echo 0)

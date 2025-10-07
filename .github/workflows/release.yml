@@ -1,0 +1,198 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Full history for verification
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.25'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+
+      - name: Install build dependencies
+        run: |
+          # Install required system packages
+          sudo apt-get update
+          sudo apt-get install -y \
+            curl \
+            jq \
+            gzip \
+            sed \
+            gawk \
+            coreutils \
+            findutils \
+            rsync
+
+          # Install Node.js minification tools
+          npm install -g terser esbuild
+
+      - name: Extract version from tag
+        id: get_version
+        run: |
+          TAG_VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$TAG_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Read version from config
+        id: config_version
+        run: |
+          CONFIG_VERSION=$(jq -r '.app.version' scripts/.config.json)
+          echo "config_version=$CONFIG_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check version match
+        run: |
+          if [ "${{ steps.get_version.outputs.version }}" != "${{ steps.config_version.outputs.config_version }}" ]; then
+            echo "Error: Tag version (${{ steps.get_version.outputs.version }}) does not match config version (${{ steps.config_version.outputs.config_version }})"
+            exit 1
+          fi
+
+      - name: Check for existing release
+        run: |
+          if gh release view v${{ steps.get_version.outputs.version }} &> /dev/null; then
+            echo "Error: Release v${{ steps.get_version.outputs.version }} already exists"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          go test -v ./... || { echo "Tests failed!"; exit 1; }
+
+      - name: Build project
+        run: |
+          echo "Building project for all platforms..."
+          make build
+
+      - name: Create release archives
+        run: |
+          echo "Creating platform-specific archives..."
+          make publish
+
+      - name: Create build verification file
+        id: build_info
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          COMMIT_SHORT=$(git rev-parse --short HEAD)
+          BUILD_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          cat > archives/v${{ steps.get_version.outputs.version }}/BUILD_INFO.txt << EOF
+          Backthynk v${{ steps.get_version.outputs.version }}
+
+          Build Information:
+          ==================
+          Version:        ${{ steps.get_version.outputs.version }}
+          Commit:         $COMMIT_SHA
+          Branch/Tag:     ${GITHUB_REF#refs/*/}
+          Build Date:     $BUILD_DATE
+          Built by:       GitHub Actions
+
+          Platforms:
+          ==========
+          - Linux AMD64 (x86_64)
+          - Linux ARM64
+          - macOS AMD64 (Intel)
+          - macOS ARM64 (Apple Silicon)
+          - Windows AMD64
+
+          Source Verification:
+          ====================
+          This binary was built from the official repository:
+          Repository: https://github.com/${{ github.repository }}
+          Commit:     https://github.com/${{ github.repository }}/commit/$COMMIT_SHA
+
+          To verify this build, clone the repository at the commit above and run:
+            git checkout $COMMIT_SHA
+            make build
+
+          Then compare the binary checksums.
+          EOF
+
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "commit_short=$COMMIT_SHORT" >> $GITHUB_OUTPUT
+
+      - name: Extract release notes
+        id: release_notes
+        run: |
+          # Try to get tag message (annotated tags)
+          TAG_MESSAGE=$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/tags/})
+
+          # If no tag message, check for CHANGELOG.md
+          if [ -z "$TAG_MESSAGE" ] || [ "$TAG_MESSAGE" = "" ]; then
+            if [ -f "CHANGELOG.md" ]; then
+              # Extract version section from CHANGELOG.md
+              TAG_MESSAGE=$(sed -n "/## \[${GITHUB_REF#refs/tags/v}\]/,/## \[/p" CHANGELOG.md | sed '$d' || echo "")
+            fi
+          fi
+
+          # If still empty, use default message
+          if [ -z "$TAG_MESSAGE" ] || [ "$TAG_MESSAGE" = "" ]; then
+            TAG_MESSAGE="Release v${{ steps.get_version.outputs.version }}"
+          fi
+
+          # Save to file to handle multiline content
+          echo "$TAG_MESSAGE" > /tmp/release_notes.txt
+          echo "notes_file=/tmp/release_notes.txt" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            archives/v${{ steps.get_version.outputs.version }}/*.tar.gz
+            archives/v${{ steps.get_version.outputs.version }}/*.zip
+            archives/v${{ steps.get_version.outputs.version }}/BUILD_INFO.txt
+            archives/v${{ steps.get_version.outputs.version }}/SHA256SUMS.txt
+          body: |
+            $(cat ${{ steps.release_notes.outputs.notes_file }})
+
+            ---
+
+            ## Download & Installation
+
+            Choose the archive for your platform below:
+
+            **Linux (AMD64/x86_64):** `backthynk-v${{ steps.get_version.outputs.version }}-linux-amd64.tar.gz`
+            **Linux (ARM64):** `backthynk-v${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
+            **macOS (Intel):** `backthynk-v${{ steps.get_version.outputs.version }}-macos-amd64.tar.gz`
+            **macOS (Apple Silicon):** `backthynk-v${{ steps.get_version.outputs.version }}-macos-arm64.tar.gz`
+            **Windows (AMD64):** `backthynk-v${{ steps.get_version.outputs.version }}-windows-amd64.zip`
+            **All Platforms:** `backthynk-v${{ steps.get_version.outputs.version }}-all-platforms.zip`
+
+            ### Quick Start
+            1. Download and extract the archive for your platform
+            2. Run: `./bin/backthynk-latest` (or `.\bin\backthynk-latest.exe` on Windows)
+            3. Open your browser to: http://localhost:8080
+
+            ## Build Verification
+
+            **Commit:** [`${{ steps.build_info.outputs.commit_short }}`](https://github.com/${{ github.repository }}/commit/${{ steps.build_info.outputs.commit_sha }})
+
+            To verify this build is from the official source:
+            1. Clone the repository: `git clone https://github.com/${{ github.repository }}.git`
+            2. Checkout the release commit: `git checkout ${{ steps.build_info.outputs.commit_sha }}`
+            3. Build: `make build`
+            4. Compare checksums
+
+            See `BUILD_INFO.txt` and `SHA256SUMS.txt` for complete build details and checksums.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

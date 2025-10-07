@@ -16,11 +16,12 @@
       "static": "web/static",
       "templates": "web/templates",
       "js": "web/static/js",
-      "css": "web/static/css"
+      "css": "web/static/css",
+      "images": "web/static/images"
     }
   },
   "urls": {
-    "github_url": "https://github.com/Fantasim/backthynk",
-    "new_issue_url": "https://github.com/Fantasim/backthynk/issues/new"
+    "github_url": "https://github.com/Backthynk/backthynk",
+    "new_issue_url": "https://github.com/Backthynk/backthynk/issues/new"
   }
 }

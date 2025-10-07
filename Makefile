@@ -1,4 +1,4 @@
-.PHONY: help build dev dev-prod run clean fclean test test-verbose
+.PHONY: help build dev dev-prod run clean fclean test test-verbose publish release
 
 # Default target
 help:
@@ -30,3 +30,11 @@ test:
 
 test-verbose:
 	@./scripts/makefile/test-verbose.sh
+
+# Publish target
+publish:
+	@./scripts/makefile/publish.sh
+
+# Release target
+release:
+	@./scripts/makefile/release.sh

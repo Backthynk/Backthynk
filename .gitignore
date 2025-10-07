@@ -9,6 +9,8 @@ service.json
 
 # Build artifacts
 /build
+/releases
+/archives
 
 # Build cache
 scripts/.cache/

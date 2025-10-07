@@ -18,6 +18,11 @@
     <meta property="twitter:title" content="{{if .Title}}{{.Title}}{{else}}Personal Micro Blog{{end}}">
     <meta property="twitter:description" content="{{if .Description}}{{.Description}}{{else}}Personal micro blog platform{{end}}">
 
+    <!-- Favicons -->
+    <link id="favicon-ico" rel="icon" type="image/x-icon" href="/static/images/light/favicon.ico">
+    <link id="favicon-16" rel="icon" type="image/png" sizes="16x16" href="/static/images/light/favicon-16x16.png">
+    <link id="favicon-32" rel="icon" type="image/png" sizes="32x32" href="/static/images/light/favicon-32x32.png">
+
     {{if .Category}}
     <!-- Structured Data -->
     <script type="application/ld+json">
@@ -97,7 +102,7 @@
                 <!-- Sticky wrapper for both containers -->
                 <div class="sticky top-4 space-y-4">
                     <!-- Categories Container -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 max-h-[50vh] flex flex-col">
+                    <div id="categories-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col">
                         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
                             <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Categories</h2>
                             <button id="add-category-btn" class="flex items-center justify-center w-7 h-7 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all duration-200">
@@ -105,12 +110,15 @@
                             </button>
                         </div>
                         <div id="categories-tree" class="flex-1 overflow-y-auto px-2 py-1">
+                            <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+                                <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+                                <p>Loading categories...</p>
+                            </div>
                             <!-- Categories will be loaded here -->
                         </div>
                         <!-- Category Sorting Footer -->
                         <div id="category-sort-footer" class="border-t border-gray-100 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900 flex-shrink-0 rounded-b-lg" style="display: none;">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="text-gray-500 dark:text-gray-400 font-medium">Sort by:</span>
                                 <div class="flex items-center space-x-3">
                                     <button class="sort-option flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors" data-sort="name">
                                         <span>Name</span>
@@ -131,42 +139,42 @@
 
                     <!-- Activity Container - Hidden on mobile for space -->
                     <div id="activity-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-3 py-3 hidden lg:block" style="display: none;">
-                    <!-- Category Breadcrumb -->
-                    <div id="activity-category-breadcrumb" class="mb-4">
-                        <!-- Breadcrumb will be generated dynamically -->
-                    </div>
+                        <!-- Category Breadcrumb -->
+                        <div id="activity-category-breadcrumb" class="mb-4">
+                            <!-- Breadcrumb will be generated dynamically -->
+                        </div>
 
-                    <!-- Centered Date Range with Navigation -->
-                    <div class="flex items-center justify-center mb-4">
-                        <button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
-                            <i class="fas fa-chevron-left text-xs"></i>
-                        </button>
-                        <span id="activity-period" class="text-sm text-gray-600 dark:text-gray-400"></span>
-                        <button id="activity-next" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 ml-3" onclick="changeActivityPeriod(1)">
-                            <i class="fas fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
+                        <!-- Centered Date Range with Navigation -->
+                        <div class="flex items-center justify-center mb-4">
+                            <button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </button>
+                            <span id="activity-period" class="text-sm text-gray-600 dark:text-gray-400"></span>
+                            <button id="activity-next" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 ml-3" onclick="changeActivityPeriod(1)">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
 
-                    <!-- Heatmap with months on left, heatmap centered -->
-                    <div class="relative mb-6">
-                        <div class="flex justify-center">
-                            <div id="activity-heatmap" class="min-h-16">
-                                <!-- Heatmap will be generated here -->
+                        <!-- Heatmap with months on left, heatmap centered -->
+                        <div class="relative mb-6">
+                            <div class="flex justify-center">
+                                <div id="activity-heatmap" class="min-h-16">
+                                    <!-- Heatmap will be generated here -->
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Legend and Summary -->
-                    <div class="flex items-center justify-between text-xs mt-6">
-                        <div id="activity-legend" class="flex flex-col space-y-1">
-                            <!-- Legend will be generated dynamically -->
+                        <!-- Legend and Summary -->
+                        <div class="flex items-center justify-between text-xs mt-6">
+                            <div id="activity-legend" class="flex flex-col space-y-1">
+                                <!-- Legend will be generated dynamically -->
+                            </div>
+                            <span id="activity-summary" class="text-gray-500 dark:text-gray-400"></span>
                         </div>
-                        <span id="activity-summary" class="text-gray-500 dark:text-gray-400"></span>
                     </div>
-                </div>
 
                     <!-- Footer Links -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-3">
+                    <div id="footer-links" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-3">
                         <div class="text-xs text-center text-gray-500 dark:text-gray-400 space-y-1">
                             <div>Backthynk © <span id="copyright-year"></span></div>
                             <div class="flex items-center justify-center space-x-3">
@@ -418,9 +426,9 @@
                         <div class="flex items-center justify-between">
                             <div class="flex-1">
                                 <label for="activityEnabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Activity Tracking
+                                    Activity Heatmap
                                 </label>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enable activity heatmaps and statistics tracking. (Not visible on mobile)</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enable activity heatmap. (Not visible on mobile)</p>
                             </div>
                             <div class="ml-4">
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -461,11 +469,7 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex items-center justify-between pt-4">
-                        <button id="reset-settings-btn" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
-                            <i class="fas fa-undo text-xs mr-2"></i>
-                            Reset to Defaults
-                        </button>
+                    <div class="flex items-center justify-end pt-4">
                         <div class="flex space-x-3">
                             <button id="cancel-settings-btn" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
                                 Cancel
