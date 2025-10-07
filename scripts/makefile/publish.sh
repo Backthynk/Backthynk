@@ -7,6 +7,7 @@ set -e
 
 # Load configuration
 source "$(dirname "$0")/../common/load-config.sh"
+source "$(dirname "$0")/../common/common.sh"
 
 echo -e "${BOLD}${CYAN}Creating release archives for v${APP_VERSION}...${NC}"
 echo -e "${CYAN}=========================================${NC}"
