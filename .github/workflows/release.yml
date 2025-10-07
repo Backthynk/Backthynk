@@ -27,6 +27,15 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Cache osxcross toolchain
+        id: cache-osxcross
+        uses: actions/cache@v4
+        with:
+          path: /tmp/osxcross
+          key: osxcross-macos15.5-${{ runner.os }}
+          restore-keys: |
+            osxcross-macos15.5-
+
       - name: Install build dependencies
         run: |
           # Install required system packages
@@ -47,10 +56,15 @@ jobs:
           npm install -g terser esbuild
 
           # Install osxcross for macOS cross-compilation
-          git clone https://github.com/tpoechtrager/osxcross.git /tmp/osxcross
-          cd /tmp/osxcross
-          wget -nc https://github.com/joseluisq/macosx-sdks/releases/download/15.5/MacOSX15.5.sdk.tar.xz -O tarballs/MacOSX15.5.sdk.tar.xz
-          UNATTENDED=1 ./build.sh
+          if [ "${{ steps.cache-osxcross.outputs.cache-hit }}" != "true" ]; then
+            echo "Building osxcross from scratch..."
+            git clone https://github.com/tpoechtrager/osxcross.git /tmp/osxcross
+            cd /tmp/osxcross
+            wget -nc https://github.com/joseluisq/macosx-sdks/releases/download/15.5/MacOSX15.5.sdk.tar.xz -O tarballs/MacOSX15.5.sdk.tar.xz
+            UNATTENDED=1 ./build.sh
+          else
+            echo "Using cached osxcross toolchain"
+          fi
           echo "/tmp/osxcross/target/bin" >> $GITHUB_PATH
 
       - name: Extract version from tag

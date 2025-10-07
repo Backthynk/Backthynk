@@ -62,27 +62,40 @@ if ! go test -v ./...; then
 fi
 echo -e "${GREEN}✓ All tests passed${NC}"
 
-# Prompt for release notes
+# Validate CHANGELOG.md
 echo ""
-echo -e "${BOLD}${CYAN}Release Notes:${NC}"
-echo -e "${CYAN}---------------${NC}"
-echo -e "You have two options for adding release notes:"
-echo -e "  1. ${BOLD}Annotated tag${NC} - Write notes now (will open editor)"
-echo -e "  2. ${BOLD}CHANGELOG.md${NC} - Use existing changelog entry"
-echo ""
-read -p "Choose method (1 for tag message, 2 for CHANGELOG.md, Enter to skip): " notes_choice
+echo -e "${BOLD}${CYAN}Validating release notes in CHANGELOG.md:${NC}"
+echo -e "${CYAN}------------------------------------------${NC}"
 
-TAG_OPTS=""
-if [ "$notes_choice" = "1" ]; then
-    echo -e "${YELLOW}Opening editor for release notes...${NC}"
-    TAG_OPTS="-a"
-elif [ "$notes_choice" = "2" ]; then
-    if [ ! -f "docs/CHANGELOG.md" ]; then
-        echo -e "${RED}Error: CHANGELOG.md not found.${NC}"
-        exit 1
-    fi
-    echo -e "${GREEN}Using CHANGELOG.md for release notes${NC}"
+if [ ! -f "docs/CHANGELOG.md" ]; then
+    echo -e "${RED}Error: docs/CHANGELOG.md not found.${NC}"
+    echo -e "${YELLOW}Please create a CHANGELOG.md file with release notes for version ${APP_VERSION}.${NC}"
+    exit 1
 fi
+
+# Check if version exists in CHANGELOG.md with content
+VERSION_SECTION=$(sed -n "/## \[${APP_VERSION}\]/,/## \[/p" docs/CHANGELOG.md | sed '$d')
+
+if [ -z "$VERSION_SECTION" ]; then
+    echo -e "${RED}Error: Version ${APP_VERSION} not found in CHANGELOG.md${NC}"
+    echo -e "${YELLOW}Please add a section for version ${APP_VERSION} in docs/CHANGELOG.md.${NC}"
+    echo ""
+    echo -e "${BOLD}Expected format:${NC}"
+    echo -e "## [${APP_VERSION}] - YYYY-MM-DD"
+    echo -e ""
+    echo -e "Description of changes..."
+    exit 1
+fi
+
+# Check if the version section has meaningful content (more than just the header)
+CONTENT_LINES=$(echo "$VERSION_SECTION" | tail -n +2 | grep -v '^[[:space:]]*$' | wc -l)
+if [ "$CONTENT_LINES" -lt 1 ]; then
+    echo -e "${RED}Error: Version ${APP_VERSION} in CHANGELOG.md has no content.${NC}"
+    echo -e "${YELLOW}Please add release notes for version ${APP_VERSION}.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Found release notes for version ${APP_VERSION} in CHANGELOG.md${NC}"
 
 echo ""
 echo -e "${BOLD}${YELLOW}Ready to create release v${APP_VERSION}${NC}"
@@ -101,14 +114,9 @@ fi
 echo ""
 echo -e "${BOLD}${CYAN}Creating release...${NC}"
 
-# Create tag
-if [ "$notes_choice" = "1" ]; then
-    echo -e "${YELLOW}Creating annotated tag (editor will open)...${NC}"
-    git tag -a "$TAG_NAME"
-else
-    echo -e "${YELLOW}Creating tag...${NC}"
-    git tag "$TAG_NAME"
-fi
+# Create lightweight tag
+echo -e "${YELLOW}Creating tag ${TAG_NAME}...${NC}"
+git tag "$TAG_NAME"
 
 # Push tag
 echo -e "${YELLOW}Pushing tag to GitHub...${NC}"

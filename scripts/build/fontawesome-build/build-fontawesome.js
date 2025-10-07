@@ -6,6 +6,7 @@ const path = require('path');
 // Font Awesome 6 unicode mappings
 const ICON_UNICODES = {
   'fa-arrow-left': '\\f060',
+  'fa-bug': '\\f188',
   'fa-chart-line': '\\f201',
   'fa-chevron-down': '\\f078',
   'fa-chevron-left': '\\f053',
@@ -33,6 +34,7 @@ const ICON_UNICODES = {
   'fa-folder-open': '\\f07c',
   'fa-folder-plus': '\\f65e',
   'fa-gem': '\\f3a5',
+  'fa-github': '\\f09b',
   'fa-image': '\\f03e',
   'fa-inbox': '\\f01c',
   'fa-lightbulb': '\\f0eb',
