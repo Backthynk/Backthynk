@@ -137,5 +137,47 @@ fi
 echo ""
 echo -e "${BOLD}${GREEN}✓ Cleanup completed!${NC}"
 echo ""
-echo -e "${CYAN}You can now run 'make release' again to retry the release.${NC}"
+
+# Verify cleanup was successful
+echo -e "${BOLD}${CYAN}Verifying cleanup...${NC}"
 echo ""
+
+VERIFY_FAILED=false
+
+# Check local tag
+if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+    echo -e "  ${RED}✗${NC} Local tag still exists"
+    VERIFY_FAILED=true
+else
+    echo -e "  ${GREEN}✓${NC} Local tag removed"
+fi
+
+# Check remote tag
+if git ls-remote --tags origin | grep -q "refs/tags/$TAG_NAME"; then
+    echo -e "  ${RED}✗${NC} Remote tag still exists"
+    VERIFY_FAILED=true
+else
+    echo -e "  ${GREEN}✓${NC} Remote tag removed"
+fi
+
+# Check GitHub release
+if gh release view "$TAG_NAME" &> /dev/null; then
+    echo -e "  ${RED}✗${NC} GitHub release still exists"
+    VERIFY_FAILED=true
+else
+    echo -e "  ${GREEN}✓${NC} GitHub release removed"
+fi
+
+echo ""
+
+if [ "$VERIFY_FAILED" = true ]; then
+    echo -e "${RED}Warning: Cleanup verification failed. Some items may still exist.${NC}"
+    echo -e "${YELLOW}Please check manually and try again if needed.${NC}"
+    echo ""
+    exit 1
+else
+    echo -e "${BOLD}${GREEN}✓ Cleanup verified successfully!${NC}"
+    echo ""
+    echo -e "${CYAN}You can now run 'make release' again to retry the release.${NC}"
+    echo ""
+fi

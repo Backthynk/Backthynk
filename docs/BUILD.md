@@ -162,7 +162,7 @@ Workflow (`.github/workflows/release.yml`):
 3. **Test**: Run `go test ./...`
 4. **Build**: Run `./scripts/build/build.sh --workflow`
    - Builds for all 5 platforms
-5. **Archive**: Run `make publish`
+5. **Archive**: Run `./scripts/makefile/publish.sh` (automated)
    - Creates `.tar.gz` for Unix platforms
    - Creates `.zip` for Windows
    - Creates universal archive with all platforms
@@ -322,10 +322,9 @@ Format: `platform-name:GOOS=os GOARCH=arch [CC=compiler]`
 
 ### Release Commands
 
-- `make release` - Create and push release tag
+- `make release` - Create and push release tag (triggers automated workflow)
 - `make release-status` - Check workflow status
 - `make release-clean` - Clean up failed release
-- `make publish` - Create archives (called by workflow)
 
 ### Clean Commands
 
