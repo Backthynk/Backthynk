@@ -71,16 +71,97 @@ export SOURCE_IMAGES=$(jq -r '.paths.source.images // "web/static/images"' "$SHA
 # Release directory structure
 export RELEASES_DIR="$PROJECT_ROOT/releases"
 
-# Platforms to build
-# For cross-compilation with CGO, you need platform-specific C compilers
-# Uncomment additional platforms only if you have the required toolchains
-export BUILD_PLATFORMS=(
+# Detect current OS and architecture for local builds
+detect_current_platform() {
+    local os=$(uname -s | tr '[:upper:]' '[:lower:]')
+    local arch=$(uname -m)
+
+    # Normalize OS name
+    case "$os" in
+        linux*)
+            os="linux"
+            ;;
+        darwin*)
+            os="macos"
+            ;;
+        mingw*|msys*|cygwin*)
+            os="windows"
+            ;;
+    esac
+
+    # Normalize architecture
+    case "$arch" in
+        x86_64|amd64)
+            arch="amd64"
+            ;;
+        aarch64|arm64)
+            arch="arm64"
+            ;;
+        armv7l)
+            arch="arm"
+            ;;
+    esac
+
+    echo "${os}-${arch}"
+}
+
+# Get appropriate C compiler for cross-compilation
+get_cc_for_platform() {
+    local platform=$1
+    case "$platform" in
+        linux-amd64)
+            echo ""  # Native compiler
+            ;;
+        linux-arm64)
+            echo "CC=aarch64-linux-gnu-gcc"
+            ;;
+        macos-amd64)
+            echo "CC=o64-clang"
+            ;;
+        macos-arm64)
+            echo "CC=oa64-clang"
+            ;;
+        windows-amd64)
+            echo "CC=x86_64-w64-mingw32-gcc"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+# All supported platforms for workflow builds
+ALL_PLATFORMS=(
     "linux-amd64:GOOS=linux GOARCH=amd64"
-    # "linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc"
-    # "macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang"
-    # "macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang"
-    # "windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc"
+    "linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc"
+    "macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang"
+    "macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang"
+    "windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc"
 )
+
+# Determine which platforms to build based on mode
+if [ "${BUILD_MODE:-local}" = "workflow" ]; then
+    # Workflow mode: build all platforms
+    export BUILD_PLATFORMS=("${ALL_PLATFORMS[@]}")
+else
+    # Local mode: build only current platform
+    CURRENT_PLATFORM=$(detect_current_platform)
+
+    # Find the configuration for the current platform
+    for platform_config in "${ALL_PLATFORMS[@]}"; do
+        platform="${platform_config%%:*}"
+        if [ "$platform" = "$CURRENT_PLATFORM" ]; then
+            export BUILD_PLATFORMS=("$platform_config")
+            break
+        fi
+    done
+
+    # Fallback to linux-amd64 if current platform not found in supported list
+    if [ -z "$BUILD_PLATFORMS" ]; then
+        echo "Warning: Current platform $CURRENT_PLATFORM not in supported list, defaulting to linux-amd64" >&2
+        export BUILD_PLATFORMS=("linux-amd64:GOOS=linux GOARCH=amd64")
+    fi
+fi
 
 # Helper functions for getting build configuration
 get_js_priority_files() {

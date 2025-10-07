@@ -39,10 +39,19 @@ jobs:
             gawk \
             coreutils \
             findutils \
-            rsync
+            rsync \
+            gcc-aarch64-linux-gnu \
+            gcc-mingw-w64-x86-64
 
           # Install Node.js minification tools
           npm install -g terser esbuild
+
+          # Install osxcross for macOS cross-compilation
+          git clone https://github.com/tpoechtrager/osxcross.git /tmp/osxcross
+          cd /tmp/osxcross
+          wget -nc https://github.com/joseluisq/macosx-sdks/releases/download/15.5/MacOSX15.5.sdk.tar.xz -O tarballs/MacOSX15.5.sdk.tar.xz
+          UNATTENDED=1 ./build.sh
+          echo "/tmp/osxcross/target/bin" >> $GITHUB_PATH
 
       - name: Extract version from tag
         id: get_version
@@ -80,7 +89,7 @@ jobs:
       - name: Build project
         run: |
           echo "Building project for all platforms..."
-          make build
+          ./scripts/build/build.sh --workflow
 
       - name: Create release archives
         run: |
@@ -108,10 +117,10 @@ jobs:
           Platforms:
           ==========
           - Linux AMD64 (x86_64)
-          - Linux ARM64
-          - macOS AMD64 (Intel)
-          - macOS ARM64 (Apple Silicon)
-          - Windows AMD64
+          - Linux ARM64 (aarch64)
+          - macOS AMD64 (Intel x86_64)
+          - macOS ARM64 (Apple Silicon M1/M2)
+          - Windows AMD64 (x86_64)
 
           Source Verification:
           ====================
@@ -123,7 +132,9 @@ jobs:
             git checkout $COMMIT_SHA
             make build
 
-          Then compare the binary checksums.
+          Then compare the checksums of the binaries and assets.
+
+          See VERIFY.md for detailed verification instructions.
           EOF
 
           echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
@@ -137,9 +148,9 @@ jobs:
 
           # If no tag message, check for CHANGELOG.md
           if [ -z "$TAG_MESSAGE" ] || [ "$TAG_MESSAGE" = "" ]; then
-            if [ -f "CHANGELOG.md" ]; then
+            if [ -f "docs/CHANGELOG.md" ]; then
               # Extract version section from CHANGELOG.md
-              TAG_MESSAGE=$(sed -n "/## \[${GITHUB_REF#refs/tags/v}\]/,/## \[/p" CHANGELOG.md | sed '$d' || echo "")
+              TAG_MESSAGE=$(sed -n "/## \[${GITHUB_REF#refs/tags/v}\]/,/## \[/p" docs/CHANGELOG.md | sed '$d' || echo "")
             fi
           fi
 
@@ -188,10 +199,10 @@ jobs:
             To verify this build is from the official source:
             1. Clone the repository: `git clone https://github.com/${{ github.repository }}.git`
             2. Checkout the release commit: `git checkout ${{ steps.build_info.outputs.commit_sha }}`
-            3. Build: `make build`
-            4. Compare checksums
+            3. Build locally: `make build`
+            4. Compare asset checksums with `SHA256SUMS.txt`
 
-            See `BUILD_INFO.txt` and `SHA256SUMS.txt` for complete build details and checksums.
+            See [`VERIFY.md`](https://github.com/${{ github.repository }}/blob/${{ steps.build_info.outputs.commit_sha }}/VERIFY.md) for detailed verification instructions, `BUILD_INFO.txt` for build details, and `SHA256SUMS.txt` for checksums.
           draft: false
           prerelease: false
         env:

@@ -77,7 +77,7 @@ if [ "$notes_choice" = "1" ]; then
     echo -e "${YELLOW}Opening editor for release notes...${NC}"
     TAG_OPTS="-a"
 elif [ "$notes_choice" = "2" ]; then
-    if [ ! -f "CHANGELOG.md" ]; then
+    if [ ! -f "docs/CHANGELOG.md" ]; then
         echo -e "${RED}Error: CHANGELOG.md not found.${NC}"
         exit 1
     fi

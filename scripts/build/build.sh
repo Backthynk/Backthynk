@@ -5,8 +5,32 @@
 
 set -e  # Exit on error
 
+# Parse command-line arguments
+BUILD_MODE="local"  # local or workflow
+BUILD_PLATFORMS_OVERRIDE=""
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --workflow)
+            BUILD_MODE="workflow"
+            shift
+            ;;
+        --platform)
+            BUILD_PLATFORMS_OVERRIDE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 # Load configuration
 source "$(dirname "$0")/../common/load-config.sh"
+
+# Export build mode for sub-scripts
+export BUILD_MODE
 
 echo -e "${BOLD}${CYAN}Building production-optimized v${APP_VERSION}...${NC}"
 
