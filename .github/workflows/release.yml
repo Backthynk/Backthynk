@@ -108,7 +108,7 @@ jobs:
       - name: Create release archives
         run: |
           echo "Creating platform-specific archives..."
-          make publish
+          ./scripts/makefile/publish.sh
 
       - name: Create build verification file
         id: build_info
