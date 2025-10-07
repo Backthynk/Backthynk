@@ -5,6 +5,22 @@
 
 set -e
 
+# Check if running in workflow mode (set BUILD_MODE before loading config)
+if [ "${BUILD_MODE:-}" != "workflow" ]; then
+    # Detect if we have multiple platform directories already built
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+    RELEASES_DIR="$PROJECT_ROOT/releases"
+
+    if [ -d "$RELEASES_DIR" ]; then
+        PLATFORM_COUNT=$(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d | wc -l)
+        if [ "$PLATFORM_COUNT" -gt 1 ]; then
+            # Multiple platforms exist, assume workflow mode
+            export BUILD_MODE="workflow"
+        fi
+    fi
+fi
+
 # Load configuration
 source "$(dirname "$0")/../common/load-config.sh"
 source "$(dirname "$0")/../common/common.sh"
@@ -94,8 +110,6 @@ macOS (Apple Silicon):
 
 Windows (AMD64):
   cd windows-amd64 && .\bin\$BINARY_NAME-latest.exe
-
-After running, open your browser to: http://localhost:8080
 
 Documentation:
 ==============

@@ -173,9 +173,44 @@ jobs:
             TAG_MESSAGE="Release v${{ steps.get_version.outputs.version }}"
           fi
 
-          # Save to file to handle multiline content
-          echo "$TAG_MESSAGE" > /tmp/release_notes.txt
-          echo "notes_file=/tmp/release_notes.txt" >> $GITHUB_OUTPUT
+          # Build complete release body with notes at the top
+          # Write TAG_MESSAGE first (with variable expansion)
+          echo "$TAG_MESSAGE" > /tmp/release_body.txt
+
+          # Append the rest of the body (no variable expansion needed in heredoc)
+          cat >> /tmp/release_body.txt << 'EOF'
+
+          ---
+
+          ## Download & Installation
+
+          Choose the archive for your platform below:
+
+          **Linux (AMD64/x86_64):** `backthynk-v${{ steps.get_version.outputs.version }}-linux-amd64.tar.gz`
+          **Linux (ARM64):** `backthynk-v${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
+          **macOS (Intel):** `backthynk-v${{ steps.get_version.outputs.version }}-macos-amd64.tar.gz`
+          **macOS (Apple Silicon):** `backthynk-v${{ steps.get_version.outputs.version }}-macos-arm64.tar.gz`
+          **Windows (AMD64):** `backthynk-v${{ steps.get_version.outputs.version }}-windows-amd64.zip`
+          **All Platforms:** `backthynk-v${{ steps.get_version.outputs.version }}-all-platforms.zip`
+
+          ### Quick Start
+          1. Download and extract the archive for your platform
+          2. Run: `./bin/backthynk-latest` (or `.\bin\backthynk-latest.exe` on Windows)
+
+          ## Build Verification
+
+          **Commit:** [`${{ steps.build_info.outputs.commit_short }}`](https://github.com/${{ github.repository }}/commit/${{ steps.build_info.outputs.commit_sha }})
+
+          To verify this build is from the official source:
+          1. Clone the repository: `git clone https://github.com/${{ github.repository }}.git`
+          2. Checkout the release commit: `git checkout ${{ steps.build_info.outputs.commit_sha }}`
+          3. Build locally: `make build`
+          4. Compare asset checksums with `SHA256SUMS.txt`
+
+          See [`VERIFY.md`](https://github.com/${{ github.repository }}/blob/${{ steps.build_info.outputs.commit_sha }}/VERIFY.md) for detailed verification instructions, `BUILD_INFO.txt` for build details, and `SHA256SUMS.txt` for checksums.
+          EOF
+
+          echo "body_file=/tmp/release_body.txt" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -185,38 +220,7 @@ jobs:
             archives/v${{ steps.get_version.outputs.version }}/*.zip
             archives/v${{ steps.get_version.outputs.version }}/BUILD_INFO.txt
             archives/v${{ steps.get_version.outputs.version }}/SHA256SUMS.txt
-          body: |
-            $(cat ${{ steps.release_notes.outputs.notes_file }})
-
-            ---
-
-            ## Download & Installation
-
-            Choose the archive for your platform below:
-
-            **Linux (AMD64/x86_64):** `backthynk-v${{ steps.get_version.outputs.version }}-linux-amd64.tar.gz`
-            **Linux (ARM64):** `backthynk-v${{ steps.get_version.outputs.version }}-linux-arm64.tar.gz`
-            **macOS (Intel):** `backthynk-v${{ steps.get_version.outputs.version }}-macos-amd64.tar.gz`
-            **macOS (Apple Silicon):** `backthynk-v${{ steps.get_version.outputs.version }}-macos-arm64.tar.gz`
-            **Windows (AMD64):** `backthynk-v${{ steps.get_version.outputs.version }}-windows-amd64.zip`
-            **All Platforms:** `backthynk-v${{ steps.get_version.outputs.version }}-all-platforms.zip`
-
-            ### Quick Start
-            1. Download and extract the archive for your platform
-            2. Run: `./bin/backthynk-latest` (or `.\bin\backthynk-latest.exe` on Windows)
-            3. Open your browser to: http://localhost:8080
-
-            ## Build Verification
-
-            **Commit:** [`${{ steps.build_info.outputs.commit_short }}`](https://github.com/${{ github.repository }}/commit/${{ steps.build_info.outputs.commit_sha }})
-
-            To verify this build is from the official source:
-            1. Clone the repository: `git clone https://github.com/${{ github.repository }}.git`
-            2. Checkout the release commit: `git checkout ${{ steps.build_info.outputs.commit_sha }}`
-            3. Build locally: `make build`
-            4. Compare asset checksums with `SHA256SUMS.txt`
-
-            See [`VERIFY.md`](https://github.com/${{ github.repository }}/blob/${{ steps.build_info.outputs.commit_sha }}/VERIFY.md) for detailed verification instructions, `BUILD_INFO.txt` for build details, and `SHA256SUMS.txt` for checksums.
+          body_path: ${{ steps.release_notes.outputs.body_file }}
           draft: false
           prerelease: false
         env:
