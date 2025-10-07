@@ -106,8 +106,8 @@ echo ""
 
 # Delete GitHub release first (if exists)
 if [ "$RELEASE_EXISTS" = true ]; then
-    echo -e "${YELLOW}Deleting GitHub release...${NC}"
-    if gh release delete "$TAG_NAME" --yes 2>/dev/null; then
+    echo -e "${YELLOW}Deleting GitHub release (including drafts)...${NC}"
+    if gh release delete "$TAG_NAME" --yes --cleanup-tag 2>/dev/null; then
         echo -e "${GREEN}✓ GitHub release deleted${NC}"
     else
         echo -e "${RED}Failed to delete GitHub release${NC}"
