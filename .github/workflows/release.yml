@@ -53,8 +53,11 @@ jobs:
             gcc-aarch64-linux-gnu \
             gcc-mingw-w64-x86-64
 
-          # Install Node.js bundling tools
-          npm install -g esbuild postcss cssnano postcss-cli
+          # Install Go-based minifier (tdewolff/minify)
+          go install github.com/tdewolff/minify/v2/cmd/minify@latest
+
+          # Install Node.js CSS optimization tools
+          npm install -g csso-cli
 
           # Install osxcross for macOS cross-compilation
           if [ "${{ steps.cache-osxcross.outputs.cache-hit }}" != "true" ]; then
