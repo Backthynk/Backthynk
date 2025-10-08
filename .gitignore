@@ -8,6 +8,7 @@ service.json
 
 
 # Build artifacts
+/bundle
 /build
 /releases
 /archives

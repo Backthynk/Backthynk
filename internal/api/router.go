@@ -78,24 +78,11 @@ func NewRouter(
 	}
 	
 	// Static files
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", createStaticFileHandler()))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", middleware.CreateStaticFileHandler()))
 	r.HandleFunc("/uploads/{filename}", uploadHandler.ServeFile).Methods("GET")
 	
 	// SPA routes
 	r.PathPrefix("/").HandlerFunc(templateHandler.ServePage).Methods("GET")
 	
 	return r
-}
-
-func createStaticFileHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Production mode handling
-		if config.IsProduction() {
-			// Serve compressed assets
-			middleware.ServeCompressedAsset(w, r)
-			return
-		}
-		// Development mode
-		http.FileServer(http.Dir("web/static/")).ServeHTTP(w, r)
-	})
 }

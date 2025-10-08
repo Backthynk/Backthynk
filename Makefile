@@ -1,12 +1,22 @@
-.PHONY: help build dev dev-prod run clean fclean test test-verbose release release-status release-clean
+.PHONY: help build bundle dev dev-prod run clean fclean test test-verbose release release-status release-clean
 
 # Default target
 help:
 	@./scripts/makefile/help.sh
 
+# Bundle targets
+bundle:
+	@./scripts/bundle/bundle.sh $(ARGS)
+
+bundle-debug:
+	@./scripts/bundle/bundle.sh --debug
+
+bundle-full:
+	@./scripts/bundle/bundle.sh --full
+
 # Build targets
 build:
-	@./scripts/build/build.sh
+	@./scripts/build/build.sh $(ARGS)
 
 # Run targets
 dev:

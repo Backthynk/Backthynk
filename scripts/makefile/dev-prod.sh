@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Development server with production assets - runs with go run + production env
+# Development server with bundled assets - runs with go run + pre-production env
 source "$(dirname "$0")/../common/load-config.sh"
 
-# Check if production assets exist
-if [ ! -d "$COMPRESSED_JS_DIR" ] || [ ! -d "$COMPRESSED_TEMPLATES_DIR" ]; then
-    echo -e "${YELLOW}⚠${NC} Production assets not found. Running build first..."
-    "$(dirname "$0")/../build/build.sh"
+# Check if bundle folder exists
+if [ ! -d "$PROJECT_ROOT/bundle" ]; then
+    echo -e "${YELLOW}⚠${NC} Bundle folder not found. Creating bundle...${NC}"
+    "$PROJECT_ROOT/scripts/bundle/bundle.sh" --full
 fi
 
-echo -e "${BLUE}▶${NC} Starting server with production assets..."
-echo -e "${GRAY}  (using go run with production environment)${NC}"
-env $PRODUCTION_ENV_VAR go run ./cmd/server/main.go
+echo -e "${BLUE}▶${NC} Starting server with bundled assets (pre-production mode)..."
+echo -e "${GRAY}  (using go run with bundle folder)${NC}"
+env APP_ENV=pre-production go run ./cmd/server/main.go

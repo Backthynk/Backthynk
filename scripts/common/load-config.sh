@@ -68,6 +68,9 @@ export SOURCE_JS=$(jq -r '.paths.source.js // "web/static/js"' "$SHARED_CONFIG_F
 export SOURCE_CSS=$(jq -r '.paths.source.css // "web/static/css"' "$SHARED_CONFIG_FILE")
 export SOURCE_IMAGES=$(jq -r '.paths.source.images // "web/static/images"' "$SHARED_CONFIG_FILE")
 
+# Cache directory (shared across build scripts)
+export CACHE_DIR="$PROJECT_ROOT/scripts/.cache"
+
 # Release directory structure
 export RELEASES_DIR="$PROJECT_ROOT/releases"
 
@@ -175,4 +178,68 @@ get_js_last_files() {
 get_html_processing_config() {
     local key=$1
     jq -r ".build.html_processing.$key // \"\"" "$SCRIPT_CONFIG_FILE" 2>/dev/null
+}
+
+# Extract changelog text for current version from CHANGELOG.md
+# Returns all content between ## [version] and the next ## or ---
+get_version_changelog() {
+    local changelog_file="$PROJECT_ROOT/docs/CHANGELOG.md"
+
+    if [ ! -f "$changelog_file" ]; then
+        echo "Error: CHANGELOG.md not found at $changelog_file" >&2
+        return 1
+    fi
+
+    # Get current version from config
+    local version="$APP_VERSION"
+
+    # Use awk to extract text between ## [version] and next ## or ---
+    awk -v version="$version" '
+        /^## \[/ {
+            # Check if this is the version we want
+            if ($0 ~ "\\[" version "\\]") {
+                in_section = 1
+                print
+                next
+            } else if (in_section) {
+                # Hit a different version section, stop
+                exit
+            }
+        }
+        /^---/ {
+            # Hit separator, stop if we were in the section
+            if (in_section) exit
+        }
+        in_section { print }
+    ' "$changelog_file"
+}
+
+# Bundle path construction helpers (mirrors config.go logic)
+# These helpers dynamically construct paths from .config.json values
+get_bundle_dir() {
+    echo "$PROJECT_ROOT/$(jq -r '.paths.dir."pre-production" // "bundle"' "$SHARED_CONFIG_FILE")"
+}
+
+get_bundle_static_dir() {
+    local bundle_dir=$(get_bundle_dir)
+    local static_path=$(jq -r '.paths.source.static // "static"' "$SHARED_CONFIG_FILE")
+    echo "$bundle_dir/$static_path"
+}
+
+get_bundle_templates_dir() {
+    local bundle_dir=$(get_bundle_dir)
+    local templates_path=$(jq -r '.paths.source.templates // "templates"' "$SHARED_CONFIG_FILE")
+    echo "$bundle_dir/$templates_path"
+}
+
+get_bundle_css_dir() {
+    local bundle_dir=$(get_bundle_dir)
+    local css_path=$(jq -r '.paths.source.css // "static/css"' "$SHARED_CONFIG_FILE")
+    echo "$bundle_dir/$css_path"
+}
+
+get_bundle_js_dir() {
+    local bundle_dir=$(get_bundle_dir)
+    local js_path=$(jq -r '.paths.source.js // "static/js"' "$SHARED_CONFIG_FILE")
+    echo "$bundle_dir/$js_path"
 }

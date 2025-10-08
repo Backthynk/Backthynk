@@ -5,4 +5,4 @@ source "$(dirname "$0")/../common/load-config.sh"
 
 echo -e "${BLUE}▶${NC} Starting server in development mode..."
 echo -e "${GRAY}  (using go run - no build required)${NC}"
-go run ./cmd/server/main.go
+env APP_ENV=development go run ./cmd/server/main.go

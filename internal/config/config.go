@@ -9,6 +9,12 @@ import (
 )
 
 const (
+	APP_MODE_DEV        = "development"   //back-end && front-end in dev mode
+	APP_MODE_PRE_PROD   = "pre-production" //front-end used is the built one && back-end in dev-mode
+	APP_MODE_PROD  = "production"     //one binary with everything integrated in.
+)
+
+const (
 	VERSION = "0.1.0"
 
 	// Category Limits
@@ -114,13 +120,10 @@ type SharedConfig struct {
 	} `json:"app"`
 	Paths struct {
 		BuildDir     string `json:"build_dir"`
-		BuildAssets  string `json:"build_assets"`
-		BuildBin     string `json:"build_bin"`
-		Compressed   struct {
-			JS        string `json:"js"`
-			CSS       string `json:"css"`
-			Templates string `json:"templates"`
-		} `json:"compressed"`
+		Dir struct {
+			Development string `json:"development"`
+			PreProduction string `json:"pre-production"`
+		} `json:"dir"`
 		Source struct {
 			Static    string `json:"static"`
 			Templates string `json:"templates"`
@@ -144,11 +147,8 @@ var (
 func LoadSharedConfig() error {
 	// Smart path detection for .config.json
 	// If scripts/common/ exists at project root, use scripts/.config.json
-	configPath := ".config.json"
-	if _, err := os.Stat("scripts/common"); err == nil {
-		configPath = "scripts/.config.json"
-	}
-
+	configPath := GetConfigJSONPath();
+	
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read shared config from %s: %w", configPath, err)
@@ -212,8 +212,52 @@ func GetSharedConfig() *SharedConfig {
 	return sharedConfig
 }
 
-func IsProduction() bool {
-	return os.Getenv("APP_ENV") == "production"
+func GetAppMode() string {
+	mode := os.Getenv("APP_ENV")
+
+	switch mode {
+		case "pre-production":
+			return APP_MODE_PRE_PROD
+		case "production":
+			return APP_MODE_PROD
+		default:
+			return APP_MODE_DEV
+	}
+}
+
+func (sc *SharedConfig) GetRessourcesRootPath() string {
+	if sc == nil {
+		return ""
+	}
+	if GetAppMode() == APP_MODE_PRE_PROD {
+		return sc.Paths.Dir.PreProduction
+	}
+	return sc.Paths.Dir.Development
+}
+
+func (sc *SharedConfig) GetWebStaticPath() string {
+	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.Static)
+}
+
+func (sc *SharedConfig) GetWebTemplatesPath() string {
+	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.Templates)
+}	
+
+func (sc *SharedConfig) GetWebJSPath() string {
+	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.JS)
+}
+
+func (sc *SharedConfig) GetWebCSSPath() string {
+	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.CSS)
+}
+
+func GetConfigJSONPath() string {
+	configPath := ".config.json"
+	if _, err := os.Stat("scripts/common"); err == nil {
+		configPath = "scripts/.config.json"
+	}
+	sharedConfigPath, _ := filepath.Abs(configPath)
+	return sharedConfigPath
 }
 
 // SetServiceConfigForTest sets the service config for testing purposes
@@ -240,10 +284,9 @@ const (
 
 // PrintConfigPaths prints the configuration file paths with colors
 func PrintConfigPaths() {
-	mode := "development"
+	mode := GetAppMode()
 	modeColor := colorGreen
-	if IsProduction() {
-		mode = "production"
+	if mode == APP_MODE_PROD {
 		modeColor = colorYellow
 	}
 
@@ -268,27 +311,21 @@ func PrintConfigPaths() {
 		fmt.Printf("  %s│%s  %s%s%s\n", colorCyan, colorReset, colorYellow, optionsConfigPath, colorReset)
 	}
 
-	// Shared config
-	configPath := ".config.json"
-	if _, err := os.Stat("scripts/common"); err == nil {
-		configPath = "scripts/.config.json"
-	}
-	sharedConfigPath, _ := filepath.Abs(configPath)
-	fmt.Printf("  %s└─%s .config.json\n", colorCyan, colorReset)
-	fmt.Printf("    %s%s%s\n\n", colorYellow, sharedConfigPath, colorReset)
+	if mode != APP_MODE_PROD {
+		// Shared config
+		configPath := GetConfigJSONPath()
+		fmt.Printf("  %s└─%s .config.json\n", colorCyan, colorReset)
+		fmt.Printf("    %s%s%s\n\n", colorYellow, configPath, colorReset)
+		// Web resources
+		fmt.Printf("%s%sWeb Resources:%s\n", colorBold, colorPurple, colorReset)
 
-	// Web resources
-	fmt.Printf("%s%sWeb Resources:%s\n", colorBold, colorPurple, colorReset)
-
-	if sharedConfig != nil {
-		webPath := sharedConfig.Paths.Source.Static
-		if IsProduction() {
-			webPath = sharedConfig.Paths.BuildAssets
+		if sharedConfig != nil {
+			absWebPath, _ := filepath.Abs(sharedConfig.GetRessourcesRootPath())
+			fmt.Printf("  %s└─%s %s\n", colorCyan, colorReset, mode)
+			fmt.Printf("    %s%s%s\n", colorYellow, absWebPath, colorReset)
 		}
-		absWebPath, _ := filepath.Abs(webPath)
-		fmt.Printf("  %s└─%s %s\n", colorCyan, colorReset, mode)
-		fmt.Printf("    %s%s%s\n", colorYellow, absWebPath, colorReset)
 	}
+
 
 
 }

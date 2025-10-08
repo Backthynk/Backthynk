@@ -1,0 +1,40 @@
+Backthynk v{{VERSION}}
+
+Build Information:
+==================
+Version:        {{VERSION}}
+Commit:         {{COMMIT_SHA}}
+Branch/Tag:     {{REF_NAME}}
+Build Date:     {{BUILD_DATE}}
+Built by:       {{BUILDER}}
+
+Platforms:
+==========
+- Linux AMD64 (x86_64)
+- Linux ARM64 (aarch64)
+- macOS AMD64 (Intel x86_64)
+- macOS ARM64 (Apple Silicon M1/M2/M3)
+- Windows AMD64 (x86_64)
+
+Build Process:
+==============
+This build uses modern bundling with:
+- esbuild for JavaScript bundling with tree-shaking
+- PostCSS with cssnano for CSS optimization
+- Brotli and gzip compression for all assets
+- Go embed for zero-dependency production binaries
+
+Source Verification:
+====================
+This binary was built from the official repository:
+Repository: {{REPO_URL}}
+Commit:     {{REPO_URL}}/commit/{{COMMIT_SHA}}
+
+To verify this build, clone the repository at the commit above and run:
+  git checkout {{COMMIT_SHA}}
+  make bundle --full
+  make build --all
+
+Then compare the checksums of the binaries and assets.
+
+See VERIFY.md for detailed verification instructions.

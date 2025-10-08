@@ -1,26 +1,36 @@
 #!/bin/bash
 
-# Build Script
-# Modular component-based build system
+# Build Script - New Version
+# Builds Go binaries for specified platforms with embedded bundle assets
 
 set -e  # Exit on error
 
 # Parse command-line arguments
-BUILD_MODE="local"  # local or workflow
-BUILD_PLATFORMS_OVERRIDE=""
+BUILD_TYPE=""  # empty (auto-detect), "all", or specific like "linux-amd64"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        --workflow)
-            BUILD_MODE="workflow"
+        --all)
+            BUILD_TYPE="all"
             shift
             ;;
-        --platform)
-            BUILD_PLATFORMS_OVERRIDE="$2"
+        --type)
+            BUILD_TYPE="$2"
             shift 2
             ;;
         *)
             echo "Unknown option: $1"
+            echo "Usage: $0 [--all] [--type <platform>]"
+            echo ""
+            echo "Options:"
+            echo "  (no flags)        Auto-detect current platform and build for it"
+            echo "  --all             Build for all platforms"
+            echo "  --type <platform> Build for specific platform (e.g., linux-amd64, macos-arm64)"
+            echo ""
+            echo "Available platforms:"
+            echo "  linux-amd64, linux-arm64"
+            echo "  macos-amd64, macos-arm64"
+            echo "  windows-amd64"
             exit 1
             ;;
     esac
@@ -29,46 +39,140 @@ done
 # Load configuration
 source "$(dirname "$0")/../common/load-config.sh"
 
-# Export build mode for sub-scripts
-export BUILD_MODE
-
-echo -e "${BOLD}${CYAN}Building production-optimized v${APP_VERSION}...${NC}"
+echo -e "${BOLD}${CYAN}Building Backthynk v${APP_VERSION}...${NC}"
+echo -e "${CYAN}====================================${NC}"
+echo ""
 
 # Start build timer
 BUILD_START=$(date +%s)
 
-# Execute build components in sequence
-COMPONENTS_DIR="$(dirname "$0")"
+# Check if bundle exists
+BUNDLE_DIR="$PROJECT_ROOT/bundle"
+if [ ! -d "$BUNDLE_DIR" ]; then
+    if [ "$BUILD_TYPE" = "all" ]; then
+        echo -e "${YELLOW}Bundle folder not found. Creating with full minification...${NC}"
+        "$PROJECT_ROOT/scripts/bundle/bundle.sh" --full
+    else
+        echo -e "${YELLOW}Bundle folder not found. Creating...${NC}"
+        "$PROJECT_ROOT/scripts/bundle/bundle.sh" --full
+    fi
+elif [ "$BUILD_TYPE" = "all" ]; then
+    echo -e "${YELLOW}Rebuilding bundle with full minification for --all build...${NC}"
+    rm -rf "$BUNDLE_DIR"
+    "$PROJECT_ROOT/scripts/bundle/bundle.sh" --full
+else
+    echo -e "${GREEN}Using existing bundle folder${NC}"
+fi
 
-# Component 01: Check dependencies
-source "$COMPONENTS_DIR/_01_dependencies.sh"
+# Determine platforms to build
+PLATFORMS_TO_BUILD=()
 
-# Component 02: Setup compression tools
-source "$COMPONENTS_DIR/_02_compression_setup.sh"
+if [ "$BUILD_TYPE" = "all" ]; then
+    # Build all platforms
+    PLATFORMS_TO_BUILD=(
+        "linux-amd64:GOOS=linux GOARCH=amd64"
+        "linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc"
+        "macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang"
+        "macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang"
+        "windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc"
+    )
+elif [ -n "$BUILD_TYPE" ]; then
+    # Build specific platform
+    case "$BUILD_TYPE" in
+        linux-amd64)
+            PLATFORMS_TO_BUILD=("linux-amd64:GOOS=linux GOARCH=amd64")
+            ;;
+        linux-arm64)
+            PLATFORMS_TO_BUILD=("linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc")
+            ;;
+        macos-amd64)
+            PLATFORMS_TO_BUILD=("macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang")
+            ;;
+        macos-arm64)
+            PLATFORMS_TO_BUILD=("macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang")
+            ;;
+        windows-amd64)
+            PLATFORMS_TO_BUILD=("windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc")
+            ;;
+        *)
+            echo -e "${RED}Unknown platform: $BUILD_TYPE${NC}"
+            exit 1
+            ;;
+    esac
+else
+    # Auto-detect current platform
+    CURRENT_PLATFORM=$(detect_current_platform)
 
-# Component 03: Process CSS files
-source "$COMPONENTS_DIR/_03_css_bundling.sh"
+    # Find configuration for current platform
+    for platform_config in "${ALL_PLATFORMS[@]}"; do
+        platform="${platform_config%%:*}"
+        if [ "$platform" = "$CURRENT_PLATFORM" ]; then
+            PLATFORMS_TO_BUILD=("$platform_config")
+            break
+        fi
+    done
 
-# Component 04: Bundle JavaScript files
-source "$COMPONENTS_DIR/_04_js_bundling.sh"
+    # Fallback
+    if [ ${#PLATFORMS_TO_BUILD[@]} -eq 0 ]; then
+        echo -e "${YELLOW}Platform $CURRENT_PLATFORM not in supported list, defaulting to linux-amd64${NC}"
+        PLATFORMS_TO_BUILD=("linux-amd64:GOOS=linux GOARCH=amd64")
+    fi
+fi
 
-# Component 05: Process HTML templates
-source "$COMPONENTS_DIR/_05_html_processing.sh"
+# Build binaries
+BUILD_DIR="$PROJECT_ROOT/build"
+RELEASES_DIR="$PROJECT_ROOT/releases"
 
-# Component 05a: Copy image assets
-source "$COMPONENTS_DIR/_05a_copy_images.sh"
+echo -e "${BOLD}Building for platforms:${NC}"
+for platform_config in "${PLATFORMS_TO_BUILD[@]}"; do
+    platform="${platform_config%%:*}"
+    echo -e "  - $platform"
+done
+echo ""
 
-# Component 06: Apply gzip compression
-source "$COMPONENTS_DIR/_06_gzip_compression.sh"
+for platform_config in "${PLATFORMS_TO_BUILD[@]}"; do
+    platform="${platform_config%%:*}"
+    env_vars="${platform_config#*:}"
 
-# Component 07: Cache CDN packages
-source "$COMPONENTS_DIR/_07_cdn_caching.sh"
+    echo -e "${BOLD}${CYAN}Building $platform...${NC}"
 
-# Component 07a: Build cross-platform binaries
-source "$COMPONENTS_DIR/_07a_cross_platform_build.sh"
+    # Set up build environment
+    eval "export $env_vars"
 
-# Component 08: Generate bundle size report
-source "$COMPONENTS_DIR/_08_bundle_reporting.sh"
+    # Determine binary extension
+    BINARY_EXT=""
+    if [[ "$platform" == "windows"* ]]; then
+        BINARY_EXT=".exe"
+    fi
+
+    # Create release directory
+    PLATFORM_DIR="$RELEASES_DIR/$platform"
+    mkdir -p "$PLATFORM_DIR/bin"
+
+    # Build with embedded bundle
+    OUTPUT_BINARY="$PLATFORM_DIR/bin/$BINARY_NAME-latest$BINARY_EXT"
+
+    echo -e "${YELLOW}Compiling Go binary with embedded assets...${NC}"
+    CGO_ENABLED=1 go build \
+        -ldflags="-X main.Version=$APP_VERSION -s -w" \
+        -tags production \
+        -o "$OUTPUT_BINARY" \
+        ./cmd/server/main.go
+
+    if [ -f "$OUTPUT_BINARY" ]; then
+        BINARY_SIZE=$(du -h "$OUTPUT_BINARY" | cut -f1)
+        echo -e "${GREEN}✓ Built: $OUTPUT_BINARY ($BINARY_SIZE)${NC}"
+    else
+        echo -e "${RED}✗ Failed to build $platform${NC}"
+        exit 1
+    fi
+
+    # Copy configuration templates
+    cp "$PROJECT_ROOT/service.json" "$PLATFORM_DIR/"
+    cp "$PROJECT_ROOT/options.json" "$PLATFORM_DIR/"
+
+    echo ""
+done
 
 # Calculate build time
 BUILD_END=$(date +%s)
@@ -80,10 +184,8 @@ echo -e "${CYAN}==================${NC}"
 printf "${GREEN}Total build time:${NC}        %02d:%02d\n" $((BUILD_TIME / 60)) $((BUILD_TIME % 60))
 
 echo ""
-echo -e "${BOLD}${GREEN}✓ Production build completed successfully!${NC}"
-echo -e "${GRAY}  • Modular component-based build system${NC}"
-echo -e "${GRAY}  • Minified and bundled JavaScript with progressive optimization${NC}"
-echo -e "${GRAY}  • Combined and compressed CSS bundles${NC}"
-echo -e "${GRAY}  • Gzipped assets for maximum compression${NC}"
-echo -e "${GRAY}  • CDN package caching for faster rebuilds${NC}"
-echo -e "${GRAY}  • Updated HTML templates with asset references${NC}"
+echo -e "${BOLD}${GREEN}✓ Build completed successfully!${NC}"
+echo -e "${GRAY}  • Binaries include embedded bundle assets${NC}"
+echo -e "${GRAY}  • Production-optimized with brotli+gzip compression${NC}"
+echo -e "${GRAY}  • Built ${#PLATFORMS_TO_BUILD[@]} platform(s)${NC}"
+echo ""

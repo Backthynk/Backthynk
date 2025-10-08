@@ -4,20 +4,15 @@
     "version": "0.0.5"
   },
   "paths": {
-    "build_dir": "build",
-    "build_assets": "build/assets",
-    "build_bin": "build/bin",
-    "compressed": {
-      "js": "build/assets/js/compressed",
-      "css": "build/assets/css/compressed",
-      "templates": "build/assets/templates/compressed"
+    "dir": {
+      "development": "web",
+      "pre-production": "bundle"
     },
     "source": {
-      "static": "web/static",
-      "templates": "web/templates",
-      "js": "web/static/js",
-      "css": "web/static/css",
-      "images": "web/static/images"
+      "static": "static",
+      "templates": "templates",
+      "js": "static/js",
+      "css": "static/css"
     }
   },
   "urls": {

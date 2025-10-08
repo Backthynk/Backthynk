@@ -60,13 +60,13 @@ create_platform_archive() {
     # Note: GET-STARTED.txt, Makefile, and run.bat are already created during build
     # No need to create additional README files here
 
-    # Create archive
-    cd "$RELEASES_DIR"
+    # Create archive with files at root (no platform subfolder)
+    cd "$RELEASES_DIR/$platform"
     if [[ "$platform" == "windows"* ]]; then
-        zip -q -r "$VERSION_DIR/$archive_name.zip" "$platform"
+        zip -q -r "$VERSION_DIR/$archive_name.zip" .
         log_substep "✓ Created $archive_name.zip"
     else
-        tar -czf "$VERSION_DIR/$archive_name.tar.gz" "$platform"
+        tar -czf "$VERSION_DIR/$archive_name.tar.gz" .
         log_substep "✓ Created $archive_name.tar.gz"
     fi
     cd - > /dev/null

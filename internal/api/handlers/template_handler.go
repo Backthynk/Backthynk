@@ -4,7 +4,9 @@ import (
 	"backthynk/internal/config"
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/services"
+	"backthynk/internal/embedded"
 	"html/template"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -46,7 +48,7 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 		Description:     h.options.Metadata.Description,
 		URL:             r.Host + path,
 		MarkdownEnabled: h.options.Features.Markdown.Enabled,
-		Dev:             !config.IsProduction(),
+		Dev:             config.GetAppMode() == config.APP_MODE_DEV,
 		GithubURL:       sharedCfg.URLs.GithubURL,
 		NewIssueURL:     sharedCfg.URLs.NewIssueURL,
 	}
@@ -72,14 +74,38 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 		pageData.Category = category
 	}
 
-	// Use compressed template in production mode
-	templatePath := filepath.Join(sharedCfg.Paths.Source.Templates, "index.html")
-	if config.IsProduction() {
-		templatePath = filepath.Join(sharedCfg.Paths.Compressed.Templates, "index.html")
+	if config.GetAppMode() == config.APP_MODE_PROD {
+		h.renderEmbeddedTemplate(w, pageData)
+	} else {
+		templatePath := filepath.Join(sharedCfg.GetWebTemplatesPath(), "index.html")
+		h.renderTemplate(w, templatePath, pageData)
+	}
+}
+
+func (h *TemplateHandler) renderEmbeddedTemplate(w http.ResponseWriter, data PageData) {
+	bundleFS, err := embedded.GetBundleFS()
+	if err != nil {
+		http.Error(w, config.ErrTemplateParsingError, http.StatusInternalServerError)
+		return
 	}
 
-	// Parse and execute template
-	h.renderTemplate(w, templatePath, pageData)
+	templateData, err := fs.ReadFile(bundleFS, "templates/index.html")
+	if err != nil {
+		http.Error(w, config.ErrTemplateParsingError, http.StatusInternalServerError)
+		return
+	}
+
+	tmpl, err := template.New("index").Parse(string(templateData))
+	if err != nil {
+		http.Error(w, config.ErrTemplateParsingError, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := tmpl.Execute(w, data); err != nil {
+		http.Error(w, config.ErrTemplateExecutionError, http.StatusInternalServerError)
+		return
+	}
 }
 
 func (h *TemplateHandler) renderTemplate(w http.ResponseWriter, templatePath string, data PageData) {

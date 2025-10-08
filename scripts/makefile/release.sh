@@ -45,7 +45,7 @@ if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
 fi
 
 # Check if remote release exists
-if gh release view "$TAG_NAME" &> /dev/null; then
+if command -v gh &> /dev/null && gh release view "$TAG_NAME" &> /dev/null; then
     echo -e "${RED}Error: GitHub release $TAG_NAME already exists.${NC}"
     exit 1
 fi
@@ -62,23 +62,16 @@ if ! go test -v ./...; then
 fi
 echo -e "${GREEN}✓ All tests passed${NC}"
 
-# Validate CHANGELOG.md
+# Extract and validate changelog
 echo ""
-echo -e "${BOLD}${CYAN}Validating release notes in CHANGELOG.md:${NC}"
-echo -e "${CYAN}------------------------------------------${NC}"
+echo -e "${BOLD}${CYAN}Extracting release notes from CHANGELOG.md:${NC}"
+echo -e "${CYAN}-------------------------------------------${NC}"
 
-if [ ! -f "docs/CHANGELOG.md" ]; then
-    echo -e "${RED}Error: docs/CHANGELOG.md not found.${NC}"
-    echo -e "${YELLOW}Please create a CHANGELOG.md file with release notes for version ${APP_VERSION}.${NC}"
-    exit 1
-fi
+CHANGELOG_CONTENT=$(get_version_changelog)
 
-# Check if version exists in CHANGELOG.md with content
-VERSION_SECTION=$(sed -n "/## \[${APP_VERSION}\]/,/## \[/p" docs/CHANGELOG.md | sed '$d')
-
-if [ -z "$VERSION_SECTION" ]; then
-    echo -e "${RED}Error: Version ${APP_VERSION} not found in CHANGELOG.md${NC}"
-    echo -e "${YELLOW}Please add a section for version ${APP_VERSION} in docs/CHANGELOG.md.${NC}"
+if [ -z "$CHANGELOG_CONTENT" ] || [ "$CHANGELOG_CONTENT" = "" ]; then
+    echo -e "${RED}Error: No changelog found for version ${APP_VERSION} in CHANGELOG.md${NC}"
+    echo -e "${YELLOW}Please add release notes for version ${APP_VERSION} in docs/CHANGELOG.md${NC}"
     echo ""
     echo -e "${BOLD}Expected format:${NC}"
     echo -e "## [${APP_VERSION}] - YYYY-MM-DD"
@@ -87,15 +80,18 @@ if [ -z "$VERSION_SECTION" ]; then
     exit 1
 fi
 
-# Check if the version section has meaningful content (more than just the header)
-CONTENT_LINES=$(echo "$VERSION_SECTION" | tail -n +2 | grep -v '^[[:space:]]*$' | wc -l)
-if [ "$CONTENT_LINES" -lt 1 ]; then
-    echo -e "${RED}Error: Version ${APP_VERSION} in CHANGELOG.md has no content.${NC}"
-    echo -e "${YELLOW}Please add release notes for version ${APP_VERSION}.${NC}"
-    exit 1
-fi
+# Display changelog and ask for confirmation
+echo -e "${GREEN}Found changelog:${NC}"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo "$CHANGELOG_CONTENT"
+echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+echo ""
+read -p "Are you satisfied with these release notes? (y/N): " changelog_confirm
 
-echo -e "${GREEN}✓ Found release notes for version ${APP_VERSION} in CHANGELOG.md${NC}"
+if [ "$changelog_confirm" != "y" ] && [ "$changelog_confirm" != "Y" ]; then
+    echo -e "${YELLOW}Please update the changelog in docs/CHANGELOG.md and try again.${NC}"
+    exit 0
+fi
 
 echo ""
 echo -e "${BOLD}${YELLOW}Ready to create release v${APP_VERSION}${NC}"
@@ -127,8 +123,9 @@ echo -e "${BOLD}${GREEN}✓ Release initiated successfully!${NC}"
 echo ""
 echo -e "${CYAN}GitHub Actions is now:${NC}"
 echo -e "  • Running tests"
-echo -e "  • Building binaries"
-echo -e "  • Creating release archive"
+echo -e "  • Building bundle with modern tooling"
+echo -e "  • Building binaries for all platforms"
+echo -e "  • Creating release archives"
 echo -e "  • Publishing to GitHub Releases"
 echo ""
 echo -e "${BOLD}Monitor progress:${NC}"

@@ -7,6 +7,13 @@ echo -e "${BLUE}▶${NC} Cleaning build artifacts..."
 
 echo -e "${BLUE}  Removing:${NC}"
 
+# Remove bundle directory
+if [ -d "$PROJECT_ROOT/bundle" ]; then
+    echo -e "    - bundle/"
+    rm -rf "$PROJECT_ROOT/bundle"
+    echo -e "${GREEN}✓${NC} Removed bundle directory"
+fi
+
 # Remove build directory
 if [ -d "$BUILD_DIR" ]; then
     echo -e "    - build/"

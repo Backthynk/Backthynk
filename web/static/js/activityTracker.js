@@ -135,8 +135,6 @@ function generateHeatmapFromCache(activityData) {
             <div id="activity-category-breadcrumb" class="mb-4">
                 <!-- Breadcrumb will be generated dynamically -->
             </div>
-
-            <!-- Centered Date Range with Navigation -->
             <div class="flex items-center justify-center mb-4">
                 <button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
                     <i class="fas fa-chevron-left text-xs"></i>
@@ -146,8 +144,6 @@ function generateHeatmapFromCache(activityData) {
                     <i class="fas fa-chevron-right text-xs"></i>
                 </button>
             </div>
-
-            <!-- Heatmap with months on left, heatmap centered -->
             <div class="relative mb-6">
                 <div class="flex justify-center">
                     <div id="activity-heatmap" class="min-h-16">
@@ -155,8 +151,6 @@ function generateHeatmapFromCache(activityData) {
                     </div>
                 </div>
             </div>
-
-            <!-- Legend and Summary -->
             <div class="flex items-center justify-between text-xs mt-6">
                 <div id="activity-legend" class="flex flex-col space-y-1">
                     <!-- Legend will be generated dynamically -->
