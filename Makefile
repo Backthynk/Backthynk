@@ -1,4 +1,4 @@
-.PHONY: help build bundle dev dev-prod run clean fclean test test-verbose release release-status release-clean %
+.PHONY: help build build-with-docker bundle dev dev-prod run clean fclean test test-verbose release release-status release-clean %
 
 # Default target
 help:
@@ -21,6 +21,9 @@ build:
 	else \
 		./scripts/makefile/build.sh; \
 	fi
+
+build-with-docker:
+	@./scripts/build-docker/build-with-docker.sh
 
 # Allow any target to be passed as arguments
 %:

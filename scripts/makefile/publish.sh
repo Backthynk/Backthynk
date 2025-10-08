@@ -79,59 +79,34 @@ for platform_config in "${BUILD_PLATFORMS[@]}"; do
 done
 
 echo ""
-echo -e "${BOLD}Creating universal archive:${NC}"
-echo ""
-
-# Create universal archive with all platforms
-log_step "Creating universal multi-platform archive..."
-UNIVERSAL_NAME="$BINARY_NAME-v$APP_VERSION-all-platforms"
-
-# Create comprehensive README
-cat > "$RELEASES_DIR/README.txt" << EOF
-Backthynk v$APP_VERSION - All Platforms
-
-This archive contains binaries for all supported platforms.
-
-Quick Start:
-============
-Choose the directory for your platform and run the binary:
-
-Linux (AMD64/x86_64):
-  cd linux-amd64 && ./bin/$BINARY_NAME-latest
-
-Linux (ARM64):
-  cd linux-arm64 && ./bin/$BINARY_NAME-latest
-
-macOS (Intel):
-  cd macos-amd64 && ./bin/$BINARY_NAME-latest
-
-macOS (Apple Silicon):
-  cd macos-arm64 && ./bin/$BINARY_NAME-latest
-
-Windows (AMD64):
-  cd windows-amd64 && .\bin\$BINARY_NAME-latest.exe
-
-Documentation:
-==============
-Visit: https://github.com/Backthynk/backthynk
-
-Support:
-========
-Issues: https://github.com/Backthynk/backthynk/issues
-EOF
-
-cd "$PROJECT_ROOT"
-zip -q -r "$VERSION_DIR/$UNIVERSAL_NAME.zip" releases/
-cd - > /dev/null
-log_substep "✓ Created $UNIVERSAL_NAME.zip"
-
-echo ""
 echo -e "${BOLD}${CYAN}Generating checksums...${NC}"
 echo ""
 
-# Generate checksums
+# Generate checksums for binaries (not archives)
 cd "$VERSION_DIR"
-sha256sum *.tar.gz *.zip > "SHA256SUMS.txt" 2>/dev/null || shasum -a 256 *.tar.gz *.zip > "SHA256SUMS.txt"
+for archive in *.tar.gz *.zip 2>/dev/null; do
+    [ -e "$archive" ] || continue
+
+    # Extract binary name from archive
+    if [[ "$archive" == *.tar.gz ]]; then
+        # For tar.gz, extract binary and checksum it
+        BINARY_IN_ARCHIVE=$(tar -tzf "$archive" | grep -E "^${BINARY_NAME}-v${APP_VERSION}$" | head -n1)
+        if [ -n "$BINARY_IN_ARCHIVE" ]; then
+            tar -xzf "$archive" "$BINARY_IN_ARCHIVE"
+            sha256sum "$BINARY_IN_ARCHIVE" >> "SHA256SUMS.txt" 2>/dev/null || shasum -a 256 "$BINARY_IN_ARCHIVE" >> "SHA256SUMS.txt"
+            rm "$BINARY_IN_ARCHIVE"
+        fi
+    elif [[ "$archive" == *.zip ]]; then
+        # For zip, extract binary and checksum it
+        BINARY_IN_ARCHIVE=$(unzip -l "$archive" | grep -oE "${BINARY_NAME}-v${APP_VERSION}\.exe" | head -n1)
+        if [ -n "$BINARY_IN_ARCHIVE" ]; then
+            unzip -q "$archive" "$BINARY_IN_ARCHIVE"
+            sha256sum "$BINARY_IN_ARCHIVE" >> "SHA256SUMS.txt" 2>/dev/null || shasum -a 256 "$BINARY_IN_ARCHIVE" >> "SHA256SUMS.txt"
+            rm "$BINARY_IN_ARCHIVE"
+        fi
+    fi
+done
+
 echo -e "${GREEN}✓ Checksums saved to SHA256SUMS.txt${NC}"
 
 # Display summary
