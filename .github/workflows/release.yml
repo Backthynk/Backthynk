@@ -157,17 +157,27 @@ jobs:
             CHANGELOG="Release v${{ steps.get_version.outputs.version }}"
           fi
 
-          # Read checksums
-          CHECKSUMS=$(cat archives/v${{ steps.get_version.outputs.version }}/SHA256SUMS.txt)
-
-          # Generate release notes from template
-          sed -e "s|{{CHANGELOG}}|$CHANGELOG|g" \
-              -e "s|{{VERSION}}|${{ steps.get_version.outputs.version }}|g" \
+          # First pass: replace all placeholders except CHECKSUMS
+          sed -e "s|{{VERSION}}|${{ steps.get_version.outputs.version }}|g" \
               -e "s|{{REPO_URL}}|${{ steps.build_info.outputs.repo_url }}|g" \
               -e "s|{{COMMIT_SHA}}|${{ steps.build_info.outputs.commit_sha }}|g" \
               -e "s|{{COMMIT_SHORT}}|${{ steps.build_info.outputs.commit_short }}|g" \
-              -e "s|{{CHECKSUMS}}|$CHECKSUMS|g" \
-              docs/templates/release-notes.md > /tmp/release_notes.md
+              docs/templates/release-notes.md > /tmp/release_notes_tmp.md
+
+          # Replace CHANGELOG placeholder (may contain newlines)
+          awk -v changelog="$CHANGELOG" '{gsub(/\{\{CHANGELOG\}\}/, changelog)}1' /tmp/release_notes_tmp.md > /tmp/release_notes_tmp2.md
+
+          # Replace CHECKSUMS placeholder with file content
+          awk '
+            /\{\{CHECKSUMS\}\}/ {
+              while ((getline line < "archives/v${{ steps.get_version.outputs.version }}/SHA256SUMS.txt") > 0) {
+                print line
+              }
+              close("archives/v${{ steps.get_version.outputs.version }}/SHA256SUMS.txt")
+              next
+            }
+            {print}
+          ' /tmp/release_notes_tmp2.md > /tmp/release_notes.md
 
           echo "notes_file=/tmp/release_notes.md" >> $GITHUB_OUTPUT
 
