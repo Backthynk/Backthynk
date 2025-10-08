@@ -1,4 +1,4 @@
-.PHONY: help build bundle dev dev-prod run clean fclean test test-verbose release release-status release-clean
+.PHONY: help build bundle dev dev-prod run clean fclean test test-verbose release release-status release-clean %
 
 # Default target
 help:
@@ -6,11 +6,25 @@ help:
 
 # Bundle targets
 bundle:
-	@./scripts/bundle/bundle.sh $(ARGS)
+	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -n "$$args" ]; then \
+		./scripts/bundle/bundle.sh --$$args; \
+	else \
+		./scripts/bundle/bundle.sh; \
+	fi
 
 # Build targets
 build:
-	@./scripts/build/build.sh $(ARGS)
+	@args="$(filter-out $@,$(MAKECMDGOALS))"; \
+	if [ -n "$$args" ]; then \
+		./scripts/makefile/build.sh $$(echo "$$args" | sed 's/^type /--type /; s/^auto/--auto/; s/^all/--all/'); \
+	else \
+		./scripts/makefile/build.sh; \
+	fi
+
+# Allow any target to be passed as arguments
+%:
+	@:
 
 # Run targets
 dev:

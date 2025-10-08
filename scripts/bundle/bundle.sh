@@ -6,7 +6,7 @@
 set -e  # Exit on error
 
 # Parse command-line arguments
-MINIFY_MODE="full"  # full or debug
+MINIFY_MODE=""  # Must be explicitly set
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -20,13 +20,25 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--debug|--full]"
+            echo "Usage: $0 --debug|--full"
             echo "  --debug: Bundle without minification/mangling (for debugging)"
-            echo "  --full:  Full minification with tree-shaking (default)"
+            echo "  --full:  Full minification with tree-shaking"
             exit 1
             ;;
     esac
 done
+
+# Ensure mode is specified
+if [ -z "$MINIFY_MODE" ]; then
+    echo ""
+    echo "❌ No minify mode specified"
+    echo ""
+    echo "Usage:"
+    echo "  make bundle debug    Bundle without minification (for debugging)"
+    echo "  make bundle full     Full minification with tree-shaking (for production)"
+    echo ""
+    exit 1
+fi
 
 # Load configuration (must be done before using helper functions)
 source "$(dirname "$0")/../common/load-config.sh"

@@ -109,7 +109,7 @@ jobs:
       - name: Build binaries for all platforms
         run: |
           echo "Building binaries for all platforms..."
-          ./scripts/build/build.sh --all
+          ./scripts/makefile/build.sh --all
 
       - name: Create release archives
         run: |

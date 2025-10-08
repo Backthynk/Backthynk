@@ -153,7 +153,7 @@ When you run `make build` locally:
 ### CI/Workflow Build
 
 When GitHub Actions builds a release:
-1. Uses `./scripts/build/build.sh --workflow`
+1. Uses `./scripts/makefile/build.sh --workflow`
 2. Builds for **all** supported platforms:
    - Linux AMD64
    - Linux ARM64

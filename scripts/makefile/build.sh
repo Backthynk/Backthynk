@@ -6,7 +6,7 @@
 set -e  # Exit on error
 
 # Parse command-line arguments
-BUILD_TYPE=""  # empty (auto-detect), "all", or specific like "linux-amd64"
+BUILD_TYPE=""  # Must be explicitly set
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -15,15 +15,37 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --type)
-            BUILD_TYPE="$2"
+            if [ -z "$2" ]; then
+                echo "Error: --type requires a platform argument"
+                exit 1
+            fi
+            # Validate platform
+            case "$2" in
+                linux-amd64|linux-arm64|macos-amd64|macos-arm64|windows-amd64)
+                    BUILD_TYPE="$2"
+                    ;;
+                *)
+                    echo "Error: Invalid platform '$2'"
+                    echo ""
+                    echo "Available platforms:"
+                    echo "  linux-amd64, linux-arm64"
+                    echo "  macos-amd64, macos-arm64"
+                    echo "  windows-amd64"
+                    exit 1
+                    ;;
+            esac
             shift 2
+            ;;
+        --auto)
+            BUILD_TYPE="auto"
+            shift
             ;;
         *)
             echo "Unknown option: $1"
-            echo "Usage: $0 [--all] [--type <platform>]"
+            echo "Usage: $0 --all|--auto|--type <platform>"
             echo ""
             echo "Options:"
-            echo "  (no flags)        Auto-detect current platform and build for it"
+            echo "  --auto            Auto-detect current platform and build for it"
             echo "  --all             Build for all platforms"
             echo "  --type <platform> Build for specific platform (e.g., linux-amd64, macos-arm64)"
             echo ""
@@ -35,6 +57,26 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+# Ensure build type is specified
+if [ -z "$BUILD_TYPE" ]; then
+    echo ""
+    echo "❌ No build target specified"
+    echo ""
+    echo "Usage:"
+    echo "  make build auto              Auto-detect and build for current platform"
+    echo "  make build all               Build for all platforms"
+    echo "  make build type <platform>   Build for specific platform"
+    echo ""
+    echo "Supported platforms:"
+    echo "  linux-amd64, linux-arm64, macos-amd64, macos-arm64, windows-amd64"
+    echo ""
+    echo "Examples:"
+    echo "  make build auto"
+    echo "  make build type linux-amd64"
+    echo ""
+    exit 1
+fi
 
 # Load configuration
 source "$(dirname "$0")/../common/load-config.sh"
@@ -76,30 +118,7 @@ if [ "$BUILD_TYPE" = "all" ]; then
         "macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang"
         "windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc"
     )
-elif [ -n "$BUILD_TYPE" ]; then
-    # Build specific platform
-    case "$BUILD_TYPE" in
-        linux-amd64)
-            PLATFORMS_TO_BUILD=("linux-amd64:GOOS=linux GOARCH=amd64")
-            ;;
-        linux-arm64)
-            PLATFORMS_TO_BUILD=("linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc")
-            ;;
-        macos-amd64)
-            PLATFORMS_TO_BUILD=("macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang")
-            ;;
-        macos-arm64)
-            PLATFORMS_TO_BUILD=("macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang")
-            ;;
-        windows-amd64)
-            PLATFORMS_TO_BUILD=("windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc")
-            ;;
-        *)
-            echo -e "${RED}Unknown platform: $BUILD_TYPE${NC}"
-            exit 1
-            ;;
-    esac
-else
+elif [ "$BUILD_TYPE" = "auto" ]; then
     # Auto-detect current platform
     CURRENT_PLATFORM=$(detect_current_platform)
 
@@ -117,6 +136,25 @@ else
         echo -e "${YELLOW}Platform $CURRENT_PLATFORM not in supported list, defaulting to linux-amd64${NC}"
         PLATFORMS_TO_BUILD=("linux-amd64:GOOS=linux GOARCH=amd64")
     fi
+else
+    # Build specific platform (already validated in argument parsing)
+    case "$BUILD_TYPE" in
+        linux-amd64)
+            PLATFORMS_TO_BUILD=("linux-amd64:GOOS=linux GOARCH=amd64")
+            ;;
+        linux-arm64)
+            PLATFORMS_TO_BUILD=("linux-arm64:GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc")
+            ;;
+        macos-amd64)
+            PLATFORMS_TO_BUILD=("macos-amd64:GOOS=darwin GOARCH=amd64 CC=o64-clang")
+            ;;
+        macos-arm64)
+            PLATFORMS_TO_BUILD=("macos-arm64:GOOS=darwin GOARCH=arm64 CC=oa64-clang")
+            ;;
+        windows-amd64)
+            PLATFORMS_TO_BUILD=("windows-amd64:GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc")
+            ;;
+    esac
 fi
 
 # Build binaries
@@ -150,7 +188,7 @@ for platform_config in "${PLATFORMS_TO_BUILD[@]}"; do
     mkdir -p "$PLATFORM_RELEASE_DIR"
 
     # Build with embedded bundle - output to releases/<platform>/
-    OUTPUT_BINARY="$PLATFORM_RELEASE_DIR/$BINARY_NAME$BINARY_EXT"
+    OUTPUT_BINARY="$PLATFORM_RELEASE_DIR/${BINARY_NAME}-v${APP_VERSION}${BINARY_EXT}"
 
     # Copy bundle and config to cmd/server for embed (symlinks don't work with embed)
     BUNDLE_COPY="$PROJECT_ROOT/cmd/server/bundle"
