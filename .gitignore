@@ -17,10 +17,12 @@ service.json
 scripts/.cache/
 
 # Build framework temporary files
-scripts/build/tailwind-build/node_modules/
-scripts/build/tailwind-build/package-lock.json
-scripts/build/fontawesome-build/node_modules/
-scripts/build/fontawesome-build/package-lock.json
+scripts/bundle/tailwind-build/node_modules/
+scripts/bundle/tailwind-build/package-lock.json
+scripts/bundle/fontawesome-build/node_modules/
+scripts/bundle/fontawesome-build/package-lock.json
+scripts/bundle/js-bundler/node_modules/
+scripts/bundle/js-bundler/package-lock.json
 
 # Development tools
 *.log
