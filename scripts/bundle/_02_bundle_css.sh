@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Bundle Component: CSS Bundling with Modern Tooling
-# Uses Tailwind, PostCSS, and cssnano for optimal CSS bundling
+# Bundle Component: CSS Bundling
+# Uses Tailwind and CSSO for optimal CSS bundling
 
 source "$(dirname "$0")/../common/common.sh"
 source "$(dirname "$0")/../common/load-config.sh"
 
-log_step "Bundling CSS with modern tooling..."
+log_step "Bundling CSS..."
 
 # Ensure cache and bundle CSS directories exist (using config-based paths)
 mkdir -p "$CACHE_DIR"
@@ -14,7 +14,7 @@ BUNDLE_CSS_DIR=$(get_bundle_css_dir)
 mkdir -p "$BUNDLE_CSS_DIR"
 
 # Generate optimized Tailwind CSS
-TAILWIND_DIR="$PROJECT_ROOT/scripts/bundle/tailwind-build"
+TAILWIND_DIR="$PROJECT_ROOT/scripts/bundle/tailwind"
 TAILWIND_OUTPUT="$CACHE_DIR/tailwind-optimized.css"
 
 if [ -d "$TAILWIND_DIR" ]; then
@@ -39,7 +39,7 @@ else
 fi
 
 # Generate optimized Font Awesome CSS
-FONTAWESOME_DIR="$PROJECT_ROOT/scripts/bundle/fontawesome-build"
+FONTAWESOME_DIR="$PROJECT_ROOT/scripts/bundle/fontawesome"
 FONTAWESOME_OUTPUT="$CACHE_DIR/fontawesome-optimized.css"
 
 if [ -d "$FONTAWESOME_DIR" ]; then
@@ -85,21 +85,10 @@ done
 BUNDLE_CSS="$BUNDLE_CSS_DIR/bundle.css"
 
 if [ "$MINIFY_MODE" = "full" ]; then
-    log_substep "Minifying CSS with cssnano..."
+    log_substep "Minifying CSS with CSSO..."
 
-    # Check for npx availability - fail if not available
-    if ! command -v npx &> /dev/null; then
-        log_error "npx not found - required for CSS minification"
-        exit 1
-    fi
-
-    # Use postcss with cssnano plugin via npx
-    # We use --use flag to avoid needing a config file
-    if npx --yes -p postcss-cli -p cssnano postcss "$COMBINED_CSS" \
-        --use cssnano \
-        --cssnano.preset=default \
-        --no-map \
-        -o "$BUNDLE_CSS"; then
+    # Use CSSO via npx for advanced CSS optimization
+    if npx --yes csso-cli -i "$COMBINED_CSS" -o "$BUNDLE_CSS"; then
         log_success "CSS bundling complete: $(du -h "$BUNDLE_CSS" | cut -f1)"
     else
         log_error "CSS minification failed"

@@ -36,24 +36,24 @@ if [ -d "scripts/.cache" ]; then
 fi
 
 # Remove node_modules from build tools
-if [ -d "scripts/build/tailwind-build/node_modules" ]; then
-    echo -e "    - scripts/build/tailwind-build/node_modules/"
-    rm -rf "scripts/build/tailwind-build/node_modules"
+if [ -d "scripts/bundle/tailwind/node_modules" ]; then
+    echo -e "    - scripts/bundle/tailwind/node_modules/"
+    rm -rf "scripts/bundle/tailwind/node_modules"
     echo -e "${GREEN}✓${NC} Removed Tailwind node_modules"
 fi
 
-if [ -d "scripts/build/fontawesome-build/node_modules" ]; then
-    echo -e "    - scripts/build/fontawesome-build/node_modules/"
-    rm -rf "scripts/build/fontawesome-build/node_modules"
+if [ -d "scripts/bundle/fontawesome/node_modules" ]; then
+    echo -e "    - scripts/bundle/fontawesome/node_modules/"
+    rm -rf "scripts/bundle/fontawesome/node_modules"
     echo -e "${GREEN}✓${NC} Removed Font Awesome node_modules"
 fi
 
 # Remove package-lock files
-if [ -f "scripts/build/tailwind-build/package-lock.json" ] || [ -f "scripts/build/fontawesome-build/package-lock.json" ]; then
-    echo -e "    - scripts/build/tailwind-build/package-lock.json"
-    echo -e "    - scripts/build/fontawesome-build/package-lock.json"
-    rm -f "scripts/build/tailwind-build/package-lock.json"
-    rm -f "scripts/build/fontawesome-build/package-lock.json"
+if [ -f "scripts/bundle/tailwind/package-lock.json" ] || [ -f "scripts/bundle/fontawesome/package-lock.json" ]; then
+    echo -e "    - scripts/bundle/tailwind/package-lock.json"
+    echo -e "    - scripts/bundle/fontawesome/package-lock.json"
+    rm -f "scripts/bundle/tailwind/package-lock.json"
+    rm -f "scripts/bundle/fontawesome/package-lock.json"
 fi
 
 echo -e "${GREEN}✓${NC} Deep clean complete"

@@ -8,12 +8,6 @@ help:
 bundle:
 	@./scripts/bundle/bundle.sh $(ARGS)
 
-bundle-debug:
-	@./scripts/bundle/bundle.sh --debug
-
-bundle-full:
-	@./scripts/bundle/bundle.sh --full
-
 # Build targets
 build:
 	@./scripts/build/build.sh $(ARGS)

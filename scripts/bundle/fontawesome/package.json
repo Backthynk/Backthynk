@@ -1,5 +1,5 @@
 {
-  "name": "fontawesome-build",
+  "name": "fontawesome",
   "version": "1.0.0",
   "description": "Font Awesome tree-shaking build for bt0.1.0",
   "main": "build-fontawesome.js",

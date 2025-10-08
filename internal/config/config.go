@@ -145,13 +145,22 @@ var (
 )
 
 func LoadSharedConfig() error {
-	// Smart path detection for .config.json
-	// If scripts/common/ exists at project root, use scripts/.config.json
-	configPath := GetConfigJSONPath();
-	
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read shared config from %s: %w", configPath, err)
+	var data []byte
+	var err error
+
+	// In production mode, use embedded config if available
+	if GetAppMode() == APP_MODE_PROD {
+		data = getEmbeddedConfig()
+		if len(data) == 0 {
+			return fmt.Errorf("embedded config not available in production mode")
+		}
+	} else {
+		// In dev/pre-prod mode, read from file system
+		configPath := GetConfigJSONPath()
+		data, err = os.ReadFile(configPath)
+		if err != nil {
+			return fmt.Errorf("failed to read shared config from %s: %w", configPath, err)
+		}
 	}
 
 	var config SharedConfig

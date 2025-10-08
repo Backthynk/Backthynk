@@ -12,17 +12,19 @@ service.json
 /build
 /releases
 /archives
+/cmd/server/bundle
+/cmd/server/.config.json
+/cmd/server/init_prod.go.bak
+/backthynk-*
 
 # Build cache
 scripts/.cache/
 
 # Build framework temporary files
-scripts/bundle/tailwind-build/node_modules/
-scripts/bundle/tailwind-build/package-lock.json
-scripts/bundle/fontawesome-build/node_modules/
-scripts/bundle/fontawesome-build/package-lock.json
-scripts/bundle/js-bundler/node_modules/
-scripts/bundle/js-bundler/package-lock.json
+scripts/bundle/tailwind/node_modules/
+scripts/bundle/tailwind/package-lock.json
+scripts/bundle/fontawesome/node_modules/
+scripts/bundle/fontawesome/package-lock.json
 
 # Development tools
 *.log

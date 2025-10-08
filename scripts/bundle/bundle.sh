@@ -81,8 +81,9 @@ printf "${GREEN}Total bundle time:${NC}        %02d:%02d\n" $((BUNDLE_TIME / 60)
 
 echo ""
 echo -e "${BOLD}${GREEN}✓ Bundle created successfully!${NC}"
-echo -e "${GRAY}  • Modern esbuild/rollup bundling with tree-shaking${NC}"
-echo -e "${GRAY}  • Optimized CSS with PostCSS and cssnano${NC}"
+echo -e "${GRAY}  • CSS optimized with CSSO${NC}"
+echo -e "${GRAY}  • JavaScript minified with tdewolff/minify${NC}"
+echo -e "${GRAY}  • HTML minified with tdewolff/minify${NC}"
 echo -e "${GRAY}  • Brotli and gzip compression${NC}"
 echo -e "${GRAY}  • Mode: $MINIFY_MODE${NC}"
 echo ""

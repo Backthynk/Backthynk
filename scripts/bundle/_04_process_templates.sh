@@ -52,19 +52,26 @@ sed -i "s|</head>|    <link rel=\"stylesheet\" href=\"/$CSS_PATH/bundle.css\">\n
 # Find the </body> tag and add bundled JS before it
 sed -i "s|</body>|    <script src=\"/$JS_PATH/bundle.js\"></script>\n    </body>|" "$TEMPLATE_OUTPUT"
 
-# Minify HTML (remove comments, extra whitespace, but preserve structure)
-# Note: We don't use aggressive minification as values are set dynamically server-side
+# Minify HTML using tdewolff/minify
 if [ "$MINIFY_MODE" = "full" ]; then
-    log_substep "Minifying HTML template..."
+    log_substep "Minifying HTML template with minify..."
 
     # Create temporary file for minification
     TEMP_HTML="$TEMPLATE_OUTPUT.tmp"
 
-    # Remove HTML comments, collapse whitespace
-    perl -pe 's/<!--.*?-->//gs; s/\s+/ /g; s/>\s+</></g' "$TEMPLATE_OUTPUT" > "$TEMP_HTML"
+    # Use minify for aggressive HTML minification
+    # --type=html: Treat as HTML
+    # --html-keep-document-tags: Keep <html>, <head>, <body> tags
+    # --html-keep-end-tags: Keep end tags for proper structure
+    # --html-keep-quotes: Keep quotes (safer for dynamic content)
+    minify --type=html \
+        --html-keep-document-tags \
+        --html-keep-end-tags \
+        "$TEMPLATE_OUTPUT" > "$TEMP_HTML"
+
     mv "$TEMP_HTML" "$TEMPLATE_OUTPUT"
 
-    log_success "Template processing complete (minified)"
+    log_success "Template processing complete (minified with minify)"
 else
     log_success "Template processing complete"
 fi

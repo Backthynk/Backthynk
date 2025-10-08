@@ -145,19 +145,65 @@ for platform_config in "${PLATFORMS_TO_BUILD[@]}"; do
         BINARY_EXT=".exe"
     fi
 
-    # Create release directory
-    PLATFORM_DIR="$RELEASES_DIR/$platform"
-    mkdir -p "$PLATFORM_DIR/bin"
+    # Create platform-specific directory under releases
+    PLATFORM_RELEASE_DIR="$RELEASES_DIR/$platform"
+    mkdir -p "$PLATFORM_RELEASE_DIR"
 
-    # Build with embedded bundle
-    OUTPUT_BINARY="$PLATFORM_DIR/bin/$BINARY_NAME-latest$BINARY_EXT"
+    # Build with embedded bundle - output to releases/<platform>/
+    OUTPUT_BINARY="$PLATFORM_RELEASE_DIR/$BINARY_NAME$BINARY_EXT"
+
+    # Copy bundle and config to cmd/server for embed (symlinks don't work with embed)
+    BUNDLE_COPY="$PROJECT_ROOT/cmd/server/bundle"
+    CONFIG_COPY="$PROJECT_ROOT/cmd/server/.config.json"
+    cp -r "$BUNDLE_DIR" "$BUNDLE_COPY"
+    cp "$PROJECT_ROOT/scripts/.config.json" "$CONFIG_COPY"
+
+    # Backup existing init_prod.go if it exists
+    INIT_PROD_FILE="$PROJECT_ROOT/cmd/server/init_prod.go"
+    INIT_PROD_BACKUP="$PROJECT_ROOT/cmd/server/init_prod.go.bak"
+    if [ -f "$INIT_PROD_FILE" ]; then
+        mv "$INIT_PROD_FILE" "$INIT_PROD_BACKUP"
+    fi
+
+    # Create temporary init_prod.go with embed directive
+    cat > "$INIT_PROD_FILE" << 'EMBED_EOF'
+//go:build production
+// +build production
+
+package main
+
+import (
+	"backthynk/internal/embedded"
+	"embed"
+)
+
+//go:embed all:bundle
+var bundleFS embed.FS
+
+//go:embed .config.json
+var configJSON []byte
+
+func init() {
+	embedded.SetBundleFS(bundleFS)
+	embedded.SetConfigJSON(configJSON)
+}
+EMBED_EOF
 
     echo -e "${YELLOW}Compiling Go binary with embedded assets...${NC}"
     CGO_ENABLED=1 go build \
         -ldflags="-X main.Version=$APP_VERSION -s -w" \
         -tags production \
         -o "$OUTPUT_BINARY" \
-        ./cmd/server/main.go
+        ./cmd/server
+
+    # Restore original init_prod.go or remove temporary one
+    if [ -f "$INIT_PROD_BACKUP" ]; then
+        mv "$INIT_PROD_BACKUP" "$INIT_PROD_FILE"
+    else
+        rm -f "$INIT_PROD_FILE"
+    fi
+    rm -rf "$BUNDLE_COPY"
+    rm -f "$CONFIG_COPY"
 
     if [ -f "$OUTPUT_BINARY" ]; then
         BINARY_SIZE=$(du -h "$OUTPUT_BINARY" | cut -f1)
@@ -166,10 +212,6 @@ for platform_config in "${PLATFORMS_TO_BUILD[@]}"; do
         echo -e "${RED}✗ Failed to build $platform${NC}"
         exit 1
     fi
-
-    # Copy configuration templates
-    cp "$PROJECT_ROOT/service.json" "$PLATFORM_DIR/"
-    cp "$PROJECT_ROOT/options.json" "$PLATFORM_DIR/"
 
     echo ""
 done

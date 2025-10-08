@@ -1,104 +1,115 @@
 #!/bin/bash
 
-# Bundle Component: Bundle Summary
-# Displays bundle size with comparison to original source files
+# Bundle Component: Detailed Bundle Summary
+# Displays per-file bundle statistics and compression ratios
 
 source "$(dirname "$0")/../common/common.sh"
 source "$(dirname "$0")/../common/load-config.sh"
 
 log_step "Generating bundle summary..."
 
-# Calculate original (uncompressed, unminified) source file sizes
-ORIGINAL_HTML_SIZE=0
-ORIGINAL_CSS_SIZE=0
-ORIGINAL_JS_SIZE=0
-
-# Get original HTML size
-TEMPLATE_SOURCE="$PROJECT_ROOT/web/$SOURCE_TEMPLATES/index.html"
-if [ -f "$TEMPLATE_SOURCE" ]; then
-    ORIGINAL_HTML_SIZE=$(stat -f%z "$TEMPLATE_SOURCE" 2>/dev/null || stat -c%s "$TEMPLATE_SOURCE" 2>/dev/null || echo 0)
-fi
-
-# Get original CSS size (all source CSS files + Tailwind + FontAwesome)
-CSS_DIR="$PROJECT_ROOT/web/$SOURCE_CSS"
-for cssfile in "$CSS_DIR"/*.css; do
-    if [ -f "$cssfile" ]; then
-        SIZE=$(stat -f%z "$cssfile" 2>/dev/null || stat -c%s "$cssfile" 2>/dev/null || echo 0)
-        ORIGINAL_CSS_SIZE=$((ORIGINAL_CSS_SIZE + SIZE))
+# Helper function to get file size in bytes
+get_size() {
+    local file=$1
+    if [ -f "$file" ]; then
+        stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0
+    else
+        echo 0
     fi
-done
+}
 
-# Add CDN sizes (approximate - Tailwind ~3.5MB, FontAwesome ~1.5MB)
-ORIGINAL_CSS_SIZE=$((ORIGINAL_CSS_SIZE + 3500000 + 1500000))
-
-# Get original JS size (all source JS files)
-JS_DIR="$PROJECT_ROOT/web/$SOURCE_JS"
-for jsfile in "$JS_DIR"/*.js; do
-    if [ -f "$jsfile" ]; then
-        SIZE=$(stat -f%z "$jsfile" 2>/dev/null || stat -c%s "$jsfile" 2>/dev/null || echo 0)
-        ORIGINAL_JS_SIZE=$((ORIGINAL_JS_SIZE + SIZE))
+# Helper function to format bytes to human-readable
+format_bytes() {
+    local bytes=$1
+    if [ $bytes -lt 1000 ]; then
+        printf "%dB" $bytes
+    elif [ $bytes -lt 1000000 ]; then
+        printf "%.1fK" $(awk "BEGIN {printf \"%.1f\", $bytes/1024}")
+    else
+        printf "%.2fM" $(awk "BEGIN {printf \"%.2f\", $bytes/1048576}")
     fi
-done
+}
 
-ORIGINAL_TOTAL=$((ORIGINAL_HTML_SIZE + ORIGINAL_CSS_SIZE + ORIGINAL_JS_SIZE))
+# Helper function to calculate percentage reduction
+calc_reduction() {
+    local original=$1
+    local compressed=$2
+    if [ $original -gt 0 ]; then
+        awk "BEGIN {printf \"%.1f\", (($original - $compressed) * 100 / $original)}"
+    else
+        echo "0"
+    fi
+}
 
-# Calculate bundle sizes (HTML + CSS.br + JS.br)
-BUNDLE_HTML_SIZE=0
-BUNDLE_CSS_SIZE=0
-BUNDLE_JS_SIZE=0
-
+# Get bundle directories
 BUNDLE_TEMPLATES_DIR=$(get_bundle_templates_dir)
 BUNDLE_CSS_DIR=$(get_bundle_css_dir)
 BUNDLE_JS_DIR=$(get_bundle_js_dir)
 
-# Get bundled HTML size (minified, no compression)
-BUNDLE_HTML="$BUNDLE_TEMPLATES_DIR/index.html"
-if [ -f "$BUNDLE_HTML" ]; then
-    BUNDLE_HTML_SIZE=$(stat -f%z "$BUNDLE_HTML" 2>/dev/null || stat -c%s "$BUNDLE_HTML" 2>/dev/null || echo 0)
-fi
+# Collect source file stats
+CSS_DIR="$PROJECT_ROOT/web/$SOURCE_CSS"
+JS_DIR="$PROJECT_ROOT/web/$SOURCE_JS"
 
-# Get bundled CSS size (brotli compressed)
-BUNDLE_CSS_BR="$BUNDLE_CSS_DIR/bundle.css.br"
-if [ -f "$BUNDLE_CSS_BR" ]; then
-    BUNDLE_CSS_SIZE=$(stat -f%z "$BUNDLE_CSS_BR" 2>/dev/null || stat -c%s "$BUNDLE_CSS_BR" 2>/dev/null || echo 0)
-fi
+# Count source files
+CSS_SOURCE_COUNT=$(find "$CSS_DIR" -name "*.css" 2>/dev/null | wc -l)
+JS_SOURCE_COUNT=$(find "$JS_DIR" -name "*.js" 2>/dev/null | wc -l)
 
-# Get bundled JS size (brotli compressed)
-BUNDLE_JS_BR="$BUNDLE_JS_DIR/bundle.js.br"
-if [ -f "$BUNDLE_JS_BR" ]; then
-    BUNDLE_JS_SIZE=$(stat -f%z "$BUNDLE_JS_BR" 2>/dev/null || stat -c%s "$BUNDLE_JS_BR" 2>/dev/null || echo 0)
-fi
+# Get combined file sizes (before minification)
+COMBINED_CSS_SIZE=$(get_size "$CACHE_DIR/combined.css")
+COMBINED_JS_SIZE=$(get_size "$CACHE_DIR/combined.js")
 
-BUNDLE_TOTAL=$((BUNDLE_HTML_SIZE + BUNDLE_CSS_SIZE + BUNDLE_JS_SIZE))
+# Get bundle file sizes
+BUNDLE_CSS_SIZE=$(get_size "$BUNDLE_CSS_DIR/bundle.css")
+BUNDLE_CSS_GZ_SIZE=$(get_size "$BUNDLE_CSS_DIR/bundle.css.gz")
+BUNDLE_CSS_BR_SIZE=$(get_size "$BUNDLE_CSS_DIR/bundle.css.br")
 
-# Calculate savings
-SAVINGS=$((ORIGINAL_TOTAL - BUNDLE_TOTAL))
-if [ $ORIGINAL_TOTAL -gt 0 ]; then
-    PERCENT=$((SAVINGS * 100 / ORIGINAL_TOTAL))
-else
-    PERCENT=0
-fi
+BUNDLE_JS_SIZE=$(get_size "$BUNDLE_JS_DIR/bundle.js")
+BUNDLE_JS_GZ_SIZE=$(get_size "$BUNDLE_JS_DIR/bundle.js.gz")
+BUNDLE_JS_BR_SIZE=$(get_size "$BUNDLE_JS_DIR/bundle.js.br")
 
-# Format sizes
-format_size() {
-    local bytes=$1
-    if [ $bytes -lt 1024 ]; then
-        echo "${bytes}B"
-    elif [ $bytes -lt 1048576 ]; then
-        echo "$((bytes / 1024))K"
-    else
-        echo "$((bytes / 1048576))M"
-    fi
-}
+BUNDLE_HTML_SIZE=$(get_size "$BUNDLE_TEMPLATES_DIR/index.html")
 
-BUNDLE_TOTAL_FMT=$(format_size $BUNDLE_TOTAL)
-SAVINGS_FMT=$(format_size $SAVINGS)
+# Calculate totals
+TOTAL_UNCOMPRESSED=$((BUNDLE_CSS_SIZE + BUNDLE_JS_SIZE + BUNDLE_HTML_SIZE))
+TOTAL_GZIP=$((BUNDLE_CSS_GZ_SIZE + BUNDLE_JS_GZ_SIZE + BUNDLE_HTML_SIZE))
+TOTAL_BROTLI=$((BUNDLE_CSS_BR_SIZE + BUNDLE_JS_BR_SIZE + BUNDLE_HTML_SIZE))
 
-# Display summary
+# Display detailed summary
 echo ""
-echo -e "${BOLD}${CYAN}Bundle Summary:${NC}"
-echo -e "${CYAN}===============${NC}"
-echo -e "${GREEN}Total Bundle Size:${NC} $BUNDLE_TOTAL_FMT ${GRAY}(-$PERCENT% -$SAVINGS_FMT)${NC}"
+echo -e "${BOLD}${CYAN}Bundle Summary${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
+
+# CSS Stats
+echo -e "${BOLD}CSS Bundle:${NC}"
+echo -e "  Source files:      ${CYAN}$CSS_SOURCE_COUNT files${NC} (+ Tailwind + Font Awesome)"
+echo -e "  Combined size:     $(format_bytes $COMBINED_CSS_SIZE)"
+echo -e "  Minified:          $(format_bytes $BUNDLE_CSS_SIZE) ${GRAY}(-$(calc_reduction $COMBINED_CSS_SIZE $BUNDLE_CSS_SIZE)%)${NC}"
+echo -e "  Gzip:              $(format_bytes $BUNDLE_CSS_GZ_SIZE) ${GRAY}(-$(calc_reduction $BUNDLE_CSS_SIZE $BUNDLE_CSS_GZ_SIZE)%)${NC}"
+echo -e "  Brotli:            $(format_bytes $BUNDLE_CSS_BR_SIZE) ${GRAY}(-$(calc_reduction $BUNDLE_CSS_SIZE $BUNDLE_CSS_BR_SIZE)%)${NC}"
+echo ""
+
+# JS Stats
+echo -e "${BOLD}JavaScript Bundle:${NC}"
+echo -e "  Source files:      ${CYAN}$JS_SOURCE_COUNT files${NC}"
+echo -e "  Combined size:     $(format_bytes $COMBINED_JS_SIZE)"
+echo -e "  Minified:          $(format_bytes $BUNDLE_JS_SIZE) ${GRAY}(-$(calc_reduction $COMBINED_JS_SIZE $BUNDLE_JS_SIZE)%)${NC}"
+echo -e "  Gzip:              $(format_bytes $BUNDLE_JS_GZ_SIZE) ${GRAY}(-$(calc_reduction $BUNDLE_JS_SIZE $BUNDLE_JS_GZ_SIZE)%)${NC}"
+echo -e "  Brotli:            $(format_bytes $BUNDLE_JS_BR_SIZE) ${GRAY}(-$(calc_reduction $BUNDLE_JS_SIZE $BUNDLE_JS_BR_SIZE)%)${NC}"
+echo ""
+
+# HTML Stats
+echo -e "${BOLD}HTML Template:${NC}"
+echo -e "  Minified size:     $(format_bytes $BUNDLE_HTML_SIZE)"
+echo ""
+
+# Total Bundle Sizes
+echo -e "${BOLD}Total Bundle Size (what users download):${NC}"
+echo -e "  Uncompressed:      ${BOLD}$(format_bytes $TOTAL_UNCOMPRESSED)${NC}"
+echo -e "  With Gzip:         ${BOLD}${GREEN}$(format_bytes $TOTAL_GZIP)${NC} ${GRAY}(-$(calc_reduction $TOTAL_UNCOMPRESSED $TOTAL_GZIP)%)${NC}"
+echo -e "  With Brotli:       ${BOLD}${GREEN}$(format_bytes $TOTAL_BROTLI)${NC} ${GRAY}(-$(calc_reduction $TOTAL_UNCOMPRESSED $TOTAL_BROTLI)%)${NC}"
+echo ""
+
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
 
 log_success "Bundle summary complete"
