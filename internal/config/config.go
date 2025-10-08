@@ -221,18 +221,6 @@ func GetSharedConfig() *SharedConfig {
 	return sharedConfig
 }
 
-func GetAppMode() string {
-	mode := os.Getenv("APP_ENV")
-
-	switch mode {
-		case "pre-production":
-			return APP_MODE_PRE_PROD
-		case "production":
-			return APP_MODE_PROD
-		default:
-			return APP_MODE_DEV
-	}
-}
 
 func (sc *SharedConfig) GetRessourcesRootPath() string {
 	if sc == nil {

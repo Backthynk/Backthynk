@@ -200,56 +200,56 @@
             <!-- Main Content -->
             <div class="lg:col-span-3">
 
-                <div id="timeline-section">
-<div id="timeline-header" class="py-4 mb-6">
-    <div class="timeline-content">
-        <div class="flex items-center justify-between">
-            <div id="timeline-title" class="flex-1 min-w-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]">
-                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100"></h2>
-            </div>
-            <div class="flex items-center space-x-3">
-                <button id="recursive-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" style="display: none;">
-                    <i class="fas fa-sitemap text-xs mr-1"></i>
-                    <span>Recursive</span>
-                </button>
+                <div>
+                    <div id="timeline-header" class="py-4 mb-6">
+                        <div class="timeline-content">
+                            <div class="flex items-center justify-between">
+                                <div id="timeline-title" class="flex-1 min-w-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]">
+                                    <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100"></h2>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <button id="recursive-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" style="display: none;">
+                                        <i class="fas fa-sitemap text-xs mr-1"></i>
+                                        <span>Recursive</span>
+                                    </button>
 
-                <!-- Dropdown menu for category actions (shown when category is selected) -->
-                <div id="category-actions-dropdown" class="relative" style="display: none;">
-                    <button id="category-actions-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
-                        <i class="fas fa-ellipsis-h text-xs mr-1"></i>
-                        <span>Actions</span>
-                        <i class="fas fa-chevron-down text-xs ml-2"></i>
-                    </button>
-                    <div id="category-actions-menu" class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
-                        <div class="py-1">
-                            <button id="edit-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                                <i class="fas fa-edit text-xs mr-3"></i>
-                                Edit category
-                            </button>
-                            <button id="delete-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                                <i class="fas fa-trash-alt text-xs mr-3"></i>
-                                Delete category
-                            </button>
+                                    <!-- Dropdown menu for category actions (shown when category is selected) -->
+                                    <div id="category-actions-dropdown" class="relative" style="display: none;">
+                                        <button id="category-actions-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+                                            <i class="fas fa-ellipsis-h text-xs mr-1"></i>
+                                            <span>Actions</span>
+                                            <i class="fas fa-chevron-down text-xs ml-2"></i>
+                                        </button>
+                                        <div id="category-actions-menu" class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
+                                            <div class="py-1">
+                                                <button id="edit-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                    <i class="fas fa-edit text-xs mr-3"></i>
+                                                    Edit category
+                                                </button>
+                                                <button id="delete-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                                    <i class="fas fa-trash-alt text-xs mr-3"></i>
+                                                    Delete category
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button id="theme-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" title="Toggle dark mode">
+                                        <i class="fas fa-lightbulb text-xs dark:hidden"></i>
+                                        <i class="fas fa-moon text-xs hidden dark:inline-block"></i>
+                                    </button>
+                                    <button id="settings-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+                                        <i class="fas fa-cog text-xs mr-1"></i>
+                                        <span>Settings</span>
+                                    </button>
+                                    <button id="new-post-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" style="display: none;">
+                                        <i class="fas fa-plus text-xs mr-1"></i>
+                                        <span>New Post</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <button id="theme-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" title="Toggle dark mode">
-                    <i class="fas fa-lightbulb text-xs dark:hidden"></i>
-                    <i class="fas fa-moon text-xs hidden dark:inline-block"></i>
-                </button>
-                <button id="settings-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
-                    <i class="fas fa-cog text-xs mr-1"></i>
-                    <span>Settings</span>
-                </button>
-                <button id="new-post-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" style="display: none;">
-                    <i class="fas fa-plus text-xs mr-1"></i>
-                    <span>New Post</span>
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
                     
                     <div id="posts-container" class="space-y-6">
                         <!-- Posts will be loaded here -->

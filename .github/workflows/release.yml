@@ -114,6 +114,52 @@ jobs:
           echo "Building binaries for all platforms..."
           ./scripts/makefile/build.sh --all
 
+      - name: Generate README files for each platform
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          REPO_URL="https://github.com/${{ github.repository }}"
+          VERSION="${{ steps.get_version.outputs.version }}"
+
+          echo "Generating README.md for each platform..."
+
+          for platform_dir in releases/*; do
+            if [ -d "$platform_dir" ]; then
+              platform=$(basename "$platform_dir")
+
+              # Determine which template to use
+              if [[ "$platform" == linux* ]]; then
+                TEMPLATE="docs/templates/get-started-linux.md"
+              elif [[ "$platform" == macos* ]]; then
+                TEMPLATE="docs/templates/get-started-macos.md"
+              elif [[ "$platform" == windows* ]]; then
+                TEMPLATE="docs/templates/get-started-windows.md"
+              else
+                continue
+              fi
+
+              # Find the binary in this platform directory
+              if [[ "$platform" == windows* ]]; then
+                BINARY="$platform_dir/backthynk-v${VERSION}.exe"
+              else
+                BINARY="$platform_dir/backthynk-v${VERSION}"
+              fi
+
+              # Calculate SHA256 for the binary
+              if [ -f "$BINARY" ]; then
+                BINARY_SHA256=$(sha256sum "$BINARY" | cut -d' ' -f1)
+
+                # Generate README.md with variable substitution
+                sed -e "s|{{VERSION}}|${VERSION}|g" \
+                    -e "s|{{SHA256}}|${BINARY_SHA256}|g" \
+                    -e "s|{{COMMIT_SHA}}|${COMMIT_SHA}|g" \
+                    -e "s|{{REPO_URL}}|${REPO_URL}|g" \
+                    "$TEMPLATE" > "$platform_dir/README.md"
+
+                echo "✓ Generated README.md for $platform"
+              fi
+            fi
+          done
+
       - name: Create release archives
         run: |
           echo "Creating platform-specific archives..."
