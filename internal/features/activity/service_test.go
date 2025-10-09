@@ -371,7 +371,7 @@ func TestUpdateRecursiveActivity(t *testing.T) {
 	date := time.Unix(now/1000, 0).Format("2006-01-02")
 
 	// Now test updateRecursiveActivity
-	service.updateRecursiveActivity(1, date, 1)
+	service.updateRecursiveActivity(1, date, 1, now)
 
 	service.mu.RLock()
 	activity, exists := service.activity[1]
@@ -396,7 +396,7 @@ func TestUpdateRecursiveActivity(t *testing.T) {
 	activity.mu.RUnlock()
 
 	// Test decrementing
-	service.updateRecursiveActivity(1, date, -1)
+	service.updateRecursiveActivity(1, date, -1, now)
 
 	activity.mu.RLock()
 	if activity.Stats.RecursivePosts != 1 {
@@ -413,7 +413,7 @@ func TestUpdateRecursiveActivity(t *testing.T) {
 	activity.mu.RUnlock()
 
 	// Test decrementing to zero
-	service.updateRecursiveActivity(1, date, -1)
+	service.updateRecursiveActivity(1, date, -1, now)
 
 	activity.mu.RLock()
 	if activity.Stats.RecursivePosts != 0 {
@@ -506,4 +506,276 @@ func TestSpaceUpdatedEvent(t *testing.T) {
 			t.Error("Expected space 2 activity to exist")
 		}
 	})
+}
+
+func TestRecursiveModeMaxPeriods(t *testing.T) {
+	catCache := cache.NewSpaceCache()
+
+	// Set up a hierarchy: Parent (ID: 1) -> Child (ID: 2)
+	parentID := 1
+	cat1 := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+	cat2 := &models.Space{ID: 2, Name: "Child", ParentID: &parentID}
+
+	catCache.Set(cat1)
+	catCache.Set(cat2)
+
+	service := &Service{
+		enabled:  true,
+		activity: make(map[int]*SpaceActivity),
+		catCache: catCache,
+	}
+
+	// Create old post in child space (2 years ago)
+	twoYearsAgo := time.Now().AddDate(-2, 0, 0).Unix() * 1000
+	service.updateActivity(2, twoYearsAgo, 1)
+
+	// No posts in parent space directly
+
+	// Calculate recursive activity
+	service.calculateRecursiveActivity(1)
+	service.calculateRecursiveActivity(2)
+
+	// Test non-recursive mode: should have maxPeriods = 0 since parent has no direct posts
+	t.Run("NonRecursiveMode", func(t *testing.T) {
+		req := ActivityPeriodRequest{
+			SpaceID:   1,
+			Recursive:    false,
+			Period:       0,
+			PeriodMonths: 4,
+		}
+
+		resp, err := service.GetActivityPeriod(req)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		if resp.MaxPeriods != 0 {
+			t.Errorf("Expected maxPeriods = 0 in non-recursive mode (no direct posts), got %d", resp.MaxPeriods)
+		}
+	})
+
+	// Test recursive mode: should have maxPeriods > 0 since child has old posts
+	t.Run("RecursiveMode", func(t *testing.T) {
+		req := ActivityPeriodRequest{
+			SpaceID:   1,
+			Recursive:    true,
+			Period:       0,
+			PeriodMonths: 4,
+		}
+
+		resp, err := service.GetActivityPeriod(req)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		// With posts from 2 years ago and 4-month periods, we should have at least 5 periods
+		// (24 months / 4 months = 6 periods, but might be 5 depending on timing)
+		if resp.MaxPeriods < 5 {
+			t.Errorf("Expected maxPeriods >= 5 in recursive mode (child has 2-year-old posts), got %d", resp.MaxPeriods)
+		}
+
+		t.Logf("MaxPeriods in recursive mode: %d", resp.MaxPeriods)
+	})
+
+	// Test that we can navigate to past periods in recursive mode
+	t.Run("NavigateToPastPeriods", func(t *testing.T) {
+		req := ActivityPeriodRequest{
+			SpaceID:   1,
+			Recursive:    true,
+			Period:       -5, // Go back 5 periods
+			PeriodMonths: 4,
+		}
+
+		resp, err := service.GetActivityPeriod(req)
+		if err != nil {
+			t.Fatalf("Expected no error, got %v", err)
+		}
+
+		// Should return valid response with correct period
+		if resp.Period != -5 {
+			t.Errorf("Expected period = -5, got %d", resp.Period)
+		}
+
+		// Should have valid date range
+		if resp.StartDate == "" || resp.EndDate == "" {
+			t.Error("Expected non-empty start and end dates")
+		}
+
+		t.Logf("Period -5: %s to %s, Days: %d", resp.StartDate, resp.EndDate, len(resp.Days))
+	})
+}
+
+func TestRecursiveFirstPostTimeTracking(t *testing.T) {
+	catCache := cache.NewSpaceCache()
+
+	// Set up hierarchy
+	parentID := 1
+	cat1 := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+	cat2 := &models.Space{ID: 2, Name: "Child", ParentID: &parentID}
+
+	catCache.Set(cat1)
+	catCache.Set(cat2)
+
+	service := &Service{
+		enabled:  true,
+		activity: make(map[int]*SpaceActivity),
+		catCache: catCache,
+	}
+
+	// Create posts at different times
+	oneYearAgo := time.Now().AddDate(-1, 0, 0).Unix() * 1000
+	twoYearsAgo := time.Now().AddDate(-2, 0, 0).Unix() * 1000
+
+	// Parent has a post from 1 year ago
+	service.updateActivity(1, oneYearAgo, 1)
+
+	// Child has a post from 2 years ago (older)
+	service.updateActivity(2, twoYearsAgo, 1)
+
+	// Calculate recursive activity
+	service.calculateRecursiveActivity(2) // Child first
+	service.calculateRecursiveActivity(1) // Then parent
+
+	// Check parent's recursive first post time
+	service.mu.RLock()
+	parentActivity := service.activity[1]
+	service.mu.RUnlock()
+
+	parentActivity.mu.RLock()
+	defer parentActivity.mu.RUnlock()
+
+	// Parent's direct first post time should be from 1 year ago
+	if parentActivity.Stats.FirstPostTime != oneYearAgo {
+		t.Errorf("Expected parent direct FirstPostTime = %d, got %d", oneYearAgo, parentActivity.Stats.FirstPostTime)
+	}
+
+	// Parent's recursive first post time should be from 2 years ago (from child)
+	if parentActivity.Stats.RecursiveFirstPostTime != twoYearsAgo {
+		t.Errorf("Expected parent recursive FirstPostTime = %d (from child), got %d", twoYearsAgo, parentActivity.Stats.RecursiveFirstPostTime)
+	}
+
+	t.Logf("Parent direct FirstPostTime: %d", parentActivity.Stats.FirstPostTime)
+	t.Logf("Parent recursive FirstPostTime: %d", parentActivity.Stats.RecursiveFirstPostTime)
+}
+
+func TestIncrementalRecursiveTimestampUpdates(t *testing.T) {
+	catCache := cache.NewSpaceCache()
+
+	// Set up hierarchy: grandparent -> parent -> child
+	parentID := 2
+	grandparentID := 1
+	cat1 := &models.Space{ID: 1, Name: "Grandparent", ParentID: nil}
+	cat2 := &models.Space{ID: 2, Name: "Parent", ParentID: &grandparentID}
+	cat3 := &models.Space{ID: 3, Name: "Child", ParentID: &parentID}
+
+	catCache.Set(cat1)
+	catCache.Set(cat2)
+	catCache.Set(cat3)
+
+	service := &Service{
+		enabled:  true,
+		activity: make(map[int]*SpaceActivity),
+		catCache: catCache,
+	}
+
+	// Define timestamps: oldest to newest
+	oldestTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC).Unix() * 1000
+	middleTime := time.Date(2024, 6, 1, 0, 0, 0, 0, time.UTC).Unix() * 1000
+	newestTime := time.Date(2025, 10, 9, 0, 0, 0, 0, time.UTC).Unix() * 1000
+
+	// Step 1: Add middle post to child - this should set initial recursive timestamps
+	service.updateActivity(3, middleTime, 1)
+
+	// Verify child has correct timestamps
+	childActivity := service.activity[3]
+	childActivity.mu.RLock()
+	if childActivity.Stats.RecursiveFirstPostTime != middleTime {
+		t.Errorf("Child RecursiveFirstPostTime should be %d, got %d", middleTime, childActivity.Stats.RecursiveFirstPostTime)
+	}
+	if childActivity.Stats.RecursiveLastPostTime != middleTime {
+		t.Errorf("Child RecursiveLastPostTime should be %d, got %d", middleTime, childActivity.Stats.RecursiveLastPostTime)
+	}
+	childActivity.mu.RUnlock()
+
+	// Verify parent inherited child's timestamps
+	parentActivity := service.activity[2]
+	parentActivity.mu.RLock()
+	if parentActivity.Stats.RecursiveFirstPostTime != middleTime {
+		t.Errorf("Parent RecursiveFirstPostTime should be %d (from child), got %d", middleTime, parentActivity.Stats.RecursiveFirstPostTime)
+	}
+	if parentActivity.Stats.RecursiveLastPostTime != middleTime {
+		t.Errorf("Parent RecursiveLastPostTime should be %d (from child), got %d", middleTime, parentActivity.Stats.RecursiveLastPostTime)
+	}
+	parentActivity.mu.RUnlock()
+
+	// Verify grandparent inherited child's timestamps
+	grandparentActivity := service.activity[1]
+	grandparentActivity.mu.RLock()
+	if grandparentActivity.Stats.RecursiveFirstPostTime != middleTime {
+		t.Errorf("Grandparent RecursiveFirstPostTime should be %d (from child), got %d", middleTime, grandparentActivity.Stats.RecursiveFirstPostTime)
+	}
+	if grandparentActivity.Stats.RecursiveLastPostTime != middleTime {
+		t.Errorf("Grandparent RecursiveLastPostTime should be %d (from child), got %d", middleTime, grandparentActivity.Stats.RecursiveLastPostTime)
+	}
+	grandparentActivity.mu.RUnlock()
+
+	// Step 2: Add retroactive post (older) to parent
+	service.updateActivity(2, oldestTime, 1)
+
+	// Verify parent's first timestamp moved back
+	parentActivity.mu.RLock()
+	if parentActivity.Stats.RecursiveFirstPostTime != oldestTime {
+		t.Errorf("After retroactive post, Parent RecursiveFirstPostTime should be %d, got %d", oldestTime, parentActivity.Stats.RecursiveFirstPostTime)
+	}
+	if parentActivity.Stats.RecursiveLastPostTime != middleTime {
+		t.Errorf("After retroactive post, Parent RecursiveLastPostTime should still be %d, got %d", middleTime, parentActivity.Stats.RecursiveLastPostTime)
+	}
+	parentActivity.mu.RUnlock()
+
+	// Verify grandparent's first timestamp also moved back
+	grandparentActivity.mu.RLock()
+	if grandparentActivity.Stats.RecursiveFirstPostTime != oldestTime {
+		t.Errorf("After retroactive post, Grandparent RecursiveFirstPostTime should be %d, got %d", oldestTime, grandparentActivity.Stats.RecursiveFirstPostTime)
+	}
+	if grandparentActivity.Stats.RecursiveLastPostTime != middleTime {
+		t.Errorf("After retroactive post, Grandparent RecursiveLastPostTime should still be %d, got %d", middleTime, grandparentActivity.Stats.RecursiveLastPostTime)
+	}
+	grandparentActivity.mu.RUnlock()
+
+	// Step 3: Add newest post to grandparent
+	service.updateActivity(1, newestTime, 1)
+
+	// Verify grandparent's last timestamp moved forward
+	grandparentActivity.mu.RLock()
+	if grandparentActivity.Stats.RecursiveFirstPostTime != oldestTime {
+		t.Errorf("After newest post, Grandparent RecursiveFirstPostTime should still be %d, got %d", oldestTime, grandparentActivity.Stats.RecursiveFirstPostTime)
+	}
+	if grandparentActivity.Stats.RecursiveLastPostTime != newestTime {
+		t.Errorf("After newest post, Grandparent RecursiveLastPostTime should be %d, got %d", newestTime, grandparentActivity.Stats.RecursiveLastPostTime)
+	}
+	grandparentActivity.mu.RUnlock()
+
+	// Step 4: Verify maxPeriods calculation uses recursive timestamps correctly
+	req := ActivityPeriodRequest{
+		SpaceID:      1,
+		Recursive:    true,
+		Period:       0,
+		PeriodMonths: 3,
+	}
+
+	response, err := service.GetActivityPeriod(req)
+	if err != nil {
+		t.Fatalf("GetActivityPeriod failed: %v", err)
+	}
+
+	// MaxPeriods should be calculated from oldestTime (not middleTime or newestTime)
+	expectedMaxPeriods := service.calculateMaxPeriods(oldestTime, 3)
+	if response.MaxPeriods != expectedMaxPeriods {
+		t.Errorf("MaxPeriods should be %d (based on oldest time %d), got %d", expectedMaxPeriods, oldestTime, response.MaxPeriods)
+	}
+
+	t.Logf("Final state - Grandparent RecursiveFirstPostTime: %d, RecursiveLastPostTime: %d, MaxPeriods: %d",
+		grandparentActivity.Stats.RecursiveFirstPostTime,
+		grandparentActivity.Stats.RecursiveLastPostTime,
+		response.MaxPeriods)
 }

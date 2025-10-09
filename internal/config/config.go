@@ -53,8 +53,8 @@ const (
 	DirectoryPermissions = 0755
 	FilePermissions      = 0644
 
-	// Patterns
-	SpaceNamePattern = `^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$`
+	// Patterns (updated to allow more flexible display names)
+	SpaceNamePattern = `^[a-zA-Z0-9\s\-_'.]+$`
 
 	// Route Names
 	RouteAPI      = "api"

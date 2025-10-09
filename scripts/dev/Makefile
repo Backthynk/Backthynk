@@ -10,7 +10,7 @@ help:
 	@printf "  \033[0;32mgenerate-posts\033[0m       Generate random posts for testing\n"
 	@printf "                       Usage: make generate-posts ARGS=\"<space_id> <num_posts> <months_back>\"\n"
 	@printf "  \033[0;32mlist-spaces\033[0m          List all available spaces\n"
-	@printf "  \033[0;32mchaos\033[0m                Create nested categories and bulk generate posts\n"
+	@printf "  \033[0;32mchaos\033[0m                Create nested spaces and bulk generate posts\n"
 	@printf "                       Edit chaos.sh to configure parameters\n"
 	@printf "\n"
 
@@ -33,7 +33,7 @@ list-spaces:
 	@echo -e "\033[0;34m▶\033[0m Listing available spaces..."
 	@cd $(shell git rev-parse --show-toplevel 2>/dev/null || pwd) && ./scripts/dev/list_spaces.sh
 
-# Chaos - Create nested categories and bulk generate posts
+# Chaos - Create nested spaces and bulk generate posts
 chaos:
 	@echo -e "\033[0;34m▶\033[0m Unleashing chaos..."
 	@cd $(shell git rev-parse --show-toplevel 2>/dev/null || pwd) && ./scripts/dev/chaos.sh

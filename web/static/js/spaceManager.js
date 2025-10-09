@@ -322,6 +322,9 @@ function toggleRecursiveMode(space) {
     // Load posts immediately (don't await, let it run in parallel)
     loadPosts(space.id, currentSpace.recursiveMode);
 
+    // Reset activity period to today when toggling recursive mode
+    currentActivityPeriod = 0;
+
     // Fetch file stats in parallel if needed and update display when ready
     if (fileStatsEnabled) {
         fetchSpaceStats(space.id, currentSpace.recursiveMode).then(stats => {

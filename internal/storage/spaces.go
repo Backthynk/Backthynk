@@ -4,9 +4,9 @@ import (
 	"backthynk/internal/config"
 	"backthynk/internal/core/logger"
 	"backthynk/internal/core/models"
+	"backthynk/internal/core/utils"
 	"database/sql"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -25,18 +25,24 @@ func (db *DB) CreateSpace(name string, parentID *int, description string) (*mode
 		return nil, fmt.Errorf("space name must be %d characters or less", config.MaxSpaceNameLength)
 	}
 
-	// Validate character restrictions
-	validNameRegex := regexp.MustCompile(config.SpaceNamePattern)
-	if !validNameRegex.MatchString(name) {
+	// Validate display name format
+	if !utils.ValidateDisplayName(name) {
 		logger.Warning("Space name contains invalid characters", zap.String("name", name))
 		return nil, fmt.Errorf(config.ErrSpaceNameInvalidFormat)
 	}
-	
-	// Check for duplicate names at same level
+
+	// Generate slug from name
+	slug := utils.GenerateSlug(name)
+	if slug == "" {
+		logger.Warning("Generated slug is empty", zap.String("name", name))
+		return nil, fmt.Errorf("space name must contain at least one alphanumeric character")
+	}
+
+	// Check for duplicate slugs at same level (slugs must be unique per parent)
 	var existingID int
 	var query string
 	var args []interface{}
-	
+
 	if parentID == nil {
 		query = "SELECT id FROM spaces WHERE LOWER(name) = LOWER(?) AND parent_id IS NULL"
 		args = []interface{}{name}
@@ -44,7 +50,8 @@ func (db *DB) CreateSpace(name string, parentID *int, description string) (*mode
 		query = "SELECT id FROM spaces WHERE LOWER(name) = LOWER(?) AND parent_id = ?"
 		args = []interface{}{name, *parentID}
 	}
-	
+
+	// First check if exact name exists at this level
 	err := db.QueryRow(query, args...).Scan(&existingID)
 	if err == nil {
 		logger.Warning("Space already exists at this level", zap.String("name", name))
@@ -52,6 +59,40 @@ func (db *DB) CreateSpace(name string, parentID *int, description string) (*mode
 	} else if err != sql.ErrNoRows {
 		logger.Error("Failed to check for duplicate space", zap.String("name", name), zap.Error(err))
 		return nil, fmt.Errorf("failed to check for duplicate: %w", err)
+	}
+
+	// Now check if slug would collide at this level
+	// Get all spaces at the same level and check their slugs
+	var existingSlugsQuery string
+	var existingArgs []interface{}
+	if parentID == nil {
+		existingSlugsQuery = "SELECT name FROM spaces WHERE parent_id IS NULL"
+		existingArgs = []interface{}{}
+	} else {
+		existingSlugsQuery = "SELECT name FROM spaces WHERE parent_id = ?"
+		existingArgs = []interface{}{*parentID}
+	}
+
+	rows, err := db.Query(existingSlugsQuery, existingArgs...)
+	if err != nil {
+		logger.Error("Failed to query existing spaces for slug check", zap.Error(err))
+		return nil, fmt.Errorf("failed to check for slug collision: %w", err)
+	}
+	defer rows.Close()
+
+	existingSlugs := make(map[string]bool)
+	for rows.Next() {
+		var existingName string
+		if err := rows.Scan(&existingName); err != nil {
+			continue
+		}
+		existingSlug := utils.GenerateSlug(existingName)
+		existingSlugs[existingSlug] = true
+	}
+
+	if existingSlugs[slug] {
+		logger.Warning("Space slug already exists at this level", zap.String("name", name), zap.String("slug", slug))
+		return nil, fmt.Errorf("a space with a similar name already exists at this level")
 	}
 
 	// Calculate depth
@@ -147,11 +188,17 @@ func (db *DB) UpdateSpace(id int, name, description string, parentID *int) (*mod
 		return nil, fmt.Errorf("space name must be %d characters or less", config.MaxSpaceNameLength)
 	}
 
-	// Validate character restrictions
-	validNameRegex := regexp.MustCompile(config.SpaceNamePattern)
-	if !validNameRegex.MatchString(name) {
+	// Validate display name format
+	if !utils.ValidateDisplayName(name) {
 		logger.Warning("Space name contains invalid characters on update", zap.Int("space_id", id), zap.String("name", name))
 		return nil, fmt.Errorf(config.ErrSpaceNameInvalidFormat)
+	}
+
+	// Generate slug from name
+	slug := utils.GenerateSlug(name)
+	if slug == "" {
+		logger.Warning("Generated slug is empty on update", zap.Int("space_id", id), zap.String("name", name))
+		return nil, fmt.Errorf("space name must contain at least one alphanumeric character")
 	}
 
 	if len(description) > config.MaxSpaceDescriptionLength {
@@ -159,10 +206,11 @@ func (db *DB) UpdateSpace(id int, name, description string, parentID *int) (*mod
 		return nil, fmt.Errorf("description cannot exceed %d characters", config.MaxSpaceDescriptionLength)
 	}
 
-	// Get current space
+	// Get current space info including name for slug comparison
 	var currentParentID sql.NullInt64
 	var currentDepth int
-	err := db.QueryRow("SELECT parent_id, depth FROM spaces WHERE id = ?", id).Scan(&currentParentID, &currentDepth)
+	var currentName string
+	err := db.QueryRow("SELECT name, parent_id, depth FROM spaces WHERE id = ?", id).Scan(&currentName, &currentParentID, &currentDepth)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Warning("Space not found for update", zap.Int("space_id", id))
@@ -172,21 +220,68 @@ func (db *DB) UpdateSpace(id int, name, description string, parentID *int) (*mod
 		return nil, fmt.Errorf("failed to get space: %w", err)
 	}
 	
-	// Calculate new depth if parent changes
-	newDepth := currentDepth
+	// Check slug uniqueness at the target level (either current or new parent)
+	// We need to check if the new name/slug conflicts with siblings at the target level
+	targetParentID := parentID // The parent level where we're checking for conflicts
+
+	// Only check for slug collision if name is changing OR parent is changing
+	nameChanging := name != currentName
 
 	// Check if parent is actually changing
 	parentChanging := false
 	if parentID == nil && currentParentID.Valid {
 		// Changing from having a parent to no parent
 		parentChanging = true
-		newDepth = 0
 	} else if parentID != nil && !currentParentID.Valid {
 		// Changing from no parent to having a parent
 		parentChanging = true
 	} else if parentID != nil && currentParentID.Valid && *parentID != int(currentParentID.Int64) {
 		// Changing from one parent to another
 		parentChanging = true
+	}
+
+	// Check for slug collisions if name or parent is changing
+	if nameChanging || parentChanging {
+		var existingSlugsQuery string
+		var existingArgs []interface{}
+		if targetParentID == nil {
+			existingSlugsQuery = "SELECT id, name FROM spaces WHERE parent_id IS NULL AND id != ?"
+			existingArgs = []interface{}{id}
+		} else {
+			existingSlugsQuery = "SELECT id, name FROM spaces WHERE parent_id = ? AND id != ?"
+			existingArgs = []interface{}{*targetParentID, id}
+		}
+
+		rows, err := db.Query(existingSlugsQuery, existingArgs...)
+		if err != nil {
+			logger.Error("Failed to query existing spaces for slug check on update", zap.Error(err))
+			return nil, fmt.Errorf("failed to check for slug collision: %w", err)
+		}
+		defer rows.Close()
+
+		existingSlugs := make(map[string]bool)
+		for rows.Next() {
+			var siblingID int
+			var siblingName string
+			if err := rows.Scan(&siblingID, &siblingName); err != nil {
+				continue
+			}
+			siblingSlug := utils.GenerateSlug(siblingName)
+			existingSlugs[siblingSlug] = true
+		}
+
+		if existingSlugs[slug] {
+			logger.Warning("Space slug would collide on update", zap.Int("space_id", id), zap.String("name", name), zap.String("slug", slug))
+			return nil, fmt.Errorf("a space with a similar name already exists at this level")
+		}
+	}
+
+	// Calculate new depth if parent changes
+	newDepth := currentDepth
+	if parentChanging {
+		if parentID == nil {
+			newDepth = 0
+		}
 	}
 
 	if parentChanging {

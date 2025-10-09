@@ -86,16 +86,26 @@ class Router {
 
         // Must start with / and contain valid characters for space names
         // Allow URL-encoded characters (like %20 for spaces) and regular space name characters
-        return /^\/[a-zA-Z0-9\s\/%]+$/.test(path) && !path.includes('//');
+        // Also allow hyphens since slugs use hyphens
+        return /^\/[a-zA-Z0-9\s\/%\-]+$/.test(path) && !path.includes('//');
     }
 
     // Handle space routing
-    async handleSpaceRoute(path) {
+    async handleSpaceRoute(path, retryCount = 0) {
+        const MAX_RETRIES = 50; // 5 seconds max wait time (50 * 100ms)
+
         // Wait for spaces to be loaded
         if (typeof spaces === 'undefined' || !spaces || spaces.length === 0) {
-            // Spaces not loaded yet, wait and try again
-            setTimeout(() => this.handleSpaceRoute(path), 100);
-            return;
+            if (retryCount < MAX_RETRIES) {
+                // Spaces not loaded yet, wait and try again
+                setTimeout(() => this.handleSpaceRoute(path, retryCount + 1), 100);
+                return;
+            } else {
+                // Timeout: spaces failed to load, redirect to home
+                console.error('Timeout waiting for spaces to load');
+                this.navigate('/', true);
+                return;
+            }
         }
 
         const space = this.findSpaceByPath(path);
@@ -104,11 +114,12 @@ class Router {
             await this.showSpacePage(space);
         } else {
             // Space not found, redirect to home
+            console.warn(`Space not found for path: ${path}`);
             this.navigate('/', true);
         }
     }
 
-    // Find space by URL path
+    // Find space by URL path (using slugs)
     findSpaceByPath(path) {
         const pathParts = path.split('/').filter(part => part.length > 0);
         if (pathParts.length === 0) return null;
@@ -120,14 +131,16 @@ class Router {
             const pathPart = pathParts[i];
             const decodedPart = decodeURIComponent(pathPart);
 
-            currentSpace = currentLevel.find(cat =>
-                cat.name.toLowerCase() === decodedPart.toLowerCase()
-            );
+            // Find space by matching slug
+            currentSpace = currentLevel.find(cat => {
+                const catSlug = generateSlug(cat.name);
+                const matches = catSlug.toLowerCase() === decodedPart.toLowerCase();
+                return matches;
+            });
 
             if (!currentSpace) {
                 return null; // Space not found
             }
-
 
             // Get children for next level
             currentLevel = spaces.filter(cat => cat.parent_id === currentSpace.id);
@@ -136,13 +149,14 @@ class Router {
         return currentSpace;
     }
 
-    // Build URL path from space
+    // Build URL path from space (using slugs)
     buildSpacePath(space) {
         const path = [];
         let current = space;
 
         while (current) {
-            path.unshift(encodeURIComponent(current.name));
+            const slug = generateSlug(current.name);
+            path.unshift(slug);
             if (current.parent_id) {
                 current = spaces.find(cat => cat.id === current.parent_id);
             } else {

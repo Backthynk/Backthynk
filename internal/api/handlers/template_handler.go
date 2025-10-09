@@ -130,17 +130,18 @@ func (h *TemplateHandler) resolveSpaceFromPath(path string) *models.Space {
 		decodedPath = path
 	}
 
-	// Split path into segments
+	// Split path into segments (these are slugs)
 	segments := strings.Split(decodedPath, "/")
 	if len(segments) == 0 {
 		return nil
 	}
 
-	// Traverse the path to find the target space
+	// Traverse the path using slugs to find the target space
 	var currentParentID *int
 
-	for i, segment := range segments {
-		cat := h.spaceService.FindByNameAndParent(segment, currentParentID)
+	for i, slugSegment := range segments {
+		// Find space by slug at current level
+		cat := h.spaceService.FindBySlugAndParent(slugSegment, currentParentID)
 		if cat == nil {
 			return nil
 		}

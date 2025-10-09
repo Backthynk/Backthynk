@@ -57,6 +57,7 @@ async function generateActivityHeatmap() {
 
         // Generate heatmap from compact data
         generateHeatmapFromCache(response);
+        updateSpaceContainerHeight();
 
     } catch (error) {
         console.error('Failed to generate activity heatmap:', error);
@@ -78,6 +79,7 @@ async function generateActivityHeatmap() {
         };
         currentActivityCache = fallbackData;
         generateHeatmapFromCache(fallbackData);
+        updateSpaceContainerHeight();
     } finally {
         isGeneratingActivity = false;
     }
@@ -112,17 +114,49 @@ function updateActivitySpaceBreadcrumb() {
         }
     }
 
-    // Generate breadcrumb HTML
-    const breadcrumbHtml = breadcrumbPath.map((cat, index) => {
-        const isLast = index === breadcrumbPath.length - 1;
-        if (isLast) {
-            return `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${cat.name}</span>`;
-        } else {
-            return `<span class="text-xs font-medium text-gray-600 dark:text-gray-400">${cat.name}</span>`;
-        }
-    }).join(' <span class="text-gray-400 dark:text-gray-500 mx-1">></span> ');
+    // Generate breadcrumb HTML - show only last 2 spaces if depth > 2
+    let breadcrumbHtml = '';
+
+    if (breadcrumbPath.length > 2) {
+        // Show "... >" followed by the last 2 spaces
+        const lastTwo = breadcrumbPath.slice(-2);
+        const parentBeforeLast = breadcrumbPath[breadcrumbPath.length - 3];
+        const ellipsisHtml = `<span class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToSpace(${parentBeforeLast.id})">...</span>`;
+        const lastTwoHtml = lastTwo.map((cat, index) => {
+            const isLast = index === lastTwo.length - 1;
+            if (isLast) {
+                return `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${cat.name}</span>`;
+            } else {
+                return `<span class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToSpace(${cat.id})">${cat.name}</span>`;
+            }
+        }).join(' <span class="text-gray-400 dark:text-gray-500 mx-1">></span> ');
+
+        breadcrumbHtml = ellipsisHtml + ' <span class="text-gray-400 dark:text-gray-500 mx-1">></span> ' + lastTwoHtml;
+    } else {
+        // Show all spaces if depth <= 2
+        breadcrumbHtml = breadcrumbPath.map((cat, index) => {
+            const isLast = index === breadcrumbPath.length - 1;
+            if (isLast) {
+                return `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${cat.name}</span>`;
+            } else {
+                return `<span class="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToSpace(${cat.id})">${cat.name}</span>`;
+            }
+        }).join(' <span class="text-gray-400 dark:text-gray-500 mx-1">></span> ');
+    }
 
     breadcrumbElement.innerHTML = breadcrumbHtml;
+
+    // Update recursive mode badge
+    const recursiveBadgeElement = document.getElementById('activity-recursive-badge');
+    if (recursiveBadgeElement) {
+        if (currentSpace.recursiveMode) {
+            recursiveBadgeElement.innerHTML = `<span class="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 mr-2" title="Recursive mode: showing posts from this space and all child spaces">
+                   <i class="fas fa-sitemap"></i>
+               </span>`;
+        } else {
+            recursiveBadgeElement.innerHTML = '';
+        }
+    }
 }
 
 // Generate heatmap from cached activity data
@@ -131,9 +165,12 @@ function generateHeatmapFromCache(activityData) {
     const activityContainer = document.getElementById('activity-container');
     if (!activityContainer.querySelector('#activity-space-breadcrumb')) {
         activityContainer.innerHTML = `
-            <!-- Space Breadcrumb -->
-            <div id="activity-space-breadcrumb" class="mb-4">
-                <!-- Breadcrumb will be generated dynamically -->
+            <!-- Space Breadcrumb with Recursive Badge -->
+            <div class="flex items-center justify-between mb-4">
+                <div id="activity-space-breadcrumb">
+                    <!-- Breadcrumb will be generated dynamically -->
+                </div>
+                <span id="activity-recursive-badge"></span>
             </div>
             <div class="flex items-center justify-center mb-4">
                 <button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">
@@ -448,11 +485,11 @@ function addHeatmapTooltips() {
             const day = e.target.getAttribute('data-day');
 
             tooltip = document.createElement('div');
-            tooltip.className = 'absolute bg-gray-900 text-white text-xs px-3 py-2 rounded shadow-lg pointer-events-none z-50 max-w-xs';
+            tooltip.className = 'absolute bg-gray-900 dark:bg-gray-700 text-white text-xs px-3 py-2 rounded shadow-lg pointer-events-none z-50 max-w-xs';
             const postText = count === '1' ? window.AppConstants.UI_TEXT.post : window.AppConstants.UI_TEXT.posts;
             tooltip.innerHTML = `
                 <div class="font-medium">${count} ${postText}</div>
-                <div class="text-gray-300">${day}</div>
+                <div class="text-gray-300 dark:text-gray-400">${day}</div>
             `;
 
             document.body.appendChild(tooltip);

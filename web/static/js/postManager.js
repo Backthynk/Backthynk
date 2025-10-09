@@ -208,7 +208,7 @@ function createPostElement(post) {
                 ${clickableSpaceBreadcrumb}
                 <span class="relative group/time text-sm text-gray-600 dark:text-gray-400 font-sans cursor-default">
                     ${formatRelativeDate(post.created)}
-                    <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover/time:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
+                    <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-md shadow-lg opacity-0 group-hover/time:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
                         ${formatFullDateTime(post.created)}
                     </div>
                 </span>
@@ -633,7 +633,7 @@ function updateSpaceStatsDisplay(stats) {
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
             </p>
             ${currentSpace.description && currentSpace.description.trim() ? `
-                <div class="absolute left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-md">
+                <div class="absolute left-0 top-full mt-1 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-md">
                     ${currentSpace.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
                 </div>
             ` : ''}

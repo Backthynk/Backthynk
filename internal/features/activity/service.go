@@ -25,12 +25,14 @@ type SpaceActivity struct {
 }
 
 type ActivityStats struct {
-	TotalPosts          int
-	TotalActiveDays     int
-	FirstPostTime       int64
-	LastPostTime        int64
-	RecursivePosts      int
-	RecursiveActiveDays int
+	TotalPosts              int
+	TotalActiveDays         int
+	FirstPostTime           int64
+	LastPostTime            int64
+	RecursivePosts          int
+	RecursiveActiveDays     int
+	RecursiveFirstPostTime  int64
+	RecursiveLastPostTime   int64
 }
 
 
@@ -118,11 +120,11 @@ func (s *Service) calculateRecursiveActivity(spaceID int) {
 	if !s.enabled {
 		return
 	}
-	
+
 	s.mu.RLock()
 	activity, ok := s.activity[spaceID]
 	s.mu.RUnlock()
-	
+
 	if !ok {
 		activity = &SpaceActivity{
 			Days:       make(map[string]int),
@@ -134,22 +136,26 @@ func (s *Service) calculateRecursiveActivity(spaceID int) {
 		s.activity[spaceID] = activity
 		s.mu.Unlock()
 	}
-	
+
 	activity.mu.Lock()
 	defer activity.mu.Unlock()
-	
+
 	// Start with direct activity
 	activity.Recursive = make(map[string]int)
 	for date, count := range activity.Days {
 		activity.Recursive[date] = count
 	}
-	
+
 	recursivePosts := activity.Stats.TotalPosts
-	
+	recursiveFirstPostTime := activity.Stats.FirstPostTime
+	recursiveLastPostTime := activity.Stats.LastPostTime
+
 	// Add descendant activity
 	if s.catCache == nil {
 		activity.Stats.RecursivePosts = recursivePosts
 		activity.Stats.RecursiveActiveDays = len(activity.Recursive)
+		activity.Stats.RecursiveFirstPostTime = recursiveFirstPostTime
+		activity.Stats.RecursiveLastPostTime = recursiveLastPostTime
 		return
 	}
 
@@ -158,19 +164,34 @@ func (s *Service) calculateRecursiveActivity(spaceID int) {
 		s.mu.RLock()
 		descActivity, ok := s.activity[descID]
 		s.mu.RUnlock()
-		
+
 		if ok {
 			descActivity.mu.RLock()
 			for date, count := range descActivity.Days {
 				activity.Recursive[date] += count
 			}
 			recursivePosts += descActivity.Stats.TotalPosts
+
+			// Track earliest and latest post times
+			if descActivity.Stats.FirstPostTime > 0 {
+				if recursiveFirstPostTime == 0 || descActivity.Stats.FirstPostTime < recursiveFirstPostTime {
+					recursiveFirstPostTime = descActivity.Stats.FirstPostTime
+				}
+			}
+			if descActivity.Stats.LastPostTime > 0 {
+				if recursiveLastPostTime == 0 || descActivity.Stats.LastPostTime > recursiveLastPostTime {
+					recursiveLastPostTime = descActivity.Stats.LastPostTime
+				}
+			}
+
 			descActivity.mu.RUnlock()
 		}
 	}
-	
+
 	activity.Stats.RecursivePosts = recursivePosts
 	activity.Stats.RecursiveActiveDays = len(activity.Recursive)
+	activity.Stats.RecursiveFirstPostTime = recursiveFirstPostTime
+	activity.Stats.RecursiveLastPostTime = recursiveLastPostTime
 }
 
 
@@ -259,10 +280,14 @@ func (s *Service) updateActivity(spaceID int, timestamp int64, delta int) {
 	activity.mu.Unlock()
 
 	// Update recursive for self and parents (after releasing the lock)
-	s.updateRecursiveActivity(spaceID, date, delta)
+	s.updateRecursiveActivity(spaceID, date, delta, timestamp)
 }
 
-func (s *Service) updateRecursiveActivity(spaceID int, date string, delta int) {
+// updateRecursiveActivity updates recursive activity stats for a space and all its ancestors.
+// It performs incremental updates to avoid full recalculation on every post addition/deletion.
+// The timestamp parameter is used to efficiently update RecursiveFirstPostTime and RecursiveLastPostTime
+// without needing to scan all descendant posts.
+func (s *Service) updateRecursiveActivity(spaceID int, date string, delta int, timestamp int64) {
 	// Update self
 	s.mu.RLock()
 	activity, ok := s.activity[spaceID]
@@ -286,6 +311,18 @@ func (s *Service) updateRecursiveActivity(spaceID int, date string, delta int) {
 		} else if oldCount > 0 && newCount <= 0 {
 			activity.Stats.RecursiveActiveDays--
 		}
+
+		// Update recursive timestamp boundaries incrementally
+		if delta > 0 && timestamp > 0 {
+			// Adding posts - expand boundaries if needed
+			if activity.Stats.RecursiveFirstPostTime == 0 || timestamp < activity.Stats.RecursiveFirstPostTime {
+				activity.Stats.RecursiveFirstPostTime = timestamp
+			}
+			if timestamp > activity.Stats.RecursiveLastPostTime {
+				activity.Stats.RecursiveLastPostTime = timestamp
+			}
+		}
+
 		activity.mu.Unlock()
 	}
 
@@ -335,6 +372,18 @@ func (s *Service) updateRecursiveActivity(spaceID int, date string, delta int) {
 		} else if oldCount > 0 && newCount <= 0 {
 			parentActivity.Stats.RecursiveActiveDays--
 		}
+
+		// Update recursive timestamp boundaries incrementally
+		if delta > 0 && timestamp > 0 {
+			// Adding posts - expand boundaries if needed
+			if parentActivity.Stats.RecursiveFirstPostTime == 0 || timestamp < parentActivity.Stats.RecursiveFirstPostTime {
+				parentActivity.Stats.RecursiveFirstPostTime = timestamp
+			}
+			if timestamp > parentActivity.Stats.RecursiveLastPostTime {
+				parentActivity.Stats.RecursiveLastPostTime = timestamp
+			}
+		}
+
 		parentActivity.mu.Unlock()
 
 		current = parentID
@@ -391,7 +440,7 @@ func (s *Service) GetActivityPeriod(req ActivityPeriodRequest) (*ActivityPeriodR
 	// Filter for period
 	days := []ActivityDay{}
 	stats := PeriodStats{}
-	
+
 	for date, count := range dayData {
 		if date >= startDate && date <= endDate && count > 0 {
 			days = append(days, ActivityDay{
@@ -405,9 +454,14 @@ func (s *Service) GetActivityPeriod(req ActivityPeriodRequest) (*ActivityPeriodR
 			}
 		}
 	}
-	
-	maxPeriods := s.calculateMaxPeriods(activity.Stats.FirstPostTime, req.PeriodMonths)
-	
+
+	// Use recursive first post time when in recursive mode
+	firstPostTime := activity.Stats.FirstPostTime
+	if req.Recursive && activity.Stats.RecursiveFirstPostTime > 0 {
+		firstPostTime = activity.Stats.RecursiveFirstPostTime
+	}
+	maxPeriods := s.calculateMaxPeriods(firstPostTime, req.PeriodMonths)
+
 	return &ActivityPeriodResponse{
 		SpaceID: req.SpaceID,
 		StartDate:  startDate,

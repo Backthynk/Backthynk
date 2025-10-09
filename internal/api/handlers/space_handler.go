@@ -24,7 +24,7 @@ func NewSpaceHandler(service *services.SpaceService) *SpaceHandler {
 
 func (h *SpaceHandler) GetSpaces(w http.ResponseWriter, r *http.Request) {
 	spaces := h.service.GetAll()
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(spaces)
 }
@@ -62,7 +62,7 @@ func (h *SpaceHandler) GetSpacesByParent(w http.ResponseWriter, r *http.Request)
 	
 	allSpaces := h.service.GetAll()
 	var filtered []*models.Space
-	
+
 	for _, cat := range allSpaces {
 		if parentID == nil && cat.ParentID == nil {
 			filtered = append(filtered, cat)
@@ -70,7 +70,7 @@ func (h *SpaceHandler) GetSpacesByParent(w http.ResponseWriter, r *http.Request)
 			filtered = append(filtered, cat)
 		}
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(filtered)
 }
@@ -103,7 +103,7 @@ func (h *SpaceHandler) CreateSpace(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(space)
@@ -144,7 +144,7 @@ func (h *SpaceHandler) UpdateSpace(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(space)
 }

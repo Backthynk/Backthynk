@@ -1,5 +1,49 @@
 // Utility functions
 
+// Generate URL-safe slug from space name (matches backend logic)
+function generateSlug(name) {
+    if (!name) return '';
+
+    // Convert to lowercase
+    let slug = name.toLowerCase();
+
+    // Remove apostrophes
+    slug = slug.replace(/'/g, '');
+
+    // Replace spaces and special characters with hyphens
+    // Keep only alphanumeric and hyphens
+    slug = slug.replace(/[^a-z0-9]+/g, '-');
+
+    // Remove leading/trailing hyphens
+    slug = slug.replace(/^-+|-+$/g, '');
+
+    // Replace multiple consecutive hyphens with single hyphen
+    slug = slug.replace(/-+/g, '-');
+
+    return slug;
+}
+
+// Validate space display name (matches backend validation)
+// Only letters and numbers can appear consecutively - all special chars must be separated
+function validateSpaceDisplayName(name) {
+    if (!name || name.length === 0) return false;
+
+    // First check: only allowed characters (letters, numbers, spaces, hyphens, underscores, apostrophes, periods)
+    const basicPattern = /^[a-zA-Z0-9\s\-_'.]+$/;
+    if (!basicPattern.test(name)) {
+        return false;
+    }
+
+    // Second check: no consecutive special characters
+    // This regex matches any two consecutive special chars (non-alphanumeric)
+    const consecutiveSpecialChars = /[\s\-_'.]{2,}/;
+    if (consecutiveSpecialChars.test(name)) {
+        return false;
+    }
+
+    return true;
+}
+
 // Message formatting with placeholders
 function formatMessage(template, ...args) {
     return template.replace(/{(\d+)}/g, (match, index) => {

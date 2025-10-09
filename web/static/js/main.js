@@ -118,7 +118,7 @@ function updateSpaceContainerHeight() {
     // Activity container: if visible, assume fixed height of 330px
     let activityHeight = 0;
     if (activityContainer && activityContainer.style.display !== 'none') {
-        activityHeight = 330;
+        activityHeight = 400;
     }
 
     // Get actual footer container height
@@ -224,9 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!submitBtn) return;
 
-        // Check if name is valid (letters, numbers, and single spaces only)
-        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
-        const isValid = name.length > 0 && validNameRegex.test(name);
+        // Check if name is valid - use the same validation as submission
+        const isValid = name.length > 0 &&
+                       name.length <= window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength &&
+                       validateSpaceDisplayName(name);
 
         if (!isValid) {
             submitBtn.disabled = true;
@@ -252,9 +253,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate character restrictions
-        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
-        if (!validNameRegex.test(name)) {
+        // Validate character restrictions (updated pattern)
+        if (!validateSpaceDisplayName(name)) {
             showError(window.AppConstants.USER_MESSAGES.error.spaceNameInvalidChars);
             return;
         }
@@ -280,7 +280,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 populateSpaceSelect(); // Update dropdowns
-                selectSpace(newSpace); // Programmatic selection after space creation
+                // Navigate using router to update URL
+                if (typeof router !== 'undefined' && router.navigateToSpace) {
+                    router.navigateToSpace(newSpace);
+                } else {
+                    selectSpace(newSpace); // Fallback if router not available
+                }
                 showSuccess('');
             }
         } catch (error) {
@@ -353,9 +358,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!submitBtn) return;
 
-        // Check if name is valid (letters, numbers, and single spaces only)
-        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
-        if (name.length === 0 || name.length > window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength || !validNameRegex.test(name)) {
+        // Check if name is valid - use the same validation as submission
+        const isValid = name.length > 0 &&
+                       name.length <= window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength &&
+                       validateSpaceDisplayName(name);
+
+        if (!isValid) {
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
         } else {
@@ -379,9 +387,8 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Validate character restrictions
-        const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
-        if (!validNameRegex.test(name)) {
+        // Validate character restrictions (updated pattern)
+        if (!validateSpaceDisplayName(name)) {
             showError(window.AppConstants.USER_MESSAGES.error.spaceNameInvalidChars);
             return;
         }

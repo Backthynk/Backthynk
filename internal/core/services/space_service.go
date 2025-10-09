@@ -160,12 +160,14 @@ func (s *SpaceService) Update(id int, name, description string, parentID *int) (
 	return cat, nil
 }
 
-func (s *SpaceService) FindByNameAndParent(name string, parentID *int) *models.Space {
+// FindBySlugAndParent finds a space by its slug at a specific parent level
+func (s *SpaceService) FindBySlugAndParent(slug string, parentID *int) *models.Space {
 	allSpaces := s.cache.GetAll()
-	nameLower := strings.ToLower(name)
+	slugLower := strings.ToLower(slug)
 
 	for _, cat := range allSpaces {
-		if strings.ToLower(cat.Name) == nameLower {
+		catSlug := strings.ToLower(cat.GetSlug())
+		if catSlug == slugLower {
 			// Check if parent matches
 			if (parentID == nil && cat.ParentID == nil) ||
 				(parentID != nil && cat.ParentID != nil && *parentID == *cat.ParentID) {
