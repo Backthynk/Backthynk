@@ -23,12 +23,12 @@ import (
 
 type postTestSetup struct {
 	postHandler     *PostHandler
-	categoryHandler *CategoryHandler
+	spaceHandler *SpaceHandler
 	postService     *services.PostService
-	categoryService *services.CategoryService
+	spaceService *services.SpaceService
 	fileService     *services.FileService
 	db              *storage.DB
-	cache           *cache.CategoryCache
+	cache           *cache.SpaceCache
 	dispatcher      *events.Dispatcher
 	options         *config.OptionsConfig
 	tempDir         string
@@ -63,16 +63,16 @@ func setupPostTest() (*postTestSetup, error) {
 	// The database is already initialized with tables in NewDB
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup services
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		return nil, err
 	}
 
@@ -86,16 +86,16 @@ func setupPostTest() (*postTestSetup, error) {
 
 	// Setup handlers
 	postHandler := NewPostHandler(postService, fileService, options)
-	categoryHandler := NewCategoryHandler(categoryService)
+	spaceHandler := NewSpaceHandler(spaceService)
 
 	return &postTestSetup{
 		postHandler:     postHandler,
-		categoryHandler: categoryHandler,
+		spaceHandler: spaceHandler,
 		postService:     postService,
-		categoryService: categoryService,
+		spaceService: spaceService,
 		fileService:     fileService,
 		db:              db,
-		cache:           categoryCache,
+		cache:           spaceCache,
 		dispatcher:      dispatcher,
 		options:         options,
 		tempDir:         tempDir,
@@ -118,10 +118,10 @@ func TestPostHandler_CreatePost(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test category
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	// Create test space
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	tests := []struct {
@@ -133,7 +133,7 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Valid post creation",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "This is a test post",
 			},
 			expectedStatus: http.StatusCreated,
@@ -142,7 +142,7 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Valid post with link previews",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "Post with link preview",
 				"link_previews": []map[string]interface{}{
 					{
@@ -159,7 +159,7 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Valid post with custom timestamp",
 			requestBody: map[string]interface{}{
-				"category_id":      category.ID,
+				"space_id":      space.ID,
 				"content":          "Post with custom timestamp",
 				"custom_timestamp": time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC).UnixMilli(),
 			},
@@ -169,7 +169,7 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Missing content",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
@@ -177,14 +177,14 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Empty content",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "",
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{
-			name: "Missing category_id",
+			name: "Missing space_id",
 			requestBody: map[string]interface{}{
 				"content": "Test content",
 			},
@@ -192,9 +192,9 @@ func TestPostHandler_CreatePost(t *testing.T) {
 			expectError:    true,
 		},
 		{
-			name: "Invalid category_id",
+			name: "Invalid space_id",
 			requestBody: map[string]interface{}{
-				"category_id": 999,
+				"space_id": 999,
 				"content":     "Test content",
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -203,7 +203,7 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Content too long",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     strings.Repeat("a", 1001), // Exceeds MaxContentLength
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -212,7 +212,7 @@ func TestPostHandler_CreatePost(t *testing.T) {
 		{
 			name: "Invalid custom timestamp (too old)",
 			requestBody: map[string]interface{}{
-				"category_id":      category.ID,
+				"space_id":      space.ID,
 				"content":          "Test content",
 				"custom_timestamp": 946684799000, // Before year 2000
 			},
@@ -274,11 +274,11 @@ func TestPostHandler_GetPost(t *testing.T) {
 	defer setup.cleanup()
 
 	// Create test data
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
-	post, _ := setup.postService.Create(category.ID, "Test post content", nil)
+	post, _ := setup.postService.Create(space.ID, "Test post content", nil)
 
 	tests := []struct {
 		name           string
@@ -343,11 +343,11 @@ func TestPostHandler_DeletePost(t *testing.T) {
 	defer setup.cleanup()
 
 	// Create test data
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
-	post, _ := setup.postService.Create(category.ID, "Test post content", nil)
+	post, _ := setup.postService.Create(space.ID, "Test post content", nil)
 
 	tests := []struct {
 		name           string
@@ -410,9 +410,9 @@ func TestPostHandler_MovePost(t *testing.T) {
 	defer setup.cleanup()
 
 	// Create test data
-	category1, _ := setup.categoryService.Create("Category 1", nil, "Category 1 desc")
-	category2, _ := setup.categoryService.Create("Category 2", nil, "Category 2 desc")
-	post, _ := setup.postService.Create(category1.ID, "Test post content", nil)
+	space1, _ := setup.spaceService.Create("Space 1", nil, "Space 1 desc")
+	space2, _ := setup.spaceService.Create("Space 2", nil, "Space 2 desc")
+	post, _ := setup.postService.Create(space1.ID, "Test post content", nil)
 
 	tests := []struct {
 		name           string
@@ -425,7 +425,7 @@ func TestPostHandler_MovePost(t *testing.T) {
 			name:   "Valid post move",
 			postID: strconv.Itoa(post.ID),
 			requestBody: map[string]interface{}{
-				"category_id": category2.ID,
+				"space_id": space2.ID,
 			},
 			expectedStatus: http.StatusOK,
 			expectError:    false,
@@ -434,7 +434,7 @@ func TestPostHandler_MovePost(t *testing.T) {
 			name:   "Invalid post ID format",
 			postID: "invalid",
 			requestBody: map[string]interface{}{
-				"category_id": category2.ID,
+				"space_id": space2.ID,
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
@@ -443,22 +443,22 @@ func TestPostHandler_MovePost(t *testing.T) {
 			name:   "Non-existent post",
 			postID: "999",
 			requestBody: map[string]interface{}{
-				"category_id": category2.ID,
+				"space_id": space2.ID,
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectError:    true,
 		},
 		{
-			name:   "Invalid category_id",
+			name:   "Invalid space_id",
 			postID: strconv.Itoa(post.ID),
 			requestBody: map[string]interface{}{
-				"category_id": 999,
+				"space_id": 999,
 			},
 			expectedStatus: http.StatusInternalServerError,
 			expectError:    true,
 		},
 		{
-			name:   "Missing category_id",
+			name:   "Missing space_id",
 			postID: strconv.Itoa(post.ID),
 			requestBody: map[string]interface{}{},
 			expectedStatus: http.StatusBadRequest,
@@ -500,19 +500,19 @@ func TestPostHandler_MovePost(t *testing.T) {
 				}
 
 				if req, ok := tt.requestBody.(map[string]interface{}); ok {
-					if categoryID, exists := req["category_id"]; exists {
+					if spaceID, exists := req["space_id"]; exists {
 						var expectedID int
-						switch v := categoryID.(type) {
+						switch v := spaceID.(type) {
 						case int:
 							expectedID = v
 						case float64:
 							expectedID = int(v)
 						default:
-							t.Errorf("Unexpected type for category_id: %T", v)
+							t.Errorf("Unexpected type for space_id: %T", v)
 							return
 						}
-						if movedPost.CategoryID != expectedID {
-							t.Errorf("Expected category ID %d, got %d", expectedID, movedPost.CategoryID)
+						if movedPost.SpaceID != expectedID {
+							t.Errorf("Expected space ID %d, got %d", expectedID, movedPost.SpaceID)
 						}
 					}
 				}
@@ -521,7 +521,7 @@ func TestPostHandler_MovePost(t *testing.T) {
 	}
 }
 
-func TestPostHandler_GetPostsByCategory(t *testing.T) {
+func TestPostHandler_GetPostsBySpace(t *testing.T) {
 	setup, err := setupPostTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
@@ -529,8 +529,8 @@ func TestPostHandler_GetPostsByCategory(t *testing.T) {
 	defer setup.cleanup()
 
 	// Create test data
-	parent, _ := setup.categoryService.Create("Parent Category", nil, "Parent desc")
-	child, _ := setup.categoryService.Create("Child Category", &parent.ID, "Child desc")
+	parent, _ := setup.spaceService.Create("Parent Space", nil, "Parent desc")
+	child, _ := setup.spaceService.Create("Child Space", &parent.ID, "Child desc")
 
 	// Create posts
 	setup.postService.Create(parent.ID, "Post in parent", nil)
@@ -539,39 +539,39 @@ func TestPostHandler_GetPostsByCategory(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		categoryID     string
+		spaceID     string
 		queryParams    string
 		expectedStatus int
 		expectedCount  int
 		expectError    bool
 	}{
 		{
-			name:           "Get posts from parent category (non-recursive)",
-			categoryID:     strconv.Itoa(parent.ID),
+			name:           "Get posts from parent space (non-recursive)",
+			spaceID:     strconv.Itoa(parent.ID),
 			queryParams:    "",
 			expectedStatus: http.StatusOK,
 			expectedCount:  1, // Only post1
 			expectError:    false,
 		},
 		{
-			name:           "Get posts from parent category (recursive)",
-			categoryID:     strconv.Itoa(parent.ID),
+			name:           "Get posts from parent space (recursive)",
+			spaceID:     strconv.Itoa(parent.ID),
 			queryParams:    "?recursive=true",
 			expectedStatus: http.StatusOK,
 			expectedCount:  3, // post1, post2, post3
 			expectError:    false,
 		},
 		{
-			name:           "Get posts from child category",
-			categoryID:     strconv.Itoa(child.ID),
+			name:           "Get posts from child space",
+			spaceID:     strconv.Itoa(child.ID),
 			queryParams:    "",
 			expectedStatus: http.StatusOK,
 			expectedCount:  2, // post2, post3
 			expectError:    false,
 		},
 		{
-			name:           "Get all posts (category 0)",
-			categoryID:     "0",
+			name:           "Get all posts (space 0)",
+			spaceID:     "0",
 			queryParams:    "",
 			expectedStatus: http.StatusOK,
 			expectedCount:  3, // All posts
@@ -579,7 +579,7 @@ func TestPostHandler_GetPostsByCategory(t *testing.T) {
 		},
 		{
 			name:           "Get posts with metadata",
-			categoryID:     strconv.Itoa(child.ID),
+			spaceID:     strconv.Itoa(child.ID),
 			queryParams:    "?with_meta=true",
 			expectedStatus: http.StatusOK,
 			expectedCount:  2,
@@ -587,7 +587,7 @@ func TestPostHandler_GetPostsByCategory(t *testing.T) {
 		},
 		{
 			name:           "Get posts with limit",
-			categoryID:     strconv.Itoa(child.ID),
+			spaceID:     strconv.Itoa(child.ID),
 			queryParams:    "?limit=1",
 			expectedStatus: http.StatusOK,
 			expectedCount:  1,
@@ -595,23 +595,23 @@ func TestPostHandler_GetPostsByCategory(t *testing.T) {
 		},
 		{
 			name:           "Get posts with offset",
-			categoryID:     strconv.Itoa(child.ID),
+			spaceID:     strconv.Itoa(child.ID),
 			queryParams:    "?limit=1&offset=1",
 			expectedStatus: http.StatusOK,
 			expectedCount:  1,
 			expectError:    false,
 		},
 		{
-			name:           "Invalid category ID format",
-			categoryID:     "invalid",
+			name:           "Invalid space ID format",
+			spaceID:     "invalid",
 			queryParams:    "",
 			expectedStatus: http.StatusBadRequest,
 			expectedCount:  0,
 			expectError:    true,
 		},
 		{
-			name:           "Non-existent category",
-			categoryID:     "999",
+			name:           "Non-existent space",
+			spaceID:     "999",
 			queryParams:    "",
 			expectedStatus: http.StatusOK,
 			expectedCount:  0,
@@ -621,12 +621,12 @@ func TestPostHandler_GetPostsByCategory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url := "/api/categories/" + tt.categoryID + "/posts" + tt.queryParams
+			url := "/api/spaces/" + tt.spaceID + "/posts" + tt.queryParams
 			req := httptest.NewRequest("GET", url, nil)
-			req = mux.SetURLVars(req, map[string]string{"id": tt.categoryID})
+			req = mux.SetURLVars(req, map[string]string{"id": tt.spaceID})
 			w := httptest.NewRecorder()
 
-			setup.postHandler.GetPostsByCategory(w, req)
+			setup.postHandler.GetPostsBySpace(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
@@ -683,10 +683,10 @@ func TestPostHandler_ConcurrentOperations(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test category
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	// Create test space
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	// Test concurrent post creation
@@ -696,7 +696,7 @@ func TestPostHandler_ConcurrentOperations(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(i int) {
 			requestBody := map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     fmt.Sprintf("Concurrent post %d", i),
 			}
 
@@ -723,10 +723,10 @@ func TestPostHandler_ConcurrentOperations(t *testing.T) {
 	}
 
 	// Verify all posts were created
-	req := httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(category.ID)+"/posts", nil)
-	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(category.ID)})
+	req := httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(space.ID)+"/posts", nil)
+	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(space.ID)})
 	w := httptest.NewRecorder()
-	setup.postHandler.GetPostsByCategory(w, req)
+	setup.postHandler.GetPostsBySpace(w, req)
 
 	var posts []models.PostWithAttachments
 	json.Unmarshal(w.Body.Bytes(), &posts)
@@ -743,29 +743,29 @@ func TestPostHandler_DataConsistency(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test categories
-	category1, _ := setup.categoryService.Create("Category 1", nil, "Category 1 desc")
-	category2, _ := setup.categoryService.Create("Category 2", nil, "Category 2 desc")
+	// Create test spaces
+	space1, _ := setup.spaceService.Create("Space 1", nil, "Space 1 desc")
+	space2, _ := setup.spaceService.Create("Space 2", nil, "Space 2 desc")
 
 	// Create posts
-	post1, _ := setup.postService.Create(category1.ID, "Post 1", nil)
-	post2, _ := setup.postService.Create(category1.ID, "Post 2", nil)
-	post3, _ := setup.postService.Create(category2.ID, "Post 3", nil)
+	post1, _ := setup.postService.Create(space1.ID, "Post 1", nil)
+	post2, _ := setup.postService.Create(space1.ID, "Post 2", nil)
+	post3, _ := setup.postService.Create(space2.ID, "Post 3", nil)
 
-	// Test 1: Verify category post counts are updated correctly
-	cat1, _ := setup.categoryService.Get(category1.ID)
-	cat2, _ := setup.categoryService.Get(category2.ID)
+	// Test 1: Verify space post counts are updated correctly
+	cat1, _ := setup.spaceService.Get(space1.ID)
+	cat2, _ := setup.spaceService.Get(space2.ID)
 
 	if cat1.PostCount != 2 {
-		t.Errorf("Expected category 1 to have 2 posts, got %d", cat1.PostCount)
+		t.Errorf("Expected space 1 to have 2 posts, got %d", cat1.PostCount)
 	}
 	if cat2.PostCount != 1 {
-		t.Errorf("Expected category 2 to have 1 post, got %d", cat2.PostCount)
+		t.Errorf("Expected space 2 to have 1 post, got %d", cat2.PostCount)
 	}
 
 	// Test 2: Move post and verify counts
 	requestBody := map[string]interface{}{
-		"category_id": category2.ID,
+		"space_id": space2.ID,
 	}
 	body, _ := json.Marshal(requestBody)
 	req := httptest.NewRequest("PUT", "/api/posts/"+strconv.Itoa(post1.ID)+"/move", bytes.NewBuffer(body))
@@ -779,14 +779,14 @@ func TestPostHandler_DataConsistency(t *testing.T) {
 	}
 
 	// Verify updated counts
-	cat1, _ = setup.categoryService.Get(category1.ID)
-	cat2, _ = setup.categoryService.Get(category2.ID)
+	cat1, _ = setup.spaceService.Get(space1.ID)
+	cat2, _ = setup.spaceService.Get(space2.ID)
 
 	if cat1.PostCount != 1 {
-		t.Errorf("Expected category 1 to have 1 post after move, got %d", cat1.PostCount)
+		t.Errorf("Expected space 1 to have 1 post after move, got %d", cat1.PostCount)
 	}
 	if cat2.PostCount != 2 {
-		t.Errorf("Expected category 2 to have 2 posts after move, got %d", cat2.PostCount)
+		t.Errorf("Expected space 2 to have 2 posts after move, got %d", cat2.PostCount)
 	}
 
 	// Test 3: Delete post and verify counts
@@ -800,22 +800,22 @@ func TestPostHandler_DataConsistency(t *testing.T) {
 	}
 
 	// Verify updated count
-	cat1, _ = setup.categoryService.Get(category1.ID)
+	cat1, _ = setup.spaceService.Get(space1.ID)
 	if cat1.PostCount != 0 {
-		t.Errorf("Expected category 1 to have 0 posts after deletion, got %d", cat1.PostCount)
+		t.Errorf("Expected space 1 to have 0 posts after deletion, got %d", cat1.PostCount)
 	}
 
 	// Test 4: Verify post retrieval consistency
-	req = httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(category2.ID)+"/posts", nil)
-	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(category2.ID)})
+	req = httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(space2.ID)+"/posts", nil)
+	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(space2.ID)})
 	w = httptest.NewRecorder()
-	setup.postHandler.GetPostsByCategory(w, req)
+	setup.postHandler.GetPostsBySpace(w, req)
 
 	var posts []models.PostWithAttachments
 	json.Unmarshal(w.Body.Bytes(), &posts)
 
 	if len(posts) != 2 {
-		t.Errorf("Expected 2 posts in category 2, got %d", len(posts))
+		t.Errorf("Expected 2 posts in space 2, got %d", len(posts))
 	}
 
 	// Verify specific posts exist
@@ -825,10 +825,10 @@ func TestPostHandler_DataConsistency(t *testing.T) {
 	}
 
 	if !foundIDs[post1.ID] {
-		t.Error("Expected to find moved post1 in category 2")
+		t.Error("Expected to find moved post1 in space 2")
 	}
 	if !foundIDs[post3.ID] {
-		t.Error("Expected to find original post3 in category 2")
+		t.Error("Expected to find original post3 in space 2")
 	}
 }
 
@@ -854,15 +854,15 @@ func TestPostHandler_EventDispatchingWithFeatures(t *testing.T) {
 		return nil
 	})
 
-	// Create test category
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	// Create test space
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	// Test post creation event
 	requestBody := map[string]interface{}{
-		"category_id": category.ID,
+		"space_id": space.ID,
 		"content":     "Test post for event",
 	}
 	body, _ := json.Marshal(requestBody)

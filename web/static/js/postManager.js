@@ -6,7 +6,7 @@ let isLoadingPosts = false;
 let virtualScroller = null;
 const VIRTUAL_SCROLL_THRESHOLD = window.AppConstants.UI_CONFIG.virtualScrollThreshold;
 
-async function loadPosts(categoryId, recursive = false, reset = true) {
+async function loadPosts(spaceId, recursive = false, reset = true) {
     if (isLoadingPosts) return;
 
     try {
@@ -18,7 +18,7 @@ async function loadPosts(categoryId, recursive = false, reset = true) {
             hasMorePosts = true;
         }
 
-        const response = await fetchPosts(categoryId, window.AppConstants.UI_CONFIG.defaultPostsPerPage, currentOffset, false, recursive);
+        const response = await fetchPosts(spaceId, window.AppConstants.UI_CONFIG.defaultPostsPerPage, currentOffset, false, recursive);
         let posts = response.posts || response; // Handle both new and old API response formats
 
         // Ensure posts is an array
@@ -44,7 +44,7 @@ async function loadPosts(categoryId, recursive = false, reset = true) {
 
         // Setup infinite scroll if this is a fresh load
         if (reset) {
-            setupInfiniteScroll(categoryId, recursive);
+            setupInfiniteScroll(spaceId, recursive);
         }
 
     } catch (error) {
@@ -57,14 +57,14 @@ async function loadPosts(categoryId, recursive = false, reset = true) {
     }
 }
 
-async function loadMorePosts(categoryId, recursive = false) {
+async function loadMorePosts(spaceId, recursive = false) {
     if (!hasMorePosts || isLoadingPosts) return;
 
-    await loadPosts(categoryId, recursive, false);
+    await loadPosts(spaceId, recursive, false);
 }
 
 
-function setupInfiniteScroll(categoryId, recursive = false) {
+function setupInfiniteScroll(spaceId, recursive = false) {
     const container = document.getElementById('posts-container');
 
     // Remove existing scroll listener
@@ -78,7 +78,7 @@ function setupInfiniteScroll(categoryId, recursive = false) {
         const threshold = document.documentElement.offsetHeight - window.AppConstants.UI_CONFIG.infiniteScrollThreshold;
 
         if (scrollPosition >= threshold) {
-            loadMorePosts(categoryId, recursive);
+            loadMorePosts(spaceId, recursive);
         }
     };
 
@@ -187,25 +187,25 @@ function createPostElement(post) {
     const totalAttachments = images.length + otherFiles.length;
     const linkPreviews = post.link_previews || [];
 
-    // Check if we should show category breadcrumb
+    // Check if we should show space breadcrumb
     // Show breadcrumb in two cases:
-    // 1. When in recursive mode and post is from a different category
-    // 2. When no category is selected (All categories view)
-    const showCategoryBreadcrumb =
-        (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) || // All categories view
-        (currentCategory && currentCategory.recursiveMode && post.category_id !== currentCategory.id); // Recursive mode
-    const categoryBreadcrumb = showCategoryBreadcrumb ? getCategoryBreadcrumb(post.category_id) : '';
+    // 1. When in recursive mode and post is from a different space
+    // 2. When no space is selected (All spaces view)
+    const showSpaceBreadcrumb =
+        (!currentSpace || currentSpace.id === window.AppConstants.ALL_SPACES_ID) || // All spaces view
+        (currentSpace && currentSpace.recursiveMode && post.space_id !== currentSpace.id); // Recursive mode
+    const spaceBreadcrumb = showSpaceBreadcrumb ? getSpaceBreadcrumb(post.space_id) : '';
 
-    // Make category breadcrumb clickable if we're showing it
-    const clickableCategoryBreadcrumb = showCategoryBreadcrumb ?
-        `<span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors" onclick="navigateToCategoryFromPost(${post.category_id})">${categoryBreadcrumb}</span>` :
+    // Make space breadcrumb clickable if we're showing it
+    const clickableSpaceBreadcrumb = showSpaceBreadcrumb ?
+        `<span class="text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors" onclick="navigateToSpaceFromPost(${post.space_id})">${spaceBreadcrumb}</span>` :
         '';
 
     // Redesigned header
     const headerHtml = `
         <div class="flex items-center justify-between mb-4">
             <div class="flex items-center space-x-2">
-                ${clickableCategoryBreadcrumb}
+                ${clickableSpaceBreadcrumb}
                 <span class="relative group/time text-sm text-gray-600 dark:text-gray-400 font-sans cursor-default">
                     ${formatRelativeDate(post.created)}
                     <div class="absolute left-0 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded-md shadow-lg opacity-0 group-hover/time:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
@@ -374,19 +374,19 @@ let currentMovePostId = null;
 function showMoveModal(postId) {
     currentMovePostId = postId;
 
-    // Find the post to get current category info
+    // Find the post to get current space info
     const post = currentPosts.find(p => p.id === postId);
     if (!post) return;
 
-    // Get current category name
-    const currentCategory = categories.find(cat => cat.id === post.category_id);
-    const currentCategoryBreadcrumb = currentCategory ? getCategoryBreadcrumb(post.category_id) : 'Unknown Category';
+    // Get current space name
+    const currentSpace = spaces.find(cat => cat.id === post.space_id);
+    const currentSpaceBreadcrumb = currentSpace ? getSpaceBreadcrumb(post.space_id) : 'Unknown Space';
 
-    // Update current category display
-    document.getElementById('current-category-display').textContent = currentCategoryBreadcrumb;
+    // Update current space display
+    document.getElementById('current-space-display').textContent = currentSpaceBreadcrumb;
 
-    // Populate category dropdown
-    populateMoveCategoryDropdown(post.category_id);
+    // Populate space dropdown
+    populateMoveSpaceDropdown(post.space_id);
 
     // Show modal
     document.getElementById('move-modal').classList.remove('hidden');
@@ -400,16 +400,16 @@ function showMoveModal(postId) {
 // Make function globally accessible for onclick handlers
 window.showMoveModal = showMoveModal;
 
-function populateMoveCategoryDropdown(currentCategoryId) {
-    const select = document.getElementById('move-category');
-    select.innerHTML = '<option value="">Select a category...</option>';
+function populateMoveSpaceDropdown(currentSpaceId) {
+    const select = document.getElementById('move-space');
+    select.innerHTML = '<option value="">Select a space...</option>';
 
-    // Add all categories except the current one
-    categories.forEach(category => {
-        if (category.id !== currentCategoryId) {
-            const breadcrumb = getCategoryBreadcrumb(category.id);
+    // Add all spaces except the current one
+    spaces.forEach(space => {
+        if (space.id !== currentSpaceId) {
+            const breadcrumb = getSpaceBreadcrumb(space.id);
             const option = document.createElement('option');
-            option.value = category.id;
+            option.value = space.id;
             option.textContent = breadcrumb;
             select.appendChild(option);
         }
@@ -418,7 +418,7 @@ function populateMoveCategoryDropdown(currentCategoryId) {
 
 function hideMoveModal() {
     document.getElementById('move-modal').classList.add('hidden');
-    document.getElementById('move-category').value = '';
+    document.getElementById('move-space').value = '';
     currentMovePostId = null;
 }
 
@@ -430,48 +430,48 @@ document.getElementById('move-form').addEventListener('submit', async function(e
 
     if (!currentMovePostId) return;
 
-    const newCategoryId = parseInt(document.getElementById('move-category').value);
-    if (!newCategoryId) {
-        showError(window.AppConstants.USER_MESSAGES.error.selectCategoryToMove);
+    const newSpaceId = parseInt(document.getElementById('move-space').value);
+    if (!newSpaceId) {
+        showError(window.AppConstants.USER_MESSAGES.error.selectSpaceToMove);
         return;
     }
 
     try {
-        // Get the old category ID before moving
+        // Get the old space ID before moving
         const post = currentPosts.find(p => p.id === currentMovePostId);
-        const oldCategoryId = post ? post.category_id : null;
+        const oldSpaceId = post ? post.space_id : null;
 
-        await movePost(currentMovePostId, newCategoryId);
+        await movePost(currentMovePostId, newSpaceId);
 
         // Update post counts locally
-        if (oldCategoryId) {
-            incrementCategoryPostCount(oldCategoryId, -1); // Remove from old category
+        if (oldSpaceId) {
+            incrementSpacePostCount(oldSpaceId, -1); // Remove from old space
         }
-        incrementCategoryPostCount(newCategoryId, 1); // Add to new category
+        incrementSpacePostCount(newSpaceId, 1); // Add to new space
 
-        // Find the new category name for success message
-        const newCategory = categories.find(cat => cat.id === newCategoryId);
-        const newCategoryName = newCategory ? newCategory.name : 'selected category';
+        // Find the new space name for success message
+        const newSpace = spaces.find(cat => cat.id === newSpaceId);
+        const newSpaceName = newSpace ? newSpace.name : 'selected space';
 
-        showSuccess(`${window.AppConstants.USER_MESSAGES.success.postMoved} ${newCategoryName}`);
+        showSuccess(`${window.AppConstants.USER_MESSAGES.success.postMoved} ${newSpaceName}`);
 
         // Remove the post from current view if it no longer belongs here
         let shouldRemoveFromView = false;
 
-        if (currentCategory && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
-            if (currentCategory.recursiveMode) {
-                // In recursive mode, check if the new category is still part of this category tree
-                const newCategoryObj = categories.find(cat => cat.id === newCategoryId);
-                if (newCategoryObj) {
-                    // Check if new category is this category or a descendant
-                    const isDescendant = isDescendantCategory(newCategoryId, currentCategory.id);
-                    shouldRemoveFromView = !(newCategoryId === currentCategory.id || isDescendant);
+        if (currentSpace && currentSpace.id !== window.AppConstants.ALL_SPACES_ID) {
+            if (currentSpace.recursiveMode) {
+                // In recursive mode, check if the new space is still part of this space tree
+                const newSpaceObj = spaces.find(cat => cat.id === newSpaceId);
+                if (newSpaceObj) {
+                    // Check if new space is this space or a descendant
+                    const isDescendant = isDescendantSpace(newSpaceId, currentSpace.id);
+                    shouldRemoveFromView = !(newSpaceId === currentSpace.id || isDescendant);
                 } else {
                     shouldRemoveFromView = true;
                 }
             } else {
-                // In non-recursive mode, only show posts directly in this category
-                shouldRemoveFromView = newCategoryId !== currentCategory.id;
+                // In non-recursive mode, only show posts directly in this space
+                shouldRemoveFromView = newSpaceId !== currentSpace.id;
             }
         }
 
@@ -484,10 +484,10 @@ document.getElementById('move-form').addEventListener('submit', async function(e
                 virtualScroller.removeItem(currentMovePostId);
             }
         } else {
-            // Update the post's category_id in the array (for All categories view or recursive mode)
+            // Update the post's space_id in the array (for All spaces view or recursive mode)
             const postIndex = currentPosts.findIndex(p => p.id === currentMovePostId);
             if (postIndex !== -1) {
-                currentPosts[postIndex].category_id = newCategoryId;
+                currentPosts[postIndex].space_id = newSpaceId;
             }
         }
 
@@ -495,8 +495,8 @@ document.getElementById('move-form').addEventListener('submit', async function(e
         renderPosts(currentPosts, true);
 
         // Update the display with the updated counts
-        if (currentCategory) {
-            updateCategoryStatsDisplay();
+        if (currentSpace) {
+            updateSpaceStatsDisplay();
         }
 
         // Regenerate activity heatmap to reflect the moved post (with small delay for backend processing)
@@ -548,13 +548,13 @@ async function confirmDeletePost(postId) {
             showSuccess('');
 
             // Decrement post count locally for immediate feedback
-            // Use the post's actual category_id, not currentCategory.id (which could be 0 for "All Categories")
-            if (post && post.category_id) {
-                incrementCategoryPostCount(post.category_id, -1);
+            // Use the post's actual space_id, not currentSpace.id (which could be 0 for "All Spaces")
+            if (post && post.space_id) {
+                incrementSpacePostCount(post.space_id, -1);
             }
 
             // Update the display
-            updateCategoryStatsDisplay();
+            updateSpaceStatsDisplay();
 
             // Regenerate activity heatmap to reflect deleted post (with small delay for backend processing)
             setTimeout(generateActivityHeatmap, 100);
@@ -578,28 +578,28 @@ async function confirmDeletePost(postId) {
 // Make function globally accessible for onclick handlers
 window.confirmDeletePost = confirmDeletePost;
 
-function updateCategoryStatsDisplay(stats) {
-    if (!currentCategory) return;
+function updateSpaceStatsDisplay(stats) {
+    if (!currentSpace) return;
 
-    // Handle "All Categories" view separately
-    if (currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        updateAllCategoriesDisplay();
+    // Handle "All Spaces" view separately
+    if (currentSpace.id === window.AppConstants.ALL_SPACES_ID) {
+        updateAllSpacesDisplay();
         return;
     }
 
-    // Ensure currentCategory has all properties by finding it in categories array
-    const fullCategory = categories.find(cat => cat.id === currentCategory.id);
-    if (fullCategory) {
+    // Ensure currentSpace has all properties by finding it in spaces array
+    const fullSpace = spaces.find(cat => cat.id === currentSpace.id);
+    if (fullSpace) {
         // Preserve recursiveMode if it was set
-        const recursiveMode = currentCategory.recursiveMode;
-        currentCategory = { ...fullCategory };
-        currentCategory.recursiveMode = recursiveMode;
+        const recursiveMode = currentSpace.recursiveMode;
+        currentSpace = { ...fullSpace };
+        currentSpace.recursiveMode = recursiveMode;
     }
 
-    // Use post count from category object, not from stats
-    const postCount = currentCategory.recursiveMode ?
-        (currentCategory.recursive_post_count || 0) :
-        (currentCategory.post_count || 0);
+    // Use post count from space object, not from stats
+    const postCount = currentSpace.recursiveMode ?
+        (currentSpace.recursive_post_count || 0) :
+        (currentSpace.post_count || 0);
 
     let statsText = `${postCount} post${postCount !== 1 ? 's' : ''}`;
 
@@ -608,12 +608,12 @@ function updateCategoryStatsDisplay(stats) {
         statsText += ` • ${stats.file_count} file${stats.file_count !== 1 ? 's' : ''} • ${formatFileSize(stats.total_size)}`;
     }
 
-    // Get the interactive breadcrumb path for the current category
-    const categoryBreadcrumb = getInteractiveCategoryBreadcrumb(currentCategory.id);
+    // Get the interactive breadcrumb path for the current space
+    const spaceBreadcrumb = getInteractiveSpaceBreadcrumb(currentSpace.id);
 
     // Format the creation date
-    const creationDate = currentCategory.created ?
-        new Date(currentCategory.created).toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
+    const creationDate = currentSpace.created ?
+        new Date(currentSpace.created).toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -621,20 +621,20 @@ function updateCategoryStatsDisplay(stats) {
         'Date unavailable';
 
     // Create tooltip content - show description if it exists
-    const tooltipContent = currentCategory.description && currentCategory.description.trim()
-        ? currentCategory.description
+    const tooltipContent = currentSpace.description && currentSpace.description.trim()
+        ? currentSpace.description
         : `Created ${creationDate}`;
 
     document.getElementById('timeline-title').innerHTML = `
         <div class="group relative">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${categoryBreadcrumb}</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${spaceBreadcrumb}</h2>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
                 <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
             </p>
-            ${currentCategory.description && currentCategory.description.trim() ? `
+            ${currentSpace.description && currentSpace.description.trim() ? `
                 <div class="absolute left-0 top-full mt-1 px-3 py-2 bg-gray-900 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-md">
-                    ${currentCategory.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                    ${currentSpace.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
                 </div>
             ` : ''}
         </div>
@@ -646,21 +646,21 @@ function updateCategoryStatsDisplay(stats) {
 
 // Function to update header button visibility and states
 function updateHeaderButtons() {
-    if (!currentCategory) {
+    if (!currentSpace) {
         document.getElementById('recursive-toggle-btn').style.display = 'none';
-        document.getElementById('category-actions-dropdown').style.display = 'none';
+        document.getElementById('space-actions-dropdown').style.display = 'none';
         document.getElementById('settings-btn').style.display = 'block';
         return;
     }
 
-    // Check if current category has subcategories to show recursive toggle
-    const hasSubcategories = categories.some(cat => cat.parent_id === currentCategory.id);
+    // Check if current space has subspaces to show recursive toggle
+    const hasSubspaces = spaces.some(cat => cat.parent_id === currentSpace.id);
     const recursiveToggleBtn = document.getElementById('recursive-toggle-btn');
 
-    if (hasSubcategories) {
+    if (hasSubspaces) {
         recursiveToggleBtn.style.display = 'block';
         // Update button styling based on state
-        if (currentCategory.recursiveMode) {
+        if (currentSpace.recursiveMode) {
             recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors';
         } else {
             recursiveToggleBtn.className = 'flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors';
@@ -669,42 +669,42 @@ function updateHeaderButtons() {
         recursiveToggleBtn.style.display = 'none';
     }
 
-    // Show dropdown and hide settings when a category is selected
-    document.getElementById('category-actions-dropdown').style.display = 'block';
+    // Show dropdown and hide settings when a space is selected
+    document.getElementById('space-actions-dropdown').style.display = 'block';
     document.getElementById('settings-btn').style.display = 'none';
 }
 
-// Function to navigate to a category when clicked from a post
-function navigateToCategoryFromPost(categoryId) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (category) {
-        selectCategory(category); // Programmatic selection from post navigation
+// Function to navigate to a space when clicked from a post
+function navigateToSpaceFromPost(spaceId) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (space) {
+        selectSpace(space); // Programmatic selection from post navigation
     }
 }
 
 // Make function globally accessible for onclick handlers
-window.navigateToCategoryFromPost = navigateToCategoryFromPost;
+window.navigateToSpaceFromPost = navigateToSpaceFromPost;
 
-// Function to update display for "All categories" view
-function updateAllCategoriesDisplay(fileStats) {
-    // Calculate total post count by summing top-level categories' recursive post counts
+// Function to update display for "All spaces" view
+function updateAllSpacesDisplay(fileStats) {
+    // Calculate total post count by summing top-level spaces' recursive post counts
     // This avoids double counting when there are parent-child relationships
-    const totalPostCount = categories.reduce((total, category) => {
-        // Only count top-level categories (no parent_id) using their recursive count
+    const totalPostCount = spaces.reduce((total, space) => {
+        // Only count top-level spaces (no parent_id) using their recursive count
         // which includes all their descendants
-        if (!category.parent_id) {
-            return total + (category.recursive_post_count || category.post_count || 0);
+        if (!space.parent_id) {
+            return total + (space.recursive_post_count || space.post_count || 0);
         }
         return total;
     }, 0);
 
-    // Find the first category created (oldest)
-    const oldestCategory = categories.reduce((oldest, current) => {
+    // Find the first space created (oldest)
+    const oldestSpace = spaces.reduce((oldest, current) => {
         return (!oldest || current.created < oldest.created) ? current : oldest;
     }, null);
 
-    const creationDate = oldestCategory ?
-        new Date(oldestCategory.created).toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
+    const creationDate = oldestSpace ?
+        new Date(oldestSpace.created).toLocaleDateString(window.AppConstants.LOCALE_SETTINGS.default, {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -720,7 +720,7 @@ function updateAllCategoriesDisplay(fileStats) {
 
     document.getElementById('timeline-title').innerHTML = `
         <div class="group">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${window.AppConstants.UI_TEXT.allCategories}</h2>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${window.AppConstants.UI_TEXT.allSpaces}</h2>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
                 <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
                 <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
@@ -728,64 +728,64 @@ function updateAllCategoriesDisplay(fileStats) {
         </div>
     `;
 
-    // Update button visibility - hide category-specific buttons
+    // Update button visibility - hide space-specific buttons
     document.getElementById('recursive-toggle-btn').style.display = 'none';
-    document.getElementById('category-actions-dropdown').style.display = 'none';
+    document.getElementById('space-actions-dropdown').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
 }
 
-// Helper function to check if categoryId is a descendant of parentId
-function isDescendantCategory(categoryId, parentId) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category || !category.parent_id) {
+// Helper function to check if spaceId is a descendant of parentId
+function isDescendantSpace(spaceId, parentId) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (!space || !space.parent_id) {
         return false;
     }
 
-    if (category.parent_id === parentId) {
+    if (space.parent_id === parentId) {
         return true;
     }
 
-    return isDescendantCategory(category.parent_id, parentId);
+    return isDescendantSpace(space.parent_id, parentId);
 }
 
-// Helper function to increment/decrement category post counts locally
-function incrementCategoryPostCount(categoryId, delta) {
-    // Update the specific category
-    const category = categories.find(cat => cat.id === categoryId);
-    if (category) {
-        category.post_count = (category.post_count || 0) + delta;
-        category.recursive_post_count = (category.recursive_post_count || 0) + delta;
+// Helper function to increment/decrement space post counts locally
+function incrementSpacePostCount(spaceId, delta) {
+    // Update the specific space
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (space) {
+        space.post_count = (space.post_count || 0) + delta;
+        space.recursive_post_count = (space.recursive_post_count || 0) + delta;
     }
 
-    // Update all parent categories' recursive counts by walking up the tree
-    let currentCat = category;
-    const affectedCategoryIds = [categoryId]; // Track all affected category IDs
+    // Update all parent spaces' recursive counts by walking up the tree
+    let currentCat = space;
+    const affectedSpaceIds = [spaceId]; // Track all affected space IDs
 
     while (currentCat && currentCat.parent_id) {
-        const parent = categories.find(cat => cat.id === currentCat.parent_id);
+        const parent = spaces.find(cat => cat.id === currentCat.parent_id);
         if (parent) {
             parent.recursive_post_count = (parent.recursive_post_count || 0) + delta;
-            affectedCategoryIds.push(parent.id);
+            affectedSpaceIds.push(parent.id);
             currentCat = parent;
         } else {
             break;
         }
     }
 
-    // Update currentCategory if it's affected (either the category itself or an ancestor)
-    if (currentCategory && affectedCategoryIds.includes(currentCategory.id)) {
-        if (currentCategory.id === categoryId) {
+    // Update currentSpace if it's affected (either the space itself or an ancestor)
+    if (currentSpace && affectedSpaceIds.includes(currentSpace.id)) {
+        if (currentSpace.id === spaceId) {
             // Direct match - update both counts
-            currentCategory.post_count = (currentCategory.post_count || 0) + delta;
-            currentCategory.recursive_post_count = (currentCategory.recursive_post_count || 0) + delta;
+            currentSpace.post_count = (currentSpace.post_count || 0) + delta;
+            currentSpace.recursive_post_count = (currentSpace.recursive_post_count || 0) + delta;
         } else {
-            // Parent category - only update recursive count
-            currentCategory.recursive_post_count = (currentCategory.recursive_post_count || 0) + delta;
+            // Parent space - only update recursive count
+            currentSpace.recursive_post_count = (currentSpace.recursive_post_count || 0) + delta;
         }
     }
 
-    // Re-render categories to show updated counts
-    renderCategories();
+    // Re-render spaces to show updated counts
+    renderSpaces();
 }
 
 // Attachment navigation functions

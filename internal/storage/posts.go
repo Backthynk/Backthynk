@@ -15,39 +15,28 @@ import (
 
 type PostData struct {
 	ID         int
-	CategoryID int
+	SpaceID int
 	Created    int64
 }
 
-func (db *DB) CreatePost(categoryID int, content string) (*models.Post, error) {
-	return db.CreatePostWithTimestamp(categoryID, content, time.Now().UnixMilli())
+func (db *DB) CreatePost(spaceID int, content string) (*models.Post, error) {
+	return db.CreatePostWithTimestamp(spaceID, content, time.Now().UnixMilli())
 }
 
-func (db *DB) CreatePostWithTimestamp(categoryID int, content string, timestampMillis int64) (*models.Post, error) {
-	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM categories WHERE id = ?)", categoryID).Scan(&exists)
-	if err != nil {
-		logger.Error("Failed to check category existence for post creation", zap.Int("category_id", categoryID), zap.Error(err))
-		return nil, fmt.Errorf("failed to check category existence: %w", err)
-	}
-	if !exists {
-		logger.Warning("Attempted to create post in non-existent category", zap.Int("category_id", categoryID))
-		return nil, fmt.Errorf("category not found")
-	}
-
+func (db *DB) CreatePostWithTimestamp(spaceID int, content string, timestampMillis int64) (*models.Post, error) {
 	result, err := db.Exec(
-		"INSERT INTO posts (category_id, content, created) VALUES (?, ?, ?)",
-		categoryID, content, timestampMillis,
+		"INSERT INTO posts (space_id, content, created) VALUES (?, ?, ?)",
+		spaceID, content, timestampMillis,
 	)
 
 	if err != nil {
-		logger.Error("Failed to create post", zap.Int("category_id", categoryID), zap.Error(err))
+		logger.Error("Failed to create post", zap.Int("space_id", spaceID), zap.Error(err))
 		return nil, fmt.Errorf("failed to create post: %w", err)
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		logger.Error("Failed to get last insert ID after post creation", zap.Int("category_id", categoryID), zap.Error(err))
+		logger.Error("Failed to get last insert ID after post creation", zap.Int("space_id", spaceID), zap.Error(err))
 		return nil, fmt.Errorf("failed to get last insert id: %w", err)
 	}
 
@@ -57,9 +46,9 @@ func (db *DB) CreatePostWithTimestamp(categoryID int, content string, timestampM
 func (db *DB) GetPost(id int) (*models.Post, error) {
 	var post models.Post
 	err := db.QueryRow(
-		"SELECT id, category_id, content, created FROM posts WHERE id = ?",
+		"SELECT id, space_id, content, created FROM posts WHERE id = ?",
 		id,
-	).Scan(&post.ID, &post.CategoryID, &post.Content, &post.Created)
+	).Scan(&post.ID, &post.SpaceID, &post.Content, &post.Created)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -73,8 +62,8 @@ func (db *DB) GetPost(id int) (*models.Post, error) {
 	return &post, nil
 }
 
-func (db *DB) GetPostIDsByCategory(categoryID int) ([]int, error) {
-	rows, err := db.Query("SELECT id FROM posts WHERE category_id = ?", categoryID)
+func (db *DB) GetPostIDsBySpace(spaceID int) ([]int, error) {
+	rows, err := db.Query("SELECT id FROM posts WHERE space_id = ?", spaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -92,34 +81,34 @@ func (db *DB) GetPostIDsByCategory(categoryID int) ([]int, error) {
 	return ids, nil
 }
 
-func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit, offset int, descendants []int) ([]models.PostWithAttachments, error) {
+func (db *DB) GetPostsBySpaceRecursive(spaceID int, recursive bool, limit, offset int, descendants []int) ([]models.PostWithAttachments, error) {
 	var query string
 	var args []interface{}
 	if recursive {
 		// Use provided descendants from cache instead of database query
-		categoryIDs := append(descendants, categoryID)
+		spaceIDs := append(descendants, spaceID)
 
-		placeholders := make([]string, len(categoryIDs))
-		args = make([]interface{}, len(categoryIDs)+2)
-		for i, id := range categoryIDs {
+		placeholders := make([]string, len(spaceIDs))
+		args = make([]interface{}, len(spaceIDs)+2)
+		for i, id := range spaceIDs {
 			placeholders[i] = "?"
 			args[i] = id
 		}
-		args[len(categoryIDs)] = limit
-		args[len(categoryIDs)+1] = offset
+		args[len(spaceIDs)] = limit
+		args[len(spaceIDs)+1] = offset
 
 		query = fmt.Sprintf(
-			"SELECT id, category_id, content, created FROM posts WHERE category_id IN (%s) ORDER BY created DESC LIMIT ? OFFSET ?",
+			"SELECT id, space_id, content, created FROM posts WHERE space_id IN (%s) ORDER BY created DESC LIMIT ? OFFSET ?",
 			strings.Join(placeholders, ","),
 		)
 	} else {
-		query = "SELECT id, category_id, content, created FROM posts WHERE category_id = ? ORDER BY created DESC LIMIT ? OFFSET ?"
-		args = []interface{}{categoryID, limit, offset}
+		query = "SELECT id, space_id, content, created FROM posts WHERE space_id = ? ORDER BY created DESC LIMIT ? OFFSET ?"
+		args = []interface{}{spaceID, limit, offset}
 	}
 
 	rows, err := db.Query(query, args...)
 	if err != nil {
-		logger.Error("Failed to query posts by category", zap.Int("category_id", categoryID), zap.Bool("recursive", recursive), zap.Error(err))
+		logger.Error("Failed to query posts by space", zap.Int("space_id", spaceID), zap.Bool("recursive", recursive), zap.Error(err))
 		return nil, fmt.Errorf("failed to query posts: %w", err)
 	}
 	defer rows.Close()
@@ -127,7 +116,7 @@ func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit,
 	var posts []models.PostWithAttachments
 	for rows.Next() {
 		var post models.PostWithAttachments
-		err := rows.Scan(&post.ID, &post.CategoryID, &post.Content, &post.Created)
+		err := rows.Scan(&post.ID, &post.SpaceID, &post.Content, &post.Created)
 		if err != nil {
 			logger.Error("Failed to scan post", zap.Error(err))
 			return nil, fmt.Errorf("failed to scan post: %w", err)
@@ -157,7 +146,7 @@ func (db *DB) GetPostsByCategoryRecursive(categoryID int, recursive bool, limit,
 
 func (db *DB) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, error) {
 	query := `
-		SELECT p.id, p.category_id, p.content, p.created
+		SELECT p.id, p.space_id, p.content, p.created
 		FROM posts p
 		ORDER BY p.created DESC
 		LIMIT ? OFFSET ?
@@ -173,7 +162,7 @@ func (db *DB) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, erro
 	var posts []models.PostWithAttachments
 	for rows.Next() {
 		var post models.PostWithAttachments
-		err := rows.Scan(&post.ID, &post.CategoryID, &post.Content, &post.Created)
+		err := rows.Scan(&post.ID, &post.SpaceID, &post.Content, &post.Created)
 		if err != nil {
 			logger.Error("Failed to scan post", zap.Error(err))
 			return nil, fmt.Errorf("failed to scan post: %w", err)
@@ -199,32 +188,11 @@ func (db *DB) GetAllPosts(limit, offset int) ([]models.PostWithAttachments, erro
 	return posts, nil
 }
 
-func (db *DB) UpdatePostCategory(postID int, newCategoryID int) error {
-	var exists bool
-	err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM posts WHERE id = ?)", postID).Scan(&exists)
+func (db *DB) UpdatePostSpace(postID int, newSpaceID int) error {
+	_, err := db.Exec("UPDATE posts SET space_id = ? WHERE id = ?", newSpaceID, postID)
 	if err != nil {
-		logger.Error("Failed to check post existence for category update", zap.Int("post_id", postID), zap.Error(err))
-		return fmt.Errorf("failed to check post existence: %w", err)
-	}
-	if !exists {
-		logger.Warning("Post not found for category update", zap.Int("post_id", postID))
-		return fmt.Errorf("post not found")
-	}
-
-	err = db.QueryRow("SELECT EXISTS(SELECT 1 FROM categories WHERE id = ?)", newCategoryID).Scan(&exists)
-	if err != nil {
-		logger.Error("Failed to check category existence for post move", zap.Int("category_id", newCategoryID), zap.Error(err))
-		return fmt.Errorf("failed to check category existence: %w", err)
-	}
-	if !exists {
-		logger.Warning("Category not found for post move", zap.Int("category_id", newCategoryID))
-		return fmt.Errorf("category not found")
-	}
-
-	_, err = db.Exec("UPDATE posts SET category_id = ? WHERE id = ?", newCategoryID, postID)
-	if err != nil {
-		logger.Error("Failed to update post category", zap.Int("post_id", postID), zap.Int("new_category_id", newCategoryID), zap.Error(err))
-		return fmt.Errorf("failed to update post category: %w", err)
+		logger.Error("Failed to update post space", zap.Int("post_id", postID), zap.Int("new_space_id", newSpaceID), zap.Error(err))
+		return fmt.Errorf("failed to update post space: %w", err)
 	}
 
 	return nil
@@ -281,7 +249,7 @@ func (db *DB) GetTotalPostCount() (int, error) {
 
 
 func (db *DB) GetAllPostsHeader() ([]PostData, error) {
-	query := "SELECT id, category_id, created FROM posts ORDER BY created"
+	query := "SELECT id, space_id, created FROM posts ORDER BY created"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -291,7 +259,7 @@ func (db *DB) GetAllPostsHeader() ([]PostData, error) {
 	var posts []PostData
 	for rows.Next() {
 		var post PostData
-		err := rows.Scan(&post.ID, &post.CategoryID, &post.Created)
+		err := rows.Scan(&post.ID, &post.SpaceID, &post.Created)
 		if err != nil {
 			return nil, err
 		}

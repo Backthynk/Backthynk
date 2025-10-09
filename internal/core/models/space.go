@@ -1,6 +1,6 @@
 package models
 
-type Category struct {
+type Space struct {
 	ID          int    `json:"id" db:"id"`
 	Name        string `json:"name" db:"name"`
 	Description string `json:"description" db:"description"`
@@ -13,7 +13,7 @@ type Category struct {
 	RecursivePostCount int `json:"recursive_post_count"`
 }
 
-type CategoryTree struct {
-	Category
-	Children []*CategoryTree `json:"children,omitempty"`
+type SpaceTree struct {
+	Space
+	Children []*SpaceTree `json:"children,omitempty"`
 }

@@ -23,14 +23,14 @@
     <link id="favicon-16" rel="icon" type="image/png" sizes="16x16" href="/static/images/light/favicon-16x16.png">
     <link id="favicon-32" rel="icon" type="image/png" sizes="32x32" href="/static/images/light/favicon-32x32.png">
 
-    {{if .Category}}
+    {{if .Space}}
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        "name": "{{.Category.Name}}",
-        "description": "{{if .Category.Description}}{{.Category.Description}}{{else}}Posts in {{.CategoryBreadcrumb}}{{end}}",
+        "name": "{{.Space.Name}}",
+        "description": "{{if .Space.Description}}{{.Space.Description}}{{else}}Posts in {{.SpaceBreadcrumb}}{{end}}",
         "url": "{{.URL}}",
         "breadcrumb": {
             "@type": "BreadcrumbList",
@@ -44,7 +44,7 @@
                 {
                     "@type": "ListItem",
                     "position": 2,
-                    "name": "{{.Category.Name}}",
+                    "name": "{{.Space.Name}}",
                     "item": "{{.URL}}"
                 }
             ]
@@ -97,27 +97,27 @@
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-200">
     <div class="container mx-auto px-4 py-8 max-w-7xl">
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <!-- Sidebar - Categories -->
+            <!-- Sidebar - Spaces -->
             <div class="lg:col-span-1">
                 <!-- Sticky wrapper for both containers -->
                 <div class="sticky top-4 space-y-4">
-                    <!-- Categories Container -->
-                    <div id="categories-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col">
+                    <!-- Spaces Container -->
+                    <div id="spaces-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex flex-col">
                         <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-                            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Categories</h2>
-                            <button id="add-category-btn" class="flex items-center justify-center w-7 h-7 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all duration-200">
+                            <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-200">Spaces</h2>
+                            <button id="add-space-btn" class="flex items-center justify-center w-7 h-7 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-all duration-200">
                                 <i class="fas fa-plus text-xs"></i>
                             </button>
                         </div>
-                        <div id="categories-tree" class="flex-1 overflow-y-auto px-2 py-1">
+                        <div id="spaces-tree" class="flex-1 overflow-y-auto px-2 py-1">
                             <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                                 <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
-                                <p>Loading categories...</p>
+                                <p>Loading spaces...</p>
                             </div>
-                            <!-- Categories will be loaded here -->
+                            <!-- Spaces will be loaded here -->
                         </div>
-                        <!-- Category Sorting Footer -->
-                        <div id="category-sort-footer" class="border-t border-gray-100 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900 flex-shrink-0 rounded-b-lg" style="display: none;">
+                        <!-- Space Sorting Footer -->
+                        <div id="space-sort-footer" class="border-t border-gray-100 dark:border-gray-700 px-4 py-2 bg-gray-50 dark:bg-gray-900 flex-shrink-0 rounded-b-lg" style="display: none;">
                             <div class="flex items-center justify-between text-xs">
                                 <div class="flex items-center space-x-3">
                                     <button class="sort-option flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors" data-sort="name">
@@ -139,8 +139,8 @@
 
                     <!-- Activity Container - Hidden on mobile for space -->
                     <div id="activity-container" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-3 py-3 hidden lg:block" style="display: none;">
-                        <!-- Category Breadcrumb -->
-                        <div id="activity-category-breadcrumb" class="mb-4">
+                        <!-- Space Breadcrumb -->
+                        <div id="activity-space-breadcrumb" class="mb-4">
                             <!-- Breadcrumb will be generated dynamically -->
                         </div>
 
@@ -213,22 +213,22 @@
                                         <span>Recursive</span>
                                     </button>
 
-                                    <!-- Dropdown menu for category actions (shown when category is selected) -->
-                                    <div id="category-actions-dropdown" class="relative" style="display: none;">
-                                        <button id="category-actions-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+                                    <!-- Dropdown menu for space actions (shown when space is selected) -->
+                                    <div id="space-actions-dropdown" class="relative" style="display: none;">
+                                        <button id="space-actions-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
                                             <i class="fas fa-ellipsis-h text-xs mr-1"></i>
                                             <span>Actions</span>
                                             <i class="fas fa-chevron-down text-xs ml-2"></i>
                                         </button>
-                                        <div id="category-actions-menu" class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
+                                        <div id="space-actions-menu" class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
                                             <div class="py-1">
-                                                <button id="edit-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                                <button id="edit-space-btn" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                                                     <i class="fas fa-edit text-xs mr-3"></i>
-                                                    Edit category
+                                                    Edit space
                                                 </button>
-                                                <button id="delete-category-btn" class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                                <button id="delete-space-btn" class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
                                                     <i class="fas fa-trash-alt text-xs mr-3"></i>
-                                                    Delete category
+                                                    Delete space
                                                 </button>
                                             </div>
                                         </div>
@@ -441,9 +441,9 @@
                         <div class="mt-4 flex items-center justify-between">
                             <div class="flex-1">
                                 <label for="fileStatsEnabled" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Category Detailed
+                                    Space Detailed
                                 </label>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enable file count and size tracking in category headers. Shows "• 5 files • 18.33 MB" when enabled.</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enable file count and size tracking in space headers. Shows "• 5 files • 18.33 MB" when enabled.</p>
                             </div>
                             <div class="ml-4">
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -488,36 +488,36 @@
         </div>
     </div>
 
-    <!-- Category Modal -->
-    <div id="category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <!-- Space Modal -->
+    <div id="space-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md transform transition-all modal-mobile-full">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Category</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add a new category to organize your posts</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Create Space</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Add a new space to organize your posts</p>
                 </div>
 
                 <!-- Body -->
                 <div class="px-6 py-4">
-                    <form id="category-form">
+                    <form id="space-form">
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Name <span class="text-red-500 dark:text-red-400">*</span></label>
-                            <input type="text" id="category-name" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                            <input type="text" id="space-name" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
                         </div>
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Description</label>
                             <div class="relative">
-                                <textarea id="category-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this category"></textarea>
+                                <textarea id="space-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this space"></textarea>
                                 <div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-700 px-1">
                                     <span id="description-counter">0</span>/<span id="description-max-length">280</span>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Category</label>
-                            <select id="category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                                <option value="">None (Root Category)</option>
+                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Space</label>
+                            <select id="space-parent" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="">None (Root Space)</option>
                             </select>
                         </div>
                     </form>
@@ -526,12 +526,12 @@
                 <!-- Footer -->
                 <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
                     <div class="flex items-center justify-end space-x-3">
-                        <button type="button" id="cancel-category" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+                        <button type="button" id="cancel-space" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" form="category-form" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
+                        <button type="submit" form="space-form" class="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors">
                             <i class="fas fa-plus text-xs mr-2"></i>
-                            Create category
+                            Create space
                         </button>
                     </div>
                 </div>
@@ -539,36 +539,36 @@
         </div>
     </div>
 
-    <!-- Edit Category Modal -->
-    <div id="edit-category-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <!-- Edit Space Modal -->
+    <div id="edit-space-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
         <div class="flex items-center justify-center min-h-screen px-4">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 w-full max-w-md transform transition-all modal-mobile-full">
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Category</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Update category information</p>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Space</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Update space information</p>
                 </div>
 
                 <!-- Body -->
                 <div class="px-6 py-4">
-                    <form id="edit-category-form">
+                    <form id="edit-space-form">
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Name <span class="text-red-500 dark:text-red-400">*</span></label>
-                            <input type="text" id="edit-category-name" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                            <input type="text" id="edit-space-name" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
                         </div>
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Description</label>
                             <div class="relative">
-                                <textarea id="edit-category-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this category"></textarea>
+                                <textarea id="edit-space-description" rows="3" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-colors" placeholder="Optional description for this space"></textarea>
                                 <div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500 bg-white dark:bg-gray-700 px-1">
                                     <span id="edit-description-counter">0</span>/<span id="edit-description-max-length">280</span>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Category</label>
-                            <select id="edit-category-parent" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                                <option value="">None (Root Category)</option>
+                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Parent Space</label>
+                            <select id="edit-space-parent" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="">None (Root Space)</option>
                             </select>
                         </div>
                     </form>
@@ -577,12 +577,12 @@
                 <!-- Footer -->
                 <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 rounded-b-lg">
                     <div class="flex items-center justify-end space-x-3">
-                        <button type="button" id="cancel-edit-category" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+                        <button type="button" id="cancel-edit-space" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
                             Cancel
                         </button>
-                        <button type="submit" form="edit-category-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                        <button type="submit" form="edit-space-form" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
                             <i class="fas fa-save text-xs mr-2"></i>
-                            Update category
+                            Update space
                         </button>
                     </div>
                 </div>
@@ -625,22 +625,22 @@
                 <!-- Header -->
                 <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Move Post</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Move this post to a different category</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Move this post to a different space</p>
                 </div>
 
                 <!-- Body -->
                 <div class="px-6 py-4">
                     <form id="move-form">
                         <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Current Category</label>
-                            <div id="current-category-display" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-600 dark:text-gray-400">
-                                <!-- Current category will be displayed here -->
+                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Current Space</label>
+                            <div id="current-space-display" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md text-sm text-gray-600 dark:text-gray-400">
+                                <!-- Current space will be displayed here -->
                             </div>
                         </div>
                         <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">New Category <span class="text-red-500 dark:text-red-400">*</span></label>
-                            <select id="move-category" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                <option value="">Select a category...</option>
+                            <label class="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">New Space <span class="text-red-500 dark:text-red-400">*</span></label>
+                            <select id="move-space" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Select a space...</option>
                             </select>
                         </div>
                     </form>
@@ -716,9 +716,9 @@
                     </div>
 
                     <div class="flex items-center justify-between text-sm">
-                        <div id="modal-category-display" class="text-gray-500 dark:text-gray-400 flex items-center min-w-0 flex-1">
+                        <div id="modal-space-display" class="text-gray-500 dark:text-gray-400 flex items-center min-w-0 flex-1">
                             <i class="fas fa-folder text-xs mr-2 flex-shrink-0"></i>
-                            <span class="truncate">Publishing to: <span id="modal-category-name" class="font-medium text-gray-700 dark:text-gray-300"></span></span>
+                            <span class="truncate">Publishing to: <span id="modal-space-name" class="font-medium text-gray-700 dark:text-gray-300"></span></span>
                         </div>
                     </div>
                 </div>
@@ -847,7 +847,7 @@
     <script src="/static/js/api.js"></script>
     <script src="/static/js/virtualScroll.js"></script>
     <script src="/static/js/ui.js"></script>
-    <script src="/static/js/categoryManager.js"></script>
+    <script src="/static/js/spaceManager.js"></script>
     <script src="/static/js/postManager.js"></script>
     <script src="/static/js/fileManager.js"></script>
     <script src="/static/js/imageViewer.js"></script>

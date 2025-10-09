@@ -22,13 +22,13 @@ import (
 )
 
 type concurrentTestSetup struct {
-	categoryHandler *CategoryHandler
+	spaceHandler *SpaceHandler
 	postHandler     *PostHandler
-	categoryService *services.CategoryService
+	spaceService *services.SpaceService
 	postService     *services.PostService
 	fileService     *services.FileService
 	db              *storage.DB
-	cache           *cache.CategoryCache
+	cache           *cache.SpaceCache
 	dispatcher      *events.Dispatcher
 	tempDir         string
 }
@@ -62,16 +62,16 @@ func setupConcurrentTest() (*concurrentTestSetup, error) {
 	// The database is already initialized with tables in NewDB
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup services
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		return nil, err
 	}
 
@@ -84,17 +84,17 @@ func setupConcurrentTest() (*concurrentTestSetup, error) {
 		WithMarkdownEnabled(false)
 
 	// Setup handlers
-	categoryHandler := NewCategoryHandler(categoryService)
+	spaceHandler := NewSpaceHandler(spaceService)
 	postHandler := NewPostHandler(postService, fileService, options)
 
 	return &concurrentTestSetup{
-		categoryHandler: categoryHandler,
+		spaceHandler: spaceHandler,
 		postHandler:     postHandler,
-		categoryService: categoryService,
+		spaceService: spaceService,
 		postService:     postService,
 		fileService:     fileService,
 		db:              db,
-		cache:           categoryCache,
+		cache:           spaceCache,
 		dispatcher:      dispatcher,
 		tempDir:         tempDir,
 	}, nil
@@ -109,7 +109,7 @@ func (setup *concurrentTestSetup) cleanup() {
 	}
 }
 
-func TestConcurrentCategoryCreation(t *testing.T) {
+func TestConcurrentSpaceCreation(t *testing.T) {
 	setup, err := setupConcurrentTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
@@ -119,45 +119,45 @@ func TestConcurrentCategoryCreation(t *testing.T) {
 	numGoroutines := 50
 	wg := sync.WaitGroup{}
 	results := make(chan error, numGoroutines)
-	createdCategories := make(chan *models.Category, numGoroutines)
+	createdSpaces := make(chan *models.Space, numGoroutines)
 
-	// Create parent category
-	parent, err := setup.categoryService.Create("Parent Category", nil, "Parent for concurrent test")
+	// Create parent space
+	parent, err := setup.spaceService.Create("Parent Space", nil, "Parent for concurrent test")
 	if err != nil {
-		t.Fatalf("Failed to create parent category: %v", err)
+		t.Fatalf("Failed to create parent space: %v", err)
 	}
 
-	// Concurrent category creation
+	// Concurrent space creation
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 
 			requestBody := map[string]interface{}{
-				"name":        fmt.Sprintf("Concurrent Category %d", i),
+				"name":        fmt.Sprintf("Concurrent Space %d", i),
 				"description": fmt.Sprintf("Description %d", i),
 				"parent_id":   parent.ID,
 			}
 
 			body, _ := json.Marshal(requestBody)
-			req := httptest.NewRequest("POST", "/api/categories", bytes.NewBuffer(body))
+			req := httptest.NewRequest("POST", "/api/spaces", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			setup.categoryHandler.CreateCategory(w, req)
+			setup.spaceHandler.CreateSpace(w, req)
 
 			if w.Code != http.StatusCreated {
 				results <- fmt.Errorf("goroutine %d: expected 201, got %d", i, w.Code)
 				return
 			}
 
-			var cat models.Category
+			var cat models.Space
 			if err := json.Unmarshal(w.Body.Bytes(), &cat); err != nil {
 				results <- fmt.Errorf("goroutine %d: failed to unmarshal: %v", i, err)
 				return
 			}
 
-			createdCategories <- &cat
+			createdSpaces <- &cat
 			results <- nil
 		}(i)
 	}
@@ -165,7 +165,7 @@ func TestConcurrentCategoryCreation(t *testing.T) {
 	// Wait for all goroutines
 	wg.Wait()
 	close(results)
-	close(createdCategories)
+	close(createdSpaces)
 
 	// Check results
 	errorCount := 0
@@ -176,37 +176,37 @@ func TestConcurrentCategoryCreation(t *testing.T) {
 		}
 	}
 
-	// Collect created categories
-	categories := make([]*models.Category, 0, numGoroutines)
-	for cat := range createdCategories {
-		categories = append(categories, cat)
+	// Collect created spaces
+	spaces := make([]*models.Space, 0, numGoroutines)
+	for cat := range createdSpaces {
+		spaces = append(spaces, cat)
 	}
 
-	if len(categories) != numGoroutines-errorCount {
-		t.Errorf("Expected %d successful categories, got %d", numGoroutines-errorCount, len(categories))
+	if len(spaces) != numGoroutines-errorCount {
+		t.Errorf("Expected %d successful spaces, got %d", numGoroutines-errorCount, len(spaces))
 	}
 
-	// Verify all categories have unique IDs
+	// Verify all spaces have unique IDs
 	ids := make(map[int]bool)
-	for _, cat := range categories {
+	for _, cat := range spaces {
 		if ids[cat.ID] {
-			t.Errorf("Duplicate category ID found: %d", cat.ID)
+			t.Errorf("Duplicate space ID found: %d", cat.ID)
 		}
 		ids[cat.ID] = true
 	}
 
-	// Verify data consistency by retrieving all categories
-	req := httptest.NewRequest("GET", "/api/categories", nil)
+	// Verify data consistency by retrieving all spaces
+	req := httptest.NewRequest("GET", "/api/spaces", nil)
 	w := httptest.NewRecorder()
-	setup.categoryHandler.GetCategories(w, req)
+	setup.spaceHandler.GetSpaces(w, req)
 
-	var allCategories []*models.Category
-	json.Unmarshal(w.Body.Bytes(), &allCategories)
+	var allSpaces []*models.Space
+	json.Unmarshal(w.Body.Bytes(), &allSpaces)
 
 	// Should have parent + successfully created children
-	expectedTotal := 1 + len(categories)
-	if len(allCategories) != expectedTotal {
-		t.Errorf("Expected %d total categories, got %d", expectedTotal, len(allCategories))
+	expectedTotal := 1 + len(spaces)
+	if len(allSpaces) != expectedTotal {
+		t.Errorf("Expected %d total spaces, got %d", expectedTotal, len(allSpaces))
 	}
 }
 
@@ -217,10 +217,10 @@ func TestConcurrentPostCreation(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test category
-	category, err := setup.categoryService.Create("Test Category", nil, "Test category for concurrent posts")
+	// Create test space
+	space, err := setup.spaceService.Create("Test Space", nil, "Test space for concurrent posts")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	numGoroutines := 50
@@ -235,7 +235,7 @@ func TestConcurrentPostCreation(t *testing.T) {
 			defer wg.Done()
 
 			requestBody := map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     fmt.Sprintf("Concurrent post content %d", i),
 			}
 
@@ -295,10 +295,10 @@ func TestConcurrentPostCreation(t *testing.T) {
 		ids[post.ID] = true
 	}
 
-	// Verify category post count is correct
-	updatedCategory, _ := setup.categoryService.Get(category.ID)
-	if updatedCategory.PostCount != len(posts) {
-		t.Errorf("Expected category post count %d, got %d", len(posts), updatedCategory.PostCount)
+	// Verify space post count is correct
+	updatedSpace, _ := setup.spaceService.Get(space.ID)
+	if updatedSpace.PostCount != len(posts) {
+		t.Errorf("Expected space post count %d, got %d", len(posts), updatedSpace.PostCount)
 	}
 }
 
@@ -309,22 +309,22 @@ func TestConcurrentPostMoves(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test categories
-	category1, err := setup.categoryService.Create("Category 1", nil, "Category 1")
+	// Create test spaces
+	space1, err := setup.spaceService.Create("Space 1", nil, "Space 1")
 	if err != nil {
-		t.Fatalf("Failed to create Category 1: %v", err)
+		t.Fatalf("Failed to create Space 1: %v", err)
 	}
-	category2, err := setup.categoryService.Create("Category 2", nil, "Category 2")
+	space2, err := setup.spaceService.Create("Space 2", nil, "Space 2")
 	if err != nil {
-		t.Fatalf("Failed to create Category 2: %v", err)
+		t.Fatalf("Failed to create Space 2: %v", err)
 	}
 
-	// Create posts in category1
+	// Create posts in space1
 	numPosts := 20
 	posts := make([]*models.Post, numPosts)
 	for i := 0; i < numPosts; i++ {
 		var err error
-		posts[i], err = setup.postService.Create(category1.ID, fmt.Sprintf("Post %d", i), nil)
+		posts[i], err = setup.postService.Create(space1.ID, fmt.Sprintf("Post %d", i), nil)
 		if err != nil {
 			t.Fatalf("Failed to create post %d: %v", i, err)
 		}
@@ -334,14 +334,14 @@ func TestConcurrentPostMoves(t *testing.T) {
 	wg := sync.WaitGroup{}
 	results := make(chan error, numGoroutines)
 
-	// Concurrent post moves from category1 to category2
+	// Concurrent post moves from space1 to space2
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 
 			requestBody := map[string]interface{}{
-				"category_id": category2.ID,
+				"space_id": space2.ID,
 			}
 
 			body, _ := json.Marshal(requestBody)
@@ -375,15 +375,15 @@ func TestConcurrentPostMoves(t *testing.T) {
 	}
 
 	// Verify final post counts
-	cat1, _ := setup.categoryService.Get(category1.ID)
-	cat2, _ := setup.categoryService.Get(category2.ID)
+	cat1, _ := setup.spaceService.Get(space1.ID)
+	cat2, _ := setup.spaceService.Get(space2.ID)
 
 	successfulMoves := numPosts - errorCount
 	if cat1.PostCount != errorCount {
-		t.Errorf("Expected category1 post count %d, got %d", errorCount, cat1.PostCount)
+		t.Errorf("Expected space1 post count %d, got %d", errorCount, cat1.PostCount)
 	}
 	if cat2.PostCount != successfulMoves {
-		t.Errorf("Expected category2 post count %d, got %d", successfulMoves, cat2.PostCount)
+		t.Errorf("Expected space2 post count %d, got %d", successfulMoves, cat2.PostCount)
 	}
 
 	// Verify total posts remain consistent
@@ -393,41 +393,41 @@ func TestConcurrentPostMoves(t *testing.T) {
 	}
 }
 
-func TestConcurrentCategoryUpdates(t *testing.T) {
+func TestConcurrentSpaceUpdates(t *testing.T) {
 	setup, err := setupConcurrentTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create test categories
-	category, err := setup.categoryService.Create("Original Category", nil, "Original description")
+	// Create test spaces
+	space, err := setup.spaceService.Create("Original Space", nil, "Original description")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	numGoroutines := 20
 	wg := sync.WaitGroup{}
 	results := make(chan error, numGoroutines)
 
-	// Concurrent category updates
+	// Concurrent space updates
 	for i := 0; i < numGoroutines; i++ {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
 
 			requestBody := map[string]interface{}{
-				"name":        fmt.Sprintf("Updated Category %d", i),
+				"name":        fmt.Sprintf("Updated Space %d", i),
 				"description": fmt.Sprintf("Updated description %d", i),
 			}
 
 			body, _ := json.Marshal(requestBody)
-			req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(category.ID), bytes.NewBuffer(body))
+			req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(space.ID), bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
-			req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(category.ID)})
+			req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(space.ID)})
 			w := httptest.NewRecorder()
 
-			setup.categoryHandler.UpdateCategory(w, req)
+			setup.spaceHandler.UpdateSpace(w, req)
 
 			if w.Code != http.StatusOK {
 				results <- fmt.Errorf("goroutine %d: expected 200, got %d", i, w.Code)
@@ -450,17 +450,17 @@ func TestConcurrentCategoryUpdates(t *testing.T) {
 	}
 
 	// Verify final state is consistent
-	finalCategory, err := setup.categoryService.Get(category.ID)
+	finalSpace, err := setup.spaceService.Get(space.ID)
 	if err != nil {
-		t.Fatalf("Failed to get final category state: %v", err)
+		t.Fatalf("Failed to get final space state: %v", err)
 	}
 
-	// Category should exist and have a valid state
-	if finalCategory.ID != category.ID {
-		t.Errorf("Category ID changed during concurrent updates")
+	// Space should exist and have a valid state
+	if finalSpace.ID != space.ID {
+		t.Errorf("Space ID changed during concurrent updates")
 	}
-	if finalCategory.Name == "Original Category" {
-		t.Error("Category name was not updated by any concurrent operation")
+	if finalSpace.Name == "Original Space" {
+		t.Error("Space name was not updated by any concurrent operation")
 	}
 }
 
@@ -472,22 +472,22 @@ func TestConcurrentMixedOperations(t *testing.T) {
 	defer setup.cleanup()
 
 	// Create initial data
-	parentCategory, err := setup.categoryService.Create("Parent Category", nil, "Parent category")
+	parentSpace, err := setup.spaceService.Create("Parent Space", nil, "Parent space")
 	if err != nil {
-		t.Fatalf("Failed to create parent category: %v", err)
+		t.Fatalf("Failed to create parent space: %v", err)
 	}
-	childCategory, err := setup.categoryService.Create("Child Category", &parentCategory.ID, "Child category")
+	childSpace, err := setup.spaceService.Create("Child Space", &parentSpace.ID, "Child space")
 	if err != nil {
-		t.Fatalf("Failed to create child category: %v", err)
+		t.Fatalf("Failed to create child space: %v", err)
 	}
 
 	// Create some initial posts
 	for i := 0; i < 5; i++ {
-		_, err := setup.postService.Create(parentCategory.ID, fmt.Sprintf("Initial post %d", i), nil)
+		_, err := setup.postService.Create(parentSpace.ID, fmt.Sprintf("Initial post %d", i), nil)
 		if err != nil {
 			t.Fatalf("Failed to create initial post %d: %v", i, err)
 		}
-		_, err = setup.postService.Create(childCategory.ID, fmt.Sprintf("Initial child post %d", i), nil)
+		_, err = setup.postService.Create(childSpace.ID, fmt.Sprintf("Initial child post %d", i), nil)
 		if err != nil {
 			t.Fatalf("Failed to create initial child post %d: %v", i, err)
 		}
@@ -505,27 +505,27 @@ func TestConcurrentMixedOperations(t *testing.T) {
 
 			switch i % 6 {
 			case 0:
-				// Create new category
+				// Create new space
 				requestBody := map[string]interface{}{
-					"name":        fmt.Sprintf("New Category %d", i),
+					"name":        fmt.Sprintf("New Space %d", i),
 					"description": fmt.Sprintf("Description %d", i),
-					"parent_id":   parentCategory.ID,
+					"parent_id":   parentSpace.ID,
 				}
 				body, _ := json.Marshal(requestBody)
-				req := httptest.NewRequest("POST", "/api/categories", bytes.NewBuffer(body))
+				req := httptest.NewRequest("POST", "/api/spaces", bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")
 				w := httptest.NewRecorder()
-				setup.categoryHandler.CreateCategory(w, req)
-				results <- fmt.Sprintf("create_category_%d: %d", i, w.Code)
+				setup.spaceHandler.CreateSpace(w, req)
+				results <- fmt.Sprintf("create_space_%d: %d", i, w.Code)
 
 			case 1:
 				// Create new post
-				targetCat := parentCategory.ID
+				targetCat := parentSpace.ID
 				if i%2 == 0 {
-					targetCat = childCategory.ID
+					targetCat = childSpace.ID
 				}
 				requestBody := map[string]interface{}{
-					"category_id": targetCat,
+					"space_id": targetCat,
 					"content":     fmt.Sprintf("New post %d", i),
 				}
 				body, _ := json.Marshal(requestBody)
@@ -536,45 +536,45 @@ func TestConcurrentMixedOperations(t *testing.T) {
 				results <- fmt.Sprintf("create_post_%d: %d", i, w.Code)
 
 			case 2:
-				// Get categories
-				req := httptest.NewRequest("GET", "/api/categories", nil)
+				// Get spaces
+				req := httptest.NewRequest("GET", "/api/spaces", nil)
 				w := httptest.NewRecorder()
-				setup.categoryHandler.GetCategories(w, req)
-				results <- fmt.Sprintf("get_categories_%d: %d", i, w.Code)
+				setup.spaceHandler.GetSpaces(w, req)
+				results <- fmt.Sprintf("get_spaces_%d: %d", i, w.Code)
 
 			case 3:
-				// Get posts by category
-				targetCat := parentCategory.ID
+				// Get posts by space
+				targetCat := parentSpace.ID
 				if i%2 == 0 {
-					targetCat = childCategory.ID
+					targetCat = childSpace.ID
 				}
-				req := httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(targetCat)+"/posts", nil)
+				req := httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(targetCat)+"/posts", nil)
 				req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(targetCat)})
 				w := httptest.NewRecorder()
-				setup.postHandler.GetPostsByCategory(w, req)
+				setup.postHandler.GetPostsBySpace(w, req)
 				results <- fmt.Sprintf("get_posts_%d: %d", i, w.Code)
 
 			case 4:
-				// Get categories by parent
-				req := httptest.NewRequest("GET", "/api/categories/by-parent?parent_id="+strconv.Itoa(parentCategory.ID), nil)
+				// Get spaces by parent
+				req := httptest.NewRequest("GET", "/api/spaces/by-parent?parent_id="+strconv.Itoa(parentSpace.ID), nil)
 				w := httptest.NewRecorder()
-				setup.categoryHandler.GetCategoriesByParent(w, req)
+				setup.spaceHandler.GetSpacesByParent(w, req)
 				results <- fmt.Sprintf("get_by_parent_%d: %d", i, w.Code)
 
 			case 5:
-				// Update category
-				targetCat := childCategory.ID
+				// Update space
+				targetCat := childSpace.ID
 				requestBody := map[string]interface{}{
 					"name":        fmt.Sprintf("Updated Child %d", i),
 					"description": fmt.Sprintf("Updated description %d", i),
 				}
 				body, _ := json.Marshal(requestBody)
-				req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(targetCat), bytes.NewBuffer(body))
+				req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(targetCat), bytes.NewBuffer(body))
 				req.Header.Set("Content-Type", "application/json")
 				req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(targetCat)})
 				w := httptest.NewRecorder()
-				setup.categoryHandler.UpdateCategory(w, req)
-				results <- fmt.Sprintf("update_category_%d: %d", i, w.Code)
+				setup.spaceHandler.UpdateSpace(w, req)
+				results <- fmt.Sprintf("update_space_%d: %d", i, w.Code)
 			}
 		}(i)
 	}
@@ -601,22 +601,22 @@ func TestConcurrentMixedOperations(t *testing.T) {
 	}
 
 	// Verify system is still functional after all operations
-	req := httptest.NewRequest("GET", "/api/categories", nil)
+	req := httptest.NewRequest("GET", "/api/spaces", nil)
 	w := httptest.NewRecorder()
-	setup.categoryHandler.GetCategories(w, req)
+	setup.spaceHandler.GetSpaces(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("System not functional after mixed operations: %d", w.Code)
 	}
 
-	var finalCategories []*models.Category
-	json.Unmarshal(w.Body.Bytes(), &finalCategories)
+	var finalSpaces []*models.Space
+	json.Unmarshal(w.Body.Bytes(), &finalSpaces)
 
-	if len(finalCategories) < 2 {
-		t.Errorf("Expected at least 2 categories after mixed operations, got %d", len(finalCategories))
+	if len(finalSpaces) < 2 {
+		t.Errorf("Expected at least 2 spaces after mixed operations, got %d", len(finalSpaces))
 	}
 
-	t.Logf("Mixed operations completed. Final state: %d categories", len(finalCategories))
+	t.Logf("Mixed operations completed. Final state: %d spaces", len(finalSpaces))
 }
 
 func TestConcurrentOperationsWithTimeout(t *testing.T) {
@@ -627,9 +627,9 @@ func TestConcurrentOperationsWithTimeout(t *testing.T) {
 	defer setup.cleanup()
 
 	// Create test data
-	category, err := setup.categoryService.Create("Test Category", nil, "Test category")
+	space, err := setup.spaceService.Create("Test Space", nil, "Test space")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	// This test specifically checks for operations that might hang
@@ -648,7 +648,7 @@ func TestConcurrentOperationsWithTimeout(t *testing.T) {
 				for i := 0; i < numOps; i++ {
 					go func(i int) {
 						requestBody := map[string]interface{}{
-							"category_id": category.ID,
+							"space_id": space.ID,
 							"content":     fmt.Sprintf("Timeout test post %d", i),
 						}
 						body, _ := json.Marshal(requestBody)
@@ -673,19 +673,19 @@ func TestConcurrentOperationsWithTimeout(t *testing.T) {
 			},
 		},
 		{
-			name:    "Rapid_Category_Hierarchy_Changes",
+			name:    "Rapid_Space_Hierarchy_Changes",
 			timeout: 15 * time.Second,
 			test: func() error {
 				// Create a small hierarchy
-				cat1, err := setup.categoryService.Create("Cat1", nil, "Cat1")
+				cat1, err := setup.spaceService.Create("Cat1", nil, "Cat1")
 				if err != nil {
 					return fmt.Errorf("failed to create Cat1: %v", err)
 				}
-				cat2, err := setup.categoryService.Create("Cat2", &cat1.ID, "Cat2")
+				cat2, err := setup.spaceService.Create("Cat2", &cat1.ID, "Cat2")
 				if err != nil {
 					return fmt.Errorf("failed to create Cat2: %v", err)
 				}
-				cat3, err := setup.categoryService.Create("Cat3", &cat2.ID, "Cat3")
+				cat3, err := setup.spaceService.Create("Cat3", &cat2.ID, "Cat3")
 				if err != nil {
 					return fmt.Errorf("failed to create Cat3: %v", err)
 				}
@@ -727,11 +727,11 @@ func TestConcurrentOperationsWithTimeout(t *testing.T) {
 						}
 
 						body, _ := json.Marshal(requestBody)
-						req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(targetCat), bytes.NewBuffer(body))
+						req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(targetCat), bytes.NewBuffer(body))
 						req.Header.Set("Content-Type", "application/json")
 						req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(targetCat)})
 						w := httptest.NewRecorder()
-						setup.categoryHandler.UpdateCategory(w, req)
+						setup.spaceHandler.UpdateSpace(w, req)
 						done <- true
 					}(i)
 				}

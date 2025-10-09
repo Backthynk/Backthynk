@@ -8,14 +8,14 @@ const (
 
 	// ID Validation Errors
 	ErrInvalidPostID     = "Invalid post ID"
-	ErrInvalidCategoryID = "Invalid category ID"
+	ErrInvalidSpaceID = "Invalid space ID"
 	ErrInvalidParentID   = "Invalid parent_id"
 
 	// Required Field Errors
 	ErrContentRequired          = "Content is required"
 	ErrNameRequired             = "Name is required"
 	ErrPostIDRequired           = "post_id is required"
-	ErrValidCategoryIDRequired  = "Valid category_id is required"
+	ErrValidSpaceIDRequired  = "Valid space_id is required"
 
 	// Feature Disabled Errors
 	ErrFileUploadDisabled        = "File upload is disabled"
@@ -31,6 +31,10 @@ const (
 	ErrFailedToRetrievePost    = "Failed to retrieve updated post"
 	ErrFailedToGetPosts        = "Failed to get posts"
 	ErrTimestampTooEarly       = "Custom timestamp cannot be earlier than 01/01/2000"
+
+	// Space Errors
+	ErrSpaceNotFound          = "Space not found"
+	ErrSpaceNameInvalidFormat = "Space name must contain only letters, numbers, and single spaces between words"
 
 	// Settings Errors
 	ErrFailedToMarshalSettings = "Failed to marshal settings"

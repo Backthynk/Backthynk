@@ -1,17 +1,17 @@
 // UI functions
 async function showCreatePost() {
-    if (!currentCategory) {
-        showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectCategory);
+    if (!currentSpace) {
+        showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectSpace);
         return;
     }
 
-    // Show modal and set category info
+    // Show modal and set space info
     document.getElementById('create-post-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Set category breadcrumb in modal
-    const categoryBreadcrumb = getCategoryFullBreadcrumb(currentCategory);
-    document.getElementById('modal-category-name').textContent = categoryBreadcrumb;
+    // Set space breadcrumb in modal
+    const spaceBreadcrumb = getSpaceFullBreadcrumb(currentSpace);
+    document.getElementById('modal-space-name').textContent = spaceBreadcrumb;
 
     // Focus on content area
     document.getElementById('modal-post-content').focus();
@@ -109,68 +109,68 @@ function hideCreatePost() {
     }
 }
 
-function showCategoryModal() {
-    document.getElementById('category-modal').classList.remove('hidden');
+function showSpaceModal() {
+    document.getElementById('space-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Set current category as default parent (if any and not "All categories")
-    const parentSelect = document.getElementById('category-parent');
-    if (currentCategory && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
-        parentSelect.value = currentCategory.id.toString();
+    // Set current space as default parent (if any and not "All spaces")
+    const parentSelect = document.getElementById('space-parent');
+    if (currentSpace && currentSpace.id !== window.AppConstants.ALL_SPACES_ID) {
+        parentSelect.value = currentSpace.id.toString();
     } else {
-        parentSelect.value = ''; // None (Root Category)
+        parentSelect.value = ''; // None (Root Space)
     }
 
-    // Set dynamic maxlength for category name
-    document.getElementById('category-name').setAttribute('maxlength', window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength);
+    // Set dynamic maxlength for space name
+    document.getElementById('space-name').setAttribute('maxlength', window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength);
 
-    document.getElementById('category-name').focus();
+    document.getElementById('space-name').focus();
 }
 
-function hideCategoryModal() {
-    document.getElementById('category-modal').classList.add('hidden');
+function hideSpaceModal() {
+    document.getElementById('space-modal').classList.add('hidden');
     document.body.style.overflow = '';
-    document.getElementById('category-form').reset();
-    document.getElementById('category-description').value = '';
-    updateDescriptionCounter('category-description', 'description-counter');
+    document.getElementById('space-form').reset();
+    document.getElementById('space-description').value = '';
+    updateDescriptionCounter('space-description', 'description-counter');
 }
 
-function handleCategoryModalClose() {
-    if (hasCategoryContent()) {
+function handleSpaceModalClose() {
+    if (hasSpaceContent()) {
         if (confirm(window.AppConstants.USER_MESSAGES.confirm.unsavedContent)) {
-            hideCategoryModal();
+            hideSpaceModal();
         }
     } else {
-        hideCategoryModal();
+        hideSpaceModal();
     }
 }
 
-function hasCategoryContent() {
-    const name = document.getElementById('category-name').value.trim();
-    const description = document.getElementById('category-description').value.trim();
+function hasSpaceContent() {
+    const name = document.getElementById('space-name').value.trim();
+    const description = document.getElementById('space-description').value.trim();
     return name.length > 0 || description.length > 0;
 }
 
-function showEditCategoryModal() {
-    if (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectCategory);
+function showEditSpaceModal() {
+    if (!currentSpace || currentSpace.id === window.AppConstants.ALL_SPACES_ID) {
+        showError(window.AppConstants.USER_MESSAGES.error.pleaseSelectSpace);
         return;
     }
 
-    document.getElementById('edit-category-modal').classList.remove('hidden');
+    document.getElementById('edit-space-modal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Populate form fields with current category data
-    document.getElementById('edit-category-name').value = currentCategory.name;
-    document.getElementById('edit-category-description').value = currentCategory.description || '';
-    updateDescriptionCounter('edit-category-description', 'edit-description-counter');
+    // Populate form fields with current space data
+    document.getElementById('edit-space-name').value = currentSpace.name;
+    document.getElementById('edit-space-description').value = currentSpace.description || '';
+    updateDescriptionCounter('edit-space-description', 'edit-description-counter');
 
     // Hide parent selector if no valid parents exist
-    const parentSelectDiv = document.querySelector('#edit-category-modal .mb-4:has(#edit-category-parent)');
+    const parentSelectDiv = document.querySelector('#edit-space-modal .mb-4:has(#edit-space-parent)');
 
     // Calculate depth span to determine if any parents are possible
-    function getDepthSpanBelow(categoryId) {
-        const children = categories.filter(cat => cat.parent_id === categoryId);
+    function getDepthSpanBelow(spaceId) {
+        const children = spaces.filter(cat => cat.parent_id === spaceId);
         if (children.length === 0) return 0;
 
         let maxChildSpan = 0;
@@ -181,23 +181,23 @@ function showEditCategoryModal() {
         return maxChildSpan;
     }
 
-    const depthSpanBelow = getDepthSpanBelow(currentCategory.id);
+    const depthSpanBelow = getDepthSpanBelow(currentSpace.id);
 
     // Check if any valid parents exist (excluding descendants)
-    const excludedIds = new Set([currentCategory.id]);
+    const excludedIds = new Set([currentSpace.id]);
     function addDescendants(parentId) {
-        const children = categories.filter(cat => cat.parent_id === parentId);
+        const children = spaces.filter(cat => cat.parent_id === parentId);
         children.forEach(child => {
             excludedIds.add(child.id);
             addDescendants(child.id);
         });
     }
-    addDescendants(currentCategory.id);
+    addDescendants(currentSpace.id);
 
-    const hasValidParents = categories.some(cat => {
+    const hasValidParents = spaces.some(cat => {
         if (excludedIds.has(cat.id)) return false;
         const newMaxDepth = cat.depth + 1 + depthSpanBelow;
-        return newMaxDepth <= window.AppConstants.MAX_CATEGORY_DEPTH;
+        return newMaxDepth <= window.AppConstants.MAX_SPACE_DEPTH;
     });
 
 
@@ -210,100 +210,100 @@ function showEditCategoryModal() {
             parentSelectDiv.style.display = 'block';
         }
 
-        // Populate parent select and exclude the current category and its descendants
-        populateEditCategorySelect();
+        // Populate parent select and exclude the current space and its descendants
+        populateEditSpaceSelect();
 
         // Set current parent if exists
-        if (currentCategory.parent_id) {
-            document.getElementById('edit-category-parent').value = currentCategory.parent_id.toString();
+        if (currentSpace.parent_id) {
+            document.getElementById('edit-space-parent').value = currentSpace.parent_id.toString();
         } else {
-            document.getElementById('edit-category-parent').value = '';
+            document.getElementById('edit-space-parent').value = '';
         }
     }
 
-    // Set dynamic maxlength for category name
-    document.getElementById('edit-category-name').setAttribute('maxlength', window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength);
+    // Set dynamic maxlength for space name
+    document.getElementById('edit-space-name').setAttribute('maxlength', window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength);
 
-    document.getElementById('edit-category-name').focus();
+    document.getElementById('edit-space-name').focus();
 }
 
-function hideEditCategoryModal() {
-    document.getElementById('edit-category-modal').classList.add('hidden');
+function hideEditSpaceModal() {
+    document.getElementById('edit-space-modal').classList.add('hidden');
     document.body.style.overflow = '';
-    document.getElementById('edit-category-form').reset();
-    document.getElementById('edit-category-description').value = '';
-    updateDescriptionCounter('edit-category-description', 'edit-description-counter');
+    document.getElementById('edit-space-form').reset();
+    document.getElementById('edit-space-description').value = '';
+    updateDescriptionCounter('edit-space-description', 'edit-description-counter');
 }
 
-function handleEditCategoryModalClose() {
-    if (hasEditCategoryContentChanged()) {
+function handleEditSpaceModalClose() {
+    if (hasEditSpaceContentChanged()) {
         if (confirm(window.AppConstants.USER_MESSAGES.confirm.unsavedContent)) {
-            hideEditCategoryModal();
+            hideEditSpaceModal();
         }
     } else {
-        hideEditCategoryModal();
+        hideEditSpaceModal();
     }
 }
 
-function hasEditCategoryContentChanged() {
-    if (!currentCategory) return false;
+function hasEditSpaceContentChanged() {
+    if (!currentSpace) return false;
 
-    const name = document.getElementById('edit-category-name').value.trim();
-    const description = document.getElementById('edit-category-description').value.trim();
-    const parentId = document.getElementById('edit-category-parent').value || null;
+    const name = document.getElementById('edit-space-name').value.trim();
+    const description = document.getElementById('edit-space-description').value.trim();
+    const parentId = document.getElementById('edit-space-parent').value || null;
 
-    const currentParentId = currentCategory.parent_id ? currentCategory.parent_id.toString() : null;
+    const currentParentId = currentSpace.parent_id ? currentSpace.parent_id.toString() : null;
     const newParentId = parentId ? parentId.toString() : null;
 
-    const nameChanged = name !== currentCategory.name;
-    const descriptionChanged = description !== (currentCategory.description || '');
+    const nameChanged = name !== currentSpace.name;
+    const descriptionChanged = description !== (currentSpace.description || '');
     const parentChanged = currentParentId !== newParentId;
 
     return nameChanged || descriptionChanged || parentChanged;
 }
 
-function populateCategorySelect() {
-    const select = document.getElementById('category-parent');
-    select.innerHTML = '<option value="">None (Root Category)</option>';
+function populateSpaceSelect() {
+    const select = document.getElementById('space-parent');
+    select.innerHTML = '<option value="">None (Root Space)</option>';
 
-    // Filter categories that can accept children (depth < MAX_CATEGORY_DEPTH)
-    const availableCategories = categories.filter(cat => cat.depth < window.AppConstants.MAX_CATEGORY_DEPTH);
+    // Filter spaces that can accept children (depth < MAX_SPACE_DEPTH)
+    const availableSpaces = spaces.filter(cat => cat.depth < window.AppConstants.MAX_SPACE_DEPTH);
 
-    availableCategories.forEach(category => {
+    availableSpaces.forEach(space => {
         const option = document.createElement('option');
-        option.value = category.id;
+        option.value = space.id;
 
         // Build breadcrumb path with emphasis on last item
-        const breadcrumbPath = getCategoryBreadcrumbPath(category.id, true);
+        const breadcrumbPath = getSpaceBreadcrumbPath(space.id, true);
         option.textContent = breadcrumbPath;
 
         select.appendChild(option);
     });
 }
 
-function populateEditCategorySelect() {
-    const select = document.getElementById('edit-category-parent');
-    select.innerHTML = '<option value="">None (Root Category)</option>';
+function populateEditSpaceSelect() {
+    const select = document.getElementById('edit-space-parent');
+    select.innerHTML = '<option value="">None (Root Space)</option>';
 
-    // Get all descendant IDs of the current category to exclude them
-    const excludedIds = new Set([currentCategory.id]);
+    // Get all descendant IDs of the current space to exclude them
+    const excludedIds = new Set([currentSpace.id]);
 
     function addDescendants(parentId) {
-        const children = categories.filter(cat => cat.parent_id === parentId);
+        const children = spaces.filter(cat => cat.parent_id === parentId);
         children.forEach(child => {
             excludedIds.add(child.id);
             addDescendants(child.id);
         });
     }
 
-    addDescendants(currentCategory.id);
+    addDescendants(currentSpace.id);
 
-    // Filter available categories (exclude self and descendants, and prevent depth violations)
-    // If a category is selected as parent, the current category would have depth = parent.depth + 1
+    // Filter available spaces (exclude self and descendants, and prevent depth violations)
+    // If a space is selected as parent, the current space would have depth = parent.depth + 1
 
-    // Calculate the depth span of the current category tree (from current category to deepest descendant)
-    function getDepthSpanBelow(categoryId) {
-        const children = categories.filter(cat => cat.parent_id === categoryId);
+    // Calculate the depth span of the current space tree (from current space to deepest descendant)
+    function getDepthSpanBelow(spaceId) {
+        const children = spaces.filter(cat => cat.parent_id === spaceId);
         if (children.length === 0) return 0; // No children, span is 0
 
         let maxChildSpan = 0;
@@ -314,42 +314,42 @@ function populateEditCategorySelect() {
         return maxChildSpan;
     }
 
-    const depthSpanBelow = getDepthSpanBelow(currentCategory.id);
+    const depthSpanBelow = getDepthSpanBelow(currentSpace.id);
 
-    const availableCategories = categories.filter(cat => {
+    const availableSpaces = spaces.filter(cat => {
         if (excludedIds.has(cat.id)) return false;
 
         // Include current parent so user can keep it selected (no change)
 
-        // If we move currentCategory under cat, currentCategory will have depth = cat.depth + 1
+        // If we move currentSpace under cat, currentSpace will have depth = cat.depth + 1
         // The deepest descendant will have depth = cat.depth + 1 + depthSpanBelow
         const newMaxDepth = cat.depth + 1 + depthSpanBelow;
-        return newMaxDepth <= window.AppConstants.MAX_CATEGORY_DEPTH;
+        return newMaxDepth <= window.AppConstants.MAX_SPACE_DEPTH;
     });
 
-    availableCategories.forEach(category => {
+    availableSpaces.forEach(space => {
         const option = document.createElement('option');
-        option.value = category.id;
+        option.value = space.id;
 
         // Build breadcrumb path with emphasis on last item
-        const breadcrumbPath = getCategoryBreadcrumbPath(category.id, true);
+        const breadcrumbPath = getSpaceBreadcrumbPath(space.id, true);
         option.textContent = breadcrumbPath;
 
         select.appendChild(option);
     });
 }
 
-function getCategoryBreadcrumbPath(categoryId, emphasizeLast = false) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category) return '';
+function getSpaceBreadcrumbPath(spaceId, emphasizeLast = false) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (!space) return '';
 
     const path = [];
-    let current = category;
+    let current = space;
 
     while (current) {
         path.unshift(current.name);
         if (current.parent_id) {
-            current = categories.find(cat => cat.id === current.parent_id);
+            current = spaces.find(cat => cat.id === current.parent_id);
         } else {
             current = null;
         }
@@ -373,18 +373,18 @@ function updateDescriptionCounter(textareaId, counterId) {
     }
 }
 
-function getCategoryFullBreadcrumb(category) {
-    if (!category || category.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        return window.AppConstants.UI_TEXT.allCategories;
+function getSpaceFullBreadcrumb(space) {
+    if (!space || space.id === window.AppConstants.ALL_SPACES_ID) {
+        return window.AppConstants.UI_TEXT.allSpaces;
     }
 
     const path = [];
-    let current = category;
+    let current = space;
 
     while (current) {
         path.unshift(current.name);
         if (current.parent_id) {
-            current = categories.find(cat => cat.id === current.parent_id);
+            current = spaces.find(cat => cat.id === current.parent_id);
         } else {
             current = null;
         }

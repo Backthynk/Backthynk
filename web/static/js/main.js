@@ -101,13 +101,13 @@ async function updateFileUploadText() {
     modalFileUploadText.textContent = `Or drag and drop files here (max ${settings.maxFilesPerPost} files)`;
 }
 
-// Calculate and set dynamic category container height
-function updateCategoryContainerHeight() {
-    const categoriesContainer = document.getElementById('categories-container');
+// Calculate and set dynamic space container height
+function updateSpaceContainerHeight() {
+    const spacesContainer = document.getElementById('spaces-container');
     const footerContainer = document.getElementById("footer-links");
     const activityContainer = document.getElementById('activity-container');
 
-    if (!categoriesContainer) return;
+    if (!spacesContainer) return;
 
     // Get viewport height
     const viewportHeight = window.innerHeight;
@@ -133,7 +133,7 @@ function updateCategoryContainerHeight() {
     const topSpacing = 16;
     const containerSpacing = (activityHeight > 0 ? 16 : 0) + (footerHeight > 0 ? 16 : 0);
 
-    // Calculate maximum available height for the entire category container
+    // Calculate maximum available height for the entire space container
     const maxHeight = viewportHeight
         - headerHeight
         - topSpacing * 2
@@ -143,34 +143,34 @@ function updateCategoryContainerHeight() {
 
     // Set max-height with a minimum of 200px to ensure usability
     const finalHeight = Math.min(Math.max(maxHeight, 200), 800);
-    categoriesContainer.style.maxHeight = `${finalHeight}px`;
+    spacesContainer.style.maxHeight = `${finalHeight}px`;
 }
 
 // Centralized app initialization
 async function initializeApp() {
 
-    // Load settings and categories in parallel for faster startup
+    // Load settings and spaces in parallel for faster startup
     const settingsPromise = initializeAppSettings();
-    const categoriesPromise = (window.location.pathname === "/" || router.isCategoryPath(window.location.pathname))
-        ? fetchCategories()
+    const spacesPromise = (window.location.pathname === "/" || router.isSpacePath(window.location.pathname))
+        ? fetchSpaces()
         : Promise.resolve();
 
     // Wait for settings to complete
     window.currentSettings = await settingsPromise;
 
     // Set description max length attributes and counters from constants
-    const maxDescLength = window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength;
+    const maxDescLength = window.AppConstants.VALIDATION_LIMITS.maxSpaceDescriptionLength;
 
     // Update textarea maxlength attributes
-    document.getElementById('category-description').setAttribute('maxlength', maxDescLength);
-    document.getElementById('edit-category-description').setAttribute('maxlength', maxDescLength);
+    document.getElementById('space-description').setAttribute('maxlength', maxDescLength);
+    document.getElementById('edit-space-description').setAttribute('maxlength', maxDescLength);
 
     // Update counter display
     document.getElementById('description-max-length').textContent = maxDescLength;
     document.getElementById('edit-description-max-length').textContent = maxDescLength;
 
     // Load saved state
-    loadExpandedCategories();
+    loadExpandedSpaces();
 
     // Check activity system status (now uses cached settings)
     checkActivityEnabled();
@@ -186,8 +186,8 @@ async function initializeApp() {
     }
     */
 
-    // Wait for categories to complete (if it was started)
-    await categoriesPromise;
+    // Wait for spaces to complete (if it was started)
+    await spacesPromise;
 
     initializeStickyHeader();
 
@@ -197,8 +197,8 @@ async function initializeApp() {
     updateFileUploadText();
     initializeSortFooter();
 
-    // Calculate initial category container height
-    updateCategoryContainerHeight();
+    // Calculate initial space container height
+    updateSpaceContainerHeight();
 }
 
 // Main initialization and event listeners
@@ -213,14 +213,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize app asynchronously
     initializeApp();
     
-    // Category modal events
-    document.getElementById('add-category-btn').onclick = showCategoryModal;
-    document.getElementById('cancel-category').onclick = handleCategoryModalClose;
+    // Space modal events
+    document.getElementById('add-space-btn').onclick = showSpaceModal;
+    document.getElementById('cancel-space').onclick = handleSpaceModalClose;
 
-    // Add real-time validation for category name
-    document.getElementById('category-name').addEventListener('input', function(e) {
+    // Add real-time validation for space name
+    document.getElementById('space-name').addEventListener('input', function(e) {
         const name = e.target.value.trim();
-        const submitBtn = document.querySelector('button[form="category-form"]');
+        const submitBtn = document.querySelector('button[form="space-form"]');
 
         if (!submitBtn) return;
 
@@ -237,38 +237,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    document.getElementById('category-form').onsubmit = async function(e) {
+    document.getElementById('space-form').onsubmit = async function(e) {
         e.preventDefault();
 
-        const name = document.getElementById('category-name').value.trim();
+        const name = document.getElementById('space-name').value.trim();
 
         if (name.length === 0) {
-            showError(window.AppConstants.USER_MESSAGES.error.categoryNameEmpty);
+            showError(window.AppConstants.USER_MESSAGES.error.spaceNameEmpty);
             return;
         }
 
-        if (name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength) {
-            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.categoryNameTooLong, window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength));
+        if (name.length > window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength) {
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.spaceNameTooLong, window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength));
             return;
         }
 
         // Validate character restrictions
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
         if (!validNameRegex.test(name)) {
-            showError(window.AppConstants.USER_MESSAGES.error.categoryNameInvalidChars);
+            showError(window.AppConstants.USER_MESSAGES.error.spaceNameInvalidChars);
             return;
         }
 
-        const parentId = document.getElementById('category-parent').value || null;
-        const description = document.getElementById('category-description').value.trim();
+        const parentId = document.getElementById('space-parent').value || null;
+        const description = document.getElementById('space-description').value.trim();
 
         try {
-            const newCategory = await createCategory(name, parentId, description);
-            hideCategoryModal();
+            const newSpace = await createSpace(name, parentId, description);
+            hideSpaceModal();
 
-            // Auto-select the newly created category
-            if (newCategory) {
-                // Immediately clear posts to prevent showing previous category's posts
+            // Auto-select the newly created space
+            if (newSpace) {
+                // Immediately clear posts to prevent showing previous space's posts
                 const postsContainer = document.getElementById('posts-container');
                 if (postsContainer) {
                     postsContainer.innerHTML = `
@@ -279,8 +279,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     `;
                 }
 
-                populateCategorySelect(); // Update dropdowns
-                selectCategory(newCategory); // Programmatic selection after category creation
+                populateSpaceSelect(); // Update dropdowns
+                selectSpace(newSpace); // Programmatic selection after space creation
                 showSuccess('');
             }
         } catch (error) {
@@ -301,61 +301,61 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Header button events
     document.getElementById('recursive-toggle-btn').addEventListener('click', () => {
-        if (currentCategory) {
-            toggleRecursiveMode(currentCategory);
+        if (currentSpace) {
+            toggleRecursiveMode(currentSpace);
         }
     });
 
-    document.getElementById('delete-category-btn').addEventListener('click', () => {
-        if (currentCategory) {
-            deleteCategory(currentCategory);
+    document.getElementById('delete-space-btn').addEventListener('click', () => {
+        if (currentSpace) {
+            deleteSpace(currentSpace);
         }
     });
 
-    document.getElementById('edit-category-btn').addEventListener('click', () => {
-        if (currentCategory) {
-            showEditCategoryModal();
+    document.getElementById('edit-space-btn').addEventListener('click', () => {
+        if (currentSpace) {
+            showEditSpaceModal();
         }
     });
 
-    // Category actions dropdown functionality
-    const categoryActionsBtn = document.getElementById('category-actions-btn');
-    const categoryActionsMenu = document.getElementById('category-actions-menu');
+    // Space actions dropdown functionality
+    const spaceActionsBtn = document.getElementById('space-actions-btn');
+    const spaceActionsMenu = document.getElementById('space-actions-menu');
 
-    categoryActionsBtn.addEventListener('click', (e) => {
+    spaceActionsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        categoryActionsMenu.classList.toggle('hidden');
+        spaceActionsMenu.classList.toggle('hidden');
     });
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {
-        if (!categoryActionsBtn.contains(e.target) && !categoryActionsMenu.contains(e.target)) {
-            categoryActionsMenu.classList.add('hidden');
+        if (!spaceActionsBtn.contains(e.target) && !spaceActionsMenu.contains(e.target)) {
+            spaceActionsMenu.classList.add('hidden');
         }
     });
 
-    // Edit category modal events
-    document.getElementById('cancel-edit-category').onclick = handleEditCategoryModalClose;
+    // Edit space modal events
+    document.getElementById('cancel-edit-space').onclick = handleEditSpaceModalClose;
 
     // Add description character counters
-    document.getElementById('category-description').addEventListener('input', function() {
-        updateDescriptionCounter('category-description', 'description-counter');
+    document.getElementById('space-description').addEventListener('input', function() {
+        updateDescriptionCounter('space-description', 'description-counter');
     });
 
-    document.getElementById('edit-category-description').addEventListener('input', function() {
-        updateDescriptionCounter('edit-category-description', 'edit-description-counter');
+    document.getElementById('edit-space-description').addEventListener('input', function() {
+        updateDescriptionCounter('edit-space-description', 'edit-description-counter');
     });
 
-    // Edit category form validation and submission
-    document.getElementById('edit-category-name').addEventListener('input', function(e) {
+    // Edit space form validation and submission
+    document.getElementById('edit-space-name').addEventListener('input', function(e) {
         const name = e.target.value.trim();
-        const submitBtn = document.querySelector('button[form="edit-category-form"]');
+        const submitBtn = document.querySelector('button[form="edit-space-form"]');
 
         if (!submitBtn) return;
 
         // Check if name is valid (letters, numbers, and single spaces only)
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
-        if (name.length === 0 || name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength || !validNameRegex.test(name)) {
+        if (name.length === 0 || name.length > window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength || !validNameRegex.test(name)) {
             submitBtn.disabled = true;
             submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
         } else {
@@ -364,58 +364,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    document.getElementById('edit-category-form').onsubmit = async function(e) {
+    document.getElementById('edit-space-form').onsubmit = async function(e) {
         e.preventDefault();
 
-        const name = document.getElementById('edit-category-name').value.trim();
+        const name = document.getElementById('edit-space-name').value.trim();
 
         if (name.length === 0) {
-            showError(window.AppConstants.USER_MESSAGES.error.categoryNameEmpty);
+            showError(window.AppConstants.USER_MESSAGES.error.spaceNameEmpty);
             return;
         }
 
-        if (name.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength) {
-            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.categoryNameTooLong, window.AppConstants.VALIDATION_LIMITS.maxCategoryNameLength));
+        if (name.length > window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength) {
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.spaceNameTooLong, window.AppConstants.VALIDATION_LIMITS.maxSpaceNameLength));
             return;
         }
 
         // Validate character restrictions
         const validNameRegex = /^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$/;
         if (!validNameRegex.test(name)) {
-            showError(window.AppConstants.USER_MESSAGES.error.categoryNameInvalidChars);
+            showError(window.AppConstants.USER_MESSAGES.error.spaceNameInvalidChars);
             return;
         }
 
-        const parentId = document.getElementById('edit-category-parent').value || null;
-        const description = document.getElementById('edit-category-description').value.trim();
+        const parentId = document.getElementById('edit-space-parent').value || null;
+        const description = document.getElementById('edit-space-description').value.trim();
 
-        if (description.length > window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength) {
-            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.categoryDescTooLong, window.AppConstants.VALIDATION_LIMITS.maxCategoryDescriptionLength));
+        if (description.length > window.AppConstants.VALIDATION_LIMITS.maxSpaceDescriptionLength) {
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.spaceDescTooLong, window.AppConstants.VALIDATION_LIMITS.maxSpaceDescriptionLength));
             return;
         }
 
         // Check if anything has actually changed
-        const currentParentId = currentCategory.parent_id ? currentCategory.parent_id.toString() : null;
+        const currentParentId = currentSpace.parent_id ? currentSpace.parent_id.toString() : null;
         const newParentId = parentId ? parentId.toString() : null;
 
-        const nameChanged = name !== currentCategory.name;
-        const descriptionChanged = description !== (currentCategory.description || '');
+        const nameChanged = name !== currentSpace.name;
+        const descriptionChanged = description !== (currentSpace.description || '');
         const parentChanged = currentParentId !== newParentId;
 
         if (!nameChanged && !descriptionChanged && !parentChanged) {
             // Nothing changed, just close modal
-            hideEditCategoryModal();
+            hideEditSpaceModal();
             return;
         }
 
         try {
-            const updatedCategory = await updateCategory(currentCategory.id, name, description, parentId);
-            hideEditCategoryModal();
+            const updatedSpace = await updateSpace(currentSpace.id, name, description, parentId);
+            hideEditSpaceModal();
 
-            // Update current category and refresh display
-            if (updatedCategory) {
-                populateCategorySelect(); // Update dropdowns
-                selectCategory(updatedCategory); // Programmatic selection after category update
+            // Update current space and refresh display
+            if (updatedSpace) {
+                populateSpaceSelect(); // Update dropdowns
+                selectSpace(updatedSpace); // Programmatic selection after space update
                 showSuccess(``);
             }
         } catch (error) {
@@ -429,8 +429,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('modal-create-post-form').onsubmit = async function(e) {
         e.preventDefault();
 
-        if (!currentCategory) {
-            showError(window.AppConstants.USER_MESSAGES.error.noCategorySelected);
+        if (!currentSpace) {
+            showError(window.AppConstants.USER_MESSAGES.error.noSpaceSelected);
             return;
         }
 
@@ -451,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Include link previews in the post creation
             const postData = {
-                category_id: currentCategory.id,
+                space_id: currentSpace.id,
                 content: content,
                 link_previews: getCurrentModalLinkPreviews ? getCurrentModalLinkPreviews() : []
             };
@@ -547,10 +547,10 @@ document.addEventListener('DOMContentLoaded', function() {
             renderPosts(currentPosts, true);
 
             // Increment post count locally for immediate feedback
-            incrementCategoryPostCount(currentCategory.id, 1);
+            incrementSpacePostCount(currentSpace.id, 1);
 
             // Update the display with the updated counts
-            updateCategoryStatsDisplay();
+            updateSpaceStatsDisplay();
 
             // Show success message
             showSuccess('');
@@ -667,8 +667,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('keydown', function(e) {
         const imageModal = document.getElementById('image-viewer-modal');
         const createPostModal = document.getElementById('create-post-modal');
-        const categoryModal = document.getElementById('category-modal');
-        const editCategoryModal = document.getElementById('edit-category-modal');
+        const spaceModal = document.getElementById('space-modal');
+        const editSpaceModal = document.getElementById('edit-space-modal');
         const moveModal = document.getElementById('move-modal');
         const confirmationModal = document.getElementById('confirmation-modal');
 
@@ -690,16 +690,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     handleModalClose();
                     break;
             }
-        } else if (!categoryModal.classList.contains('hidden')) {
+        } else if (!spaceModal.classList.contains('hidden')) {
             switch(e.key) {
                 case 'Escape':
-                    handleCategoryModalClose();
+                    handleSpaceModalClose();
                     break;
             }
-        } else if (!editCategoryModal.classList.contains('hidden')) {
+        } else if (!editSpaceModal.classList.contains('hidden')) {
             switch(e.key) {
                 case 'Escape':
-                    handleEditCategoryModalClose();
+                    handleEditSpaceModalClose();
                     break;
             }
         } else if (!moveModal.classList.contains('hidden')) {
@@ -719,15 +719,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Close modal when clicking outside
-    document.getElementById('category-modal').onclick = function(e) {
+    document.getElementById('space-modal').onclick = function(e) {
         if (e.target === this) {
-            handleCategoryModalClose();
+            handleSpaceModalClose();
         }
     };
 
-    document.getElementById('edit-category-modal').onclick = function(e) {
+    document.getElementById('edit-space-modal').onclick = function(e) {
         if (e.target === this) {
-            handleEditCategoryModalClose();
+            handleEditSpaceModalClose();
         }
     };
 
@@ -832,7 +832,7 @@ window.addEventListener('resize', function() {
     clearTimeout(window.resizeTimeout);
     window.resizeTimeout = setTimeout(function() {
         // Update activity heatmap if needed
-        if (currentCategory && document.getElementById('activity-container').style.display !== 'none') {
+        if (currentSpace && document.getElementById('activity-container').style.display !== 'none') {
             // Only regenerate if we have cached data to avoid unnecessary API calls
             if (currentActivityCache) {
                 generateHeatmapFromCache(currentActivityCache);
@@ -840,13 +840,13 @@ window.addEventListener('resize', function() {
         }
 
         // Update header breadcrumb for mobile/desktop responsiveness
-        if (currentCategory && currentCategory.id !== window.AppConstants.ALL_CATEGORIES_ID) {
+        if (currentSpace && currentSpace.id !== window.AppConstants.ALL_SPACES_ID) {
             // Re-render the header with responsive breadcrumb
-            updateCategoryStatsDisplay();
+            updateSpaceStatsDisplay();
         }
 
-        // Recalculate category container height on resize
-        updateCategoryContainerHeight();
+        // Recalculate space container height on resize
+        updateSpaceContainerHeight();
 
         // Handle legacy keyboard detection for older browsers
         if (!window.visualViewport) {

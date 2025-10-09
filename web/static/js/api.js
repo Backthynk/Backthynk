@@ -79,105 +79,105 @@ async function apiRequest(endpoint, options = {}) {
     }
 }
 
-async function fetchCategories(skipRender = false) {
+async function fetchSpaces(skipRender = false) {
     try {
-        categories = await apiRequest('/categories');
-        if (!categories || !Array.isArray(categories)) {
-            categories = [];
+        spaces = await apiRequest('/spaces');
+        if (!spaces || !Array.isArray(spaces)) {
+            spaces = [];
         }
 
         // Clean up any orphaned recursive toggle states
         cleanupRecursiveToggleStates();
 
         if (!skipRender) {
-            renderCategories();
-            populateCategorySelect();
+            renderSpaces();
+            populateSpaceSelect();
         }
 
 
-        // Check if we should handle URL routing or cached category logic
+        // Check if we should handle URL routing or cached space logic
         if (typeof router !== 'undefined') {
-            // If we're on a category path, let the router handle it
-            if (window.location.pathname !== '/' && router.isCategoryPath && router.isCategoryPath(window.location.pathname)) {
-                // This is a category URL, trigger router handling
+            // If we're on a space path, let the router handle it
+            if (window.location.pathname !== '/' && router.isSpacePath && router.isSpacePath(window.location.pathname)) {
+                // This is a space URL, trigger router handling
                 router.handleRoute(window.location.pathname, false);
-            } else if (router.checkCachedCategoryRedirect) {
-                // On root path, check for cached category redirect
-                if (!router.checkCachedCategoryRedirect()) {
-                    // No redirect happened, show all categories
-                    await deselectCategory();
+            } else if (router.checkCachedSpaceRedirect) {
+                // On root path, check for cached space redirect
+                if (!router.checkCachedSpaceRedirect()) {
+                    // No redirect happened, show all spaces
+                    await deselectSpace();
                 }
             }
         } else {
             // Fallback to original logic
-            const lastCategoryId = getLastCategory();
-            if (lastCategoryId) {
-                const lastCategory = categories.find(cat => cat.id == lastCategoryId);
-                if (lastCategory) {
-                    selectCategory(lastCategory); // Programmatic selection of last selected category
+            const lastSpaceId = getLastSpace();
+            if (lastSpaceId) {
+                const lastSpace = spaces.find(cat => cat.id == lastSpaceId);
+                if (lastSpace) {
+                    selectSpace(lastSpace); // Programmatic selection of last selected space
                 } else {
-                    // Last category no longer exists, show all categories
-                    await deselectCategory();
+                    // Last space no longer exists, show all spaces
+                    await deselectSpace();
                 }
             } else {
-                // No last category, show all categories
-                await deselectCategory();
+                // No last space, show all spaces
+                await deselectSpace();
             }
         }
     } catch (error) {
-        console.error('Failed to fetch categories:', error);
-        categories = [];
-        renderCategories();
-        populateCategorySelect();
+        console.error('Failed to fetch spaces:', error);
+        spaces = [];
+        renderSpaces();
+        populateSpaceSelect();
     }
 }
 
-async function createCategory(name, parentId, description = '') {
+async function createSpace(name, parentId, description = '') {
     try {
         const parent_id = parentId ? parseInt(parentId) : null;
-        const category = await apiRequest('/categories', {
+        const space = await apiRequest('/spaces', {
             method: 'POST',
             body: JSON.stringify({ name, description, parent_id })
         });
 
-        // Add the new category to the existing categories array instead of refetching
-        if (category && Array.isArray(categories)) {
-            categories.push(category);
+        // Add the new space to the existing spaces array instead of refetching
+        if (space && Array.isArray(spaces)) {
+            spaces.push(space);
             cleanupRecursiveToggleStates();
         }
 
-        return category;
+        return space;
     } catch (error) {
-        console.error('Failed to create category:', error);
+        console.error('Failed to create space:', error);
         throw error;
     }
 }
 
-async function updateCategory(categoryId, name, description, parentId) {
+async function updateSpace(spaceId, name, description, parentId) {
     try {
         const parent_id = parentId ? parseInt(parentId) : null;
-        const category = await apiRequest(`/categories/${categoryId}`, {
+        const space = await apiRequest(`/spaces/${spaceId}`, {
             method: 'PUT',
             body: JSON.stringify({ name, description, parent_id })
         });
 
-        // Update the category in the existing categories array instead of refetching
-        if (category && Array.isArray(categories)) {
-            const index = categories.findIndex(cat => cat.id === categoryId);
+        // Update the space in the existing spaces array instead of refetching
+        if (space && Array.isArray(spaces)) {
+            const index = spaces.findIndex(cat => cat.id === spaceId);
             if (index !== -1) {
-                categories[index] = category;
+                spaces[index] = space;
             }
             cleanupRecursiveToggleStates();
         }
 
-        return category;
+        return space;
     } catch (error) {
-        console.error('Failed to update category:', error);
+        console.error('Failed to update space:', error);
         throw error;
     }
 }
 
-async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defaultPostLimit, offset = window.AppConstants.UI_CONFIG.defaultOffset, withMeta = false, recursive = false) {
+async function fetchPosts(spaceId, limit = window.AppConstants.UI_CONFIG.defaultPostLimit, offset = window.AppConstants.UI_CONFIG.defaultOffset, withMeta = false, recursive = false) {
     try {
         const params = new URLSearchParams({
             limit: limit.toString(),
@@ -192,7 +192,7 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
             params.set('recursive', 'true');
         }
 
-        const response = await apiRequest(`/categories/${categoryId}/posts?${params.toString()}`);
+        const response = await apiRequest(`/spaces/${spaceId}/posts?${params.toString()}`);
         return response || { posts: [], has_more: false };
     } catch (error) {
         console.error('Failed to fetch posts:', error);
@@ -201,7 +201,7 @@ async function fetchPosts(categoryId, limit = window.AppConstants.UI_CONFIG.defa
 }
 
 
-async function fetchCategoryStats(categoryId, recursive = false) {
+async function fetchSpaceStats(spaceId, recursive = false) {
     try {
         // Check if detailed stats feature is enabled
         const settings = await loadAppSettings();
@@ -214,7 +214,7 @@ async function fetchCategoryStats(categoryId, recursive = false) {
             recursive: recursive.toString()
         });
 
-        const response = await apiRequest(`/category-stats/${categoryId}?${params.toString()}`);
+        const response = await apiRequest(`/space-stats/${spaceId}?${params.toString()}`);
 
         return {
             file_count: response.file_count || 0,
@@ -222,15 +222,15 @@ async function fetchCategoryStats(categoryId, recursive = false) {
             last_updated: response.last_updated || 0
         };
     } catch (error) {
-        console.error('Failed to fetch category stats:', error);
+        console.error('Failed to fetch space stats:', error);
         return { file_count: 0, total_size: 0, last_updated: 0 };
     }
 }
 
-async function createPost(categoryId, content, options = {}) {
+async function createPost(spaceId, content, options = {}) {
     try {
         const payload = {
-            category_id: categoryId,
+            space_id: spaceId,
             content: content
         };
 
@@ -264,11 +264,11 @@ async function deletePost(postId) {
     }
 }
 
-async function movePost(postId, newCategoryId) {
+async function movePost(postId, newSpaceId) {
     try {
         return await apiRequest(`/posts/${postId}/move`, {
             method: 'PUT',
-            body: JSON.stringify({ category_id: newCategoryId })
+            body: JSON.stringify({ space_id: newSpaceId })
         });
     } catch (error) {
         console.error('Failed to move post:', error);
@@ -276,13 +276,13 @@ async function movePost(postId, newCategoryId) {
     }
 }
 
-async function deleteCategoryApi(categoryId) {
+async function deleteSpaceApi(spaceId) {
     try {
-        await apiRequest(`/categories/${categoryId}`, {
+        await apiRequest(`/spaces/${spaceId}`, {
             method: 'DELETE'
         });
     } catch (error) {
-        console.error('Failed to delete category:', error);
+        console.error('Failed to delete space:', error);
         throw error;
     }
 }
@@ -309,7 +309,7 @@ async function uploadFile(postId, file) {
     }
 }
 
-async function fetchActivityData(categoryId, recursive, period) {
+async function fetchActivityData(spaceId, recursive, period) {
     try {
         const settings = window.currentSettings || await loadAppSettings();
         const periodMonths = settings.activityPeriodMonths || 4;
@@ -320,7 +320,7 @@ async function fetchActivityData(categoryId, recursive, period) {
             period_months: periodMonths.toString()
         });
 
-        const response = await fetch(`/api/activity/${categoryId}?${params}`, {
+        const response = await fetch(`/api/activity/${spaceId}?${params}`, {
             headers: {
                 'Content-Type': 'application/json'
             }

@@ -4,7 +4,7 @@ class Router {
     constructor() {
         this.routes = new Map();
         this.currentRoute = null;
-        this.currentCategoryPath = null;
+        this.currentSpacePath = null;
 
         // Handle browser back/forward buttons
         window.addEventListener('popstate', (e) => {
@@ -32,18 +32,18 @@ class Router {
 
         if (this.routes.has(cleanPath)) {
             this.currentRoute = cleanPath;
-            this.currentCategoryPath = null;
+            this.currentSpacePath = null;
             const handler = this.routes.get(cleanPath);
             handler();
-        } else if (this.isCategoryPath(cleanPath)) {
-            // Handle category paths like /cat1/cat2/cat3
-            this.currentRoute = 'category';
-            this.currentCategoryPath = cleanPath;
-            this.handleCategoryRoute(cleanPath);
+        } else if (this.isSpacePath(cleanPath)) {
+            // Handle space paths like /cat1/cat2/cat3
+            this.currentRoute = 'space';
+            this.currentSpacePath = cleanPath;
+            this.handleSpaceRoute(cleanPath);
         } else {
             // Default to home route
             this.currentRoute = '/';
-            this.currentCategoryPath = null;
+            this.currentSpacePath = null;
             if (this.routes.has('/')) {
                 this.routes.get('/')();
             }
@@ -52,13 +52,13 @@ class Router {
 
     // Initialize router with current URL
     init() {
-        // If this looks like a category path, wait for categories to load
-        if (this.isCategoryPath(window.location.pathname)) {
-            // Don't handle the route yet - let fetchCategories handle it
+        // If this looks like a space path, wait for spaces to load
+        if (this.isSpacePath(window.location.pathname)) {
+            // Don't handle the route yet - let fetchSpaces handle it
             return;
         }
 
-        // Handle non-category routes immediately
+        // Handle non-space routes immediately
         this.handleRoute(window.location.pathname, false);
     }
 
@@ -67,16 +67,16 @@ class Router {
         return this.currentRoute;
     }
 
-    // Get current category path
-    getCurrentCategoryPath() {
-        return this.currentCategoryPath;
+    // Get current space path
+    getCurrentSpacePath() {
+        return this.currentSpacePath;
     }
 
-    // Check if path is a category path
-    isCategoryPath(path) {
+    // Check if path is a space path
+    isSpacePath(path) {
         if (path === '/')
             return false
-        // Category paths start with / and contain only valid category name characters
+        // Space paths start with / and contain only valid space name characters
         // They shouldn't match existing static routes
         for (const r of window.AppConstants.RESERVED_ROUTES){
             if (path === ('/'+r)){
@@ -84,67 +84,67 @@ class Router {
             }
         }
 
-        // Must start with / and contain valid characters for category names
-        // Allow URL-encoded characters (like %20 for spaces) and regular category name characters
+        // Must start with / and contain valid characters for space names
+        // Allow URL-encoded characters (like %20 for spaces) and regular space name characters
         return /^\/[a-zA-Z0-9\s\/%]+$/.test(path) && !path.includes('//');
     }
 
-    // Handle category routing
-    async handleCategoryRoute(path) {
-        // Wait for categories to be loaded
-        if (typeof categories === 'undefined' || !categories || categories.length === 0) {
-            // Categories not loaded yet, wait and try again
-            setTimeout(() => this.handleCategoryRoute(path), 100);
+    // Handle space routing
+    async handleSpaceRoute(path) {
+        // Wait for spaces to be loaded
+        if (typeof spaces === 'undefined' || !spaces || spaces.length === 0) {
+            // Spaces not loaded yet, wait and try again
+            setTimeout(() => this.handleSpaceRoute(path), 100);
             return;
         }
 
-        const category = this.findCategoryByPath(path);
-        if (category) {
-            // Navigate to category page and select the category
-            await this.showCategoryPage(category);
+        const space = this.findSpaceByPath(path);
+        if (space) {
+            // Navigate to space page and select the space
+            await this.showSpacePage(space);
         } else {
-            // Category not found, redirect to home
+            // Space not found, redirect to home
             this.navigate('/', true);
         }
     }
 
-    // Find category by URL path
-    findCategoryByPath(path) {
+    // Find space by URL path
+    findSpaceByPath(path) {
         const pathParts = path.split('/').filter(part => part.length > 0);
         if (pathParts.length === 0) return null;
 
-        let currentCategory = null;
-        let currentLevel = categories.filter(cat => !cat.parent_id);
+        let currentSpace = null;
+        let currentLevel = spaces.filter(cat => !cat.parent_id);
 
         for (let i = 0; i < pathParts.length; i++) {
             const pathPart = pathParts[i];
             const decodedPart = decodeURIComponent(pathPart);
 
-            currentCategory = currentLevel.find(cat =>
+            currentSpace = currentLevel.find(cat =>
                 cat.name.toLowerCase() === decodedPart.toLowerCase()
             );
 
-            if (!currentCategory) {
-                return null; // Category not found
+            if (!currentSpace) {
+                return null; // Space not found
             }
 
 
             // Get children for next level
-            currentLevel = categories.filter(cat => cat.parent_id === currentCategory.id);
+            currentLevel = spaces.filter(cat => cat.parent_id === currentSpace.id);
         }
 
-        return currentCategory;
+        return currentSpace;
     }
 
-    // Build URL path from category
-    buildCategoryPath(category) {
+    // Build URL path from space
+    buildSpacePath(space) {
         const path = [];
-        let current = category;
+        let current = space;
 
         while (current) {
             path.unshift(encodeURIComponent(current.name));
             if (current.parent_id) {
-                current = categories.find(cat => cat.id === current.parent_id);
+                current = spaces.find(cat => cat.id === current.parent_id);
             } else {
                 current = null;
             }
@@ -153,8 +153,8 @@ class Router {
         return '/' + path.join('/');
     }
 
-    // Show category page
-    async showCategoryPage(category) {
+    // Show space page
+    async showSpacePage(space) {
         // Ensure we're on the home page layout
         const mainContainer = document.querySelector('.container');
         const settingsPage = document.getElementById('settings-page');
@@ -162,46 +162,46 @@ class Router {
         if (mainContainer) mainContainer.style.display = 'block';
         if (settingsPage) settingsPage.classList.add('hidden');
 
-        // Directly select the category without any intermediate steps
-        if (typeof selectCategory === 'function') {
-            selectCategory(category, false); // fromUserClick = false (programmatic)
+        // Directly select the space without any intermediate steps
+        if (typeof selectSpace === 'function') {
+            selectSpace(space, false); // fromUserClick = false (programmatic)
         }
 
-        // Update page title for category using breadcrumb (matches backend behavior)
+        // Update page title for space using breadcrumb (matches backend behavior)
         const settings = await loadAppSettings();
         const siteTitle = settings?.siteTitle || window.AppConstants.APP_NAME;
-        if (category && category.id) {
-            const breadcrumb = typeof getCategoryBreadcrumb === 'function'
-                ? getCategoryBreadcrumb(category.id)
-                : category.name;
+        if (space && space.id) {
+            const breadcrumb = typeof getSpaceBreadcrumb === 'function'
+                ? getSpaceBreadcrumb(space.id)
+                : space.name;
             document.title = `${breadcrumb}`;
         }
     }
 
-    // Navigate to category by category object
-    navigateToCategory(category) {
-        if (!category) {
+    // Navigate to space by space object
+    navigateToSpace(space) {
+        if (!space) {
             this.navigate('/');
             return;
         }
 
-        const path = this.buildCategoryPath(category);
+        const path = this.buildSpacePath(space);
         this.navigate(path);
     }
 
-    // Check for cached category and redirect if needed
-    checkCachedCategoryRedirect() {
+    // Check for cached space and redirect if needed
+    checkCachedSpaceRedirect() {
         // Only check if we're on the root path
         if (window.location.pathname !== '/') return false;
 
-        // Check if there's a cached category selection
-        const lastCategoryId = localStorage.getItem(window.AppConstants.STORAGE_KEYS.lastCategory);
-        if (lastCategoryId && categories && categories.length > 0) {
-            const category = categories.find(cat => cat.id === parseInt(lastCategoryId));
-            if (category) {
-                // Redirect to the category URL
-                const categoryPath = this.buildCategoryPath(category);
-                this.navigate(categoryPath, true);
+        // Check if there's a cached space selection
+        const lastSpaceId = localStorage.getItem(window.AppConstants.STORAGE_KEYS.lastSpace);
+        if (lastSpaceId && spaces && spaces.length > 0) {
+            const space = spaces.find(cat => cat.id === parseInt(lastSpaceId));
+            if (space) {
+                // Redirect to the space URL
+                const spacePath = this.buildSpacePath(space);
+                this.navigate(spacePath, true);
                 return true;
             }
         }
@@ -226,10 +226,10 @@ async function showHomePage() {
     const siteTitle = settings?.siteTitle || window.AppConstants.APP_NAME;
     document.title = `${siteTitle}`;
 
-    // If there's a current category, deselect it to show all posts
-    if (typeof currentCategory !== 'undefined' && currentCategory && currentCategory.id !== window.AppConstants?.ALL_CATEGORIES_ID) {
-        if (typeof deselectCategory === 'function') {
-            deselectCategory();
+    // If there's a current space, deselect it to show all posts
+    if (typeof currentSpace !== 'undefined' && currentSpace && currentSpace.id !== window.AppConstants?.ALL_SPACES_ID) {
+        if (typeof deselectSpace === 'function') {
+            deselectSpace();
         }
     }
 }

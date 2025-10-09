@@ -56,22 +56,22 @@ func (db *DB) GetStoragePath() string {
 
 func (db *DB) createTables() error {
 	queries := []string{
-		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS categories (
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS spaces (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			description TEXT DEFAULT '',
 			parent_id INTEGER,
 			depth INTEGER NOT NULL DEFAULT 0,
 			created INTEGER NOT NULL,
-			FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE CASCADE,
+			FOREIGN KEY (parent_id) REFERENCES spaces(id) ON DELETE CASCADE,
 			CHECK (depth >= 0 AND depth <= %d)
-		)`, config.MaxCategoryDepth),
+		)`, config.MaxSpaceDepth),
 		`CREATE TABLE IF NOT EXISTS posts (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			category_id INTEGER NOT NULL,
+			space_id INTEGER NOT NULL,
 			content TEXT NOT NULL,
 			created INTEGER NOT NULL,
-			FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+			FOREIGN KEY (space_id) REFERENCES spaces(id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS attachments (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,8 +92,8 @@ func (db *DB) createTables() error {
 			site_name TEXT,
 			FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 		)`,
-		`CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_spaces_parent ON spaces(parent_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_posts_space ON posts(space_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_attachments_post ON attachments(post_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_link_previews_post ON link_previews(post_id)`,

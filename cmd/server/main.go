@@ -57,17 +57,17 @@ func main() {
 	// Initialize event dispatcher
 	dispatcher := events.NewAsyncDispatcher()
 
-	// Initialize category cache
-	categoryCache := cache.NewCategoryCache()
+	// Initialize space cache
+	spaceCache := cache.NewSpaceCache()
 
 	// Initialize core services
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
 
-	// Initialize category cache
-	if err := categoryService.InitializeCache(); err != nil {
-		log.Fatal("Failed to initialize category cache:", err)
+	// Initialize space cache
+	if err := spaceService.InitializeCache(); err != nil {
+		log.Fatal("Failed to initialize space cache:", err)
 	}
 
 	// Initialize features
@@ -76,7 +76,7 @@ func main() {
 	// Detailed Stats feature
 	var detailedStatsService *detailedstats.Service
 	if opts.Features.DetailedStats.Enabled {
-		detailedStatsService = detailedstats.NewService(db, categoryCache, true)
+		detailedStatsService = detailedstats.NewService(db, spaceCache, true)
 		if err := detailedStatsService.Initialize(); err != nil {
 			log.Fatal("Failed to initialize detailed stats:", err)
 		}
@@ -84,25 +84,25 @@ func main() {
 		dispatcher.Subscribe(events.FileDeleted, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.PostDeleted, detailedStatsService.HandleEvent)
 		dispatcher.Subscribe(events.PostMoved, detailedStatsService.HandleEvent)
-		dispatcher.Subscribe(events.CategoryUpdated, detailedStatsService.HandleEvent)
+		dispatcher.Subscribe(events.SpaceUpdated, detailedStatsService.HandleEvent)
 	}
 
 	// Activity feature
 	var activityService *activity.Service
 	if opts.Features.Activity.Enabled {
-		activityService = activity.NewService(db, categoryCache, true)
+		activityService = activity.NewService(db, spaceCache, true)
 		if err := activityService.Initialize(); err != nil {
 			log.Fatal("Failed to initialize activity:", err)
 		}
 		dispatcher.Subscribe(events.PostCreated, activityService.HandleEvent)
 		dispatcher.Subscribe(events.PostDeleted, activityService.HandleEvent)
 		dispatcher.Subscribe(events.PostMoved, activityService.HandleEvent)
-		dispatcher.Subscribe(events.CategoryUpdated, activityService.HandleEvent)
+		dispatcher.Subscribe(events.SpaceUpdated, activityService.HandleEvent)
 	}
 
 	// Initialize API router
 	apiRouter := api.NewRouter(
-		categoryService,
+		spaceService,
 		postService,
 		fileService,
 		detailedStatsService,
@@ -136,17 +136,17 @@ Todo later:
 
 1. The activity is based on time UTC (which is "ok" if your timezone is based near UTC time but at UTC+9 your today's activity won't start before 9am)
 -> we compute everything in the back-end : maybe the solution would be to compute activity hour to hour. 
-It will take more space in the cache but it would work for every timezone. -> we will have to make sure the entire activity is fetch once per category in the front-end -> to avoid as much as possible recomputing things 
+It will take more space in the cache but it would work for every timezone. -> we will have to make sure the entire activity is fetch once per space in the front-end -> to avoid as much as possible recomputing things 
 
-2. Setup zip compression for category/settings/posts/activity get methods with TTL LRU and invalidation when post is added/deleted && category is added/delete
-3. Zip compression pour le index.html file avec caching
+2. Setup zip compression for space/settings/posts/activity get methods with TTL LRU and invalidation when post is added/deleted && space is added/delete
+3. compression pour le index.html file avec caching
 
 4. Setup a stats page where information about traffic/network/hardware usage, errors, warnings
 
 5. Add a feature to have an api that gives all right when added in the browser (all methods to change the state of the app.)
 if the token is system is enabled and it's not entered in the cookies or somehwere then on the client side hide everything.
 
-6. When 4 is done then add a feature to make private/public a categorie (it will be a recursive feature), if set then you can only see category's content if the token is in the cookies.
+6. When 4 is done then add a feature to make private/public a space (it will be a recursive feature), if set then you can only see space's content if the token is in the cookies.
 
 
 */

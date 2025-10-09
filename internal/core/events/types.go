@@ -8,10 +8,10 @@ const (
 	PostDeleted EventType = "post.deleted"
 	PostMoved   EventType = "post.moved"
 	
-	// Category events
-	CategoryCreated EventType = "category.created"
-	CategoryUpdated EventType = "category.updated"
-	CategoryDeleted EventType = "category.deleted"
+	// Space events
+	SpaceCreated EventType = "space.created"
+	SpaceUpdated EventType = "space.updated"
+	SpaceDeleted EventType = "space.deleted"
 	
 	// File events
 	FileUploaded EventType = "file.uploaded"
@@ -26,15 +26,15 @@ type Event struct {
 // Event data structures
 type PostEvent struct {
 	PostID     int
-	CategoryID int
-	OldCategoryID *int // For move events
+	SpaceID int
+	OldSpaceID *int // For move events
 	Timestamp  int64
 	FileSize   int64  // For file events
 	FileCount  int    // For file events
 }
 
-type CategoryEvent struct {
-	CategoryID    int
+type SpaceEvent struct {
+	SpaceID    int
 	OldParentID   *int
 	NewParentID   *int
 	AffectedPosts []int

@@ -14,14 +14,14 @@ import (
 )
 
 type TemplateHandler struct {
-	categoryService *services.CategoryService
+	spaceService *services.SpaceService
 	options         *config.OptionsConfig
 	serviceConfig   *config.ServiceConfig
 }
 
-func NewTemplateHandler(categoryService *services.CategoryService, options *config.OptionsConfig, serviceConfig *config.ServiceConfig) *TemplateHandler {
+func NewTemplateHandler(spaceService *services.SpaceService, options *config.OptionsConfig, serviceConfig *config.ServiceConfig) *TemplateHandler {
 	return &TemplateHandler{
-		categoryService: categoryService,
+		spaceService: spaceService,
 		options:         options,
 		serviceConfig:   serviceConfig,
 	}
@@ -31,8 +31,8 @@ type PageData struct {
 	Title              string
 	Description        string
 	URL                string
-	Category           interface{}
-	CategoryBreadcrumb string
+	Space           interface{}
+	SpaceBreadcrumb string
 	MarkdownEnabled    bool
 	Dev                bool
 	GithubURL          string
@@ -53,25 +53,25 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 		NewIssueURL:     sharedCfg.URLs.NewIssueURL,
 	}
 
-	// Check if this is a category path
-	if IsCategoryPath(path) {
-		category := h.resolveCategoryFromPath(path)
-		if category == nil {
-			// Category doesn't exist, redirect to home
+	// Check if this is a space path
+	if IsSpacePath(path) {
+		space := h.resolveSpaceFromPath(path)
+		if space == nil {
+			// Space doesn't exist, redirect to home
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
 
 		// Set breadcrumb as title
-		pageData.Title = h.categoryService.GetCategoryBreadcrumb(category.ID)
-		pageData.CategoryBreadcrumb = pageData.Title
+		pageData.Title = h.spaceService.GetSpaceBreadcrumb(space.ID)
+		pageData.SpaceBreadcrumb = pageData.Title
 
-		// Use category description if available, otherwise fallback to service description
-		if category.Description != "" {
-			pageData.Description = category.Description
+		// Use space description if available, otherwise fallback to service description
+		if space.Description != "" {
+			pageData.Description = space.Description
 		}
 
-		pageData.Category = category
+		pageData.Space = space
 	}
 
 	if config.GetAppMode() == config.APP_MODE_PROD {
@@ -122,7 +122,7 @@ func (h *TemplateHandler) renderTemplate(w http.ResponseWriter, templatePath str
 	}
 }
 
-func (h *TemplateHandler) resolveCategoryFromPath(path string) *models.Category {
+func (h *TemplateHandler) resolveSpaceFromPath(path string) *models.Space {
 	// Remove leading slash and decode URL
 	path = strings.TrimPrefix(path, "/")
 	decodedPath, err := url.QueryUnescape(path)
@@ -136,28 +136,28 @@ func (h *TemplateHandler) resolveCategoryFromPath(path string) *models.Category 
 		return nil
 	}
 
-	// Traverse the path to find the target category
+	// Traverse the path to find the target space
 	var currentParentID *int
 
 	for i, segment := range segments {
-		cat := h.categoryService.FindByNameAndParent(segment, currentParentID)
+		cat := h.spaceService.FindByNameAndParent(segment, currentParentID)
 		if cat == nil {
 			return nil
 		}
 
-		// If this is the last segment, return this category
+		// If this is the last segment, return this space
 		if i == len(segments)-1 {
 			return cat
 		}
 
-		// Otherwise, set this category as the parent for the next iteration
+		// Otherwise, set this space as the parent for the next iteration
 		currentParentID = &cat.ID
 	}
 
 	return nil
 }
 
-func IsCategoryPath(path string) bool {
+func IsSpacePath(path string) bool {
 	if path == "/" {
 		return false
 	}

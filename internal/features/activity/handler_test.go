@@ -56,7 +56,7 @@ func TestRegisterRoutesDisabled(t *testing.T) {
 	}
 }
 
-func TestGetActivityPeriodInvalidCategoryID(t *testing.T) {
+func TestGetActivityPeriodInvalidSpaceID(t *testing.T) {
 	service := &Service{enabled: true}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -72,15 +72,15 @@ func TestGetActivityPeriodInvalidCategoryID(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if body != "Invalid category ID\n" {
-		t.Errorf("Expected 'Invalid category ID' error message, got '%s'", body)
+	if body != "Invalid space ID\n" {
+		t.Errorf("Expected 'Invalid space ID' error message, got '%s'", body)
 	}
 }
 
 func TestGetActivityPeriodValidRequest(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -106,15 +106,15 @@ func TestGetActivityPeriodValidRequest(t *testing.T) {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if response.CategoryID != 1 {
-		t.Errorf("Expected category ID 1, got %d", response.CategoryID)
+	if response.SpaceID != 1 {
+		t.Errorf("Expected space ID 1, got %d", response.SpaceID)
 	}
 }
 
 func TestGetActivityPeriodQueryParameters(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -195,8 +195,8 @@ func TestGetActivityPeriodQueryParameters(t *testing.T) {
 					t.Fatalf("Failed to unmarshal response: %v", err)
 				}
 
-				if response.CategoryID != 1 {
-					t.Errorf("Expected category ID 1, got %d", response.CategoryID)
+				if response.SpaceID != 1 {
+					t.Errorf("Expected space ID 1, got %d", response.SpaceID)
 				}
 			}
 		})
@@ -206,7 +206,7 @@ func TestGetActivityPeriodQueryParameters(t *testing.T) {
 func TestGetActivityPeriodDefaultValues(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -228,8 +228,8 @@ func TestGetActivityPeriodDefaultValues(t *testing.T) {
 	}
 
 	// Verify default values are used
-	if response.CategoryID != 1 {
-		t.Errorf("Expected category ID 1, got %d", response.CategoryID)
+	if response.SpaceID != 1 {
+		t.Errorf("Expected space ID 1, got %d", response.SpaceID)
 	}
 
 	if response.Period != 0 {
@@ -256,7 +256,7 @@ func TestGetActivityPeriodMethodNotAllowed(t *testing.T) {
 func TestGetActivityPeriodRecursiveParameter(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -297,7 +297,7 @@ func TestGetActivityPeriodRecursiveParameter(t *testing.T) {
 func TestGetActivityPeriodGlobalStats(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -318,15 +318,15 @@ func TestGetActivityPeriodGlobalStats(t *testing.T) {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if response.CategoryID != 0 {
-		t.Errorf("Expected category ID 0 for global stats, got %d", response.CategoryID)
+	if response.SpaceID != 0 {
+		t.Errorf("Expected space ID 0 for global stats, got %d", response.SpaceID)
 	}
 }
 
 func TestActivityPeriodResponseStructure(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -349,8 +349,8 @@ func TestActivityPeriodResponseStructure(t *testing.T) {
 	}
 
 	// Verify all expected fields are present
-	if response.CategoryID != 1 {
-		t.Errorf("Expected category ID 1, got %d", response.CategoryID)
+	if response.SpaceID != 1 {
+		t.Errorf("Expected space ID 1, got %d", response.SpaceID)
 	}
 
 	if response.Period != 0 {
@@ -362,7 +362,7 @@ func TestActivityPeriodResponseStructure(t *testing.T) {
 	jsonStr := string(jsonData)
 
 	expectedFields := []string{
-		`"category_id"`,
+		`"space_id"`,
 		`"start_date"`,
 		`"end_date"`,
 		`"period"`,

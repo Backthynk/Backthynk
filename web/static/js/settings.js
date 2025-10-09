@@ -27,11 +27,11 @@ async function showSettingsPageEvent() {
 function hideSettingsPage() {
     // Use router to navigate back to home
     if (window.router) {
-        if (typeof categories === 'undefined' || !categories || categories.length === 0){
+        if (typeof spaces === 'undefined' || !spaces || spaces.length === 0){
             window.router.navigate('/');
             initializeApp()
         } else {
-            router.handleCategoryRoute('/');
+            router.handleSpaceRoute('/');
         }
 
     } else {
@@ -310,7 +310,7 @@ function updatePageTitle(siteTitle) {
     } else if (currentRoute === '/' || !currentRoute) {
         document.title = `${siteTitle} - Personal Micro Blog`;
     }
-    // Category titles will be updated by the router
+    // Space titles will be updated by the router
 }
 
 // Initialize settings when the page loads

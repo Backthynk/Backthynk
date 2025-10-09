@@ -6,7 +6,7 @@ type ActivityDay struct {
 }
 
 type ActivityPeriodRequest struct {
-	CategoryID   int    `json:"category_id"`
+	SpaceID   int    `json:"space_id"`
 	Recursive    bool   `json:"recursive"`
 	StartDate    string `json:"start_date"`
 	EndDate      string `json:"end_date"`
@@ -15,7 +15,7 @@ type ActivityPeriodRequest struct {
 }
 
 type ActivityPeriodResponse struct {
-	CategoryID int           `json:"category_id"`
+	SpaceID int           `json:"space_id"`
 	StartDate  string        `json:"start_date"`
 	EndDate    string        `json:"end_date"`
 	Period     int           `json:"period"`

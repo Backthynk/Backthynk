@@ -70,17 +70,17 @@
 .grid.grid-cols-2 > div:first-child.row-span-2 {
     grid-row: span 2;
 }
-.category-item {
+.space-item {
     margin-bottom: 1px;
 }
 
-/* Modern category styling to match activity section */
-.category-btn {
+/* Modern space styling to match activity section */
+.space-btn {
     position: relative;
     overflow: hidden;
 }
 
-.category-btn:before {
+.space-btn:before {
     content: '';
     position: absolute;
     left: 0;
@@ -91,7 +91,7 @@
     transition: background-color 0.2s ease;
 }
 
-.category-btn.bg-blue-50:before {
+.space-btn.bg-blue-50:before {
     background: #3b82f6;
 }
 #image-viewer-modal {
@@ -114,24 +114,24 @@
     transition: opacity 0.2s ease;
 }
 
-/* Custom scrollbar for categories - subtle like activity section */
-#categories-tree::-webkit-scrollbar {
+/* Custom scrollbar for spaces - subtle like activity section */
+#spaces-tree::-webkit-scrollbar {
     width: 4px;
 }
-#categories-tree::-webkit-scrollbar-track {
+#spaces-tree::-webkit-scrollbar-track {
     background: transparent;
 }
-#categories-tree::-webkit-scrollbar-thumb {
+#spaces-tree::-webkit-scrollbar-thumb {
     background: #e5e7eb;
     border-radius: 2px;
 }
-.dark #categories-tree::-webkit-scrollbar-thumb {
+.dark #spaces-tree::-webkit-scrollbar-thumb {
     background: #374151;
 }
-#categories-tree::-webkit-scrollbar-thumb:hover {
+#spaces-tree::-webkit-scrollbar-thumb:hover {
     background: #d1d5db;
 }
-.dark #categories-tree::-webkit-scrollbar-thumb:hover {
+.dark #spaces-tree::-webkit-scrollbar-thumb:hover {
     background: #4b5563;
 }
 
@@ -166,8 +166,8 @@
     }
 }
 
-/* Category actions dropdown styles */
-#category-actions-menu {
+/* Space actions dropdown styles */
+#space-actions-menu {
     animation: fadeInDown 0.15s ease-out;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -184,8 +184,8 @@
 }
 
 /* Modal animation styles - GitHub-style */
-#category-modal:not(.hidden) .transform,
-#edit-category-modal:not(.hidden) .transform,
+#space-modal:not(.hidden) .transform,
+#edit-space-modal:not(.hidden) .transform,
 #confirmation-modal:not(.hidden) .transform,
 #create-post-modal:not(.hidden) .transform {
     animation: modalFadeIn 0.15s ease-out;
@@ -311,7 +311,7 @@ button:active {
 /* Z-Index Hierarchy:
    - 9999: Alerts (highest priority)
    - 9998: Image viewer modal
-   - 50: All other modals (category, post, confirmation, etc.)
+   - 50: All other modals (space, post, confirmation, etc.)
    - 40: Sticky timeline header
    - 10: Modal internal elements (delete buttons, etc.)
    - 1: Regular content
@@ -376,31 +376,31 @@ button:active {
     line-height: 1.2;
 }
 
-/* Category Sort Footer Styles */
-#category-sort-footer {
+/* Space Sort Footer Styles */
+#space-sort-footer {
     transition: opacity 0.2s ease;
 }
 
-#category-sort-footer .sort-option {
+#space-sort-footer .sort-option {
     transition: all 0.15s ease;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
     position: relative;
 }
 
-#category-sort-footer .sort-option:hover {
+#space-sort-footer .sort-option:hover {
     background-color: rgba(59, 130, 246, 0.1);
 }
 
-#category-sort-footer .sort-option.text-blue-600 {
+#space-sort-footer .sort-option.text-blue-600 {
     background-color: rgba(59, 130, 246, 0.1);
 }
 
-#category-sort-footer .sort-option .sort-icon {
+#space-sort-footer .sort-option .sort-icon {
     transition: transform 0.1s ease;
 }
 
-#category-sort-footer .sort-option:active .sort-icon {
+#space-sort-footer .sort-option:active .sort-icon {
     transform: scale(0.95);
 }
 
@@ -463,8 +463,8 @@ button:active {
 
     /* Make all modal containers full screen on mobile */
     #create-post-modal .flex.items-center.justify-center,
-    #category-modal .flex.items-center.justify-center,
-    #edit-category-modal .flex.items-center.justify-center,
+    #space-modal .flex.items-center.justify-center,
+    #edit-space-modal .flex.items-center.justify-center,
     #move-modal .flex.items-center.justify-center,
     #confirmation-modal.flex.items-center.justify-center {
         padding: 0 !important;
@@ -474,8 +474,8 @@ button:active {
 
     /* Ensure modal content doesn't get hidden behind browser UI */
     #create-post-modal .bg-white.rounded-lg,
-    #category-modal .bg-white.rounded-lg,
-    #edit-category-modal .bg-white.rounded-lg,
+    #space-modal .bg-white.rounded-lg,
+    #edit-space-modal .bg-white.rounded-lg,
     #move-modal .bg-white.rounded-lg,
     #confirmation-modal .bg-white.rounded-lg {
         min-height: 100vh;
@@ -488,8 +488,8 @@ button:active {
     /* Reduce padding on mobile for all modals */
     #create-post-modal .px-4,
     #create-post-modal .px-6,
-    #category-modal .px-6,
-    #edit-category-modal .px-6,
+    #space-modal .px-6,
+    #edit-space-modal .px-6,
     #move-modal .px-6,
     #confirmation-modal .px-6 {
         padding-left: 1rem !important;
@@ -613,7 +613,7 @@ button:active {
 @media (max-width: 768px) {
     /* Hide button text on mobile, keep icons only */
     #recursive-toggle-btn span,
-    #category-actions-btn span:not(.fas),
+    #space-actions-btn span:not(.fas),
     #settings-btn span,
     #new-post-btn span {
         display: none;
@@ -631,8 +631,8 @@ button:active {
         justify-content: center;
     }
 
-    /* Make category actions button 1.5x larger as it contains 2 icons and feels cramped */
-    #category-actions-btn {
+    /* Make space actions button 1.5x larger as it contains 2 icons and feels cramped */
+    #space-actions-btn {
         min-width: 3rem; /* 1.5x of 2rem */
         min-height: 2rem;
         padding: 0;
@@ -642,11 +642,11 @@ button:active {
     }
 
     /* Ensure proper spacing between icons when text is hidden */
-    #category-actions-btn .fas:first-child {
+    #space-actions-btn .fas:first-child {
         margin-left: 0.5rem;
     }
 
-    #category-actions-btn .fas:last-child {
+    #space-actions-btn .fas:last-child {
         margin-right: 0.5rem;
     }
 
@@ -658,7 +658,7 @@ button:active {
         line-height: 1;
     }
 
-    /* Reduce category name font size in header by 20% */
+    /* Reduce space name font size in header by 20% */
     #timeline-title h2 {
         font-size: 1rem; /* Down from 1.25rem (xl) */
     }
@@ -689,7 +689,7 @@ button:active {
         opacity: 1 !important;
     }
 
-    /* Hide category description tooltip on mobile to prevent black container */
+    /* Hide space description tooltip on mobile to prevent black container */
     #timeline-title .absolute.left-0.top-full {
         display: none !important;
     }

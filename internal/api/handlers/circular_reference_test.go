@@ -21,13 +21,13 @@ import (
 )
 
 type circularTestSetup struct {
-	categoryHandler *CategoryHandler
+	spaceHandler *SpaceHandler
 	postHandler     *PostHandler
-	categoryService *services.CategoryService
+	spaceService *services.SpaceService
 	postService     *services.PostService
 	fileService     *services.FileService
 	db              *storage.DB
-	cache           *cache.CategoryCache
+	cache           *cache.SpaceCache
 	dispatcher      *events.Dispatcher
 	tempDir         string
 }
@@ -61,16 +61,16 @@ func setupCircularTest() (*circularTestSetup, error) {
 	// The database is already initialized with tables in NewDB
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup services
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		return nil, err
 	}
 
@@ -83,17 +83,17 @@ func setupCircularTest() (*circularTestSetup, error) {
 		WithMarkdownEnabled(false)
 
 	// Setup handlers
-	categoryHandler := NewCategoryHandler(categoryService)
+	spaceHandler := NewSpaceHandler(spaceService)
 	postHandler := NewPostHandler(postService, fileService, options)
 
 	return &circularTestSetup{
-		categoryHandler: categoryHandler,
+		spaceHandler: spaceHandler,
 		postHandler:     postHandler,
-		categoryService: categoryService,
+		spaceService: spaceService,
 		postService:     postService,
 		fileService:     fileService,
 		db:              db,
-		cache:           categoryCache,
+		cache:           spaceCache,
 		dispatcher:      dispatcher,
 		tempDir:         tempDir,
 	}, nil
@@ -115,25 +115,25 @@ func TestCircularReference_SimpleLoop(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create categories: A -> B
-	catA, err := setup.categoryService.Create("Category A", nil, "Category A")
+	// Create spaces: A -> B
+	catA, err := setup.spaceService.Create("Space A", nil, "Space A")
 	if err != nil {
-		t.Fatalf("Failed to create Category A: %v", err)
+		t.Fatalf("Failed to create Space A: %v", err)
 	}
-	catB, err := setup.categoryService.Create("Category B", &catA.ID, "Category B")
+	catB, err := setup.spaceService.Create("Space B", &catA.ID, "Space B")
 	if err != nil {
-		t.Fatalf("Failed to create Category B: %v", err)
+		t.Fatalf("Failed to create Space B: %v", err)
 	}
 
 	// Try to create circular reference: A -> B -> A
 	requestBody := map[string]interface{}{
-		"name":        "Category A Updated",
+		"name":        "Space A Updated",
 		"description": "Updated description",
 		"parent_id":   catB.ID,
 	}
 
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(catA.ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(catA.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(catA.ID)})
 	w := httptest.NewRecorder()
@@ -141,7 +141,7 @@ func TestCircularReference_SimpleLoop(t *testing.T) {
 	// This should complete without hanging
 	done := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.UpdateCategory(w, req)
+		setup.spaceHandler.UpdateSpace(w, req)
 		done <- true
 	}()
 
@@ -150,17 +150,17 @@ func TestCircularReference_SimpleLoop(t *testing.T) {
 	case <-done:
 		// Operation completed - test passed
 	case <-time.After(5 * time.Second):
-		t.Fatal("UpdateCategory operation hanged - possible infinite loop")
+		t.Fatal("UpdateSpace operation hanged - possible infinite loop")
 	}
 
-	// If update succeeded, test that GetCategories doesn't hang
+	// If update succeeded, test that GetSpaces doesn't hang
 	if w.Code == http.StatusOK {
-		req2 := httptest.NewRequest("GET", "/api/categories", nil)
+		req2 := httptest.NewRequest("GET", "/api/spaces", nil)
 		w2 := httptest.NewRecorder()
 
 		done2 := make(chan bool, 1)
 		go func() {
-			setup.categoryHandler.GetCategories(w2, req2)
+			setup.spaceHandler.GetSpaces(w2, req2)
 			done2 <- true
 		}()
 
@@ -168,16 +168,16 @@ func TestCircularReference_SimpleLoop(t *testing.T) {
 		case <-done2:
 			// Operation completed
 		case <-time.After(5 * time.Second):
-			t.Fatal("GetCategories operation hanged after circular reference creation")
+			t.Fatal("GetSpaces operation hanged after circular reference creation")
 		}
 
-		// Test GetCategoriesByParent
-		req3 := httptest.NewRequest("GET", "/api/categories/by-parent", nil)
+		// Test GetSpacesByParent
+		req3 := httptest.NewRequest("GET", "/api/spaces/by-parent", nil)
 		w3 := httptest.NewRecorder()
 
 		done3 := make(chan bool, 1)
 		go func() {
-			setup.categoryHandler.GetCategoriesByParent(w3, req3)
+			setup.spaceHandler.GetSpacesByParent(w3, req3)
 			done3 <- true
 		}()
 
@@ -185,7 +185,7 @@ func TestCircularReference_SimpleLoop(t *testing.T) {
 		case <-done3:
 			// Operation completed
 		case <-time.After(5 * time.Second):
-			t.Fatal("GetCategoriesByParent operation hanged after circular reference creation")
+			t.Fatal("GetSpacesByParent operation hanged after circular reference creation")
 		}
 	}
 }
@@ -197,29 +197,29 @@ func TestCircularReference_ComplexLoop(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create categories: A -> B -> C (within depth limit)
-	catA, err := setup.categoryService.Create("Category A", nil, "Category A")
+	// Create spaces: A -> B -> C (within depth limit)
+	catA, err := setup.spaceService.Create("Space A", nil, "Space A")
 	if err != nil {
-		t.Fatalf("Failed to create Category A: %v", err)
+		t.Fatalf("Failed to create Space A: %v", err)
 	}
-	catB, err := setup.categoryService.Create("Category B", &catA.ID, "Category B")
+	catB, err := setup.spaceService.Create("Space B", &catA.ID, "Space B")
 	if err != nil {
-		t.Fatalf("Failed to create Category B: %v", err)
+		t.Fatalf("Failed to create Space B: %v", err)
 	}
-	catC, err := setup.categoryService.Create("Category C", &catB.ID, "Category C")
+	catC, err := setup.spaceService.Create("Space C", &catB.ID, "Space C")
 	if err != nil {
-		t.Fatalf("Failed to create Category C: %v", err)
+		t.Fatalf("Failed to create Space C: %v", err)
 	}
 
 	// Try to create circular reference: A -> B -> C -> A
 	requestBody := map[string]interface{}{
-		"name":        "Category A Updated",
+		"name":        "Space A Updated",
 		"description": "Updated description",
 		"parent_id":   catC.ID,
 	}
 
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(catA.ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(catA.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(catA.ID)})
 	w := httptest.NewRecorder()
@@ -227,7 +227,7 @@ func TestCircularReference_ComplexLoop(t *testing.T) {
 	// This should complete without hanging
 	done := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.UpdateCategory(w, req)
+		setup.spaceHandler.UpdateSpace(w, req)
 		done <- true
 	}()
 
@@ -235,23 +235,23 @@ func TestCircularReference_ComplexLoop(t *testing.T) {
 	case <-done:
 		// Operation completed
 	case <-time.After(5 * time.Second):
-		t.Fatal("UpdateCategory operation hanged with complex circular reference")
+		t.Fatal("UpdateSpace operation hanged with complex circular reference")
 	}
 
-	// Test all category operations with the potential circular reference
+	// Test all space operations with the potential circular reference
 	operations := []struct {
 		name string
 		test func() error
 	}{
 		{
-			name: "GetCategories",
+			name: "GetSpaces",
 			test: func() error {
-				req := httptest.NewRequest("GET", "/api/categories", nil)
+				req := httptest.NewRequest("GET", "/api/spaces", nil)
 				w := httptest.NewRecorder()
 
 				done := make(chan bool, 1)
 				go func() {
-					setup.categoryHandler.GetCategories(w, req)
+					setup.spaceHandler.GetSpaces(w, req)
 					done <- true
 				}()
 
@@ -264,14 +264,14 @@ func TestCircularReference_ComplexLoop(t *testing.T) {
 			},
 		},
 		{
-			name: "GetCategoriesByParent",
+			name: "GetSpacesByParent",
 			test: func() error {
-				req := httptest.NewRequest("GET", "/api/categories/by-parent", nil)
+				req := httptest.NewRequest("GET", "/api/spaces/by-parent", nil)
 				w := httptest.NewRecorder()
 
 				done := make(chan bool, 1)
 				go func() {
-					setup.categoryHandler.GetCategoriesByParent(w, req)
+					setup.spaceHandler.GetSpacesByParent(w, req)
 					done <- true
 				}()
 
@@ -284,15 +284,15 @@ func TestCircularReference_ComplexLoop(t *testing.T) {
 			},
 		},
 		{
-			name: "GetCategory",
+			name: "GetSpace",
 			test: func() error {
-				req := httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(catA.ID), nil)
+				req := httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(catA.ID), nil)
 				req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(catA.ID)})
 				w := httptest.NewRecorder()
 
 				done := make(chan bool, 1)
 				go func() {
-					setup.categoryHandler.GetCategory(w, req)
+					setup.spaceHandler.GetSpace(w, req)
 					done <- true
 				}()
 
@@ -322,28 +322,28 @@ func TestCircularReference_SelfReference(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create category
-	cat, err := setup.categoryService.Create("Self Reference Category", nil, "Test category")
+	// Create space
+	cat, err := setup.spaceService.Create("Self Reference Space", nil, "Test space")
 	if err != nil {
-		t.Fatalf("Failed to create category: %v", err)
+		t.Fatalf("Failed to create space: %v", err)
 	}
 
 	// Try to create self-reference
 	requestBody := map[string]interface{}{
-		"name":        "Self Reference Category Updated",
+		"name":        "Self Reference Space Updated",
 		"description": "Updated description",
 		"parent_id":   cat.ID,
 	}
 
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(cat.ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(cat.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(cat.ID)})
 	w := httptest.NewRecorder()
 
 	done := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.UpdateCategory(w, req)
+		setup.spaceHandler.UpdateSpace(w, req)
 		done <- true
 	}()
 
@@ -352,12 +352,12 @@ func TestCircularReference_SelfReference(t *testing.T) {
 		// Self-reference should be prevented or handled gracefully
 		if w.Code == http.StatusOK {
 			// If it's allowed, verify no infinite loops occur
-			req2 := httptest.NewRequest("GET", "/api/categories", nil)
+			req2 := httptest.NewRequest("GET", "/api/spaces", nil)
 			w2 := httptest.NewRecorder()
 
 			done2 := make(chan bool, 1)
 			go func() {
-				setup.categoryHandler.GetCategories(w2, req2)
+				setup.spaceHandler.GetSpaces(w2, req2)
 				done2 <- true
 			}()
 
@@ -365,66 +365,66 @@ func TestCircularReference_SelfReference(t *testing.T) {
 			case <-done2:
 				// OK
 			case <-time.After(3 * time.Second):
-				t.Fatal("GetCategories hanged after self-reference creation")
+				t.Fatal("GetSpaces hanged after self-reference creation")
 			}
 		}
 	case <-time.After(5 * time.Second):
-		t.Fatal("UpdateCategory operation hanged with self-reference")
+		t.Fatal("UpdateSpace operation hanged with self-reference")
 	}
 }
 
-func TestCircularReference_PostOperationsWithCircularCategories(t *testing.T) {
+func TestCircularReference_PostOperationsWithCircularSpaces(t *testing.T) {
 	setup, err := setupCircularTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create categories with potential circular reference
-	catA, err := setup.categoryService.Create("Category A", nil, "Category A")
+	// Create spaces with potential circular reference
+	catA, err := setup.spaceService.Create("Space A", nil, "Space A")
 	if err != nil {
-		t.Fatalf("Failed to create Category A: %v", err)
+		t.Fatalf("Failed to create Space A: %v", err)
 	}
-	catB, err := setup.categoryService.Create("Category B", &catA.ID, "Category B")
+	catB, err := setup.spaceService.Create("Space B", &catA.ID, "Space B")
 	if err != nil {
-		t.Fatalf("Failed to create Category B: %v", err)
+		t.Fatalf("Failed to create Space B: %v", err)
 	}
-	catC, err := setup.categoryService.Create("Category C", &catB.ID, "Category C")
+	catC, err := setup.spaceService.Create("Space C", &catB.ID, "Space C")
 	if err != nil {
-		t.Fatalf("Failed to create Category C: %v", err)
+		t.Fatalf("Failed to create Space C: %v", err)
 	}
 
-	// Create posts in these categories
+	// Create posts in these spaces
 	post1, err := setup.postService.Create(catA.ID, "Post in A", nil)
 	if err != nil {
-		t.Fatalf("Failed to create post in Category A: %v", err)
+		t.Fatalf("Failed to create post in Space A: %v", err)
 	}
 	_, err = setup.postService.Create(catB.ID, "Post in B", nil)
 	if err != nil {
-		t.Fatalf("Failed to create post in Category B: %v", err)
+		t.Fatalf("Failed to create post in Space B: %v", err)
 	}
 	post3, err := setup.postService.Create(catC.ID, "Post in C", nil)
 	if err != nil {
-		t.Fatalf("Failed to create post in Category C: %v", err)
+		t.Fatalf("Failed to create post in Space C: %v", err)
 	}
 
 	// Try to create a circular reference: C -> A (A -> B -> C -> A)
 	requestBody := map[string]interface{}{
-		"name":        "Category C Updated",
+		"name":        "Space C Updated",
 		"description": "Updated description",
 		"parent_id":   catA.ID,
 	}
 
 	// First, update C to point to A, creating potential circular reference
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(catC.ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(catC.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(catC.ID)})
 	w := httptest.NewRecorder()
 
 	done := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.UpdateCategory(w, req)
+		setup.spaceHandler.UpdateSpace(w, req)
 		done <- true
 	}()
 
@@ -432,24 +432,24 @@ func TestCircularReference_PostOperationsWithCircularCategories(t *testing.T) {
 	case <-done:
 		// Update completed
 	case <-time.After(5 * time.Second):
-		t.Fatal("Category update hanged when creating potential circular reference")
+		t.Fatal("Space update hanged when creating potential circular reference")
 	}
 
-	// Now test post operations with potential circular categories
+	// Now test post operations with potential circular spaces
 	postOperations := []struct {
 		name string
 		test func() error
 	}{
 		{
-			name: "GetPostsByCategory_Recursive",
+			name: "GetPostsBySpace_Recursive",
 			test: func() error {
-				req := httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(catA.ID)+"/posts?recursive=true", nil)
+				req := httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(catA.ID)+"/posts?recursive=true", nil)
 				req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(catA.ID)})
 				w := httptest.NewRecorder()
 
 				done := make(chan bool, 1)
 				go func() {
-					setup.postHandler.GetPostsByCategory(w, req)
+					setup.postHandler.GetPostsBySpace(w, req)
 					done <- true
 				}()
 
@@ -465,8 +465,8 @@ func TestCircularReference_PostOperationsWithCircularCategories(t *testing.T) {
 			name: "CreatePost",
 			test: func() error {
 				requestBody := map[string]interface{}{
-					"category_id": catA.ID,
-					"content":     "New post in potentially circular category",
+					"space_id": catA.ID,
+					"content":     "New post in potentially circular space",
 				}
 
 				body, _ := json.Marshal(requestBody)
@@ -492,7 +492,7 @@ func TestCircularReference_PostOperationsWithCircularCategories(t *testing.T) {
 			name: "MovePost",
 			test: func() error {
 				requestBody := map[string]interface{}{
-					"category_id": catB.ID,
+					"space_id": catB.ID,
 				}
 
 				body, _ := json.Marshal(requestBody)
@@ -547,50 +547,50 @@ func TestCircularReference_PostOperationsWithCircularCategories(t *testing.T) {
 	}
 }
 
-func TestCircularReference_CategoryDeletionWithCircularReference(t *testing.T) {
+func TestCircularReference_SpaceDeletionWithCircularReference(t *testing.T) {
 	setup, err := setupCircularTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create categories: A -> B -> C
-	catA, err := setup.categoryService.Create("Category A", nil, "Category A")
+	// Create spaces: A -> B -> C
+	catA, err := setup.spaceService.Create("Space A", nil, "Space A")
 	if err != nil {
-		t.Fatalf("Failed to create Category A: %v", err)
+		t.Fatalf("Failed to create Space A: %v", err)
 	}
-	catB, err := setup.categoryService.Create("Category B", &catA.ID, "Category B")
+	catB, err := setup.spaceService.Create("Space B", &catA.ID, "Space B")
 	if err != nil {
-		t.Fatalf("Failed to create Category B: %v", err)
+		t.Fatalf("Failed to create Space B: %v", err)
 	}
-	catC, err := setup.categoryService.Create("Category C", &catB.ID, "Category C")
+	catC, err := setup.spaceService.Create("Space C", &catB.ID, "Space C")
 	if err != nil {
-		t.Fatalf("Failed to create Category C: %v", err)
+		t.Fatalf("Failed to create Space C: %v", err)
 	}
 
-	// Create posts in each category
+	// Create posts in each space
 	_, err = setup.postService.Create(catA.ID, "Post in A", nil)
 	if err != nil {
-		t.Fatalf("Failed to create post in Category A: %v", err)
+		t.Fatalf("Failed to create post in Space A: %v", err)
 	}
 	_, err = setup.postService.Create(catB.ID, "Post in B", nil)
 	if err != nil {
-		t.Fatalf("Failed to create post in Category B: %v", err)
+		t.Fatalf("Failed to create post in Space B: %v", err)
 	}
 	_, err = setup.postService.Create(catC.ID, "Post in C", nil)
 	if err != nil {
-		t.Fatalf("Failed to create post in Category C: %v", err)
+		t.Fatalf("Failed to create post in Space C: %v", err)
 	}
 
 	// Create potential circular reference by making A point to C (A -> C -> B -> A)
 	requestBody := map[string]interface{}{
-		"name":        "Category A Updated",
+		"name":        "Space A Updated",
 		"description": "Updated description",
 		"parent_id":   catC.ID,
 	}
 
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(catA.ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(catA.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(catA.ID)})
 	w := httptest.NewRecorder()
@@ -598,7 +598,7 @@ func TestCircularReference_CategoryDeletionWithCircularReference(t *testing.T) {
 	// Update to create potential circular reference
 	done := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.UpdateCategory(w, req)
+		setup.spaceHandler.UpdateSpace(w, req)
 		done <- true
 	}()
 
@@ -606,17 +606,17 @@ func TestCircularReference_CategoryDeletionWithCircularReference(t *testing.T) {
 	case <-done:
 		// Update completed
 	case <-time.After(5 * time.Second):
-		t.Fatal("Category update hanged when creating circular reference")
+		t.Fatal("Space update hanged when creating circular reference")
 	}
 
-	// Try to delete one of the categories in the potential circular structure
-	req2 := httptest.NewRequest("DELETE", "/api/categories/"+strconv.Itoa(catB.ID), nil)
+	// Try to delete one of the spaces in the potential circular structure
+	req2 := httptest.NewRequest("DELETE", "/api/spaces/"+strconv.Itoa(catB.ID), nil)
 	req2 = mux.SetURLVars(req2, map[string]string{"id": strconv.Itoa(catB.ID)})
 	w2 := httptest.NewRecorder()
 
 	done2 := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.DeleteCategory(w2, req2)
+		setup.spaceHandler.DeleteSpace(w2, req2)
 		done2 <- true
 	}()
 
@@ -624,16 +624,16 @@ func TestCircularReference_CategoryDeletionWithCircularReference(t *testing.T) {
 	case <-done2:
 		// Deletion completed - should handle circular reference gracefully
 	case <-time.After(10 * time.Second):
-		t.Fatal("Category deletion hanged with circular reference")
+		t.Fatal("Space deletion hanged with circular reference")
 	}
 
 	// Verify system is still functional after deletion
-	req3 := httptest.NewRequest("GET", "/api/categories", nil)
+	req3 := httptest.NewRequest("GET", "/api/spaces", nil)
 	w3 := httptest.NewRecorder()
 
 	done3 := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.GetCategories(w3, req3)
+		setup.spaceHandler.GetSpaces(w3, req3)
 		done3 <- true
 	}()
 
@@ -641,7 +641,7 @@ func TestCircularReference_CategoryDeletionWithCircularReference(t *testing.T) {
 	case <-done3:
 		// Should work
 	case <-time.After(3 * time.Second):
-		t.Fatal("GetCategories hanged after deletion with circular reference")
+		t.Fatal("GetSpaces hanged after deletion with circular reference")
 	}
 }
 
@@ -652,55 +652,55 @@ func TestCircularReference_StressTestWithManyOperations(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create categories within depth limit: Root -> A, Root -> B, A -> C
-	categories := make([]*models.Category, 4)
-	categories[0], err = setup.categoryService.Create("Root Category", nil, "Root")
+	// Create spaces within depth limit: Root -> A, Root -> B, A -> C
+	spaces := make([]*models.Space, 4)
+	spaces[0], err = setup.spaceService.Create("Root Space", nil, "Root")
 	if err != nil {
-		t.Fatalf("Failed to create root category: %v", err)
+		t.Fatalf("Failed to create root space: %v", err)
 	}
 
-	// Create two categories under root
-	categories[1], err = setup.categoryService.Create("Category A", &categories[0].ID, "Category A")
+	// Create two spaces under root
+	spaces[1], err = setup.spaceService.Create("Space A", &spaces[0].ID, "Space A")
 	if err != nil {
-		t.Fatalf("Failed to create Category A: %v", err)
+		t.Fatalf("Failed to create Space A: %v", err)
 	}
 
-	categories[2], err = setup.categoryService.Create("Category B", &categories[0].ID, "Category B")
+	spaces[2], err = setup.spaceService.Create("Space B", &spaces[0].ID, "Space B")
 	if err != nil {
-		t.Fatalf("Failed to create Category B: %v", err)
+		t.Fatalf("Failed to create Space B: %v", err)
 	}
 
 	// Create one more at depth 2
-	categories[3], err = setup.categoryService.Create("Category C", &categories[1].ID, "Category C")
+	spaces[3], err = setup.spaceService.Create("Space C", &spaces[1].ID, "Space C")
 	if err != nil {
-		t.Fatalf("Failed to create Category C: %v", err)
+		t.Fatalf("Failed to create Space C: %v", err)
 	}
 
-	// Create posts in each category
-	for i, cat := range categories {
-		_, err := setup.postService.Create(cat.ID, fmt.Sprintf("Post in category %d", i), nil)
+	// Create posts in each space
+	for i, cat := range spaces {
+		_, err := setup.postService.Create(cat.ID, fmt.Sprintf("Post in space %d", i), nil)
 		if err != nil {
-			t.Fatalf("Failed to create post in category %d: %v", i, err)
+			t.Fatalf("Failed to create post in space %d: %v", i, err)
 		}
 	}
 
-	// Try to create circular reference by making Root point to Category C
+	// Try to create circular reference by making Root point to Space C
 	// This creates: Root -> A -> C -> Root
 	requestBody := map[string]interface{}{
-		"name":        "Root Category Updated",
+		"name":        "Root Space Updated",
 		"description": "Updated with circular reference",
-		"parent_id":   categories[3].ID,
+		"parent_id":   spaces[3].ID,
 	}
 
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(categories[0].ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(spaces[0].ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
-	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(categories[0].ID)})
+	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(spaces[0].ID)})
 	w := httptest.NewRecorder()
 
 	done := make(chan bool, 1)
 	go func() {
-		setup.categoryHandler.UpdateCategory(w, req)
+		setup.spaceHandler.UpdateSpace(w, req)
 		done <- true
 	}()
 
@@ -719,22 +719,22 @@ func TestCircularReference_StressTestWithManyOperations(t *testing.T) {
 		go func(i int) {
 			switch i % 4 {
 			case 0:
-				// Get categories
-				req := httptest.NewRequest("GET", "/api/categories", nil)
+				// Get spaces
+				req := httptest.NewRequest("GET", "/api/spaces", nil)
 				w := httptest.NewRecorder()
-				setup.categoryHandler.GetCategories(w, req)
+				setup.spaceHandler.GetSpaces(w, req)
 			case 1:
-				// Get posts by category
-				catIdx := i % len(categories)
-				req := httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(categories[catIdx].ID)+"/posts?recursive=true", nil)
-				req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(categories[catIdx].ID)})
+				// Get posts by space
+				catIdx := i % len(spaces)
+				req := httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(spaces[catIdx].ID)+"/posts?recursive=true", nil)
+				req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(spaces[catIdx].ID)})
 				w := httptest.NewRecorder()
-				setup.postHandler.GetPostsByCategory(w, req)
+				setup.postHandler.GetPostsBySpace(w, req)
 			case 2:
 				// Create new post
-				catIdx := i % len(categories)
+				catIdx := i % len(spaces)
 				requestBody := map[string]interface{}{
-					"category_id": categories[catIdx].ID,
+					"space_id": spaces[catIdx].ID,
 					"content":     fmt.Sprintf("Stress test post %d", i),
 				}
 				body, _ := json.Marshal(requestBody)
@@ -743,10 +743,10 @@ func TestCircularReference_StressTestWithManyOperations(t *testing.T) {
 				w := httptest.NewRecorder()
 				setup.postHandler.CreatePost(w, req)
 			case 3:
-				// Get categories by parent
-				req := httptest.NewRequest("GET", "/api/categories/by-parent", nil)
+				// Get spaces by parent
+				req := httptest.NewRequest("GET", "/api/spaces/by-parent", nil)
 				w := httptest.NewRecorder()
-				setup.categoryHandler.GetCategoriesByParent(w, req)
+				setup.spaceHandler.GetSpacesByParent(w, req)
 			}
 			operationsDone <- true
 		}(i)

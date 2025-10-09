@@ -5,7 +5,7 @@ const APP_NAME = 'Backthynk';
 const APP_TAGLINE = 'Personal Micro Blog';
 const APP_DESCRIPTION = 'Personal micro blog platform';
 
-// Reserved Routes (cannot be used as category names)
+// Reserved Routes (cannot be used as space names)
 const RESERVED_ROUTES = [
     'api',
     'static',
@@ -13,11 +13,11 @@ const RESERVED_ROUTES = [
     'settings'
 ];
 
-// Special Category IDs
-const ALL_CATEGORIES_ID = 0; // Category ID 0 represents "all categories"
+// Special Space IDs
+const ALL_SPACES_ID = 0; // Space ID 0 represents "all spaces"
 
-// Category Configuration
-const MAX_CATEGORY_DEPTH = 2; // Maximum category depth (0, 1, 2)
+// Space Configuration
+const MAX_SPACE_DEPTH = 2; // Maximum space depth (0, 1, 2)
 
 // Default Application Settings
 const DEFAULT_SETTINGS = {
@@ -38,8 +38,8 @@ const VALIDATION_LIMITS = {
     maxContentLength: 50000,
     minFilesPerPost: 1,
     maxFilesPerPost: 50,
-    maxCategoryNameLength: 30,
-    maxCategoryDescriptionLength: 280,
+    maxSpaceNameLength: 30,
+    maxSpaceDescriptionLength: 280,
     maxSiteTitleLength: 100,
     maxSiteDescriptionLength: 160
 };
@@ -48,19 +48,19 @@ const VALIDATION_LIMITS = {
 const USER_MESSAGES = {
     // Success messages
     success: {
-        categoryDeleted: 'deleted successfully!',
+        spaceDeleted: 'deleted successfully!',
         postMoved: 'Post successfully moved to',
         settingsSaved: 'Settings saved successfully!'
     },
 
     // Error messages
     error: {
-        categoryNameEmpty: 'Category name cannot be empty',
-        categoryNameTooLong: 'Category name must be {0} characters or less',
-        categoryNameInvalidChars: 'Category name can only contain letters, numbers, and single spaces',
-        categoryDescTooLong: 'Description cannot exceed {0} characters',
-        noCategorySelected: 'No category selected',
-        pleaseSelectCategory: 'Please select a category first',
+        spaceNameEmpty: 'Space name cannot be empty',
+        spaceNameTooLong: 'Space name must be {0} characters or less',
+        spaceNameInvalidChars: 'Space name can only contain letters, numbers, and single spaces',
+        spaceDescTooLong: 'Description cannot exceed {0} characters',
+        noSpaceSelected: 'No space selected',
+        pleaseSelectSpace: 'Please select a space first',
         contentRequired: 'Content is required',
         contentTooLong: 'Content exceeds maximum length of {0} characters',
         contentExceedsMax: 'Content exceeds maximum length',
@@ -68,9 +68,9 @@ const USER_MESSAGES = {
         fileSizeExceeded: 'File "{0}" exceeds maximum file size of {1}MB',
         failedToLoadSettings: 'Failed to load settings: {0}',
         failedToSaveSettings: 'Failed to save settings: {0}',
-        failedToDeleteCategory: 'Failed to delete category: {0}',
+        failedToDeleteSpace: 'Failed to delete space: {0}',
         failedToDeletePost: 'Failed to delete post: {0}',
-        selectCategoryToMove: 'Please select a category to move the post to.'
+        selectSpaceToMove: 'Please select a space to move the post to.'
     },
 
     // Validation messages
@@ -92,7 +92,7 @@ const USER_MESSAGES = {
     // Confirmation messages
     confirm: {
         unsavedContent: 'You have unsaved content. Are you sure you want to close?',
-        deleteCategory: 'Are you sure you want to delete',
+        deleteSpace: 'Are you sure you want to delete',
         undoWarning: '\n\nThis action cannot be undone.'
     },
 
@@ -121,7 +121,7 @@ const UI_CONFIG = {
     defaultPostsPerPage: 20,
     infiniteScrollThreshold: 1000, // px from bottom to load more
     virtualScrollThreshold: 50, // posts count to enable virtual scrolling
-    categoryBatchLimit: 100,
+    spaceBatchLimit: 100,
 
     maxFilenameDisplay: 200, // pixels
 
@@ -192,8 +192,8 @@ const UI_TEXT = {
     less: 'Less',
     more: 'More',
     all: 'All',
-    categories: 'Categories',
-    allCategories: 'All Categories',
+    spaces: 'Spaces',
+    allSpaces: 'All Spaces',
     settings: 'Settings',
 
     // Time expressions
@@ -239,16 +239,16 @@ const UI_TEXT = {
     attachments: 'Attachments',
     createNewPost: 'Create New Post',
 
-    // Settings categories
+    // Settings spaces
     fileUploadSettings: 'File Upload Settings',
     contentSettings: 'Content Settings',
     performanceSettings: 'Performance Settings',
     activityTracking: 'Activity Tracking',
-    fileStatistics: 'Category Detailed',
+    fileStatistics: 'Space Detailed',
 
     // Empty state messages
     noPostsYet: 'No posts yet. Create your first post!',
-    noCategoriesYet: 'No categories yet. Create your first category!',
+    noSpacesYet: 'No spaces yet. Create your first space!',
     noFilesSelected: 'No files selected',
     chooseFiles: 'Choose Files',
 
@@ -281,10 +281,10 @@ const TIME_FORMAT = {
 
 // Local Storage Keys
 const STORAGE_KEYS = {
-    lastCategory: 'lastSelectedCategory',
-    expandedCategories: 'expandedCategories',
+    lastSpace: 'lastSelectedSpace',
+    expandedSpaces: 'expandedSpaces',
     recursiveStates: 'recursiveToggleStates',
-    categorySortPref: 'categorySortPreference'
+    spaceSortPref: 'spaceSortPreference'
 };
 
 // File Extensions
@@ -387,9 +387,9 @@ window.AppConstants = {
     // Routes
     RESERVED_ROUTES,
 
-    // Category Constants
-    ALL_CATEGORIES_ID,
-    MAX_CATEGORY_DEPTH,
+    // Space Constants
+    ALL_SPACES_ID,
+    MAX_SPACE_DEPTH,
 
     // Settings and Configuration
     DEFAULT_SETTINGS,

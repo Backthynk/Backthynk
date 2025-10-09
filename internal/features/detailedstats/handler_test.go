@@ -30,12 +30,12 @@ func TestStatsRegisterRoutesEnabled(t *testing.T) {
 	handler.RegisterRoutes(router)
 
 	// Check if the route was registered
-	req := httptest.NewRequest("GET", "/api/category-stats/1", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/1", nil)
 	match := &mux.RouteMatch{}
 	matched := router.Match(req, match)
 
 	if !matched {
-		t.Error("Expected category-stats route to be registered when enabled")
+		t.Error("Expected space-stats route to be registered when enabled")
 	}
 }
 
@@ -47,22 +47,22 @@ func TestStatsRegisterRoutesDisabled(t *testing.T) {
 	handler.RegisterRoutes(router)
 
 	// Check if the route was NOT registered
-	req := httptest.NewRequest("GET", "/api/category-stats/1", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/1", nil)
 	match := &mux.RouteMatch{}
 	matched := router.Match(req, match)
 
 	if matched {
-		t.Error("Expected category-stats route NOT to be registered when disabled")
+		t.Error("Expected space-stats route NOT to be registered when disabled")
 	}
 }
 
-func TestGetCategoryStatsInvalidCategoryID(t *testing.T) {
+func TestGetSpaceStatsInvalidSpaceID(t *testing.T) {
 	service := &Service{enabled: true}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
 
-	req := httptest.NewRequest("GET", "/api/category-stats/invalid", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/invalid", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -72,15 +72,15 @@ func TestGetCategoryStatsInvalidCategoryID(t *testing.T) {
 	}
 
 	body := w.Body.String()
-	if body != "Invalid category ID\n" {
-		t.Errorf("Expected 'Invalid category ID' error message, got '%s'", body)
+	if body != "Invalid space ID\n" {
+		t.Errorf("Expected 'Invalid space ID' error message, got '%s'", body)
 	}
 }
 
-func TestGetCategoryStatsValidRequest(t *testing.T) {
+func TestGetSpaceStatsValidRequest(t *testing.T) {
 	service := &Service{
 		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		stats:   make(map[int]*SpaceStats),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -88,13 +88,13 @@ func TestGetCategoryStatsValidRequest(t *testing.T) {
 
 	// Create some test stats manually to avoid updateStats which requires catCache
 	service.mu.Lock()
-	service.stats[1] = &CategoryStats{
+	service.stats[1] = &SpaceStats{
 		Direct:    Stats{FileCount: 5, TotalSize: 1000},
 		Recursive: Stats{FileCount: 5, TotalSize: 1000},
 	}
 	service.mu.Unlock()
 
-	req := httptest.NewRequest("GET", "/api/category-stats/1", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/1", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -114,8 +114,8 @@ func TestGetCategoryStatsValidRequest(t *testing.T) {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if response.CategoryID != 1 {
-		t.Errorf("Expected category ID 1, got %d", response.CategoryID)
+	if response.SpaceID != 1 {
+		t.Errorf("Expected space ID 1, got %d", response.SpaceID)
 	}
 
 	if response.FileCount != 5 {
@@ -131,10 +131,10 @@ func TestGetCategoryStatsValidRequest(t *testing.T) {
 	}
 }
 
-func TestGetCategoryStatsRecursiveParameter(t *testing.T) {
+func TestGetSpaceStatsRecursiveParameter(t *testing.T) {
 	service := &Service{
 		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		stats:   make(map[int]*SpaceStats),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -142,14 +142,14 @@ func TestGetCategoryStatsRecursiveParameter(t *testing.T) {
 
 	// Create some test stats manually
 	service.mu.Lock()
-	service.stats[1] = &CategoryStats{
+	service.stats[1] = &SpaceStats{
 		Direct:    Stats{FileCount: 5, TotalSize: 1000},
 		Recursive: Stats{FileCount: 5, TotalSize: 1000},
 	}
 	service.mu.Unlock()
 
 	// Test recursive=true
-	req := httptest.NewRequest("GET", "/api/category-stats/1?recursive=true", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/1?recursive=true", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -177,7 +177,7 @@ func TestGetCategoryStatsRecursiveParameter(t *testing.T) {
 	}
 
 	// Test recursive=false (default)
-	req = httptest.NewRequest("GET", "/api/category-stats/1", nil)
+	req = httptest.NewRequest("GET", "/api/space-stats/1", nil)
 	w = httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -204,28 +204,28 @@ func TestGetCategoryStatsRecursiveParameter(t *testing.T) {
 	}
 }
 
-func TestGetCategoryStatsGlobalStats(t *testing.T) {
+func TestGetSpaceStatsGlobalStats(t *testing.T) {
 	service := &Service{
 		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		stats:   make(map[int]*SpaceStats),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
 
-	// Create stats for multiple categories manually
+	// Create stats for multiple spaces manually
 	service.mu.Lock()
-	service.stats[1] = &CategoryStats{
+	service.stats[1] = &SpaceStats{
 		Direct:    Stats{FileCount: 5, TotalSize: 1000},
 		Recursive: Stats{FileCount: 5, TotalSize: 1000},
 	}
-	service.stats[2] = &CategoryStats{
+	service.stats[2] = &SpaceStats{
 		Direct:    Stats{FileCount: 3, TotalSize: 500},
 		Recursive: Stats{FileCount: 3, TotalSize: 500},
 	}
 	service.mu.Unlock()
 
-	req := httptest.NewRequest("GET", "/api/category-stats/0", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/0", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -240,11 +240,11 @@ func TestGetCategoryStatsGlobalStats(t *testing.T) {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if response.CategoryID != 0 {
-		t.Errorf("Expected category ID 0 for global stats, got %d", response.CategoryID)
+	if response.SpaceID != 0 {
+		t.Errorf("Expected space ID 0 for global stats, got %d", response.SpaceID)
 	}
 
-	// Should include files from all categories
+	// Should include files from all spaces
 	if response.FileCount != 8 { // 5 + 3
 		t.Errorf("Expected 8 files globally, got %d", response.FileCount)
 	}
@@ -254,16 +254,16 @@ func TestGetCategoryStatsGlobalStats(t *testing.T) {
 	}
 }
 
-func TestGetCategoryStatsNonExistentCategory(t *testing.T) {
+func TestGetSpaceStatsNonExistentSpace(t *testing.T) {
 	service := &Service{
 		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		stats:   make(map[int]*SpaceStats),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
 
-	req := httptest.NewRequest("GET", "/api/category-stats/999", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/999", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -278,26 +278,26 @@ func TestGetCategoryStatsNonExistentCategory(t *testing.T) {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if response.CategoryID != 999 {
-		t.Errorf("Expected category ID 999, got %d", response.CategoryID)
+	if response.SpaceID != 999 {
+		t.Errorf("Expected space ID 999, got %d", response.SpaceID)
 	}
 
 	if response.FileCount != 0 {
-		t.Errorf("Expected 0 files for non-existent category, got %d", response.FileCount)
+		t.Errorf("Expected 0 files for non-existent space, got %d", response.FileCount)
 	}
 
 	if response.TotalSize != 0 {
-		t.Errorf("Expected 0 total size for non-existent category, got %d", response.TotalSize)
+		t.Errorf("Expected 0 total size for non-existent space, got %d", response.TotalSize)
 	}
 }
 
-func TestGetCategoryStatsMethodNotAllowed(t *testing.T) {
+func TestGetSpaceStatsMethodNotAllowed(t *testing.T) {
 	service := &Service{enabled: true}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
 	handler.RegisterRoutes(router)
 
-	req := httptest.NewRequest("POST", "/api/category-stats/1", nil)
+	req := httptest.NewRequest("POST", "/api/space-stats/1", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -307,10 +307,10 @@ func TestGetCategoryStatsMethodNotAllowed(t *testing.T) {
 	}
 }
 
-func TestGetCategoryStatsQueryParameterParsing(t *testing.T) {
+func TestGetSpaceStatsQueryParameterParsing(t *testing.T) {
 	service := &Service{
 		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		stats:   make(map[int]*SpaceStats),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -318,7 +318,7 @@ func TestGetCategoryStatsQueryParameterParsing(t *testing.T) {
 
 	// Create some test stats manually
 	service.mu.Lock()
-	service.stats[1] = &CategoryStats{
+	service.stats[1] = &SpaceStats{
 		Direct:    Stats{FileCount: 5, TotalSize: 1000},
 		Recursive: Stats{FileCount: 5, TotalSize: 1000},
 	}
@@ -332,31 +332,31 @@ func TestGetCategoryStatsQueryParameterParsing(t *testing.T) {
 	}{
 		{
 			name:              "No recursive parameter",
-			url:               "/api/category-stats/1",
+			url:               "/api/space-stats/1",
 			expectedRecursive: false,
 			expectedStatus:    http.StatusOK,
 		},
 		{
 			name:              "Recursive true",
-			url:               "/api/category-stats/1?recursive=true",
+			url:               "/api/space-stats/1?recursive=true",
 			expectedRecursive: true,
 			expectedStatus:    http.StatusOK,
 		},
 		{
 			name:              "Recursive false",
-			url:               "/api/category-stats/1?recursive=false",
+			url:               "/api/space-stats/1?recursive=false",
 			expectedRecursive: false,
 			expectedStatus:    http.StatusOK,
 		},
 		{
 			name:              "Recursive invalid value",
-			url:               "/api/category-stats/1?recursive=invalid",
+			url:               "/api/space-stats/1?recursive=invalid",
 			expectedRecursive: false,
 			expectedStatus:    http.StatusOK,
 		},
 		{
 			name:              "Multiple query parameters",
-			url:               "/api/category-stats/1?recursive=true&other=value",
+			url:               "/api/space-stats/1?recursive=true&other=value",
 			expectedRecursive: true,
 			expectedStatus:    http.StatusOK,
 		},
@@ -391,7 +391,7 @@ func TestGetCategoryStatsQueryParameterParsing(t *testing.T) {
 func TestStatsResponseStructure(t *testing.T) {
 	service := &Service{
 		enabled: true,
-		stats:   make(map[int]*CategoryStats),
+		stats:   make(map[int]*SpaceStats),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -399,13 +399,13 @@ func TestStatsResponseStructure(t *testing.T) {
 
 	// Create some test stats manually
 	service.mu.Lock()
-	service.stats[1] = &CategoryStats{
+	service.stats[1] = &SpaceStats{
 		Direct:    Stats{FileCount: 5, TotalSize: 1000},
 		Recursive: Stats{FileCount: 5, TotalSize: 1000},
 	}
 	service.mu.Unlock()
 
-	req := httptest.NewRequest("GET", "/api/category-stats/1?recursive=true", nil)
+	req := httptest.NewRequest("GET", "/api/space-stats/1?recursive=true", nil)
 	w := httptest.NewRecorder()
 
 	router.ServeHTTP(w, req)
@@ -422,8 +422,8 @@ func TestStatsResponseStructure(t *testing.T) {
 	}
 
 	// Verify all fields are present and correct
-	if response.CategoryID != 1 {
-		t.Errorf("Expected category ID 1, got %d", response.CategoryID)
+	if response.SpaceID != 1 {
+		t.Errorf("Expected space ID 1, got %d", response.SpaceID)
 	}
 
 	if response.Recursive != true {
@@ -443,7 +443,7 @@ func TestStatsResponseStructure(t *testing.T) {
 	jsonStr := string(jsonData)
 
 	expectedFields := []string{
-		`"category_id"`,
+		`"space_id"`,
 		`"recursive"`,
 		`"file_count"`,
 		`"total_size"`,

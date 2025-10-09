@@ -6,45 +6,48 @@ import (
 	"backthynk/internal/core/services"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strconv"
 
 	"github.com/gorilla/mux"
 )
 
-type CategoryHandler struct {
-	service *services.CategoryService
+var validSpaceNameRegex = regexp.MustCompile(config.SpaceNamePattern)
+
+type SpaceHandler struct {
+	service *services.SpaceService
 }
 
-func NewCategoryHandler(service *services.CategoryService) *CategoryHandler {
-	return &CategoryHandler{service: service}
+func NewSpaceHandler(service *services.SpaceService) *SpaceHandler {
+	return &SpaceHandler{service: service}
 }
 
-func (h *CategoryHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
-	categories := h.service.GetAll()
+func (h *SpaceHandler) GetSpaces(w http.ResponseWriter, r *http.Request) {
+	spaces := h.service.GetAll()
 	
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(categories)
+	json.NewEncoder(w).Encode(spaces)
 }
 
-func (h *CategoryHandler) GetCategory(w http.ResponseWriter, r *http.Request) {
+func (h *SpaceHandler) GetSpace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidSpaceID, http.StatusBadRequest)
 		return
 	}
 
-	category, err := h.service.Get(id)
+	space, err := h.service.Get(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(category)
+	json.NewEncoder(w).Encode(space)
 }
 
-func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.Request) {
+func (h *SpaceHandler) GetSpacesByParent(w http.ResponseWriter, r *http.Request) {
 	parentIDStr := r.URL.Query().Get("parent_id")
 
 	var parentID *int
@@ -57,10 +60,10 @@ func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.R
 		parentID = &id
 	}
 	
-	allCategories := h.service.GetAll()
-	var filtered []*models.Category
+	allSpaces := h.service.GetAll()
+	var filtered []*models.Space
 	
-	for _, cat := range allCategories {
+	for _, cat := range allSpaces {
 		if parentID == nil && cat.ParentID == nil {
 			filtered = append(filtered, cat)
 		} else if parentID != nil && cat.ParentID != nil && *cat.ParentID == *parentID {
@@ -72,7 +75,7 @@ func (h *CategoryHandler) GetCategoriesByParent(w http.ResponseWriter, r *http.R
 	json.NewEncoder(w).Encode(filtered)
 }
 
-func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request) {
+func (h *SpaceHandler) CreateSpace(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Name        string `json:"name"`
 		Description string `json:"description"`
@@ -88,8 +91,14 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 		http.Error(w, config.ErrNameRequired, http.StatusBadRequest)
 		return
 	}
-	
-	category, err := h.service.Create(req.Name, req.ParentID, req.Description)
+
+	// Validate space name format
+	if !validSpaceNameRegex.MatchString(req.Name) {
+		http.Error(w, config.ErrSpaceNameInvalidFormat, http.StatusBadRequest)
+		return
+	}
+
+	space, err := h.service.Create(req.Name, req.ParentID, req.Description)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -97,14 +106,14 @@ func (h *CategoryHandler) CreateCategory(w http.ResponseWriter, r *http.Request)
 	
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(category)
+	json.NewEncoder(w).Encode(space)
 }
 
-func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+func (h *SpaceHandler) UpdateSpace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidSpaceID, http.StatusBadRequest)
 		return
 	}
 
@@ -123,22 +132,28 @@ func (h *CategoryHandler) UpdateCategory(w http.ResponseWriter, r *http.Request)
 		http.Error(w, config.ErrNameRequired, http.StatusBadRequest)
 		return
 	}
-	
-	category, err := h.service.Update(id, req.Name, req.Description, req.ParentID)
+
+	// Validate space name format
+	if !validSpaceNameRegex.MatchString(req.Name) {
+		http.Error(w, config.ErrSpaceNameInvalidFormat, http.StatusBadRequest)
+		return
+	}
+
+	space, err := h.service.Update(id, req.Name, req.Description, req.ParentID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(category)
+	json.NewEncoder(w).Encode(space)
 }
 
-func (h *CategoryHandler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+func (h *SpaceHandler) DeleteSpace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidSpaceID, http.StatusBadRequest)
 		return
 	}
 

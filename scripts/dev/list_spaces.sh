@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Categories Lister
+# Spaces Lister
 # ============================
 #
-# This script lists all available categories in the instance.
-# Useful for finding category IDs before running other development scripts.
+# This script lists all available spaces in the instance.
+# Useful for finding space IDs before running other development scripts.
 #
 # USAGE:
-#   ./scripts/dev/list_categories.sh
+#   ./scripts/dev/list_spaces.sh
 #
 # REQUIREMENTS:
 #   - Server must be running (port configured in service.json or set APP_URL environment variable)
@@ -32,7 +32,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE} Categories${NC}"
+echo -e "${BLUE} Spaces${NC}"
 echo "===================="
 echo ""
 echo -e "Server: ${YELLOW}$APP_URL${NC}"
@@ -45,23 +45,23 @@ if ! curl -s --max-time 5 "$APP_URL" > /dev/null; then
     exit 1
 fi
 
-# Fetch categories
-CATEGORIES_RESPONSE=$(curl -s "$API_BASE/categories")
+# Fetch spaces
+SPACES_RESPONSE=$(curl -s "$API_BASE/spaces")
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Failed to fetch categories${NC}"
+    echo -e "${RED}Error: Failed to fetch spaces${NC}"
     exit 1
 fi
 
-# Check if we have any categories
-CATEGORY_COUNT=$(echo "$CATEGORIES_RESPONSE" | jq length)
-if [ "$CATEGORY_COUNT" -eq 0 ]; then
-    echo -e "${YELLOW}No categories found${NC}"
-    echo "Create some categories in the web interface before generating posts."
+# Check if we have any spaces
+SPACE_COUNT=$(echo "$SPACES_RESPONSE" | jq length)
+if [ "$SPACE_COUNT" -eq 0 ]; then
+    echo -e "${YELLOW}No spaces found${NC}"
+    echo "Create some spaces in the web interface before generating posts."
     exit 0
 fi
 
-echo -e "${GREEN}Found $CATEGORY_COUNT categories:${NC}"
+echo -e "${GREEN}Found $SPACE_COUNT spaces:${NC}"
 echo ""
 
-# Display categories in a nice format
-echo "$CATEGORIES_RESPONSE" | jq -r '.[] | "  ID: \(.id) - \(.name)\(if .description and .description != "" then " (\(.description))" else "" end)"' | sort -n
+# Display spaces in a nice format
+echo "$SPACES_RESPONSE" | jq -r '.[] | "  ID: \(.id) - \(.name)\(if .description and .description != "" then " (\(.description))" else "" end)"' | sort -n

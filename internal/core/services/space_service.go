@@ -11,34 +11,34 @@ import (
 	"strings"
 )
 
-type CategoryService struct {
+type SpaceService struct {
 	db         *storage.DB
-	cache      *cache.CategoryCache
+	cache      *cache.SpaceCache
 	dispatcher *events.Dispatcher
 }
 
-func NewCategoryService(db *storage.DB, cache *cache.CategoryCache, dispatcher *events.Dispatcher) *CategoryService {
-	return &CategoryService{
+func NewSpaceService(db *storage.DB, cache *cache.SpaceCache, dispatcher *events.Dispatcher) *SpaceService {
+	return &SpaceService{
 		db:         db,
 		cache:      cache,
 		dispatcher: dispatcher,
 	}
 }
 
-func (s *CategoryService) InitializeCache() error {
-	categories, err := s.db.GetCategories()
+func (s *SpaceService) InitializeCache() error {
+	spaces, err := s.db.GetSpaces()
 	if err != nil {
-		return fmt.Errorf("failed to load categories: %w", err)
+		return fmt.Errorf("failed to load spaces: %w", err)
 	}
 	
 	// Load post counts
-	postCounts, err := s.db.GetAllCategoryPostCounts()
+	postCounts, err := s.db.GetAllSpacePostCounts()
 	if err != nil {
 		return fmt.Errorf("failed to load post counts: %w", err)
 	}
 	
 	// Build cache
-	for _, cat := range categories {
+	for _, cat := range spaces {
 		if count, ok := postCounts[cat.ID]; ok {
 			cat.PostCount = count
 		}
@@ -46,7 +46,7 @@ func (s *CategoryService) InitializeCache() error {
 	}
 	
 	// Calculate recursive counts
-	for _, cat := range categories {
+	for _, cat := range spaces {
 		recursiveCount := s.calculateRecursivePostCount(cat.ID)
 		if cached, ok := s.cache.Get(cat.ID); ok {
 			cached.RecursivePostCount = recursiveCount
@@ -56,14 +56,14 @@ func (s *CategoryService) InitializeCache() error {
 	return nil
 }
 
-func (s *CategoryService) calculateRecursivePostCount(categoryID int) int {
-	cat, ok := s.cache.Get(categoryID)
+func (s *SpaceService) calculateRecursivePostCount(spaceID int) int {
+	cat, ok := s.cache.Get(spaceID)
 	if !ok {
 		return 0
 	}
 	
 	count := cat.PostCount
-	descendants := s.cache.GetDescendants(categoryID)
+	descendants := s.cache.GetDescendants(spaceID)
 	
 	for _, descID := range descendants {
 		if descCat, ok := s.cache.Get(descID); ok {
@@ -74,17 +74,17 @@ func (s *CategoryService) calculateRecursivePostCount(categoryID int) int {
 	return count
 }
 
-func (s *CategoryService) GetAll() []*models.Category {
+func (s *SpaceService) GetAll() []*models.Space {
 	return s.cache.GetAll()
 }
 
-func (s *CategoryService) Get(id int) (*models.Category, error) {
+func (s *SpaceService) Get(id int) (*models.Space, error) {
 	if cat, ok := s.cache.Get(id); ok {
 		return cat, nil
 	}
 	
 	// Fallback to database
-	cat, err := s.db.GetCategory(id)
+	cat, err := s.db.GetSpace(id)
 	if err != nil {
 		return nil, err
 	}
@@ -94,8 +94,8 @@ func (s *CategoryService) Get(id int) (*models.Category, error) {
 	return cat, nil
 }
 
-func (s *CategoryService) Create(name string, parentID *int, description string) (*models.Category, error) {
-	cat, err := s.db.CreateCategory(name, parentID, description)
+func (s *SpaceService) Create(name string, parentID *int, description string) (*models.Space, error) {
+	cat, err := s.db.CreateSpace(name, parentID, description)
 	if err != nil {
 		return nil, err
 	}
@@ -107,17 +107,17 @@ func (s *CategoryService) Create(name string, parentID *int, description string)
 	
 	// Dispatch event
 	s.dispatcher.Dispatch(events.Event{
-		Type: events.CategoryCreated,
-		Data: events.CategoryEvent{CategoryID: cat.ID},
+		Type: events.SpaceCreated,
+		Data: events.SpaceEvent{SpaceID: cat.ID},
 	})
 	
 	return cat, nil
 }
 
-func (s *CategoryService) Update(id int, name, description string, parentID *int) (*models.Category, error) {
+func (s *SpaceService) Update(id int, name, description string, parentID *int) (*models.Space, error) {
 	oldCat, _ := s.cache.Get(id)
 	
-	cat, err := s.db.UpdateCategory(id, name, description, parentID)
+	cat, err := s.db.UpdateSpace(id, name, description, parentID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +149,9 @@ func (s *CategoryService) Update(id int, name, description string, parentID *int
 	
 	// Dispatch event
 	s.dispatcher.Dispatch(events.Event{
-		Type: events.CategoryUpdated,
-		Data: events.CategoryEvent{
-			CategoryID:  cat.ID,
+		Type: events.SpaceUpdated,
+		Data: events.SpaceEvent{
+			SpaceID:  cat.ID,
 			OldParentID: oldCat.ParentID,
 			NewParentID: parentID,
 		},
@@ -160,11 +160,11 @@ func (s *CategoryService) Update(id int, name, description string, parentID *int
 	return cat, nil
 }
 
-func (s *CategoryService) FindByNameAndParent(name string, parentID *int) *models.Category {
-	allCategories := s.cache.GetAll()
+func (s *SpaceService) FindByNameAndParent(name string, parentID *int) *models.Space {
+	allSpaces := s.cache.GetAll()
 	nameLower := strings.ToLower(name)
 
-	for _, cat := range allCategories {
+	for _, cat := range allSpaces {
 		if strings.ToLower(cat.Name) == nameLower {
 			// Check if parent matches
 			if (parentID == nil && cat.ParentID == nil) ||
@@ -176,14 +176,14 @@ func (s *CategoryService) FindByNameAndParent(name string, parentID *int) *model
 	return nil
 }
 
-func (s *CategoryService) GetCategoryBreadcrumb(categoryID int) string {
-	cat, ok := s.cache.Get(categoryID)
+func (s *SpaceService) GetSpaceBreadcrumb(spaceID int) string {
+	cat, ok := s.cache.Get(spaceID)
 	if !ok {
 		return ""
 	}
 
 	// Build breadcrumb from ancestors
-	ancestors := s.cache.GetAncestors(categoryID)
+	ancestors := s.cache.GetAncestors(spaceID)
 
 	// Reverse ancestors to get root -> parent order
 	breadcrumb := ""
@@ -196,7 +196,7 @@ func (s *CategoryService) GetCategoryBreadcrumb(categoryID int) string {
 		}
 	}
 
-	// Add current category
+	// Add current space
 	if breadcrumb != "" {
 		breadcrumb += " > "
 	}
@@ -205,22 +205,22 @@ func (s *CategoryService) GetCategoryBreadcrumb(categoryID int) string {
 	return breadcrumb
 }
 
-func (s *CategoryService) Delete(id int) error {
+func (s *SpaceService) Delete(id int) error {
 	// Get parent information before deletion for event
 	var parentID *int
 	if cat, ok := s.cache.Get(id); ok {
 		parentID = cat.ParentID
 	}
 
-	// Get all affected categories (including descendants)
+	// Get all affected spaces (including descendants)
 	descendants := s.cache.GetDescendants(id)
-	allCategories := append([]int{id}, descendants...)
+	allSpaces := append([]int{id}, descendants...)
 
 	// Fire PostDeleted events and handle file cleanup for all posts
 	// This must happen BEFORE database deletion so detailed stats service gets the events
 	var affectedPosts []int
-	for _, catID := range allCategories {
-		postIDs, _ := s.db.GetPostIDsByCategory(catID)
+	for _, catID := range allSpaces {
+		postIDs, _ := s.db.GetPostIDsBySpace(catID)
 		affectedPosts = append(affectedPosts, postIDs...)
 
 		// For each post, handle file cleanup and fire PostDeleted event
@@ -238,20 +238,20 @@ func (s *CategoryService) Delete(id int) error {
 	}
 
 	// Delete from database (CASCADE will handle posts and attachments at DB level)
-	if err := s.db.DeleteCategory(id); err != nil {
+	if err := s.db.DeleteSpace(id); err != nil {
 		return err
 	}
 
-	// Update cache - remove deleted categories
-	for _, catID := range allCategories {
+	// Update cache - remove deleted spaces
+	for _, catID := range allSpaces {
 		s.cache.Delete(catID)
 	}
 
-	// Dispatch CategoryDeleted event (for any services that need to know about category deletion itself)
+	// Dispatch SpaceDeleted event (for any services that need to know about space deletion itself)
 	s.dispatcher.Dispatch(events.Event{
-		Type: events.CategoryDeleted,
-		Data: events.CategoryEvent{
-			CategoryID:    id,
+		Type: events.SpaceDeleted,
+		Data: events.SpaceEvent{
+			SpaceID:    id,
 			OldParentID:   parentID, // Include parent info for stats updates
 			AffectedPosts: affectedPosts,
 		},
@@ -261,7 +261,7 @@ func (s *CategoryService) Delete(id int) error {
 }
 
 // firePostDeletedEvent fires a PostDeleted event for a specific post, including file information
-func (s *CategoryService) firePostDeletedEvent(postID, categoryID int) error {
+func (s *SpaceService) firePostDeletedEvent(postID, spaceID int) error {
 	// Get post details
 	post, err := s.db.GetPost(postID)
 	if err != nil {
@@ -294,7 +294,7 @@ func (s *CategoryService) firePostDeletedEvent(postID, categoryID int) error {
 		Type: events.PostDeleted,
 		Data: events.PostEvent{
 			PostID:     postID,
-			CategoryID: categoryID,
+			SpaceID: spaceID,
 			Timestamp:  post.Created,
 			FileSize:   totalSize,
 			FileCount:  len(attachments),

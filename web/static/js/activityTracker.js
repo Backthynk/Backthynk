@@ -13,7 +13,7 @@ async function generateActivityHeatmap() {
     }
 
     // Check if activity system is enabled
-    if (!activityEnabled || !currentCategory) {
+    if (!activityEnabled || !currentSpace) {
         document.getElementById('activity-container').style.display = 'none';
         return;
     }
@@ -34,10 +34,10 @@ async function generateActivityHeatmap() {
 
     try {
         // Use efficient API that returns only non-zero activity days
-        // For category ID 0, the backend will return global activity data
+        // For space ID 0, the backend will return global activity data
         const response = await fetchActivityPeriod(
-            currentCategory.id,
-            currentCategory.recursiveMode || false,
+            currentSpace.id,
+            currentSpace.recursiveMode || false,
             currentActivityPeriod
         );
 
@@ -47,7 +47,7 @@ async function generateActivityHeatmap() {
             return;
         }
 
-        // Always show the activity container if we have a valid response (category exists)
+        // Always show the activity container if we have a valid response (space exists)
         // The heatmap will show as empty if there's no activity, but it should be visible
         // so users know the system is working and can see activity when it happens
         document.getElementById('activity-container').style.display = '';
@@ -84,31 +84,31 @@ async function generateActivityHeatmap() {
 }
 
 // Fetch activity data from efficient backend API
-async function fetchActivityPeriod(categoryId, recursive = false, period = 0) {
-    return await fetchActivityData(categoryId, recursive, period);
+async function fetchActivityPeriod(spaceId, recursive = false, period = 0) {
+    return await fetchActivityData(spaceId, recursive, period);
 }
 
-// Update category breadcrumb display
-function updateActivityCategoryBreadcrumb() {
-    const breadcrumbElement = document.getElementById('activity-category-breadcrumb');
+// Update space breadcrumb display
+function updateActivitySpaceBreadcrumb() {
+    const breadcrumbElement = document.getElementById('activity-space-breadcrumb');
     if (!breadcrumbElement) return;
 
-    if (!currentCategory || currentCategory.id === window.AppConstants.ALL_CATEGORIES_ID) {
-        breadcrumbElement.innerHTML = `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${window.AppConstants.UI_TEXT.allCategories}</span>`;
+    if (!currentSpace || currentSpace.id === window.AppConstants.ALL_SPACES_ID) {
+        breadcrumbElement.innerHTML = `<span class="text-xs font-semibold text-gray-700 dark:text-gray-300">${window.AppConstants.UI_TEXT.allSpaces}</span>`;
         return;
     }
 
     // Build breadcrumb path
     const breadcrumbPath = [];
-    let category = currentCategory;
+    let space = currentSpace;
 
-    // Build path from current category up to root
-    while (category) {
-        breadcrumbPath.unshift(category);
-        if (category.parent_id && categories) {
-            category = categories.find(cat => cat.id === category.parent_id);
+    // Build path from current space up to root
+    while (space) {
+        breadcrumbPath.unshift(space);
+        if (space.parent_id && spaces) {
+            space = spaces.find(cat => cat.id === space.parent_id);
         } else {
-            category = null;
+            space = null;
         }
     }
 
@@ -129,10 +129,10 @@ function updateActivityCategoryBreadcrumb() {
 function generateHeatmapFromCache(activityData) {
     // Restore the activity container structure if it was replaced by loading indicator
     const activityContainer = document.getElementById('activity-container');
-    if (!activityContainer.querySelector('#activity-category-breadcrumb')) {
+    if (!activityContainer.querySelector('#activity-space-breadcrumb')) {
         activityContainer.innerHTML = `
-            <!-- Category Breadcrumb -->
-            <div id="activity-category-breadcrumb" class="mb-4">
+            <!-- Space Breadcrumb -->
+            <div id="activity-space-breadcrumb" class="mb-4">
                 <!-- Breadcrumb will be generated dynamically -->
             </div>
             <div class="flex items-center justify-center mb-4">
@@ -160,8 +160,8 @@ function generateHeatmapFromCache(activityData) {
         `;
     }
 
-    // Update category breadcrumb
-    updateActivityCategoryBreadcrumb();
+    // Update space breadcrumb
+    updateActivitySpaceBreadcrumb();
 
     // Convert activity days array to map for O(1) lookups
     const activityMap = {};

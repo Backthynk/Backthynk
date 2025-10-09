@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+
 const (
 	APP_MODE_DEV        = "development"   //back-end && front-end in dev mode
 	APP_MODE_PRE_PROD   = "pre-production" //front-end used is the built one && back-end in dev-mode
@@ -17,10 +18,10 @@ const (
 const (
 	VERSION = "0.1.0"
 
-	// Category Limits
-	MaxCategoryDepth             = 2
-	MaxCategoryNameLength        = 30
-	MaxCategoryDescriptionLength = 280
+	// Space Limits
+	MaxSpaceDepth             = 2
+	MaxSpaceNameLength        = 30
+	MaxSpaceDescriptionLength = 280
 
 	// Post Limits
 	DefaultPostLimit            = 20
@@ -53,7 +54,7 @@ const (
 	FilePermissions      = 0644
 
 	// Patterns
-	CategoryNamePattern = `^[a-zA-Z0-9_-]+(?:\s[a-zA-Z0-9_-]+)*$`
+	SpaceNamePattern = `^[a-zA-Z0-9]+(?:\s[a-zA-Z0-9]+)*$`
 
 	// Route Names
 	RouteAPI      = "api"

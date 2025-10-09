@@ -12,19 +12,19 @@ import (
 	"time"
 )
 
-type categoryDeletionTestSetup struct {
-	categoryService *CategoryService
+type spaceDeletionTestSetup struct {
+	spaceService *SpaceService
 	postService     *PostService
 	db              *storage.DB
-	cache           *cache.CategoryCache
+	cache           *cache.SpaceCache
 	dispatcher      *events.Dispatcher
 	tempDir         string
 	uploadsDir      string
 }
 
-func setupCategoryDeletionTest() (*categoryDeletionTestSetup, error) {
+func setupSpaceDeletionTest() (*spaceDeletionTestSetup, error) {
 	// Create a temporary directory for the test
-	tempDir := "/tmp/backthynk_category_deletion_test_" + fmt.Sprintf("%d", os.Getpid())
+	tempDir := "/tmp/backthynk_space_deletion_test_" + fmt.Sprintf("%d", os.Getpid())
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
 		return nil, err
 	}
@@ -66,37 +66,37 @@ func setupCategoryDeletionTest() (*categoryDeletionTestSetup, error) {
 	}
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup services
-	categoryService := NewCategoryService(db, categoryCache, dispatcher)
-	postService := NewPostService(db, categoryCache, dispatcher)
+	spaceService := NewSpaceService(db, spaceCache, dispatcher)
+	postService := NewPostService(db, spaceCache, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		return nil, err
 	}
 
-	return &categoryDeletionTestSetup{
-		categoryService: categoryService,
+	return &spaceDeletionTestSetup{
+		spaceService: spaceService,
 		postService:     postService,
 		db:              db,
-		cache:           categoryCache,
+		cache:           spaceCache,
 		dispatcher:      dispatcher,
 		tempDir:         tempDir,
 		uploadsDir:      uploadsDir,
 	}, nil
 }
 
-func (setup *categoryDeletionTestSetup) cleanup() {
+func (setup *spaceDeletionTestSetup) cleanup() {
 	if setup.db != nil {
 		setup.db.Close()
 	}
 	os.RemoveAll(setup.tempDir)
 }
 
-func (setup *categoryDeletionTestSetup) createTestFile(filename, content string) (string, error) {
+func (setup *spaceDeletionTestSetup) createTestFile(filename, content string) (string, error) {
 	filePath := filepath.Join(setup.uploadsDir, filename)
 	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
 		return "", err
@@ -104,30 +104,30 @@ func (setup *categoryDeletionTestSetup) createTestFile(filename, content string)
 	return filename, nil // Return relative path for database
 }
 
-func TestCategoryDeletionWithPostsAndAttachments(t *testing.T) {
-	setup, err := setupCategoryDeletionTest()
+func TestSpaceDeletionWithPostsAndAttachments(t *testing.T) {
+	setup, err := setupSpaceDeletionTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create category hierarchy: Parent -> Child1, Child2
-	parent, err := setup.categoryService.Create("Parent Category", nil, "Parent desc")
+	// Create space hierarchy: Parent -> Child1, Child2
+	parent, err := setup.spaceService.Create("Parent Space", nil, "Parent desc")
 	if err != nil {
-		t.Fatalf("Failed to create parent category: %v", err)
+		t.Fatalf("Failed to create parent space: %v", err)
 	}
 
-	child1, err := setup.categoryService.Create("Child 1", &parent.ID, "Child 1 desc")
+	child1, err := setup.spaceService.Create("Child 1", &parent.ID, "Child 1 desc")
 	if err != nil {
-		t.Fatalf("Failed to create child1 category: %v", err)
+		t.Fatalf("Failed to create child1 space: %v", err)
 	}
 
-	child2, err := setup.categoryService.Create("Child 2", &parent.ID, "Child 2 desc")
+	child2, err := setup.spaceService.Create("Child 2", &parent.ID, "Child 2 desc")
 	if err != nil {
-		t.Fatalf("Failed to create child2 category: %v", err)
+		t.Fatalf("Failed to create child2 space: %v", err)
 	}
 
-	// Create posts with attachments in each category
+	// Create posts with attachments in each space
 	post1, err := setup.postService.Create(parent.ID, "Post in parent", nil)
 	if err != nil {
 		t.Fatalf("Failed to create post1: %v", err)
@@ -210,16 +210,16 @@ func TestCategoryDeletionWithPostsAndAttachments(t *testing.T) {
 		return nil
 	})
 
-	var categoryDeletedEvents []events.Event
-	setup.dispatcher.Subscribe(events.CategoryDeleted, func(event events.Event) error {
-		categoryDeletedEvents = append(categoryDeletedEvents, event)
+	var spaceDeletedEvents []events.Event
+	setup.dispatcher.Subscribe(events.SpaceDeleted, func(event events.Event) error {
+		spaceDeletedEvents = append(spaceDeletedEvents, event)
 		return nil
 	})
 
-	// Delete parent category (should cascade to children and all posts)
-	err = setup.categoryService.Delete(parent.ID)
+	// Delete parent space (should cascade to children and all posts)
+	err = setup.spaceService.Delete(parent.ID)
 	if err != nil {
-		t.Fatalf("Failed to delete parent category: %v", err)
+		t.Fatalf("Failed to delete parent space: %v", err)
 	}
 
 	// Give events time to be processed
@@ -236,29 +236,29 @@ func TestCategoryDeletionWithPostsAndAttachments(t *testing.T) {
 		t.Error("test3.txt should be deleted")
 	}
 
-	// Verify all categories are deleted from cache
+	// Verify all spaces are deleted from cache
 	if _, exists := setup.cache.Get(parent.ID); exists {
-		t.Error("Parent category should be deleted from cache")
+		t.Error("Parent space should be deleted from cache")
 	}
 	if _, exists := setup.cache.Get(child1.ID); exists {
-		t.Error("Child1 category should be deleted from cache")
+		t.Error("Child1 space should be deleted from cache")
 	}
 	if _, exists := setup.cache.Get(child2.ID); exists {
-		t.Error("Child2 category should be deleted from cache")
+		t.Error("Child2 space should be deleted from cache")
 	}
 
-	// Verify all categories are deleted from database
-	_, err = setup.db.GetCategory(parent.ID)
+	// Verify all spaces are deleted from database
+	_, err = setup.db.GetSpace(parent.ID)
 	if err == nil {
-		t.Error("Parent category should be deleted from database")
+		t.Error("Parent space should be deleted from database")
 	}
-	_, err = setup.db.GetCategory(child1.ID)
+	_, err = setup.db.GetSpace(child1.ID)
 	if err == nil {
-		t.Error("Child1 category should be deleted from database")
+		t.Error("Child1 space should be deleted from database")
 	}
-	_, err = setup.db.GetCategory(child2.ID)
+	_, err = setup.db.GetSpace(child2.ID)
 	if err == nil {
-		t.Error("Child2 category should be deleted from database")
+		t.Error("Child2 space should be deleted from database")
 	}
 
 	// Verify all posts are deleted from database
@@ -311,38 +311,38 @@ func TestCategoryDeletionWithPostsAndAttachments(t *testing.T) {
 		}
 	}
 
-	// Verify CategoryDeleted event was fired
-	if len(categoryDeletedEvents) != 1 {
-		t.Errorf("Expected 1 CategoryDeleted event, got %d", len(categoryDeletedEvents))
+	// Verify SpaceDeleted event was fired
+	if len(spaceDeletedEvents) != 1 {
+		t.Errorf("Expected 1 SpaceDeleted event, got %d", len(spaceDeletedEvents))
 	}
 
-	if len(categoryDeletedEvents) > 0 {
-		data := categoryDeletedEvents[0].Data.(events.CategoryEvent)
-		if data.CategoryID != parent.ID {
-			t.Errorf("Expected CategoryDeleted event for category %d, got %d", parent.ID, data.CategoryID)
+	if len(spaceDeletedEvents) > 0 {
+		data := spaceDeletedEvents[0].Data.(events.SpaceEvent)
+		if data.SpaceID != parent.ID {
+			t.Errorf("Expected SpaceDeleted event for space %d, got %d", parent.ID, data.SpaceID)
 		}
 		if len(data.AffectedPosts) != 3 {
-			t.Errorf("Expected 3 affected posts in CategoryDeleted event, got %d", len(data.AffectedPosts))
+			t.Errorf("Expected 3 affected posts in SpaceDeleted event, got %d", len(data.AffectedPosts))
 		}
 	}
 }
 
-func TestCategoryDeletionCacheConsistency(t *testing.T) {
-	setup, err := setupCategoryDeletionTest()
+func TestSpaceDeletionCacheConsistency(t *testing.T) {
+	setup, err := setupSpaceDeletionTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
 	// Create a complex hierarchy: Root -> Branch1 -> Leaf1, Branch2 -> Leaf2, Leaf3
-	root, _ := setup.categoryService.Create("Root", nil, "Root category")
-	branch1, _ := setup.categoryService.Create("Branch1", &root.ID, "Branch 1")
-	branch2, _ := setup.categoryService.Create("Branch2", &root.ID, "Branch 2")
-	leaf1, _ := setup.categoryService.Create("Leaf1", &branch1.ID, "Leaf 1")
-	leaf2, _ := setup.categoryService.Create("Leaf2", &branch2.ID, "Leaf 2")
-	leaf3, _ := setup.categoryService.Create("Leaf3", &branch2.ID, "Leaf 3")
+	root, _ := setup.spaceService.Create("Root", nil, "Root space")
+	branch1, _ := setup.spaceService.Create("Branch1", &root.ID, "Branch 1")
+	branch2, _ := setup.spaceService.Create("Branch2", &root.ID, "Branch 2")
+	leaf1, _ := setup.spaceService.Create("Leaf1", &branch1.ID, "Leaf 1")
+	leaf2, _ := setup.spaceService.Create("Leaf2", &branch2.ID, "Leaf 2")
+	leaf3, _ := setup.spaceService.Create("Leaf3", &branch2.ID, "Leaf 3")
 
-	// Add posts to each category
+	// Add posts to each space
 	setup.postService.Create(root.ID, "Root post", nil)
 	setup.postService.Create(branch1.ID, "Branch1 post", nil)
 	setup.postService.Create(branch2.ID, "Branch2 post", nil)
@@ -363,15 +363,15 @@ func TestCategoryDeletionCacheConsistency(t *testing.T) {
 	}
 
 	// Delete branch2 (should remove branch2, leaf2, leaf3 and their posts)
-	err = setup.categoryService.Delete(branch2.ID)
+	err = setup.spaceService.Delete(branch2.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete branch2: %v", err)
 	}
 
-	// Verify remaining categories still exist and have correct counts
+	// Verify remaining spaces still exist and have correct counts
 	rootCat, exists := setup.cache.Get(root.ID)
 	if !exists {
-		t.Fatal("Root category should still exist")
+		t.Fatal("Root space should still exist")
 	}
 	if rootCat.PostCount != 1 { // Only root's direct post
 		t.Errorf("Expected root post count 1 after deletion, got %d", rootCat.PostCount)
@@ -382,13 +382,13 @@ func TestCategoryDeletionCacheConsistency(t *testing.T) {
 
 	branch1Cat, exists := setup.cache.Get(branch1.ID)
 	if !exists {
-		t.Fatal("Branch1 category should still exist")
+		t.Fatal("Branch1 space should still exist")
 	}
 	if branch1Cat.RecursivePostCount != 2 { // Branch1 + Leaf1
 		t.Errorf("Expected branch1 recursive count 2 after deletion, got %d", branch1Cat.RecursivePostCount)
 	}
 
-	// Verify deleted categories don't exist
+	// Verify deleted spaces don't exist
 	if _, exists := setup.cache.Get(branch2.ID); exists {
 		t.Error("Branch2 should be deleted from cache")
 	}
@@ -400,15 +400,15 @@ func TestCategoryDeletionCacheConsistency(t *testing.T) {
 	}
 }
 
-func TestCategoryDeletionFileCleanupWithMissingFiles(t *testing.T) {
-	setup, err := setupCategoryDeletionTest()
+func TestSpaceDeletionFileCleanupWithMissingFiles(t *testing.T) {
+	setup, err := setupSpaceDeletionTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create category and post
-	cat, _ := setup.categoryService.Create("Test Category", nil, "Test desc")
+	// Create space and post
+	cat, _ := setup.spaceService.Create("Test Space", nil, "Test desc")
 	post, _ := setup.postService.Create(cat.ID, "Test post", nil)
 
 	// Create attachment in database but don't create physical file
@@ -417,14 +417,14 @@ func TestCategoryDeletionFileCleanupWithMissingFiles(t *testing.T) {
 		t.Fatalf("Failed to create attachment: %v", err)
 	}
 
-	// Delete category - should not fail even if physical file is missing
-	err = setup.categoryService.Delete(cat.ID)
+	// Delete space - should not fail even if physical file is missing
+	err = setup.spaceService.Delete(cat.ID)
 	if err != nil {
-		t.Errorf("Category deletion should not fail when physical files are missing: %v", err)
+		t.Errorf("Space deletion should not fail when physical files are missing: %v", err)
 	}
 
-	// Verify category is deleted
+	// Verify space is deleted
 	if _, exists := setup.cache.Get(cat.ID); exists {
-		t.Error("Category should be deleted from cache")
+		t.Error("Space should be deleted from cache")
 	}
 }

@@ -19,7 +19,7 @@ import (
 func TestAPIActivityAfterPostOperations(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -33,15 +33,15 @@ func TestAPIActivityAfterPostOperations(t *testing.T) {
 	// Create posts
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day1},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day2},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day2},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day3},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day3},
 	})
 
 	// Test 1: Check initial state via API
@@ -65,7 +65,7 @@ func TestAPIActivityAfterPostOperations(t *testing.T) {
 	// Test 2: Delete oldest post and verify API
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day1},
 	})
 
 	req = httptest.NewRequest("GET", "/api/activity/1", nil)
@@ -80,18 +80,18 @@ func TestAPIActivityAfterPostOperations(t *testing.T) {
 		t.Errorf("After delete, expected 2 total posts, got %d", response.Stats.TotalPosts)
 	}
 
-	// Test 3: Move a post and verify both categories via API
+	// Test 3: Move a post and verify both spaces via API
 	oldCat := 1
 	service.HandleEvent(events.Event{
 		Type: events.PostMoved,
 		Data: events.PostEvent{
-			CategoryID:    2,
-			OldCategoryID: &oldCat,
+			SpaceID:    2,
+			OldSpaceID: &oldCat,
 			Timestamp:     day2,
 		},
 	})
 
-	// Check category 1
+	// Check space 1
 	req = httptest.NewRequest("GET", "/api/activity/1", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -101,10 +101,10 @@ func TestAPIActivityAfterPostOperations(t *testing.T) {
 	}
 
 	if response.Stats.TotalPosts != 1 {
-		t.Errorf("Category 1: expected 1 post after move, got %d", response.Stats.TotalPosts)
+		t.Errorf("Space 1: expected 1 post after move, got %d", response.Stats.TotalPosts)
 	}
 
-	// Check category 2
+	// Check space 2
 	req = httptest.NewRequest("GET", "/api/activity/2", nil)
 	w = httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -114,16 +114,16 @@ func TestAPIActivityAfterPostOperations(t *testing.T) {
 	}
 
 	if response.Stats.TotalPosts != 1 {
-		t.Errorf("Category 2: expected 1 post after move, got %d", response.Stats.TotalPosts)
+		t.Errorf("Space 2: expected 1 post after move, got %d", response.Stats.TotalPosts)
 	}
 }
 
 // TestAPIMaxPeriodsCalculation tests that MaxPeriods is correctly calculated
-// based on the actual FirstPostTime in the category
+// based on the actual FirstPostTime in the space
 func TestAPIMaxPeriodsCalculation(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -136,13 +136,13 @@ func TestAPIMaxPeriodsCalculation(t *testing.T) {
 	// Create old post (2 years ago)
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: twoYearsAgo},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: twoYearsAgo},
 	})
 
 	// Create newer post (1 year ago)
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: oneYearAgo},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: oneYearAgo},
 	})
 
 	// Check MaxPeriods with periodMonths=4 (should be ~24/4 = 6 periods)
@@ -164,7 +164,7 @@ func TestAPIMaxPeriodsCalculation(t *testing.T) {
 	// Delete the oldest post - MaxPeriods should decrease
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: twoYearsAgo},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: twoYearsAgo},
 	})
 
 	req = httptest.NewRequest("GET", "/api/activity/1?period_months=4", nil)
@@ -186,7 +186,7 @@ func TestAPIMaxPeriodsCalculation(t *testing.T) {
 	// Delete all posts - MaxPeriods should be 0
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: oneYearAgo},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: oneYearAgo},
 	})
 
 	req = httptest.NewRequest("GET", "/api/activity/1?period_months=4", nil)
@@ -206,10 +206,10 @@ func TestAPIMaxPeriodsCalculation(t *testing.T) {
 // and returned through the API
 func TestAPIRecursiveActivity(t *testing.T) {
 	db := &storage.DB{}
-	catCache := cache.NewCategoryCache()
+	catCache := cache.NewSpaceCache()
 
-	parent := &models.Category{ID: 1, Name: "Parent", ParentID: nil}
-	child := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
+	parent := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+	child := &models.Space{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
 
 	catCache.Set(parent)
 	catCache.Set(child)
@@ -224,17 +224,17 @@ func TestAPIRecursiveActivity(t *testing.T) {
 	// Create post in parent
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 	})
 
 	// Create posts in child
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: now},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: now},
 	})
 
 	// Check parent with recursive=false (only direct posts)
@@ -267,7 +267,7 @@ func TestAPIRecursiveActivity(t *testing.T) {
 	// Delete child post and verify recursive count updates
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: now},
 	})
 
 	req = httptest.NewRequest("GET", "/api/activity/1?recursive=true", nil)
@@ -283,11 +283,11 @@ func TestAPIRecursiveActivity(t *testing.T) {
 	}
 }
 
-// TestAPIGlobalActivity tests that global activity (categoryID=0) works correctly
+// TestAPIGlobalActivity tests that global activity (spaceID=0) works correctly
 func TestAPIGlobalActivity(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -295,18 +295,18 @@ func TestAPIGlobalActivity(t *testing.T) {
 
 	now := time.Now().Unix() * 1000
 
-	// Create posts in different categories
+	// Create posts in different spaces
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: now},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 3, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 3, Timestamp: now},
 	})
 
 	// Check global activity
@@ -319,8 +319,8 @@ func TestAPIGlobalActivity(t *testing.T) {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if response.CategoryID != 0 {
-		t.Errorf("Expected category ID 0, got %d", response.CategoryID)
+	if response.SpaceID != 0 {
+		t.Errorf("Expected space ID 0, got %d", response.SpaceID)
 	}
 
 	if response.Stats.TotalPosts != 3 {
@@ -330,7 +330,7 @@ func TestAPIGlobalActivity(t *testing.T) {
 	// Delete post and verify global count updates
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: now},
 	})
 
 	req = httptest.NewRequest("GET", "/api/activity/0", nil)
@@ -350,7 +350,7 @@ func TestAPIGlobalActivity(t *testing.T) {
 func TestAPIPeriodFiltering(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -364,19 +364,19 @@ func TestAPIPeriodFiltering(t *testing.T) {
 
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: jan1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: jan1},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: jan15},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: jan15},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: feb1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: feb1},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: feb15},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: feb15},
 	})
 
 	// Test with date range filtering
@@ -403,7 +403,7 @@ func TestAPIPeriodFiltering(t *testing.T) {
 func TestAPIMaxDayActivity(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 	handler := NewHandler(service)
 	router := mux.NewRouter()
@@ -415,14 +415,14 @@ func TestAPIMaxDayActivity(t *testing.T) {
 	// Create 1 post today
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 	})
 
 	// Create 5 posts yesterday
 	for i := 0; i < 5; i++ {
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: yesterday},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: yesterday},
 		})
 	}
 

@@ -1,26 +1,26 @@
-// Category management functions
-function renderCategories() {
-    const container = document.getElementById('categories-tree');
+// Space management functions
+function renderSpaces() {
+    const container = document.getElementById('spaces-tree');
     container.innerHTML = '';
 
-    const rootCategories = categories.filter(cat => !cat.parent_id);
+    const rootSpaces = spaces.filter(cat => !cat.parent_id);
 
-    if (rootCategories.length === 0) {
+    if (rootSpaces.length === 0) {
         container.innerHTML = `
             <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                 <i class="fas fa-folder-plus text-4xl mb-4"></i>
-                <p>${window.AppConstants.UI_TEXT.noCategoriesYet}</p>
+                <p>${window.AppConstants.UI_TEXT.noSpacesYet}</p>
             </div>
         `;
         updateSortFooterVisibility();
         return;
     }
 
-    // Sort root categories
-    const sortedRootCategories = sortCategories(rootCategories);
+    // Sort root spaces
+    const sortedRootSpaces = sortSpaces(rootSpaces);
 
-    sortedRootCategories.forEach(category => {
-        const element = createCategoryElement(category);
+    sortedRootSpaces.forEach(space => {
+        const element = createSpaceElement(space);
         container.appendChild(element);
     });
 
@@ -28,12 +28,12 @@ function renderCategories() {
     updateSortFooterVisibility();
 }
 
-function createCategoryElement(category, level = 0) {
+function createSpaceElement(space, level = 0) {
     const div = document.createElement('div');
-    div.className = 'category-item mb-1';
+    div.className = 'space-item mb-1';
 
-    const hasChildren = categories.some(cat => cat.parent_id === category.id);
-    const isExpanded = expandedCategories.has(category.id);
+    const hasChildren = spaces.some(cat => cat.parent_id === space.id);
+    const isExpanded = expandedSpaces.has(space.id);
     const shouldShowChildren = isExpanded;
 
     const mainDiv = document.createElement('div');
@@ -51,25 +51,25 @@ function createCategoryElement(category, level = 0) {
         expandButton = `<div class="w-5 h-5 mr-1" style="margin-left: ${level * 14}px;"></div>`;
     }
 
-    // Main category button with GitHub-style design
-    const categoryButton = document.createElement('button');
-    const isSelected = currentCategory?.id === category.id;
-    categoryButton.className = `category-btn flex-1 text-left px-2 py-1.5 rounded-md transition-all duration-200 min-w-0 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 ${
+    // Main space button with GitHub-style design
+    const spaceButton = document.createElement('button');
+    const isSelected = currentSpace?.id === space.id;
+    spaceButton.className = `space-btn flex-1 text-left px-2 py-1.5 rounded-md transition-all duration-200 min-w-0 group-hover:bg-gray-50 dark:group-hover:bg-gray-700 ${
         isSelected
             ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-l-2 border-blue-500 dark:border-blue-400 font-medium'
             : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
     }`;
-    categoryButton.dataset.categoryId = category.id; // Add data attribute for easy identification
+    spaceButton.dataset.spaceId = space.id; // Add data attribute for easy identification
 
-    categoryButton.innerHTML = `
+    spaceButton.innerHTML = `
         <div class="flex items-center min-w-0">
             <i class="fas fa-folder${isSelected ? '-open' : ''} mr-2 flex-shrink-0 text-xs ${isSelected ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}"></i>
-            <span class="text-sm truncate" title="${category.name}">${category.name}</span>
+            <span class="text-sm truncate" title="${space.name}">${space.name}</span>
         </div>
     `;
 
     mainDiv.innerHTML = expandButton;
-    mainDiv.appendChild(categoryButton);
+    mainDiv.appendChild(spaceButton);
 
     div.appendChild(mainDiv);
 
@@ -78,37 +78,37 @@ function createCategoryElement(category, level = 0) {
     if (expandBtn) {
         expandBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            toggleCategory(category.id);
+            toggleSpace(space.id);
         });
     }
 
-    categoryButton.addEventListener('click', (e) => {
+    spaceButton.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        // Check if clicking on already selected category (deselection)
-        if (currentCategory && currentCategory.id === category.id) {
+        // Check if clicking on already selected space (deselection)
+        if (currentSpace && currentSpace.id === space.id) {
             // Deselect by navigating to root
             if (typeof router !== 'undefined' && router.navigate) {
                 router.navigate('/');
             } else {
-                selectCategory(category, true); // fallback to original logic
+                selectSpace(space, true); // fallback to original logic
             }
         } else {
             // Navigate using router to update URL
-            if (typeof router !== 'undefined' && router.navigateToCategory) {
-                router.navigateToCategory(category);
+            if (typeof router !== 'undefined' && router.navigateToSpace) {
+                router.navigateToSpace(space);
             } else {
-                selectCategory(category, true); // fallback
+                selectSpace(space, true); // fallback
             }
         }
     });
 
-    // Add subcategories only if expanded
+    // Add subspaces only if expanded
     if (hasChildren && shouldShowChildren) {
-        const subcategories = categories.filter(cat => cat.parent_id === category.id);
-        const sortedSubcategories = sortCategories(subcategories);
-        sortedSubcategories.forEach(subcat => {
-            const subElement = createCategoryElement(subcat, level + 1);
+        const subspaces = spaces.filter(cat => cat.parent_id === space.id);
+        const sortedSubspaces = sortSpaces(subspaces);
+        sortedSubspaces.forEach(subcat => {
+            const subElement = createSpaceElement(subcat, level + 1);
             div.appendChild(subElement);
         });
     }
@@ -116,20 +116,20 @@ function createCategoryElement(category, level = 0) {
     return div;
 }
 
-function toggleCategory(categoryId) {
-    if (expandedCategories.has(categoryId)) {
-        expandedCategories.delete(categoryId);
+function toggleSpace(spaceId) {
+    if (expandedSpaces.has(spaceId)) {
+        expandedSpaces.delete(spaceId);
     } else {
-        expandedCategories.add(categoryId);
+        expandedSpaces.add(spaceId);
     }
-    saveExpandedCategories();
-    renderCategories();
+    saveExpandedSpaces();
+    renderSpaces();
 }
 
-function selectCategory(category, fromUserClick = false) {
-    // If clicking on already selected category, deselect it (only for user clicks)
-    if (fromUserClick && currentCategory && currentCategory.id === category.id) {
-        deselectCategory();
+function selectSpace(space, fromUserClick = false) {
+    // If clicking on already selected space, deselect it (only for user clicks)
+    if (fromUserClick && currentSpace && currentSpace.id === space.id) {
+        deselectSpace();
         return;
     }
 
@@ -147,28 +147,28 @@ function selectCategory(category, fromUserClick = false) {
         `;
     }
 
-    // Update category state
-    currentCategory = category;
-    currentCategory.recursiveMode = loadRecursiveToggleState(category.id);
+    // Update space state
+    currentSpace = space;
+    currentSpace.recursiveMode = loadRecursiveToggleState(space.id);
 
-    saveLastCategory(category.id);
+    saveLastSpace(space.id);
 
     // Update UI
     document.getElementById('new-post-btn').style.display = 'block';
     document.getElementById('settings-btn').style.display = 'none';
     document.getElementById('theme-toggle-btn').style.display = 'none';
-    document.getElementById('category-actions-dropdown').style.display = 'block';
+    document.getElementById('space-actions-dropdown').style.display = 'block';
 
-    // Ensure all parent categories are expanded
-    expandCategoryPath(category.id);
-    renderCategories();
-    scrollToCategoryElement(category.id);
+    // Ensure all parent spaces are expanded
+    expandSpacePath(space.id);
+    renderSpaces();
+    scrollToSpaceElement(space.id);
 
-    // Update header immediately with category name and post count from cached state (no await, synchronous)
-    updateCategoryStatsDisplay();
+    // Update header immediately with space name and post count from cached state (no await, synchronous)
+    updateSpaceStatsDisplay();
 
     // Load posts immediately (don't await, let it run in parallel)
-    loadPosts(category.id, currentCategory.recursiveMode);
+    loadPosts(space.id, currentSpace.recursiveMode);
 
     // Reset activity period
     currentActivityPeriod = 0;
@@ -176,8 +176,8 @@ function selectCategory(category, fromUserClick = false) {
 
     // Fetch file stats in parallel if needed and update display when ready
     if (fileStatsEnabled) {
-        fetchCategoryStats(category.id, currentCategory.recursiveMode).then(stats => {
-            updateCategoryStatsDisplay(stats);
+        fetchSpaceStats(space.id, currentSpace.recursiveMode).then(stats => {
+            updateSpaceStatsDisplay(stats);
         }).catch(error => {
             console.error('Failed to fetch file stats:', error);
         });
@@ -188,36 +188,36 @@ function selectCategory(category, fromUserClick = false) {
 }
 
 
-// Helper function to expand all parent categories of a given category
-function expandCategoryPath(categoryId) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category) return;
+// Helper function to expand all parent spaces of a given space
+function expandSpacePath(spaceId) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (!space) return;
 
-    // Recursively expand all parent categories
+    // Recursively expand all parent spaces
     function expandParents(cat) {
         if (cat.parent_id) {
-            const parent = categories.find(c => c.id === cat.parent_id);
+            const parent = spaces.find(c => c.id === cat.parent_id);
             if (parent) {
-                expandedCategories.add(parent.id);
+                expandedSpaces.add(parent.id);
                 expandParents(parent);
             }
         }
     }
 
-    expandParents(category);
-    saveExpandedCategories();
+    expandParents(space);
+    saveExpandedSpaces();
 }
 
-// Helper function to scroll the selected category into view
-function scrollToCategoryElement(categoryId) {
+// Helper function to scroll the selected space into view
+function scrollToSpaceElement(spaceId) {
     // Use setTimeout to ensure DOM is fully rendered
     setTimeout(() => {
-        // Find the category button using the data attribute
-        const targetButton = document.querySelector(`[data-category-id="${categoryId}"]`);
+        // Find the space button using the data attribute
+        const targetButton = document.querySelector(`[data-space-id="${spaceId}"]`);
 
         if (targetButton) {
-            // Get the categories container - check if it has a scrollable parent
-            const container = document.getElementById('categories-tree');
+            // Get the spaces container - check if it has a scrollable parent
+            const container = document.getElementById('spaces-tree');
             const scrollableParent = container?.closest('.overflow-auto, .overflow-y-auto, .overflow-scroll, .overflow-y-scroll') || container?.parentElement;
 
             if (scrollableParent) {
@@ -249,7 +249,7 @@ function scrollToCategoryElement(categoryId) {
     }, 100); // Small delay to ensure DOM is updated and animations complete
 }
 
-function deselectCategory() {
+function deselectSpace() {
     // Stop any ongoing loading
     isLoadingPosts = false;
 
@@ -264,24 +264,24 @@ function deselectCategory() {
         `;
     }
 
-    // Create "all categories" state
-    currentCategory = {
-        id: window.AppConstants.ALL_CATEGORIES_ID,
-        name: window.AppConstants.UI_TEXT.allCategories,
+    // Create "all spaces" state
+    currentSpace = {
+        id: window.AppConstants.ALL_SPACES_ID,
+        name: window.AppConstants.UI_TEXT.allSpaces,
         recursiveMode: false
     };
 
-    localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastCategory);
-    renderCategories();
+    localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastSpace);
+    renderSpaces();
 
     // Update UI
     document.getElementById('new-post-btn').style.display = 'none';
     document.getElementById('settings-btn').style.display = 'block';
     document.getElementById('theme-toggle-btn').style.display = 'block';
-    document.getElementById('category-actions-dropdown').style.display = 'none';
+    document.getElementById('space-actions-dropdown').style.display = 'none';
 
     // Update header immediately with cached post counts
-    updateAllCategoriesDisplay();
+    updateAllSpacesDisplay();
 
     // Load all posts
     loadPosts(0, false);
@@ -292,8 +292,8 @@ function deselectCategory() {
 
     // Fetch file stats in parallel if needed and update display when ready
     if (fileStatsEnabled) {
-        fetchCategoryStats(0, false).then(fileStats => {
-            updateAllCategoriesDisplay(fileStats);
+        fetchSpaceStats(0, false).then(fileStats => {
+            updateAllSpacesDisplay(fileStats);
         }).catch(error => {
             console.error('Failed to fetch file stats:', error);
         });
@@ -303,29 +303,29 @@ function deselectCategory() {
     generateActivityHeatmap();
 }
 
-function toggleRecursiveMode(category) {
-    if (!currentCategory || currentCategory.id !== category.id) return;
+function toggleRecursiveMode(space) {
+    if (!currentSpace || currentSpace.id !== space.id) return;
 
-    currentCategory.recursiveMode = !currentCategory.recursiveMode;
+    currentSpace.recursiveMode = !currentSpace.recursiveMode;
 
     // Save the new state
-    saveRecursiveToggleState(category.id, currentCategory.recursiveMode);
+    saveRecursiveToggleState(space.id, currentSpace.recursiveMode);
 
     // Scroll to top when toggling
     window.scrollTo(0, 0);
 
-    renderCategories();
+    renderSpaces();
 
     // Update header immediately with new post count from cached state (no await, synchronous)
-    updateCategoryStatsDisplay();
+    updateSpaceStatsDisplay();
 
     // Load posts immediately (don't await, let it run in parallel)
-    loadPosts(category.id, currentCategory.recursiveMode);
+    loadPosts(space.id, currentSpace.recursiveMode);
 
     // Fetch file stats in parallel if needed and update display when ready
     if (fileStatsEnabled) {
-        fetchCategoryStats(category.id, currentCategory.recursiveMode).then(stats => {
-            updateCategoryStatsDisplay(stats);
+        fetchSpaceStats(space.id, currentSpace.recursiveMode).then(stats => {
+            updateSpaceStatsDisplay(stats);
         }).catch(error => {
             console.error('Failed to fetch file stats:', error);
         });
@@ -335,51 +335,51 @@ function toggleRecursiveMode(category) {
     generateActivityHeatmap();
 }
 
-// Functions to manage recursive toggle state per category
-function saveRecursiveToggleState(categoryId, recursiveMode) {
+// Functions to manage recursive toggle state per space
+function saveRecursiveToggleState(spaceId, recursiveMode) {
     const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
-    recursiveStates[categoryId] = recursiveMode;
+    recursiveStates[spaceId] = recursiveMode;
     localStorage.setItem(window.AppConstants.STORAGE_KEYS.recursiveStates, JSON.stringify(recursiveStates));
 }
 
-function loadRecursiveToggleState(categoryId) {
+function loadRecursiveToggleState(spaceId) {
     const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
-    return recursiveStates[categoryId] || false;
+    return recursiveStates[spaceId] || false;
 }
 
-function removeRecursiveToggleState(categoryId) {
+function removeRecursiveToggleState(spaceId) {
     const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
-    delete recursiveStates[categoryId];
+    delete recursiveStates[spaceId];
     localStorage.setItem(window.AppConstants.STORAGE_KEYS.recursiveStates, JSON.stringify(recursiveStates));
 }
 
 function cleanupRecursiveToggleStates() {
-    // Clean up states for categories that no longer exist
+    // Clean up states for spaces that no longer exist
     const recursiveStates = JSON.parse(localStorage.getItem(window.AppConstants.STORAGE_KEYS.recursiveStates) || '{}');
-    const existingCategoryIds = new Set(categories.map(cat => cat.id.toString()));
+    const existingSpaceIds = new Set(spaces.map(cat => cat.id.toString()));
 
     const cleanedStates = {};
-    for (const [categoryId, state] of Object.entries(recursiveStates)) {
-        if (existingCategoryIds.has(categoryId)) {
-            cleanedStates[categoryId] = state;
+    for (const [spaceId, state] of Object.entries(recursiveStates)) {
+        if (existingSpaceIds.has(spaceId)) {
+            cleanedStates[spaceId] = state;
         }
     }
 
     localStorage.setItem(window.AppConstants.STORAGE_KEYS.recursiveStates, JSON.stringify(cleanedStates));
 }
 
-// Helper function to build category breadcrumb path
-function getCategoryBreadcrumb(categoryId) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category) return '';
+// Helper function to build space breadcrumb path
+function getSpaceBreadcrumb(spaceId) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (!space) return '';
 
     const path = [];
-    let current = category;
+    let current = space;
 
     while (current) {
         path.unshift(current.name);
         if (current.parent_id) {
-            current = categories.find(cat => cat.id === current.parent_id);
+            current = spaces.find(cat => cat.id === current.parent_id);
         } else {
             current = null;
         }
@@ -389,12 +389,12 @@ function getCategoryBreadcrumb(categoryId) {
 }
 
 // Helper function to build interactive breadcrumb with clickable links
-function getInteractiveCategoryBreadcrumb(categoryId) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (!category) return '';
+function getInteractiveSpaceBreadcrumb(spaceId) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (!space) return '';
 
     const pathElements = [];
-    let current = category;
+    let current = space;
 
     while (current) {
         pathElements.unshift({
@@ -402,7 +402,7 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
             name: current.name
         });
         if (current.parent_id) {
-            current = categories.find(cat => cat.id === current.parent_id);
+            current = spaces.find(cat => cat.id === current.parent_id);
         } else {
             current = null;
         }
@@ -412,85 +412,85 @@ function getInteractiveCategoryBreadcrumb(categoryId) {
     const isMobile = window.innerWidth <= 768;
 
     if (isMobile) {
-        // On mobile, show "... > Current Category" format
+        // On mobile, show "... > Current Space" format
         const currentElement = pathElements[pathElements.length - 1];
 
         if (pathElements.length > 1) {
-            // Has parent categories - show "... > Current Category"
+            // Has parent spaces - show "... > Current Space"
             const parentElement = pathElements[pathElements.length - 2];
-            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToCategory(${parentElement.id})">...</span> <span class="text-gray-400 dark:text-gray-500">></span> <span class="text-gray-900 dark:text-gray-100">${currentElement.name}</span>`;
+            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToSpace(${parentElement.id})">...</span> <span class="text-gray-400 dark:text-gray-500">></span> <span class="text-gray-900 dark:text-gray-100">${currentElement.name}</span>`;
         } else {
-            // Root category - show "... > Current Category" where ... goes to All Categories
-            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToAllCategories()">...</span> <span class="text-gray-400 dark:text-gray-500">></span> <span class="text-gray-900 dark:text-gray-100">${currentElement.name}</span>`;
+            // Root space - show "... > Current Space" where ... goes to All Spaces
+            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToAllSpaces()">...</span> <span class="text-gray-400 dark:text-gray-500">></span> <span class="text-gray-900 dark:text-gray-100">${currentElement.name}</span>`;
         }
     }
 
     // On desktop, show full breadcrumb path
     return pathElements.map((element, index) => {
         if (index === pathElements.length - 1) {
-            // Last element (current category) - not clickable
+            // Last element (current space) - not clickable
             return `<span class="text-gray-900 dark:text-gray-100">${element.name}</span>`;
         } else {
             // Parent elements - clickable
-            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToCategory(${element.id})">${element.name}</span>`;
+            return `<span class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer transition-colors" onclick="navigateToSpace(${element.id})">${element.name}</span>`;
         }
     }).join(' <span class="text-gray-400 dark:text-gray-500">></span> ');
 }
 
-// Function to navigate to a category when breadcrumb is clicked
-function navigateToCategory(categoryId) {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (category) {
-        // Use router to properly handle URL updates for categories with spaces
-        if (typeof router !== 'undefined' && router.navigateToCategory) {
-            router.navigateToCategory(category);
+// Function to navigate to a space when breadcrumb is clicked
+function navigateToSpace(spaceId) {
+    const space = spaces.find(cat => cat.id === spaceId);
+    if (space) {
+        // Use router to properly handle URL updates for spaces with spaces
+        if (typeof router !== 'undefined' && router.navigateToSpace) {
+            router.navigateToSpace(space);
         } else {
-            selectCategory(category); // Fallback if router not available
+            selectSpace(space); // Fallback if router not available
         }
     }
 }
 
-// Function to navigate to all categories (used on mobile breadcrumb)
-function navigateToAllCategories() {
-    // Use router to navigate to root/all categories
+// Function to navigate to all spaces (used on mobile breadcrumb)
+function navigateToAllSpaces() {
+    // Use router to navigate to root/all spaces
     if (typeof router !== 'undefined' && router.navigate) {
         router.navigate('/');
     } else {
-        deselectCategory(); // Fallback if router not available
+        deselectSpace(); // Fallback if router not available
     }
 }
 
 // Make functions globally accessible for onclick handlers
-window.navigateToCategory = navigateToCategory;
-window.navigateToAllCategories = navigateToAllCategories;
+window.navigateToSpace = navigateToSpace;
+window.navigateToAllSpaces = navigateToAllSpaces;
 
-// Function to get all descendant categories recursively
-async function getAllDescendantCategories(parentId) {
+// Function to get all descendant spaces recursively
+async function getAllDescendantSpaces(parentId) {
     const descendants = [];
 
     // Get direct children
-    const directChildren = categories.filter(cat => cat.parent_id === parentId);
+    const directChildren = spaces.filter(cat => cat.parent_id === parentId);
 
     for (const child of directChildren) {
         descendants.push(child);
         // Recursively get children of this child
-        const childDescendants = await getAllDescendantCategories(child.id);
+        const childDescendants = await getAllDescendantSpaces(child.id);
         descendants.push(...childDescendants);
     }
 
     return descendants;
 }
 
-// Function to get all posts recursively from a category
-async function getAllPostsRecursively(categoryId) {
+// Function to get all posts recursively from a space
+async function getAllPostsRecursively(spaceId) {
     let allPosts = [];
     let offset = 0;
-    const limit = window.AppConstants.UI_CONFIG.categoryBatchLimit;
+    const limit = window.AppConstants.UI_CONFIG.spaceBatchLimit;
     let hasMore = true;
 
     while (hasMore) {
         try {
-            const response = await fetchPosts(categoryId, limit, offset, true, true); // recursive = true
+            const response = await fetchPosts(spaceId, limit, offset, true, true); // recursive = true
             if (!response) {
                 hasMore = false;
                 continue;
@@ -519,18 +519,18 @@ async function getAllPostsRecursively(categoryId) {
     return allPosts;
 }
 
-async function deleteCategory(category) {
-    // Get total posts from category's recursive count
-    const totalPosts = category.recursive_post_count || 0;
+async function deleteSpace(space) {
+    // Get total posts from space's recursive count
+    const totalPosts = space.recursive_post_count || 0;
 
-    // Get all descendant categories for accurate count
-    const allDescendants = await getAllDescendantCategories(category.id);
-    const totalSubcategories = allDescendants.length;
+    // Get all descendant spaces for accurate count
+    const allDescendants = await getAllDescendantSpaces(space.id);
+    const totalSubspaces = allDescendants.length;
 
-    let message = `${window.AppConstants.USER_MESSAGES.confirm.deleteCategory} "${category.name}"?`;
+    let message = `${window.AppConstants.USER_MESSAGES.confirm.deleteSpace} "${space.name}"?`;
 
-    if (totalSubcategories > 0) {
-        message += `\n\nThis will also delete **${totalSubcategories}** subcategory(ies)`;
+    if (totalSubspaces > 0) {
+        message += `\n\nThis will also delete **${totalSubspaces}** subspace(ies)`;
     }
 
     if (totalPosts > 0) {
@@ -540,69 +540,69 @@ async function deleteCategory(category) {
 
     message += window.AppConstants.USER_MESSAGES.confirm.undoWarning;
 
-    // Build details HTML for subcategories list only
+    // Build details HTML for subspaces list only
     let detailsHtml = '';
 
-    // Subcategories list
+    // Subspaces list
     if (allDescendants.length > 0) {
-        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Subcategories to be deleted:</h4>';
+        detailsHtml += '<div class="mb-4"><h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Subspaces to be deleted:</h4>';
         detailsHtml += '<div class="bg-gray-50 dark:bg-gray-800 rounded p-3 max-h-32 overflow-y-auto"><ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">';
 
         allDescendants.forEach(subcat => {
-            const breadcrumb = getCategoryBreadcrumb(subcat.id);
+            const breadcrumb = getSpaceBreadcrumb(subcat.id);
             detailsHtml += `<li>• ${breadcrumb}</li>`;
         });
 
         detailsHtml += '</ul></div></div>';
     }
 
-    const confirmed = await showConfirmation('Delete Category', message, detailsHtml);
+    const confirmed = await showConfirmation('Delete Space', message, detailsHtml);
     if (confirmed) {
         try {
-            await deleteCategoryApi(category.id);
+            await deleteSpaceApi(space.id);
 
-            // Remove recursive toggle state for this category
-            removeRecursiveToggleState(category.id);
+            // Remove recursive toggle state for this space
+            removeRecursiveToggleState(space.id);
 
-            await fetchCategories();
+            await fetchSpaces();
 
             // Show success message
-            showSuccess(`Category "${category.name}" ${window.AppConstants.USER_MESSAGES.success.categoryDeleted}`);
+            showSuccess(`Space "${space.name}" ${window.AppConstants.USER_MESSAGES.success.spaceDeleted}`);
 
             // Cleanup any orphaned toggle states
             cleanupRecursiveToggleStates();
 
-            if (currentCategory && currentCategory.id === category.id) {
-                currentCategory = null;
-                localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastCategory);
+            if (currentSpace && currentSpace.id === space.id) {
+                currentSpace = null;
+                localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastSpace);
                 document.getElementById('timeline-title').textContent = '';
                 document.getElementById('new-post-btn').style.display = 'none';
                 document.getElementById('settings-btn').style.display = 'block';
                 document.getElementById('theme-toggle-btn').style.display = 'block';
                 document.getElementById('recursive-toggle-btn').style.display = 'none';
-                document.getElementById('category-actions-dropdown').style.display = 'none';
+                document.getElementById('space-actions-dropdown').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';
             }
         } catch (error) {
-            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToDeleteCategory, error.message));
+            showError(formatMessage(window.AppConstants.USER_MESSAGES.error.failedToDeleteSpace, error.message));
         }
     }
 }
 
-// Category sorting functionality
+// Space sorting functionality
 function getSortPreference() {
-    const stored = localStorage.getItem(window.AppConstants.STORAGE_KEYS.categorySortPref);
+    const stored = localStorage.getItem(window.AppConstants.STORAGE_KEYS.spaceSortPref);
     return stored ? JSON.parse(stored) : { field: 'name', ascending: true };
 }
 
 function setSortPreference(field, ascending) {
     const preference = { field, ascending };
-    localStorage.setItem(window.AppConstants.STORAGE_KEYS.categorySortPref, JSON.stringify(preference));
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.spaceSortPref, JSON.stringify(preference));
 }
 
-function sortCategories(categoriesArray) {
+function sortSpaces(spacesArray) {
     const sortPref = getSortPreference();
-    const sorted = [...categoriesArray];
+    const sorted = [...spacesArray];
 
     sorted.sort((a, b) => {
         let aValue, bValue;
@@ -639,20 +639,20 @@ function sortCategories(categoriesArray) {
 }
 
 function updateSortFooterVisibility() {
-    const footer = document.getElementById('category-sort-footer');
+    const footer = document.getElementById('space-sort-footer');
     if (!footer) return;
 
-    // Count categories at the same level (root level and each parent level)
-    const rootCategories = categories.filter(cat => !cat.parent_id);
+    // Count spaces at the same level (root level and each parent level)
+    const rootSpaces = spaces.filter(cat => !cat.parent_id);
 
-    // Show footer if there are 2 or more root categories, or if any parent has 2+ children
-    let shouldShow = rootCategories.length >= 2;
+    // Show footer if there are 2 or more root spaces, or if any parent has 2+ children
+    let shouldShow = rootSpaces.length >= 2;
 
     if (!shouldShow) {
         // Check if any expanded parent has 2+ children
-        for (const category of categories) {
-            if (expandedCategories.has(category.id)) {
-                const children = categories.filter(cat => cat.parent_id === category.id);
+        for (const space of spaces) {
+            if (expandedSpaces.has(space.id)) {
+                const children = spaces.filter(cat => cat.parent_id === space.id);
                 if (children.length >= 2) {
                     shouldShow = true;
                     break;
@@ -665,7 +665,7 @@ function updateSortFooterVisibility() {
 }
 
 function initializeSortFooter() {
-    const footer = document.getElementById('category-sort-footer');
+    const footer = document.getElementById('space-sort-footer');
     if (!footer) return;
 
     const sortOptions = footer.querySelectorAll('.sort-option');
@@ -688,13 +688,13 @@ function initializeSortFooter() {
 
             setSortPreference(field, ascending);
             updateSortButtonStates();
-            renderCategories();
+            renderSpaces();
         });
     });
 }
 
 function updateSortButtonStates() {
-    const footer = document.getElementById('category-sort-footer');
+    const footer = document.getElementById('space-sort-footer');
     if (!footer) return;
 
     const sortOptions = footer.querySelectorAll('.sort-option');

@@ -13,7 +13,7 @@ import (
 )
 
 func NewRouter(
-	categoryService *services.CategoryService,
+	spaceService *services.SpaceService,
 	postService *services.PostService,
 	fileService *services.FileService,
 	detailedStats *detailedstats.Service,
@@ -28,31 +28,31 @@ func NewRouter(
 	r.Use(middleware.Logging)
 	
 	// Initialize handlers
-	categoryHandler := handlers.NewCategoryHandler(categoryService)
+	spaceHandler := handlers.NewSpaceHandler(spaceService)
 	postHandler := handlers.NewPostHandler(postService, fileService, opts)
 	uploadHandler := handlers.NewUploadHandler(fileService, opts)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
 	logsHandler := handlers.NewLogsHandler()
-	templateHandler := handlers.NewTemplateHandler(categoryService, opts, serviceConfig)
+	templateHandler := handlers.NewTemplateHandler(spaceService, opts, serviceConfig)
 	
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 	
-	// Categories
-	api.HandleFunc("/categories", categoryHandler.GetCategories).Methods("GET")
-	api.HandleFunc("/categories", categoryHandler.CreateCategory).Methods("POST")
-	api.HandleFunc("/categories/by-parent", categoryHandler.GetCategoriesByParent).Methods("GET")
-	api.HandleFunc("/categories/{id}", categoryHandler.GetCategory).Methods("GET")
-	api.HandleFunc("/categories/{id}", categoryHandler.UpdateCategory).Methods("PUT")
-	api.HandleFunc("/categories/{id}", categoryHandler.DeleteCategory).Methods("DELETE")
+	// Spaces
+	api.HandleFunc("/spaces", spaceHandler.GetSpaces).Methods("GET")
+	api.HandleFunc("/spaces", spaceHandler.CreateSpace).Methods("POST")
+	api.HandleFunc("/spaces/by-parent", spaceHandler.GetSpacesByParent).Methods("GET")
+	api.HandleFunc("/spaces/{id}", spaceHandler.GetSpace).Methods("GET")
+	api.HandleFunc("/spaces/{id}", spaceHandler.UpdateSpace).Methods("PUT")
+	api.HandleFunc("/spaces/{id}", spaceHandler.DeleteSpace).Methods("DELETE")
 	
 	// Posts
 	api.HandleFunc("/posts", postHandler.CreatePost).Methods("POST")
 	api.HandleFunc("/posts/{id}", postHandler.GetPost).Methods("GET")
 	api.HandleFunc("/posts/{id}", postHandler.DeletePost).Methods("DELETE")
 	api.HandleFunc("/posts/{id}/move", postHandler.MovePost).Methods("PUT")
-	api.HandleFunc("/categories/{id}/posts", postHandler.GetPostsByCategory).Methods("GET")
+	api.HandleFunc("/spaces/{id}/posts", postHandler.GetPostsBySpace).Methods("GET")
 	
 	// Files
 	api.HandleFunc("/upload", uploadHandler.UploadFile).Methods("POST")

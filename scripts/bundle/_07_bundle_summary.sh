@@ -58,6 +58,9 @@ JS_SOURCE_COUNT=$(find "$JS_DIR" -name "*.js" 2>/dev/null | wc -l)
 COMBINED_CSS_SIZE=$(get_size "$CACHE_DIR/combined.css")
 COMBINED_JS_SIZE=$(get_size "$CACHE_DIR/combined.js")
 
+# Get source HTML size (before minification)
+SOURCE_HTML_SIZE=$(get_size "$PROJECT_ROOT/web/$SOURCE_TEMPLATES/index.html")
+
 # Get bundle file sizes
 BUNDLE_CSS_SIZE=$(get_size "$BUNDLE_CSS_DIR/bundle.css")
 BUNDLE_CSS_GZ_SIZE=$(get_size "$BUNDLE_CSS_DIR/bundle.css.gz")
@@ -68,11 +71,13 @@ BUNDLE_JS_GZ_SIZE=$(get_size "$BUNDLE_JS_DIR/bundle.js.gz")
 BUNDLE_JS_BR_SIZE=$(get_size "$BUNDLE_JS_DIR/bundle.js.br")
 
 BUNDLE_HTML_SIZE=$(get_size "$BUNDLE_TEMPLATES_DIR/index.html")
+BUNDLE_HTML_GZ_SIZE=$(get_size "$BUNDLE_TEMPLATES_DIR/index.html.gz")
+BUNDLE_HTML_BR_SIZE=$(get_size "$BUNDLE_TEMPLATES_DIR/index.html.br")
 
 # Calculate totals
 TOTAL_UNCOMPRESSED=$((BUNDLE_CSS_SIZE + BUNDLE_JS_SIZE + BUNDLE_HTML_SIZE))
-TOTAL_GZIP=$((BUNDLE_CSS_GZ_SIZE + BUNDLE_JS_GZ_SIZE + BUNDLE_HTML_SIZE))
-TOTAL_BROTLI=$((BUNDLE_CSS_BR_SIZE + BUNDLE_JS_BR_SIZE + BUNDLE_HTML_SIZE))
+TOTAL_GZIP=$((BUNDLE_CSS_GZ_SIZE + BUNDLE_JS_GZ_SIZE + BUNDLE_HTML_GZ_SIZE))
+TOTAL_BROTLI=$((BUNDLE_CSS_BR_SIZE + BUNDLE_JS_BR_SIZE + BUNDLE_HTML_BR_SIZE))
 
 # Display detailed summary
 echo ""
@@ -100,7 +105,10 @@ echo ""
 
 # HTML Stats
 echo -e "${BOLD}HTML Template:${NC}"
-echo -e "  Minified size:     $(format_bytes $BUNDLE_HTML_SIZE)"
+echo -e "  Source size:       $(format_bytes $SOURCE_HTML_SIZE)"
+echo -e "  Minified:          $(format_bytes $BUNDLE_HTML_SIZE) ${GRAY}(-$(calc_reduction $SOURCE_HTML_SIZE $BUNDLE_HTML_SIZE)%)${NC}"
+echo -e "  Gzip:              $(format_bytes $BUNDLE_HTML_GZ_SIZE) ${GRAY}(-$(calc_reduction $BUNDLE_HTML_SIZE $BUNDLE_HTML_GZ_SIZE)%)${NC}"
+echo -e "  Brotli:            $(format_bytes $BUNDLE_HTML_BR_SIZE) ${GRAY}(-$(calc_reduction $BUNDLE_HTML_SIZE $BUNDLE_HTML_BR_SIZE)%)${NC}"
 echo ""
 
 # Total Bundle Sizes

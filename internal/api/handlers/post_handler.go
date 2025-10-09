@@ -38,7 +38,7 @@ func NewPostHandler(postService *services.PostService, fileService *services.Fil
 
 func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		CategoryID      int                 `json:"category_id"`
+		SpaceID      int                 `json:"space_id"`
 		Content         string              `json:"content"`
 		LinkPreviews    []PostLinkPreview   `json:"link_previews,omitempty"`
 		CustomTimestamp *int64              `json:"custom_timestamp,omitempty"`
@@ -54,8 +54,8 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.CategoryID <= 0 {
-		http.Error(w, config.ErrValidCategoryIDRequired, http.StatusBadRequest)
+	if req.SpaceID <= 0 {
+		http.Error(w, config.ErrValidSpaceIDRequired, http.StatusBadRequest)
 		return
 	}
 	
@@ -78,7 +78,7 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	
-	post, err := h.postService.Create(req.CategoryID, req.Content, req.CustomTimestamp)
+	post, err := h.postService.Create(req.SpaceID, req.Content, req.CustomTimestamp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -145,7 +145,7 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		CategoryID int `json:"category_id"`
+		SpaceID int `json:"space_id"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -153,12 +153,12 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.CategoryID <= 0 {
-		http.Error(w, config.ErrValidCategoryIDRequired, http.StatusBadRequest)
+	if req.SpaceID <= 0 {
+		http.Error(w, config.ErrValidSpaceIDRequired, http.StatusBadRequest)
 		return
 	}
 
-	if err := h.postService.Move(postID, req.CategoryID); err != nil {
+	if err := h.postService.Move(postID, req.SpaceID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -182,11 +182,11 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(post)
 }
 
-func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request) {
+func (h *PostHandler) GetPostsBySpace(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	categoryID, err := strconv.Atoi(vars["id"])
+	spaceID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidSpaceID, http.StatusBadRequest)
 		return
 	}
 
@@ -213,16 +213,16 @@ func (h *PostHandler) GetPostsByCategory(w http.ResponseWriter, r *http.Request)
 	var posts []models.PostWithAttachments
 	var totalCount int
 
-	if categoryID == 0 { // All categories
+	if spaceID == 0 { // All spaces
 		posts, err = h.postService.GetAllPosts(limit, offset)
 		if withMeta {
 			totalCount, _ = h.fileService.GetTotalPostCount()
 		}
 	} else {
-		posts, err = h.postService.GetByCategory(categoryID, recursive, limit, offset)
+		posts, err = h.postService.GetBySpace(spaceID, recursive, limit, offset)
 		if withMeta {
 			// Get count from cache
-			if cat, ok := h.postService.GetCategoryFromCache(categoryID); ok {
+			if cat, ok := h.postService.GetSpaceFromCache(spaceID); ok {
 				if recursive {
 					totalCount = cat.RecursivePostCount
 				} else {

@@ -22,14 +22,14 @@ func TestServiceBasicFunctionality(t *testing.T) {
 		// HandleEvent should succeed but do nothing
 		err = service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: time.Now().Unix() * 1000},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: time.Now().Unix() * 1000},
 		})
 		if err != nil {
 			t.Errorf("Expected no error for disabled service, got %v", err)
 		}
 
 		// GetActivityPeriod should return empty response
-		req := ActivityPeriodRequest{CategoryID: 1, PeriodMonths: 1}
+		req := ActivityPeriodRequest{SpaceID: 1, PeriodMonths: 1}
 		resp, err := service.GetActivityPeriod(req)
 		if err != nil {
 			t.Errorf("Expected no error for disabled service, got %v", err)
@@ -43,7 +43,7 @@ func TestServiceBasicFunctionality(t *testing.T) {
 	t.Run("EnabledService", func(t *testing.T) {
 		service := &Service{
 			enabled:  true,
-			activity: make(map[int]*CategoryActivity),
+			activity: make(map[int]*SpaceActivity),
 		}
 
 		// Test event handling
@@ -52,7 +52,7 @@ func TestServiceBasicFunctionality(t *testing.T) {
 		// Create a post
 		err := service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 		})
 		if err != nil {
 			t.Errorf("Expected no error handling PostCreated event, got %v", err)
@@ -64,7 +64,7 @@ func TestServiceBasicFunctionality(t *testing.T) {
 		service.mu.RUnlock()
 
 		if !exists {
-			t.Fatal("Expected activity to be created for category 1")
+			t.Fatal("Expected activity to be created for space 1")
 		}
 
 		activity.mu.RLock()
@@ -79,7 +79,7 @@ func TestServiceBasicFunctionality(t *testing.T) {
 		// Delete the post
 		err = service.HandleEvent(events.Event{
 			Type: events.PostDeleted,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 		})
 		if err != nil {
 			t.Errorf("Expected no error handling PostDeleted event, got %v", err)
@@ -97,27 +97,27 @@ func TestServiceBasicFunctionality(t *testing.T) {
 	t.Run("PostMoved", func(t *testing.T) {
 		service := &Service{
 			enabled:  true,
-			activity: make(map[int]*CategoryActivity),
+			activity: make(map[int]*SpaceActivity),
 		}
 
 		now := time.Now().Unix() * 1000
 
-		// Create a post in category 1
+		// Create a post in space 1
 		err := service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 		})
 		if err != nil {
 			t.Errorf("Expected no error handling PostCreated event, got %v", err)
 		}
 
-		// Move post from category 1 to category 2
-		oldCategoryID := 1
+		// Move post from space 1 to space 2
+		oldSpaceID := 1
 		err = service.HandleEvent(events.Event{
 			Type: events.PostMoved,
 			Data: events.PostEvent{
-				CategoryID:    2,
-				OldCategoryID: &oldCategoryID,
+				SpaceID:    2,
+				OldSpaceID: &oldSpaceID,
 				Timestamp:     now,
 			},
 		})
@@ -125,28 +125,28 @@ func TestServiceBasicFunctionality(t *testing.T) {
 			t.Errorf("Expected no error handling PostMoved event, got %v", err)
 		}
 
-		// Check old category activity decreased
+		// Check old space activity decreased
 		service.mu.RLock()
 		activity1, exists1 := service.activity[1]
 		activity2, exists2 := service.activity[2]
 		service.mu.RUnlock()
 
 		if !exists1 {
-			t.Fatal("Expected activity for category 1")
+			t.Fatal("Expected activity for space 1")
 		}
 		if !exists2 {
-			t.Fatal("Expected activity for category 2")
+			t.Fatal("Expected activity for space 2")
 		}
 
 		activity1.mu.RLock()
 		if activity1.Stats.TotalPosts != 0 {
-			t.Errorf("Expected 0 posts in old category, got %d", activity1.Stats.TotalPosts)
+			t.Errorf("Expected 0 posts in old space, got %d", activity1.Stats.TotalPosts)
 		}
 		activity1.mu.RUnlock()
 
 		activity2.mu.RLock()
 		if activity2.Stats.TotalPosts != 1 {
-			t.Errorf("Expected 1 post in new category, got %d", activity2.Stats.TotalPosts)
+			t.Errorf("Expected 1 post in new space, got %d", activity2.Stats.TotalPosts)
 		}
 		activity2.mu.RUnlock()
 	})
@@ -155,7 +155,7 @@ func TestServiceBasicFunctionality(t *testing.T) {
 func TestUpdateActivity(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 
 	now := time.Now().Unix() * 1000
@@ -323,12 +323,12 @@ func TestCalculateMaxPeriods(t *testing.T) {
 func TestGetActivityPeriodBasic(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 
-	// Test non-existent category
+	// Test non-existent space
 	req := ActivityPeriodRequest{
-		CategoryID:   999,
+		SpaceID:   999,
 		PeriodMonths: 1,
 	}
 
@@ -337,31 +337,31 @@ func TestGetActivityPeriodBasic(t *testing.T) {
 		t.Fatalf("Expected no error, got %v", err)
 	}
 
-	if resp.CategoryID != 999 {
-		t.Errorf("Expected category ID 999, got %d", resp.CategoryID)
+	if resp.SpaceID != 999 {
+		t.Errorf("Expected space ID 999, got %d", resp.SpaceID)
 	}
 
 	if len(resp.Days) != 0 {
-		t.Errorf("Expected empty days for non-existent category, got %d", len(resp.Days))
+		t.Errorf("Expected empty days for non-existent space, got %d", len(resp.Days))
 	}
 
-	// Test global activity (categoryID = 0)
-	req.CategoryID = 0
+	// Test global activity (spaceID = 0)
+	req.SpaceID = 0
 
 	resp, err = service.GetActivityPeriod(req)
 	if err != nil {
 		t.Fatalf("Expected no error for global activity, got %v", err)
 	}
 
-	if resp.CategoryID != 0 {
-		t.Errorf("Expected category ID 0 for global, got %d", resp.CategoryID)
+	if resp.SpaceID != 0 {
+		t.Errorf("Expected space ID 0 for global, got %d", resp.SpaceID)
 	}
 }
 
 func TestUpdateRecursiveActivity(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 
 	// First create activity using updateActivity
@@ -429,58 +429,58 @@ func TestUpdateRecursiveActivity(t *testing.T) {
 	activity.mu.RUnlock()
 }
 
-func TestCategoryUpdatedEvent(t *testing.T) {
+func TestSpaceUpdatedEvent(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 		catCache: nil, // Disable cache for simple test
 	}
 
-	// Test that CategoryUpdated events are handled without errors
+	// Test that SpaceUpdated events are handled without errors
 	t.Run("EventHandlingBasic", func(t *testing.T) {
 		err := service.HandleEvent(events.Event{
-			Type: events.CategoryUpdated,
-			Data: events.CategoryEvent{
-				CategoryID:  1,
+			Type: events.SpaceUpdated,
+			Data: events.SpaceEvent{
+				SpaceID:  1,
 				OldParentID: nil,
 				NewParentID: &[]int{2}[0],
 			},
 		})
 
 		if err != nil {
-			t.Errorf("Expected no error handling CategoryUpdated event, got %v", err)
+			t.Errorf("Expected no error handling SpaceUpdated event, got %v", err)
 		}
 	})
 
 	// Test with cache - just verify the methods are called
 	t.Run("EventHandlingWithCache", func(t *testing.T) {
-		catCache := cache.NewCategoryCache()
+		catCache := cache.NewSpaceCache()
 
 		// Set up a simple hierarchy
-		cat1 := &models.Category{ID: 1, Name: "Parent", ParentID: nil}
-		cat2 := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
+		cat1 := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+		cat2 := &models.Space{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
 
 		catCache.Set(cat1)
 		catCache.Set(cat2)
 
 		service.catCache = catCache
 
-		// Create some activity in category 2
+		// Create some activity in space 2
 		now := time.Now().Unix() * 1000
 		service.updateActivity(2, now, 1)
 
-		// Trigger CategoryUpdated event (move category 2 to root)
+		// Trigger SpaceUpdated event (move space 2 to root)
 		err := service.HandleEvent(events.Event{
-			Type: events.CategoryUpdated,
-			Data: events.CategoryEvent{
-				CategoryID:  2,
+			Type: events.SpaceUpdated,
+			Data: events.SpaceEvent{
+				SpaceID:  2,
 				OldParentID: &[]int{1}[0],
 				NewParentID: nil,
 			},
 		})
 
 		if err != nil {
-			t.Errorf("Expected no error handling CategoryUpdated event with cache, got %v", err)
+			t.Errorf("Expected no error handling SpaceUpdated event with cache, got %v", err)
 		}
 
 		// Just verify that activity was recalculated (should not crash)
@@ -491,19 +491,19 @@ func TestCategoryUpdatedEvent(t *testing.T) {
 
 		if exists1 {
 			activity1.mu.RLock()
-			t.Logf("Category 1 recursive posts: %d", activity1.Stats.RecursivePosts)
+			t.Logf("Space 1 recursive posts: %d", activity1.Stats.RecursivePosts)
 			activity1.mu.RUnlock()
 		}
 
 		if exists2 {
 			activity2.mu.RLock()
-			t.Logf("Category 2 total posts: %d, recursive posts: %d", activity2.Stats.TotalPosts, activity2.Stats.RecursivePosts)
+			t.Logf("Space 2 total posts: %d, recursive posts: %d", activity2.Stats.TotalPosts, activity2.Stats.RecursivePosts)
 			if activity2.Stats.TotalPosts != 1 {
-				t.Errorf("Expected 1 total post in category 2, got %d", activity2.Stats.TotalPosts)
+				t.Errorf("Expected 1 total post in space 2, got %d", activity2.Stats.TotalPosts)
 			}
 			activity2.mu.RUnlock()
 		} else {
-			t.Error("Expected category 2 activity to exist")
+			t.Error("Expected space 2 activity to exist")
 		}
 	})
 }

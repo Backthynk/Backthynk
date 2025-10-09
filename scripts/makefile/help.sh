@@ -40,6 +40,6 @@ echo -e "    ${GREEN}release${NC}                  Tag and trigger GitHub Action
 echo -e "    ${GREEN}release-status${NC}           Check the status of the latest release workflow"
 echo -e "    ${GREEN}release-clean${NC}            Clean up a failed release (delete tag and GitHub release)"
 echo ""
-echo -e "${GRAY}For development tools (generate posts, list categories), see:${NC}"
+echo -e "${GRAY}For development tools (generate posts, list spaces), see:${NC}"
 echo -e "${GRAY}  cd scripts/dev && make help${NC}"
 echo ""

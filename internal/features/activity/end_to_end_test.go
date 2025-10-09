@@ -14,20 +14,20 @@ import (
 )
 
 // TestEndToEndActivityLifecycle simulates a complete real-world scenario:
-// 1. Multiple categories with hierarchy
+// 1. Multiple spaces with hierarchy
 // 2. Posts created over time (including retroactive)
-// 3. Posts moved between categories
+// 3. Posts moved between spaces
 // 4. Posts deleted (including first and last posts)
 // 5. Verify activity stats remain consistent throughout
 func TestEndToEndActivityLifecycle(t *testing.T) {
 	db := &storage.DB{}
-	catCache := cache.NewCategoryCache()
+	catCache := cache.NewSpaceCache()
 
-	// Setup category hierarchy
-	root := &models.Category{ID: 1, Name: "Root", ParentID: nil}
-	child1 := &models.Category{ID: 2, Name: "Child1", ParentID: &[]int{1}[0]}
-	child2 := &models.Category{ID: 3, Name: "Child2", ParentID: &[]int{1}[0]}
-	grandchild := &models.Category{ID: 4, Name: "Grandchild", ParentID: &[]int{2}[0]}
+	// Setup space hierarchy
+	root := &models.Space{ID: 1, Name: "Root", ParentID: nil}
+	child1 := &models.Space{ID: 2, Name: "Child1", ParentID: &[]int{1}[0]}
+	child2 := &models.Space{ID: 3, Name: "Child2", ParentID: &[]int{1}[0]}
+	grandchild := &models.Space{ID: 4, Name: "Grandchild", ParentID: &[]int{2}[0]}
 
 	catCache.Set(root)
 	catCache.Set(child1)
@@ -53,36 +53,36 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 
 	// Phase 1: Initial post creation
 	t.Run("Phase1_InitialCreation", func(t *testing.T) {
-		// Create posts in root category
+		// Create posts in root space
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: timestamps["1_year_ago"]},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: timestamps["1_year_ago"]},
 		})
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: timestamps["today"]},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: timestamps["today"]},
 		})
 
 		// Create posts in child1
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 2, Timestamp: timestamps["6_months_ago"]},
+			Data: events.PostEvent{SpaceID: 2, Timestamp: timestamps["6_months_ago"]},
 		})
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 2, Timestamp: timestamps["1_month_ago"]},
+			Data: events.PostEvent{SpaceID: 2, Timestamp: timestamps["1_month_ago"]},
 		})
 
 		// Create posts in child2
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 3, Timestamp: timestamps["3_months_ago"]},
+			Data: events.PostEvent{SpaceID: 3, Timestamp: timestamps["3_months_ago"]},
 		})
 
 		// Create posts in grandchild
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 4, Timestamp: timestamps["1_week_ago"]},
+			Data: events.PostEvent{SpaceID: 4, Timestamp: timestamps["1_week_ago"]},
 		})
 
 		// Verify root direct activity
@@ -110,7 +110,7 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 		veryOld := timestamps["1_year_ago"] - (365 * 86400000) // 2 years ago
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: veryOld},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: veryOld},
 		})
 
 		resp := getActivity(t, router, 1, false)
@@ -132,15 +132,15 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 		activity.mu.RUnlock()
 	})
 
-	// Phase 3: Move posts between categories
+	// Phase 3: Move posts between spaces
 	t.Run("Phase3_MovePost", func(t *testing.T) {
 		// Move a post from child1 to child2
 		oldCat := 2
 		service.HandleEvent(events.Event{
 			Type: events.PostMoved,
 			Data: events.PostEvent{
-				CategoryID:    3,
-				OldCategoryID: &oldCat,
+				SpaceID:    3,
+				OldSpaceID: &oldCat,
 				Timestamp:     timestamps["6_months_ago"],
 			},
 		})
@@ -180,7 +180,7 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 		veryOld := timestamps["1_year_ago"] - (365 * 86400000)
 		service.HandleEvent(events.Event{
 			Type: events.PostDeleted,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: veryOld},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: veryOld},
 		})
 
 		activity.mu.RLock()
@@ -196,7 +196,7 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 		// Delete the newest post (today)
 		service.HandleEvent(events.Event{
 			Type: events.PostDeleted,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: timestamps["today"]},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: timestamps["today"]},
 		})
 
 		activity.mu.RLock()
@@ -220,7 +220,7 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 		// Delete remaining post in root
 		service.HandleEvent(events.Event{
 			Type: events.PostDeleted,
-			Data: events.PostEvent{CategoryID: 1, Timestamp: timestamps["1_year_ago"]},
+			Data: events.PostEvent{SpaceID: 1, Timestamp: timestamps["1_year_ago"]},
 		})
 
 		service.mu.RLock()
@@ -256,7 +256,7 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 	t.Run("Phase6_GlobalActivityConsistency", func(t *testing.T) {
 		resp := getActivity(t, router, 0, false)
 
-		// Count remaining posts across all categories
+		// Count remaining posts across all spaces
 		// Root: 0, Child1: 1, Child2: 2, Grandchild: 1 = 4 total
 		expectedTotal := 4
 		if resp.Stats.TotalPosts != expectedTotal {
@@ -267,7 +267,7 @@ func TestEndToEndActivityLifecycle(t *testing.T) {
 
 // Helper function to get activity from API
 // Uses a very wide date range to capture all activity (2 years in past, 1 year in future)
-func getActivity(t *testing.T, router *mux.Router, categoryID int, recursive bool) ActivityPeriodResponse {
+func getActivity(t *testing.T, router *mux.Router, spaceID int, recursive bool) ActivityPeriodResponse {
 	t.Helper()
 
 	now := time.Now()
@@ -275,10 +275,10 @@ func getActivity(t *testing.T, router *mux.Router, categoryID int, recursive boo
 	endDate := now.AddDate(1, 0, 0).Format("2006-01-02")    // 1 year in future
 
 	url := "/api/activity/"
-	if categoryID == 0 {
+	if spaceID == 0 {
 		url += "0"
 	} else {
-		url += string(rune('0' + categoryID))
+		url += string(rune('0' + spaceID))
 	}
 
 	url += "?start_date=" + startDate + "&end_date=" + endDate

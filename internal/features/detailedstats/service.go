@@ -14,9 +14,9 @@ type Stats struct {
 
 type Service struct {
 	db        *storage.DB
-	catCache  *cache.CategoryCache
-	stats     map[int]*CategoryStats     // categoryID -> stats
-	postFiles map[int]map[int]*FileInfo  // categoryID -> postID -> file info
+	catCache  *cache.SpaceCache
+	stats     map[int]*SpaceStats     // spaceID -> stats
+	postFiles map[int]map[int]*FileInfo  // spaceID -> postID -> file info
 	mu        sync.RWMutex
 	enabled   bool
 }
@@ -26,17 +26,17 @@ type FileInfo struct {
 	TotalSize int64
 }
 
-type CategoryStats struct {
+type SpaceStats struct {
 	Direct    Stats `json:"direct"`
 	Recursive Stats `json:"recursive"`
 	mu        sync.RWMutex
 }
 
-func NewService(db *storage.DB, catCache *cache.CategoryCache, enabled bool) *Service {
+func NewService(db *storage.DB, catCache *cache.SpaceCache, enabled bool) *Service {
 	return &Service{
 		db:        db,
 		catCache:  catCache,
-		stats:     make(map[int]*CategoryStats),
+		stats:     make(map[int]*SpaceStats),
 		postFiles: make(map[int]map[int]*FileInfo),
 		enabled:   enabled,
 	}
@@ -55,7 +55,7 @@ func (s *Service) Initialize() error {
 
 	// Build direct stats
 	for catID, stats := range fileStats {
-		s.stats[catID] = &CategoryStats{
+		s.stats[catID] = &SpaceStats{
 			Direct: Stats{
 				FileCount: stats.FileCount,
 				TotalSize: stats.TotalSize,
@@ -72,10 +72,10 @@ func (s *Service) Initialize() error {
 	// Initialize postFiles map with existing data
 	s.mu.Lock()
 	for _, pfs := range postFileStats {
-		if _, ok := s.postFiles[pfs.CategoryID]; !ok {
-			s.postFiles[pfs.CategoryID] = make(map[int]*FileInfo)
+		if _, ok := s.postFiles[pfs.SpaceID]; !ok {
+			s.postFiles[pfs.SpaceID] = make(map[int]*FileInfo)
 		}
-		s.postFiles[pfs.CategoryID][pfs.PostID] = &FileInfo{
+		s.postFiles[pfs.SpaceID][pfs.PostID] = &FileInfo{
 			FileCount: pfs.FileCount,
 			TotalSize: pfs.TotalSize,
 		}
@@ -83,23 +83,23 @@ func (s *Service) Initialize() error {
 	s.mu.Unlock()
 
 	// Calculate recursive stats
-	categories := s.catCache.GetAll()
-	for _, cat := range categories {
+	spaces := s.catCache.GetAll()
+	for _, cat := range spaces {
 		s.calculateRecursiveStats(cat.ID)
 	}
 
 	return nil
 }
 
-func (s *Service) calculateRecursiveStats(categoryID int) {
+func (s *Service) calculateRecursiveStats(spaceID int) {
 	if !s.enabled {
 		return
 	}
 	
-	stats, ok := s.stats[categoryID]
+	stats, ok := s.stats[spaceID]
 	if !ok {
-		stats = &CategoryStats{}
-		s.stats[categoryID] = stats
+		stats = &SpaceStats{}
+		s.stats[spaceID] = stats
 	}
 	
 	stats.mu.Lock()
@@ -109,7 +109,7 @@ func (s *Service) calculateRecursiveStats(categoryID int) {
 	stats.Recursive = stats.Direct
 	
 	// Add descendant stats
-	descendants := s.catCache.GetDescendants(categoryID)
+	descendants := s.catCache.GetDescendants(spaceID)
 	for _, descID := range descendants {
 		if descStats, ok := s.stats[descID]; ok {
 			descStats.mu.RLock()
@@ -128,52 +128,52 @@ func (s *Service) HandleEvent(event events.Event) error {
 	switch event.Type {
 	case events.FileUploaded:
 		data := event.Data.(events.PostEvent)
-		s.updateStats(data.CategoryID, data.FileSize, 1)
-		s.trackFileByPost(data.CategoryID, data.PostID, data.FileSize, 1)
+		s.updateStats(data.SpaceID, data.FileSize, 1)
+		s.trackFileByPost(data.SpaceID, data.PostID, data.FileSize, 1)
 
 	case events.FileDeleted:
 		data := event.Data.(events.PostEvent)
-		s.updateStats(data.CategoryID, -data.FileSize, -1)
-		s.trackFileByPost(data.CategoryID, data.PostID, -data.FileSize, -1)
+		s.updateStats(data.SpaceID, -data.FileSize, -1)
+		s.trackFileByPost(data.SpaceID, data.PostID, -data.FileSize, -1)
 		
 	case events.PostDeleted:
 		data := event.Data.(events.PostEvent)
 		if data.FileCount > 0 {
-			s.updateStats(data.CategoryID, -data.FileSize, -data.FileCount)
+			s.updateStats(data.SpaceID, -data.FileSize, -data.FileCount)
 		}
 
 	case events.PostMoved:
 		data := event.Data.(events.PostEvent)
-		if data.OldCategoryID != nil {
+		if data.OldSpaceID != nil {
 			// For post moves, we need to calculate how many files are being moved
 			// by looking at what files exist for this post in our internal stats
-			s.handlePostMoved(data.PostID, *data.OldCategoryID, data.CategoryID)
+			s.handlePostMoved(data.PostID, *data.OldSpaceID, data.SpaceID)
 		}
 
-	case events.CategoryUpdated:
-		data := event.Data.(events.CategoryEvent)
-		// When a category is moved, we need to recalculate recursive stats
+	case events.SpaceUpdated:
+		data := event.Data.(events.SpaceEvent)
+		// When a space is moved, we need to recalculate recursive stats
 		// for the old and new parent hierarchies
 		if data.OldParentID != data.NewParentID {
-			s.handleCategoryHierarchyChange(data.CategoryID, data.OldParentID, data.NewParentID)
+			s.handleSpaceHierarchyChange(data.SpaceID, data.OldParentID, data.NewParentID)
 		}
 
-	case events.CategoryDeleted:
-		data := event.Data.(events.CategoryEvent)
-		s.handleCategoryDeleted(data.CategoryID, data.AffectedPosts, data.OldParentID)
+	case events.SpaceDeleted:
+		data := event.Data.(events.SpaceEvent)
+		s.handleSpaceDeleted(data.SpaceID, data.AffectedPosts, data.OldParentID)
 	}
 	
 	return nil
 }
 
-func (s *Service) updateStats(categoryID int, sizeDelta int64, countDelta int) {
+func (s *Service) updateStats(spaceID int, sizeDelta int64, countDelta int) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	stats, ok := s.stats[categoryID]
+	stats, ok := s.stats[spaceID]
 	if !ok {
-		stats = &CategoryStats{}
-		s.stats[categoryID] = stats
+		stats = &SpaceStats{}
+		s.stats[spaceID] = stats
 	}
 	
 	stats.mu.Lock()
@@ -190,12 +190,12 @@ func (s *Service) updateStats(categoryID int, sizeDelta int64, countDelta int) {
 	stats.mu.Unlock()
 	
 	// Update recursive stats for all parents
-	s.updateParentRecursiveStats(categoryID, sizeDelta, countDelta)
+	s.updateParentRecursiveStats(spaceID, sizeDelta, countDelta)
 }
 
-func (s *Service) updateParentRecursiveStats(categoryID int, sizeDelta int64, countDelta int) {
+func (s *Service) updateParentRecursiveStats(spaceID int, sizeDelta int64, countDelta int) {
 	// Update self
-	if stats, ok := s.stats[categoryID]; ok {
+	if stats, ok := s.stats[spaceID]; ok {
 		stats.mu.Lock()
 		stats.Recursive.TotalSize += sizeDelta
 		stats.Recursive.FileCount += int64(countDelta)
@@ -215,9 +215,9 @@ func (s *Service) updateParentRecursiveStats(categoryID int, sizeDelta int64, co
 	}
 
 	// Update ancestors by walking up the parent chain
-	current := categoryID
+	current := spaceID
 	for {
-		// Get parent of current category
+		// Get parent of current space
 		cat, ok := s.catCache.Get(current)
 		if !ok || cat.ParentID == nil {
 			break
@@ -238,7 +238,7 @@ func (s *Service) updateParentRecursiveStats(categoryID int, sizeDelta int64, co
 			stats.mu.Unlock()
 		} else {
 			// Create stats entry for parent
-			parentStats := &CategoryStats{}
+			parentStats := &SpaceStats{}
 			parentStats.Recursive.TotalSize = sizeDelta
 			parentStats.Recursive.FileCount = int64(countDelta)
 			if parentStats.Recursive.TotalSize < 0 {
@@ -254,7 +254,7 @@ func (s *Service) updateParentRecursiveStats(categoryID int, sizeDelta int64, co
 	}
 }
 
-func (s *Service) GetStats(categoryID int, recursive bool) *Stats {
+func (s *Service) GetStats(spaceID int, recursive bool) *Stats {
 	if !s.enabled {
 		return &Stats{}
 	}
@@ -262,7 +262,7 @@ func (s *Service) GetStats(categoryID int, recursive bool) *Stats {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	
-	stats, ok := s.stats[categoryID]
+	stats, ok := s.stats[spaceID]
 	if !ok {
 		return &Stats{}
 	}
@@ -295,22 +295,22 @@ func (s *Service) GetGlobalStats() *Stats {
 	return total
 }
 
-// handleCategoryHierarchyChange handles when a category is moved to a different parent
-func (s *Service) handleCategoryHierarchyChange(categoryID int, oldParentID, newParentID *int) {
+// handleSpaceHierarchyChange handles when a space is moved to a different parent
+func (s *Service) handleSpaceHierarchyChange(spaceID int, oldParentID, newParentID *int) {
 	if !s.enabled {
 		return
 	}
 
-	// Get direct stats for the moved category and all its descendants
-	descendants := s.catCache.GetDescendants(categoryID)
-	affectedCategories := append([]int{categoryID}, descendants...)
+	// Get direct stats for the moved space and all its descendants
+	descendants := s.catCache.GetDescendants(spaceID)
+	affectedSpaces := append([]int{spaceID}, descendants...)
 
 	var totalFilesImpacted int64
 	var totalSizeImpacted int64
 
-	// Calculate total impact from the moved category tree
+	// Calculate total impact from the moved space tree
 	s.mu.RLock()
-	for _, catID := range affectedCategories {
+	for _, catID := range affectedSpaces {
 		if stats, ok := s.stats[catID]; ok {
 			stats.mu.RLock()
 			totalFilesImpacted += stats.Direct.FileCount
@@ -320,31 +320,31 @@ func (s *Service) handleCategoryHierarchyChange(categoryID int, oldParentID, new
 	}
 	s.mu.RUnlock()
 
-	// Update old parent hierarchy (subtract the moved category's impact)
+	// Update old parent hierarchy (subtract the moved space's impact)
 	if oldParentID != nil {
 		s.updateParentRecursiveStatsForHierarchy(*oldParentID, -totalSizeImpacted, -int(totalFilesImpacted))
 	}
 
-	// Update new parent hierarchy (add the moved category's impact)
+	// Update new parent hierarchy (add the moved space's impact)
 	if newParentID != nil {
 		s.updateParentRecursiveStatsForHierarchy(*newParentID, totalSizeImpacted, int(totalFilesImpacted))
 	}
 
-	// Recalculate recursive stats for the moved category tree since parent relationships changed
-	for _, catID := range affectedCategories {
+	// Recalculate recursive stats for the moved space tree since parent relationships changed
+	for _, catID := range affectedSpaces {
 		s.calculateRecursiveStats(catID)
 	}
 }
 
 // updateParentRecursiveStatsForHierarchy updates recursive stats for a parent and all its ancestors
-func (s *Service) updateParentRecursiveStatsForHierarchy(startCategoryID int, sizeDelta int64, countDelta int) {
-	current := startCategoryID
+func (s *Service) updateParentRecursiveStatsForHierarchy(startSpaceID int, sizeDelta int64, countDelta int) {
+	current := startSpaceID
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	for {
-		// Update current category's recursive stats
+		// Update current space's recursive stats
 		if stats, ok := s.stats[current]; ok {
 			stats.mu.Lock()
 			stats.Recursive.TotalSize += sizeDelta
@@ -358,8 +358,8 @@ func (s *Service) updateParentRecursiveStatsForHierarchy(startCategoryID int, si
 			}
 			stats.mu.Unlock()
 		} else {
-			// Create stats entry for this category
-			newStats := &CategoryStats{}
+			// Create stats entry for this space
+			newStats := &SpaceStats{}
 			newStats.Recursive.TotalSize = sizeDelta
 			newStats.Recursive.FileCount = int64(countDelta)
 			if newStats.Recursive.TotalSize < 0 {
@@ -371,7 +371,7 @@ func (s *Service) updateParentRecursiveStatsForHierarchy(startCategoryID int, si
 			s.stats[current] = newStats
 		}
 
-		// Get parent of current category
+		// Get parent of current space
 		cat, ok := s.catCache.Get(current)
 		if !ok || cat.ParentID == nil {
 			break
@@ -382,35 +382,35 @@ func (s *Service) updateParentRecursiveStatsForHierarchy(startCategoryID int, si
 }
 
 // trackFileByPost tracks files by post ID for accurate post movement handling
-func (s *Service) trackFileByPost(categoryID, postID int, sizeDelta int64, countDelta int) {
-	if _, ok := s.postFiles[categoryID]; !ok {
-		s.postFiles[categoryID] = make(map[int]*FileInfo)
+func (s *Service) trackFileByPost(spaceID, postID int, sizeDelta int64, countDelta int) {
+	if _, ok := s.postFiles[spaceID]; !ok {
+		s.postFiles[spaceID] = make(map[int]*FileInfo)
 	}
 
-	if _, ok := s.postFiles[categoryID][postID]; !ok {
-		s.postFiles[categoryID][postID] = &FileInfo{}
+	if _, ok := s.postFiles[spaceID][postID]; !ok {
+		s.postFiles[spaceID][postID] = &FileInfo{}
 	}
 
-	fileInfo := s.postFiles[categoryID][postID]
+	fileInfo := s.postFiles[spaceID][postID]
 	fileInfo.FileCount += int64(countDelta)
 	fileInfo.TotalSize += sizeDelta
 
 	// Clean up if no files left
 	if fileInfo.FileCount <= 0 && fileInfo.TotalSize <= 0 {
-		delete(s.postFiles[categoryID], postID)
-		if len(s.postFiles[categoryID]) == 0 {
-			delete(s.postFiles, categoryID)
+		delete(s.postFiles[spaceID], postID)
+		if len(s.postFiles[spaceID]) == 0 {
+			delete(s.postFiles, spaceID)
 		}
 	}
 }
 
-// updateParentRecursiveStatsFromParent updates recursive stats starting from a specific parent category
-// This is used when we know the parent ID but the child category is already removed from cache
+// updateParentRecursiveStatsFromParent updates recursive stats starting from a specific parent space
+// This is used when we know the parent ID but the child space is already removed from cache
 func (s *Service) updateParentRecursiveStatsFromParent(startParentID int, sizeDelta int64, countDelta int) {
 	current := startParentID
 
 	for {
-		// Update current category's recursive stats
+		// Update current space's recursive stats
 		if stats, ok := s.stats[current]; ok {
 			stats.mu.Lock()
 			stats.Recursive.TotalSize += sizeDelta
@@ -424,8 +424,8 @@ func (s *Service) updateParentRecursiveStatsFromParent(startParentID int, sizeDe
 			}
 			stats.mu.Unlock()
 		} else {
-			// Create stats entry for this category
-			newStats := &CategoryStats{}
+			// Create stats entry for this space
+			newStats := &SpaceStats{}
 			newStats.Recursive.TotalSize = sizeDelta
 			newStats.Recursive.FileCount = int64(countDelta)
 			if newStats.Recursive.TotalSize < 0 {
@@ -437,7 +437,7 @@ func (s *Service) updateParentRecursiveStatsFromParent(startParentID int, sizeDe
 			s.stats[current] = newStats
 		}
 
-		// Get parent of current category
+		// Get parent of current space
 		// If catCache is nil (e.g., in tests), we can only update this one level
 		if s.catCache == nil {
 			break
@@ -452,8 +452,8 @@ func (s *Service) updateParentRecursiveStatsFromParent(startParentID int, sizeDe
 	}
 }
 
-// handleCategoryDeleted handles when a category and potentially its subcategories are deleted
-func (s *Service) handleCategoryDeleted(categoryID int, affectedPosts []int, parentID *int) {
+// handleSpaceDeleted handles when a space and potentially its subspaces are deleted
+func (s *Service) handleSpaceDeleted(spaceID int, affectedPosts []int, parentID *int) {
 	if !s.enabled {
 		return
 	}
@@ -461,54 +461,54 @@ func (s *Service) handleCategoryDeleted(categoryID int, affectedPosts []int, par
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Get the stats of the category before deletion to update parent recursive stats
-	if stats, exists := s.stats[categoryID]; exists {
-		// Get the direct stats that need to be subtracted from parent categories
+	// Get the stats of the space before deletion to update parent recursive stats
+	if stats, exists := s.stats[spaceID]; exists {
+		// Get the direct stats that need to be subtracted from parent spaces
 		stats.mu.RLock()
 		deletedFileCount := stats.Direct.FileCount
 		deletedTotalSize := stats.Direct.TotalSize
 		stats.mu.RUnlock()
 
-		// Update parent recursive stats by subtracting the deleted category's direct stats
-		// Use the parent information from the event since the category is already removed from cache
+		// Update parent recursive stats by subtracting the deleted space's direct stats
+		// Use the parent information from the event since the space is already removed from cache
 		if (deletedFileCount > 0 || deletedTotalSize > 0) && parentID != nil {
 			s.updateParentRecursiveStatsFromParent(*parentID, -deletedTotalSize, -int(deletedFileCount))
 		}
 	}
 
-	// Remove stats for the deleted category
-	delete(s.stats, categoryID)
+	// Remove stats for the deleted space
+	delete(s.stats, spaceID)
 
-	// Remove post file tracking for the deleted category
-	delete(s.postFiles, categoryID)
+	// Remove post file tracking for the deleted space
+	delete(s.postFiles, spaceID)
 
-	// Note: For subcategories, the category service sends separate CategoryDeleted events
-	// for each subcategory, so this method will be called for each one individually
+	// Note: For subspaces, the space service sends separate SpaceDeleted events
+	// for each subspace, so this method will be called for each one individually
 }
 
-// handlePostMoved handles when a post is moved between categories
-func (s *Service) handlePostMoved(postID, oldCategoryID, newCategoryID int) {
-	// Find the files for this post in the old category
+// handlePostMoved handles when a post is moved between spaces
+func (s *Service) handlePostMoved(postID, oldSpaceID, newSpaceID int) {
+	// Find the files for this post in the old space
 	var fileCount int64
 	var totalSize int64
 
 	s.mu.Lock()
-	if postFiles, ok := s.postFiles[oldCategoryID]; ok {
+	if postFiles, ok := s.postFiles[oldSpaceID]; ok {
 		if fileInfo, ok := postFiles[postID]; ok {
 			fileCount = fileInfo.FileCount
 			totalSize = fileInfo.TotalSize
 
-			// Remove from old category tracking
+			// Remove from old space tracking
 			delete(postFiles, postID)
 			if len(postFiles) == 0 {
-				delete(s.postFiles, oldCategoryID)
+				delete(s.postFiles, oldSpaceID)
 			}
 
-			// Add to new category tracking
-			if _, ok := s.postFiles[newCategoryID]; !ok {
-				s.postFiles[newCategoryID] = make(map[int]*FileInfo)
+			// Add to new space tracking
+			if _, ok := s.postFiles[newSpaceID]; !ok {
+				s.postFiles[newSpaceID] = make(map[int]*FileInfo)
 			}
-			s.postFiles[newCategoryID][postID] = &FileInfo{
+			s.postFiles[newSpaceID][postID] = &FileInfo{
 				FileCount: fileCount,
 				TotalSize: totalSize,
 			}
@@ -518,7 +518,7 @@ func (s *Service) handlePostMoved(postID, oldCategoryID, newCategoryID int) {
 
 	// Update stats if there were files to move
 	if fileCount > 0 || totalSize > 0 {
-		s.updateStats(oldCategoryID, -totalSize, -int(fileCount))
-		s.updateStats(newCategoryID, totalSize, int(fileCount))
+		s.updateStats(oldSpaceID, -totalSize, -int(fileCount))
+		s.updateStats(newSpaceID, totalSize, int(fileCount))
 	}
 }

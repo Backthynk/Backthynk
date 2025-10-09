@@ -15,11 +15,11 @@ import (
 )
 
 type eventTestSetup struct {
-	categoryService *services.CategoryService
+	spaceService *services.SpaceService
 	postService     *services.PostService
 	fileService     *services.FileService
 	db              *storage.DB
-	cache           *cache.CategoryCache
+	cache           *cache.SpaceCache
 	dispatcher      *events.Dispatcher
 	tempDir         string
 }
@@ -51,26 +51,26 @@ func setupEventTest() (*eventTestSetup, error) {
 	}
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup services
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		os.RemoveAll(tempDir)
 		return nil, err
 	}
 
 	return &eventTestSetup{
-		categoryService: categoryService,
+		spaceService: spaceService,
 		postService:     postService,
 		fileService:     fileService,
 		db:              db,
-		cache:           categoryCache,
+		cache:           spaceCache,
 		dispatcher:      dispatcher,
 		tempDir:         tempDir,
 	}, nil
@@ -112,7 +112,7 @@ func TestEventDispatcher_ConcurrentSubscribeAndDispatch(t *testing.T) {
 				return nil
 			}
 
-			setup.dispatcher.Subscribe(events.CategoryCreated, handler)
+			setup.dispatcher.Subscribe(events.SpaceCreated, handler)
 			atomic.AddInt64(&subscriptionsAdded, 1)
 		}(i)
 	}
@@ -126,8 +126,8 @@ func TestEventDispatcher_ConcurrentSubscribeAndDispatch(t *testing.T) {
 
 			for j := 0; j < 10; j++ {
 				event := events.Event{
-					Type: events.CategoryCreated,
-					Data: events.CategoryEvent{CategoryID: dispatcherID*10 + j},
+					Type: events.SpaceCreated,
+					Data: events.SpaceEvent{SpaceID: dispatcherID*10 + j},
 				}
 				setup.dispatcher.Dispatch(event)
 			}
@@ -158,7 +158,7 @@ func TestEventDispatcher_HandlerErrors(t *testing.T) {
 
 	// Add handlers that succeed
 	for i := 0; i < 5; i++ {
-		setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+		setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 			atomic.AddInt64(&successfulHandlers, 1)
 			return nil
 		})
@@ -166,7 +166,7 @@ func TestEventDispatcher_HandlerErrors(t *testing.T) {
 
 	// Add handlers that fail
 	for i := 0; i < 3; i++ {
-		setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+		setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 			atomic.AddInt64(&failedHandlers, 1)
 			return fmt.Errorf("simulated handler error")
 		})
@@ -174,8 +174,8 @@ func TestEventDispatcher_HandlerErrors(t *testing.T) {
 
 	// Dispatch an event
 	event := events.Event{
-		Type: events.CategoryCreated,
-		Data: events.CategoryEvent{CategoryID: 1},
+		Type: events.SpaceCreated,
+		Data: events.SpaceEvent{SpaceID: 1},
 	}
 	setup.dispatcher.Dispatch(event)
 
@@ -196,20 +196,20 @@ func TestEventDispatcher_ProductionLikeScenario(t *testing.T) {
 	defer setup.cleanup()
 
 	// This test simulates production usage patterns
-	var categoryCreatedEvents int64
-	var categoryUpdatedEvents int64
+	var spaceCreatedEvents int64
+	var spaceUpdatedEvents int64
 	var postCreatedEvents int64
 
 	// Subscribe to different event types (like production would)
-	setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
-		atomic.AddInt64(&categoryCreatedEvents, 1)
+	setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
+		atomic.AddInt64(&spaceCreatedEvents, 1)
 		// Simulate some processing time
 		time.Sleep(time.Millisecond)
 		return nil
 	})
 
-	setup.dispatcher.Subscribe(events.CategoryUpdated, func(event events.Event) error {
-		atomic.AddInt64(&categoryUpdatedEvents, 1)
+	setup.dispatcher.Subscribe(events.SpaceUpdated, func(event events.Event) error {
+		atomic.AddInt64(&spaceUpdatedEvents, 1)
 		return nil
 	})
 
@@ -219,17 +219,17 @@ func TestEventDispatcher_ProductionLikeScenario(t *testing.T) {
 	})
 
 	// Perform actual operations that should trigger events
-	category, err := setup.categoryService.Create("Test Category", nil, "Test description")
+	space, err := setup.spaceService.Create("Test Space", nil, "Test description")
 	if err != nil {
-		t.Fatalf("Failed to create category: %v", err)
+		t.Fatalf("Failed to create space: %v", err)
 	}
 
-	_, err = setup.categoryService.Update(category.ID, "Updated Category", "Updated description", nil)
+	_, err = setup.spaceService.Update(space.ID, "Updated Space", "Updated description", nil)
 	if err != nil {
-		t.Fatalf("Failed to update category: %v", err)
+		t.Fatalf("Failed to update space: %v", err)
 	}
 
-	_, err = setup.postService.Create(category.ID, "Test post content", nil)
+	_, err = setup.postService.Create(space.ID, "Test post content", nil)
 	if err != nil {
 		t.Fatalf("Failed to create post: %v", err)
 	}
@@ -238,11 +238,11 @@ func TestEventDispatcher_ProductionLikeScenario(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Verify events were dispatched
-	if atomic.LoadInt64(&categoryCreatedEvents) != 1 {
-		t.Errorf("Expected 1 category created event, got %d", categoryCreatedEvents)
+	if atomic.LoadInt64(&spaceCreatedEvents) != 1 {
+		t.Errorf("Expected 1 space created event, got %d", spaceCreatedEvents)
 	}
-	if atomic.LoadInt64(&categoryUpdatedEvents) != 1 {
-		t.Errorf("Expected 1 category updated event, got %d", categoryUpdatedEvents)
+	if atomic.LoadInt64(&spaceUpdatedEvents) != 1 {
+		t.Errorf("Expected 1 space updated event, got %d", spaceUpdatedEvents)
 	}
 	if atomic.LoadInt64(&postCreatedEvents) != 1 {
 		t.Errorf("Expected 1 post created event, got %d", postCreatedEvents)
@@ -260,9 +260,9 @@ func TestEventDispatcher_ConcurrentOperationsWithSubscriptions(t *testing.T) {
 
 	// Subscribe to all event types
 	eventTypes := []events.EventType{
-		events.CategoryCreated,
-		events.CategoryUpdated,
-		events.CategoryDeleted,
+		events.SpaceCreated,
+		events.SpaceUpdated,
+		events.SpaceDeleted,
 		events.PostCreated,
 		events.PostMoved,
 		events.PostDeleted,
@@ -286,24 +286,24 @@ func TestEventDispatcher_ConcurrentOperationsWithSubscriptions(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 
-			// Create a category
-			category, err := setup.categoryService.Create(fmt.Sprintf("Category %d", i), nil, fmt.Sprintf("Description %d", i))
+			// Create a space
+			space, err := setup.spaceService.Create(fmt.Sprintf("Space %d", i), nil, fmt.Sprintf("Description %d", i))
 			if err != nil {
-				t.Errorf("Failed to create category %d: %v", i, err)
+				t.Errorf("Failed to create space %d: %v", i, err)
 				return
 			}
 
 			// Create a post
-			post, err := setup.postService.Create(category.ID, fmt.Sprintf("Post content %d", i), nil)
+			post, err := setup.postService.Create(space.ID, fmt.Sprintf("Post content %d", i), nil)
 			if err != nil {
 				t.Errorf("Failed to create post %d: %v", i, err)
 				return
 			}
 
-			// Update the category
-			_, err = setup.categoryService.Update(category.ID, fmt.Sprintf("Updated Category %d", i), fmt.Sprintf("Updated Description %d", i), nil)
+			// Update the space
+			_, err = setup.spaceService.Update(space.ID, fmt.Sprintf("Updated Space %d", i), fmt.Sprintf("Updated Description %d", i), nil)
 			if err != nil {
-				t.Errorf("Failed to update category %d: %v", i, err)
+				t.Errorf("Failed to update space %d: %v", i, err)
 				return
 			}
 
@@ -314,10 +314,10 @@ func TestEventDispatcher_ConcurrentOperationsWithSubscriptions(t *testing.T) {
 				return
 			}
 
-			// Delete the category
-			err = setup.categoryService.Delete(category.ID)
+			// Delete the space
+			err = setup.spaceService.Delete(space.ID)
 			if err != nil {
-				t.Errorf("Failed to delete category %d: %v", i, err)
+				t.Errorf("Failed to delete space %d: %v", i, err)
 				return
 			}
 		}(i)
@@ -328,7 +328,7 @@ func TestEventDispatcher_ConcurrentOperationsWithSubscriptions(t *testing.T) {
 	// Give events time to be processed
 	time.Sleep(500 * time.Millisecond)
 
-	// Each goroutine should generate: 1 CategoryCreated + 1 PostCreated + 1 CategoryUpdated + 1 PostDeleted + 1 CategoryDeleted = 5 events
+	// Each goroutine should generate: 1 SpaceCreated + 1 PostCreated + 1 SpaceUpdated + 1 PostDeleted + 1 SpaceDeleted = 5 events
 	expectedEvents := int64(numGoroutines * 5)
 	actualEvents := atomic.LoadInt64(&totalEvents)
 
@@ -348,7 +348,7 @@ func TestEventDispatcher_AggressiveRaceConditionTest(t *testing.T) {
 
 	// This test tries very hard to trigger race conditions
 	var eventsReceived int64
-	eventType := events.CategoryCreated
+	eventType := events.SpaceCreated
 
 	wg := sync.WaitGroup{}
 
@@ -379,7 +379,7 @@ func TestEventDispatcher_AggressiveRaceConditionTest(t *testing.T) {
 			for j := 0; j < 20; j++ {
 				event := events.Event{
 					Type: eventType,
-					Data: events.CategoryEvent{CategoryID: id*20 + j},
+					Data: events.SpaceEvent{SpaceID: id*20 + j},
 				}
 				setup.dispatcher.Dispatch(event)
 				// Yield to increase chance of race
@@ -402,7 +402,7 @@ func TestEventDispatcher_SliceReallocRace(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	eventType := events.CategoryCreated
+	eventType := events.SpaceCreated
 
 	// Start a goroutine that keeps dispatching events
 	stopDispatch := make(chan bool)
@@ -414,7 +414,7 @@ func TestEventDispatcher_SliceReallocRace(t *testing.T) {
 			default:
 				event := events.Event{
 					Type: eventType,
-					Data: events.CategoryEvent{CategoryID: 1},
+					Data: events.SpaceEvent{SpaceID: 1},
 				}
 				setup.dispatcher.Dispatch(event)
 			}
@@ -453,7 +453,7 @@ func TestEventDispatcher_SlowHandlers(t *testing.T) {
 	var handlerCompleted int64
 
 	// Add a slow handler
-	setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		atomic.AddInt64(&handlerStarted, 1)
 		time.Sleep(100 * time.Millisecond) // Simulate slow processing
 		atomic.AddInt64(&handlerCompleted, 1)
@@ -461,7 +461,7 @@ func TestEventDispatcher_SlowHandlers(t *testing.T) {
 	})
 
 	// Add a fast handler
-	setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		atomic.AddInt64(&handlerCompleted, 1)
 		return nil
 	})
@@ -471,8 +471,8 @@ func TestEventDispatcher_SlowHandlers(t *testing.T) {
 	// Dispatch multiple events
 	for i := 0; i < 5; i++ {
 		event := events.Event{
-			Type: events.CategoryCreated,
-			Data: events.CategoryEvent{CategoryID: i},
+			Type: events.SpaceCreated,
+			Data: events.SpaceEvent{SpaceID: i},
 		}
 		setup.dispatcher.Dispatch(event)
 	}
@@ -505,12 +505,12 @@ func TestEventDispatcher_HandlerPanic(t *testing.T) {
 	var safeHandlerCalled int64
 
 	// Add a handler that panics
-	setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		panic("handler panic!")
 	})
 
 	// Add a safe handler
-	setup.dispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	setup.dispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		atomic.AddInt64(&safeHandlerCalled, 1)
 		return nil
 	})
@@ -523,8 +523,8 @@ func TestEventDispatcher_HandlerPanic(t *testing.T) {
 	}()
 
 	event := events.Event{
-		Type: events.CategoryCreated,
-		Data: events.CategoryEvent{CategoryID: 1},
+		Type: events.SpaceCreated,
+		Data: events.SpaceEvent{SpaceID: 1},
 	}
 
 	setup.dispatcher.Dispatch(event)
@@ -543,7 +543,7 @@ func TestEventDispatcher_MemoryLeakWithManySubscriptions(t *testing.T) {
 	defer setup.cleanup()
 
 	// This test checks if continuously adding and never removing handlers causes issues
-	eventType := events.CategoryCreated
+	eventType := events.SpaceCreated
 
 	// Add many handlers
 	numHandlers := 10000
@@ -557,7 +557,7 @@ func TestEventDispatcher_MemoryLeakWithManySubscriptions(t *testing.T) {
 	// Dispatch an event to all handlers
 	event := events.Event{
 		Type: eventType,
-		Data: events.CategoryEvent{CategoryID: 1},
+		Data: events.SpaceEvent{SpaceID: 1},
 	}
 
 	start := time.Now()
@@ -586,7 +586,7 @@ func TestAsyncEventDispatcher_NonBlocking(t *testing.T) {
 	var handlerCompleted int64
 
 	// Add a slow handler
-	asyncDispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	asyncDispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		atomic.AddInt64(&handlerStarted, 1)
 		time.Sleep(200 * time.Millisecond) // Simulate slow processing
 		atomic.AddInt64(&handlerCompleted, 1)
@@ -598,8 +598,8 @@ func TestAsyncEventDispatcher_NonBlocking(t *testing.T) {
 	// Dispatch multiple events
 	for i := 0; i < 5; i++ {
 		event := events.Event{
-			Type: events.CategoryCreated,
-			Data: events.CategoryEvent{CategoryID: i},
+			Type: events.SpaceCreated,
+			Data: events.SpaceEvent{SpaceID: i},
 		}
 		asyncDispatcher.Dispatch(event)
 	}
@@ -635,20 +635,20 @@ func TestAsyncEventDispatcher_PanicHandling(t *testing.T) {
 	var safeHandlerCalled int64
 
 	// Add a handler that panics
-	asyncDispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	asyncDispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		panic("async handler panic!")
 	})
 
 	// Add a safe handler
-	asyncDispatcher.Subscribe(events.CategoryCreated, func(event events.Event) error {
+	asyncDispatcher.Subscribe(events.SpaceCreated, func(event events.Event) error {
 		time.Sleep(10 * time.Millisecond) // Small delay to ensure execution
 		atomic.AddInt64(&safeHandlerCalled, 1)
 		return nil
 	})
 
 	event := events.Event{
-		Type: events.CategoryCreated,
-		Data: events.CategoryEvent{CategoryID: 1},
+		Type: events.SpaceCreated,
+		Data: events.SpaceEvent{SpaceID: 1},
 	}
 
 	// This should not crash due to panic in async handler

@@ -10,12 +10,12 @@ import (
 
 func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 	// Setup cache with hierarchy: Parent -> Child -> Grandchild
-	catCache := cache.NewCategoryCache()
+	catCache := cache.NewSpaceCache()
 
-	parent := &models.Category{ID: 1, Name: "Parent", ParentID: nil}
-	child := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
-	grandchild := &models.Category{ID: 3, Name: "Grandchild", ParentID: &[]int{2}[0]}
-	anotherParent := &models.Category{ID: 4, Name: "AnotherParent", ParentID: nil}
+	parent := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+	child := &models.Space{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
+	grandchild := &models.Space{ID: 3, Name: "Grandchild", ParentID: &[]int{2}[0]}
+	anotherParent := &models.Space{ID: 4, Name: "AnotherParent", ParentID: nil}
 
 	catCache.Set(parent)
 	catCache.Set(child)
@@ -24,21 +24,21 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 		catCache: catCache,
 	}
 
 	now := time.Now().Unix() * 1000
 
 	// Test Case 1: Move post from grandchild to anotherParent
-	// This should update recursive activity for parent and child categories
+	// This should update recursive activity for parent and child spaces
 	t.Run("MoveFromGrandchildToAnotherParent", func(t *testing.T) {
 		// Create initial post in grandchild using PostCreated event
 		err := service.HandleEvent(events.Event{
 			Type: events.PostCreated,
 			Data: events.PostEvent{
 				PostID:     1,
-				CategoryID: grandchild.ID,
+				SpaceID: grandchild.ID,
 				Timestamp:  now,
 			},
 		})
@@ -54,7 +54,7 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 		service.mu.RUnlock()
 
 		if !parentExists || !childExists || !grandchildExists {
-			t.Fatal("Expected activities to be created for all categories in hierarchy")
+			t.Fatal("Expected activities to be created for all spaces in hierarchy")
 		}
 
 		// Check initial state - all ancestors should have recursive activity
@@ -77,13 +77,13 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 		grandchildActivity.mu.RUnlock()
 
 		// Simulate post move: from grandchild to anotherParent
-		oldCategoryID := grandchild.ID
+		oldSpaceID := grandchild.ID
 		err = service.HandleEvent(events.Event{
 			Type: events.PostMoved,
 			Data: events.PostEvent{
 				PostID:        1,
-				CategoryID:    anotherParent.ID,
-				OldCategoryID: &oldCategoryID,
+				SpaceID:    anotherParent.ID,
+				OldSpaceID: &oldSpaceID,
 				Timestamp:     now,
 			},
 		})
@@ -111,7 +111,7 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 		}
 		grandchildActivity.mu.RUnlock()
 
-		// Verify activity was added to the new category
+		// Verify activity was added to the new space
 		service.mu.RLock()
 		anotherParentActivity, exists := service.activity[anotherParent.ID]
 		service.mu.RUnlock()
@@ -133,7 +133,7 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 	// Test Case 2: Move post within hierarchy (child to parent)
 	t.Run("MoveWithinHierarchy", func(t *testing.T) {
 		// Reset service
-		service.activity = make(map[int]*CategoryActivity)
+		service.activity = make(map[int]*SpaceActivity)
 
 		tomorrow := now + 86400000 // Next day
 
@@ -142,7 +142,7 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 			Type: events.PostCreated,
 			Data: events.PostEvent{
 				PostID:     2,
-				CategoryID: child.ID,
+				SpaceID: child.ID,
 				Timestamp:  tomorrow,
 			},
 		})
@@ -172,13 +172,13 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 		}
 
 		// Move post from child to parent
-		oldCategoryID := child.ID
+		oldSpaceID := child.ID
 		err = service.HandleEvent(events.Event{
 			Type: events.PostMoved,
 			Data: events.PostEvent{
 				PostID:        2,
-				CategoryID:    parent.ID,
-				OldCategoryID: &oldCategoryID,
+				SpaceID:    parent.ID,
+				OldSpaceID: &oldSpaceID,
 				Timestamp:     tomorrow,
 			},
 		})
@@ -211,24 +211,24 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 	// Test Case 3: Multiple posts and complex moves
 	t.Run("MultiplePostsComplexMoves", func(t *testing.T) {
 		// Reset service
-		service.activity = make(map[int]*CategoryActivity)
+		service.activity = make(map[int]*SpaceActivity)
 
 		dayAfterTomorrow := now + 2*86400000
 
-		// Create multiple posts in different categories using events
+		// Create multiple posts in different spaces using events
 		// 2 posts in grandchild
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{PostID: 3, CategoryID: grandchild.ID, Timestamp: dayAfterTomorrow},
+			Data: events.PostEvent{PostID: 3, SpaceID: grandchild.ID, Timestamp: dayAfterTomorrow},
 		})
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{PostID: 4, CategoryID: grandchild.ID, Timestamp: dayAfterTomorrow},
+			Data: events.PostEvent{PostID: 4, SpaceID: grandchild.ID, Timestamp: dayAfterTomorrow},
 		})
 		// 1 post in child
 		service.HandleEvent(events.Event{
 			Type: events.PostCreated,
-			Data: events.PostEvent{PostID: 5, CategoryID: child.ID, Timestamp: dayAfterTomorrow},
+			Data: events.PostEvent{PostID: 5, SpaceID: child.ID, Timestamp: dayAfterTomorrow},
 		})
 
 		// Verify initial recursive counts
@@ -243,13 +243,13 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 		parentActivity.mu.RUnlock()
 
 		// Move 1 post from grandchild to anotherParent
-		oldCategoryID := grandchild.ID
+		oldSpaceID := grandchild.ID
 		err := service.HandleEvent(events.Event{
 			Type: events.PostMoved,
 			Data: events.PostEvent{
 				PostID:        3,
-				CategoryID:    anotherParent.ID,
-				OldCategoryID: &oldCategoryID,
+				SpaceID:    anotherParent.ID,
+				OldSpaceID: &oldSpaceID,
 				Timestamp:     dayAfterTomorrow,
 			},
 		})
@@ -291,11 +291,11 @@ func TestPostMoveRecursiveParentActivityUpdate(t *testing.T) {
 
 func TestPostMoveRecursiveActivityDayTracking(t *testing.T) {
 	// Test that daily activity tracking works correctly with post moves
-	catCache := cache.NewCategoryCache()
+	catCache := cache.NewSpaceCache()
 
-	parent := &models.Category{ID: 1, Name: "Parent", ParentID: nil}
-	child := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
-	other := &models.Category{ID: 3, Name: "Other", ParentID: nil}
+	parent := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+	child := &models.Space{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
+	other := &models.Space{ID: 3, Name: "Other", ParentID: nil}
 
 	catCache.Set(parent)
 	catCache.Set(child)
@@ -303,7 +303,7 @@ func TestPostMoveRecursiveActivityDayTracking(t *testing.T) {
 
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 		catCache: catCache,
 	}
 
@@ -314,11 +314,11 @@ func TestPostMoveRecursiveActivityDayTracking(t *testing.T) {
 	// Create posts on different days using events
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{PostID: 6, CategoryID: child.ID, Timestamp: day1},
+		Data: events.PostEvent{PostID: 6, SpaceID: child.ID, Timestamp: day1},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{PostID: 7, CategoryID: child.ID, Timestamp: day2},
+		Data: events.PostEvent{PostID: 7, SpaceID: child.ID, Timestamp: day2},
 	})
 
 	// Verify parent has recursive activity on both days
@@ -341,14 +341,14 @@ func TestPostMoveRecursiveActivityDayTracking(t *testing.T) {
 	}
 	parentActivity.mu.RUnlock()
 
-	// Move day 1 post to other category
-	oldCategoryID := child.ID
+	// Move day 1 post to other space
+	oldSpaceID := child.ID
 	err := service.HandleEvent(events.Event{
 		Type: events.PostMoved,
 		Data: events.PostEvent{
 			PostID:        1,
-			CategoryID:    other.ID,
-			OldCategoryID: &oldCategoryID,
+			SpaceID:    other.ID,
+			OldSpaceID: &oldSpaceID,
 			Timestamp:     day1,
 		},
 	})
@@ -370,7 +370,7 @@ func TestPostMoveRecursiveActivityDayTracking(t *testing.T) {
 	}
 	parentActivity.mu.RUnlock()
 
-	// Verify other category got day 1 activity
+	// Verify other space got day 1 activity
 	service.mu.RLock()
 	otherActivity := service.activity[other.ID]
 	service.mu.RUnlock()

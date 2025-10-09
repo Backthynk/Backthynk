@@ -20,15 +20,15 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type categoryTestSetup struct {
-	handler     *CategoryHandler
-	service     *services.CategoryService
+type spaceTestSetup struct {
+	handler     *SpaceHandler
+	service     *services.SpaceService
 	db          *storage.DB
-	cache       *cache.CategoryCache
+	cache       *cache.SpaceCache
 	dispatcher  *events.Dispatcher
 }
 
-func setupCategoryTest() (*categoryTestSetup, error) {
+func setupSpaceTest() (*spaceTestSetup, error) {
 	// Create a temporary directory for the test
 	tempDir := "/tmp/backthynk_test_" + fmt.Sprintf("%d", os.Getpid())
 	if err := os.MkdirAll(tempDir, 0755); err != nil {
@@ -67,30 +67,30 @@ func setupCategoryTest() (*categoryTestSetup, error) {
 	}
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup service
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		return nil, err
 	}
 
 	// Setup handler
-	handler := NewCategoryHandler(categoryService)
+	handler := NewSpaceHandler(spaceService)
 
-	return &categoryTestSetup{
+	return &spaceTestSetup{
 		handler:    handler,
-		service:    categoryService,
+		service:    spaceService,
 		db:         db,
-		cache:      categoryCache,
+		cache:      spaceCache,
 		dispatcher: dispatcher,
 	}, nil
 }
 
-func (setup *categoryTestSetup) cleanup() {
+func (setup *spaceTestSetup) cleanup() {
 	if setup.db != nil {
 		setup.db.Close()
 	}
@@ -99,34 +99,34 @@ func (setup *categoryTestSetup) cleanup() {
 	os.RemoveAll(tempDir)
 }
 
-func TestCategoryHandler_GetCategories(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_GetSpaces(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create test categories
-	cat1, _ := setup.service.Create("Category 1", nil, "Description 1")
-	setup.service.Create("Category 2", nil, "Description 2")
-	setup.service.Create("Subcategory", &cat1.ID, "Subcategory desc")
+	// Create test spaces
+	cat1, _ := setup.service.Create("Space 1", nil, "Description 1")
+	setup.service.Create("Space 2", nil, "Description 2")
+	setup.service.Create("Subspace", &cat1.ID, "Subspace desc")
 
-	req := httptest.NewRequest("GET", "/api/categories", nil)
+	req := httptest.NewRequest("GET", "/api/spaces", nil)
 	w := httptest.NewRecorder()
 
-	setup.handler.GetCategories(w, req)
+	setup.handler.GetSpaces(w, req)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
 	}
 
-	var categories []*models.Category
-	if err := json.Unmarshal(w.Body.Bytes(), &categories); err != nil {
+	var spaces []*models.Space
+	if err := json.Unmarshal(w.Body.Bytes(), &spaces); err != nil {
 		t.Fatalf("Failed to unmarshal response: %v", err)
 	}
 
-	if len(categories) != 3 {
-		t.Errorf("Expected 3 categories, got %d", len(categories))
+	if len(spaces) != 3 {
+		t.Errorf("Expected 3 spaces, got %d", len(spaces))
 	}
 
 	// Verify content-type
@@ -134,57 +134,57 @@ func TestCategoryHandler_GetCategories(t *testing.T) {
 		t.Errorf("Expected application/json content type")
 	}
 
-	// Verify categories are returned with proper structure
+	// Verify spaces are returned with proper structure
 	foundNames := make(map[string]bool)
-	for _, cat := range categories {
+	for _, cat := range spaces {
 		foundNames[cat.Name] = true
-		if cat.Name == "Category 1" && cat.ParentID != nil {
-			t.Errorf("Category 1 should have nil parent")
+		if cat.Name == "Space 1" && cat.ParentID != nil {
+			t.Errorf("Space 1 should have nil parent")
 		}
-		if cat.Name == "Subcategory" && (cat.ParentID == nil || *cat.ParentID != cat1.ID) {
-			t.Errorf("Subcategory should have Category 1 as parent")
+		if cat.Name == "Subspace" && (cat.ParentID == nil || *cat.ParentID != cat1.ID) {
+			t.Errorf("Subspace should have Space 1 as parent")
 		}
 	}
 
-	expectedNames := []string{"Category 1", "Category 2", "Subcategory"}
+	expectedNames := []string{"Space 1", "Space 2", "Subspace"}
 	for _, name := range expectedNames {
 		if !foundNames[name] {
-			t.Errorf("Expected to find category: %s", name)
+			t.Errorf("Expected to find space: %s", name)
 		}
 	}
 }
 
-func TestCategoryHandler_GetCategory(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_GetSpace(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create test category
-	cat, _ := setup.service.Create("Test Category", nil, "Test Description")
+	// Create test space
+	cat, _ := setup.service.Create("Test Space", nil, "Test Description")
 
 	tests := []struct {
 		name           string
-		categoryID     string
+		spaceID     string
 		expectedStatus int
 		expectError    bool
 	}{
 		{
-			name:           "Valid category ID",
-			categoryID:     strconv.Itoa(cat.ID),
+			name:           "Valid space ID",
+			spaceID:     strconv.Itoa(cat.ID),
 			expectedStatus: http.StatusOK,
 			expectError:    false,
 		},
 		{
-			name:           "Invalid category ID format",
-			categoryID:     "invalid",
+			name:           "Invalid space ID format",
+			spaceID:     "invalid",
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{
-			name:           "Non-existent category ID",
-			categoryID:     "999",
+			name:           "Non-existent space ID",
+			spaceID:     "999",
 			expectedStatus: http.StatusNotFound,
 			expectError:    true,
 		},
@@ -192,43 +192,43 @@ func TestCategoryHandler_GetCategory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/api/categories/"+tt.categoryID, nil)
+			req := httptest.NewRequest("GET", "/api/spaces/"+tt.spaceID, nil)
 			w := httptest.NewRecorder()
 
 			// Setup mux vars
-			req = mux.SetURLVars(req, map[string]string{"id": tt.categoryID})
+			req = mux.SetURLVars(req, map[string]string{"id": tt.spaceID})
 
-			setup.handler.GetCategory(w, req)
+			setup.handler.GetSpace(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 
 			if !tt.expectError {
-				var returnedCat models.Category
+				var returnedCat models.Space
 				if err := json.Unmarshal(w.Body.Bytes(), &returnedCat); err != nil {
 					t.Fatalf("Failed to unmarshal response: %v", err)
 				}
 
 				if returnedCat.ID != cat.ID {
-					t.Errorf("Expected category ID %d, got %d", cat.ID, returnedCat.ID)
+					t.Errorf("Expected space ID %d, got %d", cat.ID, returnedCat.ID)
 				}
 				if returnedCat.Name != cat.Name {
-					t.Errorf("Expected category name %s, got %s", cat.Name, returnedCat.Name)
+					t.Errorf("Expected space name %s, got %s", cat.Name, returnedCat.Name)
 				}
 			}
 		})
 	}
 }
 
-func TestCategoryHandler_GetCategoriesByParent(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_GetSpacesByParent(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create test categories
+	// Create test spaces
 	parent1, _ := setup.service.Create("Parent 1", nil, "Parent 1 desc")
 	parent2, _ := setup.service.Create("Parent 2", nil, "Parent 2 desc")
 	setup.service.Create("Child 1", &parent1.ID, "Child 1 desc")
@@ -243,7 +243,7 @@ func TestCategoryHandler_GetCategoriesByParent(t *testing.T) {
 		expectError    bool
 	}{
 		{
-			name:           "Get root categories (no parent_id)",
+			name:           "Get root spaces (no parent_id)",
 			parentID:       "",
 			expectedCount:  2, // parent1 and parent2
 			expectedStatus: http.StatusOK,
@@ -281,7 +281,7 @@ func TestCategoryHandler_GetCategoriesByParent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			url := "/api/categories/by-parent"
+			url := "/api/spaces/by-parent"
 			if tt.parentID != "" {
 				url += "?parent_id=" + tt.parentID
 			}
@@ -289,35 +289,35 @@ func TestCategoryHandler_GetCategoriesByParent(t *testing.T) {
 			req := httptest.NewRequest("GET", url, nil)
 			w := httptest.NewRecorder()
 
-			setup.handler.GetCategoriesByParent(w, req)
+			setup.handler.GetSpacesByParent(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 
 			if !tt.expectError {
-				var categories []*models.Category
-				if err := json.Unmarshal(w.Body.Bytes(), &categories); err != nil {
+				var spaces []*models.Space
+				if err := json.Unmarshal(w.Body.Bytes(), &spaces); err != nil {
 					t.Fatalf("Failed to unmarshal response: %v", err)
 				}
 
-				if len(categories) != tt.expectedCount {
-					t.Errorf("Expected %d categories, got %d", tt.expectedCount, len(categories))
+				if len(spaces) != tt.expectedCount {
+					t.Errorf("Expected %d spaces, got %d", tt.expectedCount, len(spaces))
 				}
 			}
 		})
 	}
 }
 
-func TestCategoryHandler_CreateCategory(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_CreateSpace(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create a parent category for testing
-	parent, _ := setup.service.Create("Parent Category", nil, "Parent desc")
+	// Create a parent space for testing
+	parent, _ := setup.service.Create("Parent Space", nil, "Parent desc")
 
 	tests := []struct {
 		name           string
@@ -326,18 +326,18 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 		expectError    bool
 	}{
 		{
-			name: "Valid category creation",
+			name: "Valid space creation",
 			requestBody: map[string]interface{}{
-				"name":        "Test Category",
+				"name":        "Test Space",
 				"description": "Test Description",
 			},
 			expectedStatus: http.StatusCreated,
 			expectError:    false,
 		},
 		{
-			name: "Valid category with parent",
+			name: "Valid space with parent",
 			requestBody: map[string]interface{}{
-				"name":        "Child Category",
+				"name":        "Child Space",
 				"description": "Child Description",
 				"parent_id":   parent.ID,
 			},
@@ -378,18 +378,18 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 				body, _ = json.Marshal(tt.requestBody)
 			}
 
-			req := httptest.NewRequest("POST", "/api/categories", bytes.NewBuffer(body))
+			req := httptest.NewRequest("POST", "/api/spaces", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			setup.handler.CreateCategory(w, req)
+			setup.handler.CreateSpace(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 
 			if !tt.expectError && w.Code == http.StatusCreated {
-				var createdCat models.Category
+				var createdCat models.Space
 				if err := json.Unmarshal(w.Body.Bytes(), &createdCat); err != nil {
 					t.Fatalf("Failed to unmarshal response: %v", err)
 				}
@@ -404,36 +404,36 @@ func TestCategoryHandler_CreateCategory(t *testing.T) {
 				}
 
 				if createdCat.ID == 0 {
-					t.Error("Expected non-zero ID for created category")
+					t.Error("Expected non-zero ID for created space")
 				}
 			}
 		})
 	}
 }
 
-func TestCategoryHandler_UpdateCategory(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_UpdateSpace(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create test categories
-	cat, _ := setup.service.Create("Original Category", nil, "Original desc")
-	parent, _ := setup.service.Create("Parent Category", nil, "Parent desc")
+	// Create test spaces
+	cat, _ := setup.service.Create("Original Space", nil, "Original desc")
+	parent, _ := setup.service.Create("Parent Space", nil, "Parent desc")
 
 	tests := []struct {
 		name           string
-		categoryID     string
+		spaceID     string
 		requestBody    interface{}
 		expectedStatus int
 		expectError    bool
 	}{
 		{
 			name:       "Valid update",
-			categoryID: strconv.Itoa(cat.ID),
+			spaceID: strconv.Itoa(cat.ID),
 			requestBody: map[string]interface{}{
-				"name":        "Updated Category",
+				"name":        "Updated Space",
 				"description": "Updated Description",
 			},
 			expectedStatus: http.StatusOK,
@@ -441,7 +441,7 @@ func TestCategoryHandler_UpdateCategory(t *testing.T) {
 		},
 		{
 			name:       "Update with parent",
-			categoryID: strconv.Itoa(cat.ID),
+			spaceID: strconv.Itoa(cat.ID),
 			requestBody: map[string]interface{}{
 				"name":        "Updated with Parent",
 				"description": "Updated Description",
@@ -451,20 +451,20 @@ func TestCategoryHandler_UpdateCategory(t *testing.T) {
 			expectError:    false,
 		},
 		{
-			name:       "Invalid category ID",
-			categoryID: "invalid",
+			name:       "Invalid space ID",
+			spaceID: "invalid",
 			requestBody: map[string]interface{}{
-				"name":        "Updated Category",
+				"name":        "Updated Space",
 				"description": "Updated Description",
 			},
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{
-			name:       "Non-existent category",
-			categoryID: "999",
+			name:       "Non-existent space",
+			spaceID: "999",
 			requestBody: map[string]interface{}{
-				"name":        "Updated Category",
+				"name":        "Updated Space",
 				"description": "Updated Description",
 			},
 			expectedStatus: http.StatusBadRequest,
@@ -472,7 +472,7 @@ func TestCategoryHandler_UpdateCategory(t *testing.T) {
 		},
 		{
 			name:       "Empty name",
-			categoryID: strconv.Itoa(cat.ID),
+			spaceID: strconv.Itoa(cat.ID),
 			requestBody: map[string]interface{}{
 				"name":        "",
 				"description": "Updated Description",
@@ -491,19 +491,19 @@ func TestCategoryHandler_UpdateCategory(t *testing.T) {
 				body, _ = json.Marshal(tt.requestBody)
 			}
 
-			req := httptest.NewRequest("PUT", "/api/categories/"+tt.categoryID, bytes.NewBuffer(body))
+			req := httptest.NewRequest("PUT", "/api/spaces/"+tt.spaceID, bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
-			req = mux.SetURLVars(req, map[string]string{"id": tt.categoryID})
+			req = mux.SetURLVars(req, map[string]string{"id": tt.spaceID})
 			w := httptest.NewRecorder()
 
-			setup.handler.UpdateCategory(w, req)
+			setup.handler.UpdateSpace(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 
 			if !tt.expectError && w.Code == http.StatusOK {
-				var updatedCat models.Category
+				var updatedCat models.Space
 				if err := json.Unmarshal(w.Body.Bytes(), &updatedCat); err != nil {
 					t.Fatalf("Failed to unmarshal response: %v", err)
 				}
@@ -518,38 +518,38 @@ func TestCategoryHandler_UpdateCategory(t *testing.T) {
 	}
 }
 
-func TestCategoryHandler_DeleteCategory(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_DeleteSpace(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create test categories
-	parent, _ := setup.service.Create("Parent Category", nil, "Parent desc")
-	setup.service.Create("Child Category", &parent.ID, "Child desc")
+	// Create test spaces
+	parent, _ := setup.service.Create("Parent Space", nil, "Parent desc")
+	setup.service.Create("Child Space", &parent.ID, "Child desc")
 
 	tests := []struct {
 		name           string
-		categoryID     string
+		spaceID     string
 		expectedStatus int
 		expectError    bool
 	}{
 		{
-			name:           "Delete parent category (should cascade)",
-			categoryID:     strconv.Itoa(parent.ID),
+			name:           "Delete parent space (should cascade)",
+			spaceID:     strconv.Itoa(parent.ID),
 			expectedStatus: http.StatusNoContent,
 			expectError:    false,
 		},
 		{
-			name:           "Invalid category ID",
-			categoryID:     "invalid",
+			name:           "Invalid space ID",
+			spaceID:     "invalid",
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{
-			name:           "Non-existent category",
-			categoryID:     "999",
+			name:           "Non-existent space",
+			spaceID:     "999",
 			expectedStatus: http.StatusNotFound,
 			expectError:    true,
 		},
@@ -557,83 +557,83 @@ func TestCategoryHandler_DeleteCategory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("DELETE", "/api/categories/"+tt.categoryID, nil)
-			req = mux.SetURLVars(req, map[string]string{"id": tt.categoryID})
+			req := httptest.NewRequest("DELETE", "/api/spaces/"+tt.spaceID, nil)
+			req = mux.SetURLVars(req, map[string]string{"id": tt.spaceID})
 			w := httptest.NewRecorder()
 
-			setup.handler.DeleteCategory(w, req)
+			setup.handler.DeleteSpace(w, req)
 
 			if w.Code != tt.expectedStatus {
 				t.Errorf("Expected status %d, got %d", tt.expectedStatus, w.Code)
 			}
 
-			// For successful deletions, verify the category is actually deleted
+			// For successful deletions, verify the space is actually deleted
 			if !tt.expectError && w.Code == http.StatusNoContent {
-				id, _ := strconv.Atoi(tt.categoryID)
+				id, _ := strconv.Atoi(tt.spaceID)
 				_, err := setup.service.Get(id)
 				if err == nil {
-					t.Error("Expected category to be deleted, but it still exists")
+					t.Error("Expected space to be deleted, but it still exists")
 				}
 			}
 		})
 	}
 }
 
-func TestCategoryHandler_CircularReferenceProtection(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_CircularReferenceProtection(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create a chain of categories
-	cat1, _ := setup.service.Create("Category 1", nil, "Cat 1")
-	cat2, _ := setup.service.Create("Category 2", &cat1.ID, "Cat 2")
-	cat3, _ := setup.service.Create("Category 3", &cat2.ID, "Cat 3")
+	// Create a chain of spaces
+	cat1, _ := setup.service.Create("Space 1", nil, "Cat 1")
+	cat2, _ := setup.service.Create("Space 2", &cat1.ID, "Cat 2")
+	cat3, _ := setup.service.Create("Space 3", &cat2.ID, "Cat 3")
 
 	// Try to create a circular reference: cat1 -> cat3 (which would create cat1 -> cat3 -> cat2 -> cat1)
 	requestBody := map[string]interface{}{
-		"name":        "Category 1 Updated",
+		"name":        "Space 1 Updated",
 		"description": "Updated",
 		"parent_id":   cat3.ID,
 	}
 
 	body, _ := json.Marshal(requestBody)
-	req := httptest.NewRequest("PUT", "/api/categories/"+strconv.Itoa(cat1.ID), bytes.NewBuffer(body))
+	req := httptest.NewRequest("PUT", "/api/spaces/"+strconv.Itoa(cat1.ID), bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(cat1.ID)})
 	w := httptest.NewRecorder()
 
-	setup.handler.UpdateCategory(w, req)
+	setup.handler.UpdateSpace(w, req)
 
 	// This should either fail with BadRequest or succeed with proper circular reference handling
 	if w.Code != http.StatusBadRequest && w.Code != http.StatusOK {
 		t.Errorf("Expected either 400 or 200 status, got %d", w.Code)
 	}
 
-	// If it succeeded, verify no infinite loops occur when getting categories
+	// If it succeeded, verify no infinite loops occur when getting spaces
 	if w.Code == http.StatusOK {
-		// Test that GetCategories doesn't hang
-		req2 := httptest.NewRequest("GET", "/api/categories", nil)
+		// Test that GetSpaces doesn't hang
+		req2 := httptest.NewRequest("GET", "/api/spaces", nil)
 		w2 := httptest.NewRecorder()
 
 		// This should complete without hanging
-		setup.handler.GetCategories(w2, req2)
+		setup.handler.GetSpaces(w2, req2)
 
 		if w2.Code != http.StatusOK {
-			t.Errorf("GetCategories failed after potential circular reference: %d", w2.Code)
+			t.Errorf("GetSpaces failed after potential circular reference: %d", w2.Code)
 		}
 	}
 }
 
-func TestCategoryHandler_ConcurrentOperations(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_ConcurrentOperations(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create initial category
+	// Create initial space
 	parent, _ := setup.service.Create("Parent", nil, "Parent desc")
 
 	// Test concurrent creates
@@ -643,17 +643,17 @@ func TestCategoryHandler_ConcurrentOperations(t *testing.T) {
 	for i := 0; i < numGoroutines; i++ {
 		go func(i int) {
 			requestBody := map[string]interface{}{
-				"name":        fmt.Sprintf("Concurrent Category %d", i),
+				"name":        fmt.Sprintf("Concurrent Space %d", i),
 				"description": fmt.Sprintf("Description %d", i),
 				"parent_id":   parent.ID,
 			}
 
 			body, _ := json.Marshal(requestBody)
-			req := httptest.NewRequest("POST", "/api/categories", bytes.NewBuffer(body))
+			req := httptest.NewRequest("POST", "/api/spaces", bytes.NewBuffer(body))
 			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
-			setup.handler.CreateCategory(w, req)
+			setup.handler.CreateSpace(w, req)
 
 			if w.Code != http.StatusCreated {
 				done <- fmt.Errorf("concurrent create failed with status %d", w.Code)
@@ -670,38 +670,38 @@ func TestCategoryHandler_ConcurrentOperations(t *testing.T) {
 		}
 	}
 
-	// Verify all categories were created
-	req := httptest.NewRequest("GET", "/api/categories", nil)
+	// Verify all spaces were created
+	req := httptest.NewRequest("GET", "/api/spaces", nil)
 	w := httptest.NewRecorder()
-	setup.handler.GetCategories(w, req)
+	setup.handler.GetSpaces(w, req)
 
-	var categories []*models.Category
-	json.Unmarshal(w.Body.Bytes(), &categories)
+	var spaces []*models.Space
+	json.Unmarshal(w.Body.Bytes(), &spaces)
 
 	// Should have 1 parent + 10 children = 11 total
-	if len(categories) != 11 {
-		t.Errorf("Expected 11 categories after concurrent creates, got %d", len(categories))
+	if len(spaces) != 11 {
+		t.Errorf("Expected 11 spaces after concurrent creates, got %d", len(spaces))
 	}
 }
 
-func TestCategoryHandler_DataConsistency(t *testing.T) {
-	setup, err := setupCategoryTest()
+func TestSpaceHandler_DataConsistency(t *testing.T) {
+	setup, err := setupSpaceTest()
 	if err != nil {
 		t.Fatalf("Failed to setup test: %v", err)
 	}
 	defer setup.cleanup()
 
-	// Create categories and verify consistent state
+	// Create spaces and verify consistent state
 	parent, _ := setup.service.Create("Parent", nil, "Parent desc")
 	child1, _ := setup.service.Create("Child 1", &parent.ID, "Child 1 desc")
 	setup.service.Create("Child 2", &parent.ID, "Child 2 desc")
 
 	// Test 1: Verify hierarchy consistency
-	req := httptest.NewRequest("GET", "/api/categories/by-parent?parent_id="+strconv.Itoa(parent.ID), nil)
+	req := httptest.NewRequest("GET", "/api/spaces/by-parent?parent_id="+strconv.Itoa(parent.ID), nil)
 	w := httptest.NewRecorder()
-	setup.handler.GetCategoriesByParent(w, req)
+	setup.handler.GetSpacesByParent(w, req)
 
-	var children []*models.Category
+	var children []*models.Space
 	json.Unmarshal(w.Body.Bytes(), &children)
 
 	if len(children) != 2 {
@@ -711,12 +711,12 @@ func TestCategoryHandler_DataConsistency(t *testing.T) {
 	// Test 2: Verify depth calculation
 	grandchild, _ := setup.service.Create("Grandchild", &child1.ID, "Grandchild desc")
 
-	req = httptest.NewRequest("GET", "/api/categories/"+strconv.Itoa(grandchild.ID), nil)
+	req = httptest.NewRequest("GET", "/api/spaces/"+strconv.Itoa(grandchild.ID), nil)
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(grandchild.ID)})
 	w = httptest.NewRecorder()
-	setup.handler.GetCategory(w, req)
+	setup.handler.GetSpace(w, req)
 
-	var retrievedGrandchild models.Category
+	var retrievedGrandchild models.Space
 	json.Unmarshal(w.Body.Bytes(), &retrievedGrandchild)
 
 	if retrievedGrandchild.Depth != 2 {
@@ -724,24 +724,24 @@ func TestCategoryHandler_DataConsistency(t *testing.T) {
 	}
 
 	// Test 3: Verify deletion cascade
-	req = httptest.NewRequest("DELETE", "/api/categories/"+strconv.Itoa(parent.ID), nil)
+	req = httptest.NewRequest("DELETE", "/api/spaces/"+strconv.Itoa(parent.ID), nil)
 	req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(parent.ID)})
 	w = httptest.NewRecorder()
-	setup.handler.DeleteCategory(w, req)
+	setup.handler.DeleteSpace(w, req)
 
 	if w.Code != http.StatusNoContent {
 		t.Errorf("Expected successful deletion, got %d", w.Code)
 	}
 
-	// Verify all related categories are deleted
-	req = httptest.NewRequest("GET", "/api/categories", nil)
+	// Verify all related spaces are deleted
+	req = httptest.NewRequest("GET", "/api/spaces", nil)
 	w = httptest.NewRecorder()
-	setup.handler.GetCategories(w, req)
+	setup.handler.GetSpaces(w, req)
 
-	var remainingCategories []*models.Category
-	json.Unmarshal(w.Body.Bytes(), &remainingCategories)
+	var remainingSpaces []*models.Space
+	json.Unmarshal(w.Body.Bytes(), &remainingSpaces)
 
-	if len(remainingCategories) != 0 {
-		t.Errorf("Expected 0 categories after cascade delete, got %d", len(remainingCategories))
+	if len(remainingSpaces) != 0 {
+		t.Errorf("Expected 0 spaces after cascade delete, got %d", len(remainingSpaces))
 	}
 }

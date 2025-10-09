@@ -7,16 +7,17 @@ import (
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/utils"
 	"backthynk/internal/storage"
+	"fmt"
 )
 
 type PostService struct {
 	db         *storage.DB
-	cache      *cache.CategoryCache
+	cache      *cache.SpaceCache
 	dispatcher *events.Dispatcher
 	options    *config.OptionsConfig
 }
 
-func NewPostService(db *storage.DB, cache *cache.CategoryCache, dispatcher *events.Dispatcher) *PostService {
+func NewPostService(db *storage.DB, cache *cache.SpaceCache, dispatcher *events.Dispatcher) *PostService {
 	return &PostService{
 		db:         db,
 		cache:      cache,
@@ -25,14 +26,19 @@ func NewPostService(db *storage.DB, cache *cache.CategoryCache, dispatcher *even
 	}
 }
 
-func (s *PostService) Create(categoryID int, content string, customTimestamp *int64) (*models.Post, error) {
+func (s *PostService) Create(spaceID int, content string, customTimestamp *int64) (*models.Post, error) {
+	// Validate space exists using cache
+	if _, ok := s.cache.Get(spaceID); !ok {
+		return nil, fmt.Errorf(config.ErrSpaceNotFound)
+	}
+
 	var post *models.Post
 	var err error
 
 	if customTimestamp != nil {
-		post, err = s.db.CreatePostWithTimestamp(categoryID, content, *customTimestamp)
+		post, err = s.db.CreatePostWithTimestamp(spaceID, content, *customTimestamp)
 	} else {
-		post, err = s.db.CreatePost(categoryID, content)
+		post, err = s.db.CreatePost(spaceID, content)
 	}
 
 	if err != nil {
@@ -45,14 +51,14 @@ func (s *PostService) Create(categoryID int, content string, customTimestamp *in
 	}
 
 	// Update cache
-	s.cache.UpdatePostCount(categoryID, 1)
+	s.cache.UpdatePostCount(spaceID, 1)
 	
 	// Dispatch event
 	s.dispatcher.Dispatch(events.Event{
 		Type: events.PostCreated,
 		Data: events.PostEvent{
 			PostID:     post.ID,
-			CategoryID: categoryID,
+			SpaceID: spaceID,
 			Timestamp:  post.Created,
 		},
 	})
@@ -75,7 +81,7 @@ func (s *PostService) Delete(id int) error {
 	}
 	
 	// Update cache
-	s.cache.UpdatePostCount(post.CategoryID, -1)
+	s.cache.UpdatePostCount(post.SpaceID, -1)
 	
 	// Calculate total file size
 	var totalSize int64
@@ -88,7 +94,7 @@ func (s *PostService) Delete(id int) error {
 		Type: events.PostDeleted,
 		Data: events.PostEvent{
 			PostID:     id,
-			CategoryID: post.CategoryID,
+			SpaceID: post.SpaceID,
 			Timestamp:  post.Created,
 			FileSize:   totalSize,
 			FileCount:  len(attachments),
@@ -99,22 +105,27 @@ func (s *PostService) Delete(id int) error {
 }
 
 
-func (s *PostService) Move(postID int, newCategoryID int) error {
+func (s *PostService) Move(postID int, newSpaceID int) error {
+	// Validate new space exists using cache
+	if _, ok := s.cache.Get(newSpaceID); !ok {
+		return fmt.Errorf(config.ErrSpaceNotFound)
+	}
+
 	post, err := s.db.GetPost(postID)
 	if err != nil {
 		return err
 	}
-	
-	oldCategoryID := post.CategoryID
-	
+
+	oldSpaceID := post.SpaceID
+
 	// Update in database
-	if err := s.db.UpdatePostCategory(postID, newCategoryID); err != nil {
+	if err := s.db.UpdatePostSpace(postID, newSpaceID); err != nil {
 		return err
 	}
 	
 	// Update cache
-	s.cache.UpdatePostCount(oldCategoryID, -1)
-	s.cache.UpdatePostCount(newCategoryID, 1)
+	s.cache.UpdatePostCount(oldSpaceID, -1)
+	s.cache.UpdatePostCount(newSpaceID, 1)
 	
 	// Get attachments for file stats
 	attachments, _ := s.db.GetAttachmentsByPost(postID)
@@ -128,8 +139,8 @@ func (s *PostService) Move(postID int, newCategoryID int) error {
 		Type: events.PostMoved,
 		Data: events.PostEvent{
 			PostID:        postID,
-			CategoryID:    newCategoryID,
-			OldCategoryID: &oldCategoryID,
+			SpaceID:    newSpaceID,
+			OldSpaceID: &oldSpaceID,
 			Timestamp:     post.Created,
 			FileSize:      totalSize,
 			FileCount:     len(attachments),
@@ -139,12 +150,12 @@ func (s *PostService) Move(postID int, newCategoryID int) error {
 	return nil
 }
 
-func (s *PostService) GetByCategory(categoryID int, recursive bool, limit, offset int) ([]models.PostWithAttachments, error) {
+func (s *PostService) GetBySpace(spaceID int, recursive bool, limit, offset int) ([]models.PostWithAttachments, error) {
 	var descendants []int
 	if recursive {
-		descendants = s.cache.GetDescendants(categoryID)
+		descendants = s.cache.GetDescendants(spaceID)
 	}
-	posts, err := s.db.GetPostsByCategoryRecursive(categoryID, recursive, limit, offset, descendants)
+	posts, err := s.db.GetPostsBySpaceRecursive(spaceID, recursive, limit, offset, descendants)
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +186,6 @@ func (s *PostService) GetAllPosts(limit, offset int) ([]models.PostWithAttachmen
 	return posts, nil
 }
 
-func (s *PostService) GetCategoryFromCache(categoryID int) (*models.Category, bool) {
-	return s.cache.Get(categoryID)
+func (s *PostService) GetSpaceFromCache(spaceID int) (*models.Space, bool) {
+	return s.cache.Get(spaceID)
 }

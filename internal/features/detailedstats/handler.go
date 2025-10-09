@@ -23,35 +23,35 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	}
 	
 	api := router.PathPrefix("/api").Subrouter()
-	api.HandleFunc("/category-stats/{id}", h.GetCategoryStats).Methods("GET")
+	api.HandleFunc("/space-stats/{id}", h.GetSpaceStats).Methods("GET")
 }
 
 type StatsResponse struct {
-	CategoryID int   `json:"category_id"`
+	SpaceID int   `json:"space_id"`
 	Recursive  bool  `json:"recursive"`
 	FileCount  int64 `json:"file_count"`
 	TotalSize  int64 `json:"total_size"`
 }
 
-func (h *Handler) GetCategoryStats(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetSpaceStats(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	categoryID, err := strconv.Atoi(vars["id"])
+	spaceID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidSpaceID, http.StatusBadRequest)
 		return
 	}
 	
 	recursive := r.URL.Query().Get("recursive") == "true"
 	
 	var stats *Stats
-	if categoryID == 0 { // Global stats
+	if spaceID == 0 { // Global stats
 		stats = h.service.GetGlobalStats()
 	} else {
-		stats = h.service.GetStats(categoryID, recursive)
+		stats = h.service.GetStats(spaceID, recursive)
 	}
 	
 	response := StatsResponse{
-		CategoryID: categoryID,
+		SpaceID: spaceID,
 		Recursive:  recursive,
 		FileCount:  stats.FileCount,
 		TotalSize:  stats.TotalSize,

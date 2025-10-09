@@ -14,7 +14,7 @@ import (
 func TestFirstLastPostTimeOnCreate(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 
 	now := time.Now().Unix() * 1000
@@ -24,7 +24,7 @@ func TestFirstLastPostTimeOnCreate(t *testing.T) {
 	// Create first post (middle timestamp)
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: now},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: now},
 	})
 
 	service.mu.RLock()
@@ -43,7 +43,7 @@ func TestFirstLastPostTimeOnCreate(t *testing.T) {
 	// Create retroactive post (should update FirstPostTime)
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: yesterday},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: yesterday},
 	})
 
 	activity.mu.RLock()
@@ -58,7 +58,7 @@ func TestFirstLastPostTimeOnCreate(t *testing.T) {
 	// Create future post (should update LastPostTime)
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: tomorrow},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: tomorrow},
 	})
 
 	activity.mu.RLock()
@@ -76,7 +76,7 @@ func TestFirstLastPostTimeOnCreate(t *testing.T) {
 func TestFirstLastPostTimeOnDelete(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 
 	day1 := time.Now().AddDate(0, 0, -3).Unix() * 1000 // 3 days ago
@@ -86,15 +86,15 @@ func TestFirstLastPostTimeOnDelete(t *testing.T) {
 	// Create 3 posts
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day2},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day2},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day1},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day3},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day3},
 	})
 
 	service.mu.RLock()
@@ -116,7 +116,7 @@ func TestFirstLastPostTimeOnDelete(t *testing.T) {
 	// Delete the oldest post (should update FirstPostTime)
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day1},
 	})
 
 	activity.mu.RLock()
@@ -134,7 +134,7 @@ func TestFirstLastPostTimeOnDelete(t *testing.T) {
 	// Delete the newest post (should update LastPostTime)
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day3},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day3},
 	})
 
 	activity.mu.RLock()
@@ -152,7 +152,7 @@ func TestFirstLastPostTimeOnDelete(t *testing.T) {
 	// Delete the last post (should reset both to 0)
 	service.HandleEvent(events.Event{
 		Type: events.PostDeleted,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day2},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day2},
 	})
 
 	activity.mu.RLock()
@@ -169,34 +169,34 @@ func TestFirstLastPostTimeOnDelete(t *testing.T) {
 }
 
 // TestFirstLastPostTimeOnMove tests that FirstPostTime and LastPostTime
-// are correctly updated when moving posts between categories
+// are correctly updated when moving posts between spaces
 func TestFirstLastPostTimeOnMove(t *testing.T) {
 	service := &Service{
 		enabled:  true,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 	}
 
 	day1 := time.Now().AddDate(0, 0, -3).Unix() * 1000
 	day2 := time.Now().AddDate(0, 0, -2).Unix() * 1000
 	day3 := time.Now().AddDate(0, 0, -1).Unix() * 1000
 
-	// Create posts in category 1
+	// Create posts in space 1
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day1},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day1},
 	})
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day3},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day3},
 	})
 
-	// Move the oldest post to category 2
+	// Move the oldest post to space 2
 	oldCat := 1
 	service.HandleEvent(events.Event{
 		Type: events.PostMoved,
 		Data: events.PostEvent{
-			CategoryID:    2,
-			OldCategoryID: &oldCat,
+			SpaceID:    2,
+			OldSpaceID: &oldCat,
 			Timestamp:     day1,
 		},
 	})
@@ -206,56 +206,56 @@ func TestFirstLastPostTimeOnMove(t *testing.T) {
 	activity2 := service.activity[2]
 	service.mu.RUnlock()
 
-	// Category 1 should now have only day3 post
+	// Space 1 should now have only day3 post
 	activity1.mu.RLock()
 	if activity1.Stats.FirstPostTime != day3 {
-		t.Errorf("Category 1: expected FirstPostTime %d, got %d", day3, activity1.Stats.FirstPostTime)
+		t.Errorf("Space 1: expected FirstPostTime %d, got %d", day3, activity1.Stats.FirstPostTime)
 	}
 	if activity1.Stats.LastPostTime != day3 {
-		t.Errorf("Category 1: expected LastPostTime %d, got %d", day3, activity1.Stats.LastPostTime)
+		t.Errorf("Space 1: expected LastPostTime %d, got %d", day3, activity1.Stats.LastPostTime)
 	}
 	if activity1.Stats.TotalPosts != 1 {
-		t.Errorf("Category 1: expected 1 post, got %d", activity1.Stats.TotalPosts)
+		t.Errorf("Space 1: expected 1 post, got %d", activity1.Stats.TotalPosts)
 	}
 	activity1.mu.RUnlock()
 
-	// Category 2 should now have only day1 post
+	// Space 2 should now have only day1 post
 	activity2.mu.RLock()
 	if activity2.Stats.FirstPostTime != day1 {
-		t.Errorf("Category 2: expected FirstPostTime %d, got %d", day1, activity2.Stats.FirstPostTime)
+		t.Errorf("Space 2: expected FirstPostTime %d, got %d", day1, activity2.Stats.FirstPostTime)
 	}
 	if activity2.Stats.LastPostTime != day1 {
-		t.Errorf("Category 2: expected LastPostTime %d, got %d", day1, activity2.Stats.LastPostTime)
+		t.Errorf("Space 2: expected LastPostTime %d, got %d", day1, activity2.Stats.LastPostTime)
 	}
 	if activity2.Stats.TotalPosts != 1 {
-		t.Errorf("Category 2: expected 1 post, got %d", activity2.Stats.TotalPosts)
+		t.Errorf("Space 2: expected 1 post, got %d", activity2.Stats.TotalPosts)
 	}
 	activity2.mu.RUnlock()
 
-	// Add a middle post to category 2
+	// Add a middle post to space 2
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: day2},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: day2},
 	})
 
 	activity2.mu.RLock()
 	if activity2.Stats.FirstPostTime != day1 {
-		t.Errorf("Category 2: expected FirstPostTime %d, got %d", day1, activity2.Stats.FirstPostTime)
+		t.Errorf("Space 2: expected FirstPostTime %d, got %d", day1, activity2.Stats.FirstPostTime)
 	}
 	if activity2.Stats.LastPostTime != day2 {
-		t.Errorf("Category 2: expected LastPostTime %d, got %d", day2, activity2.Stats.LastPostTime)
+		t.Errorf("Space 2: expected LastPostTime %d, got %d", day2, activity2.Stats.LastPostTime)
 	}
 	if activity2.Stats.TotalPosts != 2 {
-		t.Errorf("Category 2: expected 2 posts, got %d", activity2.Stats.TotalPosts)
+		t.Errorf("Space 2: expected 2 posts, got %d", activity2.Stats.TotalPosts)
 	}
 	activity2.mu.RUnlock()
 }
 
-// TestRefreshCategoryCorrectness tests that refreshCategory properly initializes
+// TestRefreshSpaceCorrectness tests that refreshSpace properly initializes
 // FirstPostTime and LastPostTime from a list of posts
-func TestRefreshCategoryCorrectness(t *testing.T) {
+func TestRefreshSpaceCorrectness(t *testing.T) {
 	db := &storage.DB{} // Mock DB, not used in this test
-	catCache := cache.NewCategoryCache()
+	catCache := cache.NewSpaceCache()
 	service := NewService(db, catCache, true)
 
 	day1 := time.Now().AddDate(0, 0, -5).Unix() * 1000
@@ -263,12 +263,12 @@ func TestRefreshCategoryCorrectness(t *testing.T) {
 	day3 := time.Now().AddDate(0, 0, -1).Unix() * 1000
 
 	posts := []storage.PostData{
-		{CategoryID: 1, Created: day2},
-		{CategoryID: 1, Created: day1}, // oldest
-		{CategoryID: 1, Created: day3}, // newest
+		{SpaceID: 1, Created: day2},
+		{SpaceID: 1, Created: day1}, // oldest
+		{SpaceID: 1, Created: day3}, // newest
 	}
 
-	service.refreshCategory(1, posts)
+	service.refreshSpace(1, posts)
 
 	service.mu.RLock()
 	activity, ok := service.activity[1]
@@ -296,10 +296,10 @@ func TestRefreshCategoryCorrectness(t *testing.T) {
 // when timestamps are being tracked
 func TestRecursiveStatsWithTimestamps(t *testing.T) {
 	db := &storage.DB{}
-	catCache := cache.NewCategoryCache()
+	catCache := cache.NewSpaceCache()
 
-	parent := &models.Category{ID: 1, Name: "Parent", ParentID: nil}
-	child := &models.Category{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
+	parent := &models.Space{ID: 1, Name: "Parent", ParentID: nil}
+	child := &models.Space{ID: 2, Name: "Child", ParentID: &[]int{1}[0]}
 
 	catCache.Set(parent)
 	catCache.Set(child)
@@ -312,13 +312,13 @@ func TestRecursiveStatsWithTimestamps(t *testing.T) {
 	// Create post in parent
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 1, Timestamp: day2},
+		Data: events.PostEvent{SpaceID: 1, Timestamp: day2},
 	})
 
 	// Create post in child
 	service.HandleEvent(events.Event{
 		Type: events.PostCreated,
-		Data: events.PostEvent{CategoryID: 2, Timestamp: day1},
+		Data: events.PostEvent{SpaceID: 2, Timestamp: day1},
 	})
 
 	// Recalculate recursive activity

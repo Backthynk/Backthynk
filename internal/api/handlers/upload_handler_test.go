@@ -27,7 +27,7 @@ type uploadTestSetup struct {
 	postService    *services.PostService
 	db             *storage.DB
 	dispatcher     *events.Dispatcher
-	categoryCache  *cache.CategoryCache
+	spaceCache  *cache.SpaceCache
 	options        *config.OptionsConfig
 	tempDir        string
 	uploadsDir     string
@@ -71,21 +71,21 @@ func setupUploadTest(t *testing.T) (*uploadTestSetup, func()) {
 	}
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Create services
 	fileService := services.NewFileService(db, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		t.Fatal(err)
 	}
 
-	// Create a test category
-	if _, err := categoryService.Create("Test Category", nil, ""); err != nil {
+	// Create a test space
+	if _, err := spaceService.Create("Test Space", nil, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -101,7 +101,7 @@ func setupUploadTest(t *testing.T) (*uploadTestSetup, func()) {
 		postService:   postService,
 		db:            db,
 		dispatcher:    dispatcher,
-		categoryCache: categoryCache,
+		spaceCache: spaceCache,
 		options:       options,
 		tempDir:       tempDir,
 		uploadsDir:    uploadsDir,

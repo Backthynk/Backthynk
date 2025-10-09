@@ -110,10 +110,10 @@ type FileStats struct {
 
 func (db *DB) GetAllFileStats() (map[int]FileStats, error) {
 	query := `
-		SELECT p.category_id, COUNT(a.id), COALESCE(SUM(a.file_size), 0)
+		SELECT p.space_id, COUNT(a.id), COALESCE(SUM(a.file_size), 0)
 		FROM posts p
 		LEFT JOIN attachments a ON p.id = a.post_id
-		GROUP BY p.category_id
+		GROUP BY p.space_id
 	`
 	
 	rows, err := db.Query(query)
@@ -124,15 +124,15 @@ func (db *DB) GetAllFileStats() (map[int]FileStats, error) {
 	
 	stats := make(map[int]FileStats)
 	for rows.Next() {
-		var categoryID int
+		var spaceID int
 		var fileCount int64
 		var totalSize int64
 		
-		if err := rows.Scan(&categoryID, &fileCount, &totalSize); err != nil {
+		if err := rows.Scan(&spaceID, &fileCount, &totalSize); err != nil {
 			return nil, err
 		}
 		
-		stats[categoryID] = FileStats{
+		stats[spaceID] = FileStats{
 			FileCount: fileCount,
 			TotalSize: totalSize,
 		}
@@ -144,18 +144,18 @@ func (db *DB) GetAllFileStats() (map[int]FileStats, error) {
 // PostFileStats represents file stats for a specific post
 type PostFileStats struct {
 	PostID     int
-	CategoryID int
+	SpaceID int
 	FileCount  int64
 	TotalSize  int64
 }
 
-// GetAllPostFileStats returns file statistics for all posts grouped by category and post
+// GetAllPostFileStats returns file statistics for all posts grouped by space and post
 func (db *DB) GetAllPostFileStats() ([]PostFileStats, error) {
 	query := `
-		SELECT p.id, p.category_id, COUNT(a.id), COALESCE(SUM(a.file_size), 0)
+		SELECT p.id, p.space_id, COUNT(a.id), COALESCE(SUM(a.file_size), 0)
 		FROM posts p
 		LEFT JOIN attachments a ON p.id = a.post_id
-		GROUP BY p.id, p.category_id
+		GROUP BY p.id, p.space_id
 		HAVING COUNT(a.id) > 0
 	`
 
@@ -168,7 +168,7 @@ func (db *DB) GetAllPostFileStats() ([]PostFileStats, error) {
 	var postStats []PostFileStats
 	for rows.Next() {
 		var stat PostFileStats
-		if err := rows.Scan(&stat.PostID, &stat.CategoryID, &stat.FileCount, &stat.TotalSize); err != nil {
+		if err := rows.Scan(&stat.PostID, &stat.SpaceID, &stat.FileCount, &stat.TotalSize); err != nil {
 			return nil, err
 		}
 		postStats = append(postStats, stat)

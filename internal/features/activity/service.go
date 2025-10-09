@@ -10,13 +10,13 @@ import (
 
 type Service struct {
 	db       *storage.DB
-	catCache *cache.CategoryCache
-	activity map[int]*CategoryActivity // categoryID -> activity
+	catCache *cache.SpaceCache
+	activity map[int]*SpaceActivity // spaceID -> activity
 	mu       sync.RWMutex
 	enabled  bool
 }
 
-type CategoryActivity struct {
+type SpaceActivity struct {
 	Days       map[string]int     // YYYY-MM-DD -> count
 	Recursive  map[string]int     // Recursive activity
 	Timestamps map[string][]int64 // YYYY-MM-DD -> list of timestamps for that day
@@ -34,11 +34,11 @@ type ActivityStats struct {
 }
 
 
-func NewService(db *storage.DB, catCache *cache.CategoryCache, enabled bool) *Service {
+func NewService(db *storage.DB, catCache *cache.SpaceCache, enabled bool) *Service {
 	return &Service{
 		db:       db,
 		catCache: catCache,
-		activity: make(map[int]*CategoryActivity),
+		activity: make(map[int]*SpaceActivity),
 		enabled:  enabled,
 	}
 }
@@ -54,32 +54,32 @@ func (s *Service) Initialize() error {
 		return err
 	}
 	
-	// Group posts by category
-	postsByCategory := make(map[int][]storage.PostData)
+	// Group posts by space
+	postsBySpace := make(map[int][]storage.PostData)
 	for _, post := range posts {
-		postsByCategory[post.CategoryID] = append(postsByCategory[post.CategoryID], post)
+		postsBySpace[post.SpaceID] = append(postsBySpace[post.SpaceID], post)
 	}
 	
-	// Initialize activity for each category
-	for catID, posts := range postsByCategory {
-		s.refreshCategory(catID, posts)
+	// Initialize activity for each space
+	for catID, posts := range postsBySpace {
+		s.refreshSpace(catID, posts)
 	}
 	
 	// Calculate recursive activity
-	categories := s.catCache.GetAll()
-	for _, cat := range categories {
+	spaces := s.catCache.GetAll()
+	for _, cat := range spaces {
 		s.calculateRecursiveActivity(cat.ID)
 	}
 
 	return nil
 }
 
-func (s *Service) refreshCategory(categoryID int, posts []storage.PostData) {
+func (s *Service) refreshSpace(spaceID int, posts []storage.PostData) {
 	if !s.enabled {
 		return
 	}
 
-	activity := &CategoryActivity{
+	activity := &SpaceActivity{
 		Days:       make(map[string]int),
 		Recursive:  make(map[string]int),
 		Timestamps: make(map[string][]int64),
@@ -110,28 +110,28 @@ func (s *Service) refreshCategory(categoryID int, posts []storage.PostData) {
 	activity.Stats.RecursiveActiveDays = activity.Stats.TotalActiveDays
 
 	s.mu.Lock()
-	s.activity[categoryID] = activity
+	s.activity[spaceID] = activity
 	s.mu.Unlock()
 }
 
-func (s *Service) calculateRecursiveActivity(categoryID int) {
+func (s *Service) calculateRecursiveActivity(spaceID int) {
 	if !s.enabled {
 		return
 	}
 	
 	s.mu.RLock()
-	activity, ok := s.activity[categoryID]
+	activity, ok := s.activity[spaceID]
 	s.mu.RUnlock()
 	
 	if !ok {
-		activity = &CategoryActivity{
+		activity = &SpaceActivity{
 			Days:       make(map[string]int),
 			Recursive:  make(map[string]int),
 			Timestamps: make(map[string][]int64),
 			Stats:      ActivityStats{},
 		}
 		s.mu.Lock()
-		s.activity[categoryID] = activity
+		s.activity[spaceID] = activity
 		s.mu.Unlock()
 	}
 	
@@ -153,7 +153,7 @@ func (s *Service) calculateRecursiveActivity(categoryID int) {
 		return
 	}
 
-	descendants := s.catCache.GetDescendants(categoryID)
+	descendants := s.catCache.GetDescendants(spaceID)
 	for _, descID := range descendants {
 		s.mu.RLock()
 		descActivity, ok := s.activity[descID]
@@ -174,19 +174,19 @@ func (s *Service) calculateRecursiveActivity(categoryID int) {
 }
 
 
-func (s *Service) updateActivity(categoryID int, timestamp int64, delta int) {
+func (s *Service) updateActivity(spaceID int, timestamp int64, delta int) {
 	date := time.Unix(timestamp/1000, 0).Format("2006-01-02")
 
 	s.mu.Lock()
-	activity, ok := s.activity[categoryID]
+	activity, ok := s.activity[spaceID]
 	if !ok {
-		activity = &CategoryActivity{
+		activity = &SpaceActivity{
 			Days:       make(map[string]int),
 			Recursive:  make(map[string]int),
 			Timestamps: make(map[string][]int64),
 			Stats:      ActivityStats{},
 		}
-		s.activity[categoryID] = activity
+		s.activity[spaceID] = activity
 	}
 	s.mu.Unlock()
 
@@ -259,13 +259,13 @@ func (s *Service) updateActivity(categoryID int, timestamp int64, delta int) {
 	activity.mu.Unlock()
 
 	// Update recursive for self and parents (after releasing the lock)
-	s.updateRecursiveActivity(categoryID, date, delta)
+	s.updateRecursiveActivity(spaceID, date, delta)
 }
 
-func (s *Service) updateRecursiveActivity(categoryID int, date string, delta int) {
+func (s *Service) updateRecursiveActivity(spaceID int, date string, delta int) {
 	// Update self
 	s.mu.RLock()
-	activity, ok := s.activity[categoryID]
+	activity, ok := s.activity[spaceID]
 	s.mu.RUnlock()
 
 	if ok {
@@ -294,9 +294,9 @@ func (s *Service) updateRecursiveActivity(categoryID int, date string, delta int
 		return
 	}
 
-	current := categoryID
+	current := spaceID
 	for {
-		// Get parent of current category
+		// Get parent of current space
 		cat, ok := s.catCache.Get(current)
 		if !ok || cat.ParentID == nil {
 			break
@@ -308,7 +308,7 @@ func (s *Service) updateRecursiveActivity(categoryID int, date string, delta int
 		parentActivity, ok := s.activity[parentID]
 		if !ok {
 			// Create activity record for parent if it doesn't exist
-			parentActivity = &CategoryActivity{
+			parentActivity = &SpaceActivity{
 				Days:       make(map[string]int),
 				Recursive:  make(map[string]int),
 				Timestamps: make(map[string][]int64),
@@ -346,19 +346,19 @@ func (s *Service) GetActivityPeriod(req ActivityPeriodRequest) (*ActivityPeriodR
 		return &ActivityPeriodResponse{}, nil
 	}
 	
-	// Handle global activity (categoryID == 0)
-	if req.CategoryID == 0 {
+	// Handle global activity (spaceID == 0)
+	if req.SpaceID == 0 {
 		return s.getGlobalActivityPeriod(req)
 	}
 	
 	s.mu.RLock()
-	activity, ok := s.activity[req.CategoryID]
+	activity, ok := s.activity[req.SpaceID]
 	s.mu.RUnlock()
 	
 	if !ok {
 		startDate, endDate := s.calculatePeriodDates(req.Period, req.PeriodMonths)
 		return &ActivityPeriodResponse{
-			CategoryID: req.CategoryID,
+			SpaceID: req.SpaceID,
 			StartDate:  startDate,
 			EndDate:    endDate,
 			Period:     req.Period,
@@ -409,7 +409,7 @@ func (s *Service) GetActivityPeriod(req ActivityPeriodRequest) (*ActivityPeriodR
 	maxPeriods := s.calculateMaxPeriods(activity.Stats.FirstPostTime, req.PeriodMonths)
 	
 	return &ActivityPeriodResponse{
-		CategoryID: req.CategoryID,
+		SpaceID: req.SpaceID,
 		StartDate:  startDate,
 		EndDate:    endDate,
 		Period:     req.Period,
@@ -476,7 +476,7 @@ func (s *Service) getGlobalActivityPeriod(req ActivityPeriodRequest) (*ActivityP
 	maxPeriods := s.calculateMaxPeriods(earliestTime, req.PeriodMonths)
 	
 	return &ActivityPeriodResponse{
-		CategoryID: 0,
+		SpaceID: 0,
 		StartDate:  startDate,
 		EndDate:    endDate,
 		Period:     req.Period,
@@ -524,30 +524,30 @@ func (s *Service) HandleEvent(event events.Event) error {
 	switch event.Type {
 	case events.PostCreated:
 		data := event.Data.(events.PostEvent)
-		s.updateActivity(data.CategoryID, data.Timestamp, 1)
+		s.updateActivity(data.SpaceID, data.Timestamp, 1)
 
 	case events.PostDeleted:
 		data := event.Data.(events.PostEvent)
-		s.updateActivity(data.CategoryID, data.Timestamp, -1)
+		s.updateActivity(data.SpaceID, data.Timestamp, -1)
 
 	case events.PostMoved:
 		data := event.Data.(events.PostEvent)
-		if data.OldCategoryID != nil {
-			s.updateActivity(*data.OldCategoryID, data.Timestamp, -1)
+		if data.OldSpaceID != nil {
+			s.updateActivity(*data.OldSpaceID, data.Timestamp, -1)
 		}
-		s.updateActivity(data.CategoryID, data.Timestamp, 1)
+		s.updateActivity(data.SpaceID, data.Timestamp, 1)
 
-	case events.CategoryUpdated:
-		data := event.Data.(events.CategoryEvent)
-		s.handleCategoryHierarchyChange(data.CategoryID, data.OldParentID, data.NewParentID)
+	case events.SpaceUpdated:
+		data := event.Data.(events.SpaceEvent)
+		s.handleSpaceHierarchyChange(data.SpaceID, data.OldParentID, data.NewParentID)
 	}
 
 	return nil
 }
 
-func (s *Service) handleCategoryHierarchyChange(categoryID int, oldParentID, newParentID *int) {
-	// When a category moves in the hierarchy, we need to recalculate
-	// recursive activity for all affected parent categories
+func (s *Service) handleSpaceHierarchyChange(spaceID int, oldParentID, newParentID *int) {
+	// When a space moves in the hierarchy, we need to recalculate
+	// recursive activity for all affected parent spaces
 
 	// First, recalculate for all old ancestors
 	if oldParentID != nil {
@@ -559,21 +559,21 @@ func (s *Service) handleCategoryHierarchyChange(categoryID int, oldParentID, new
 		s.recalculateAncestorActivity(*newParentID)
 	}
 
-	// Finally, recalculate for the moved category itself and all its descendants
-	s.recalculateDescendantActivity(categoryID)
+	// Finally, recalculate for the moved space itself and all its descendants
+	s.recalculateDescendantActivity(spaceID)
 }
 
-func (s *Service) recalculateAncestorActivity(categoryID int) {
+func (s *Service) recalculateAncestorActivity(spaceID int) {
 	if s.catCache == nil {
 		return
 	}
 
 	// Walk up the parent chain and recalculate each ancestor
-	current := categoryID
+	current := spaceID
 	for {
 		s.calculateRecursiveActivity(current)
 
-		// Get parent of current category
+		// Get parent of current space
 		cat, ok := s.catCache.Get(current)
 		if !ok || cat.ParentID == nil {
 			break
@@ -583,16 +583,16 @@ func (s *Service) recalculateAncestorActivity(categoryID int) {
 	}
 }
 
-func (s *Service) recalculateDescendantActivity(categoryID int) {
+func (s *Service) recalculateDescendantActivity(spaceID int) {
 	if s.catCache == nil {
 		return
 	}
 
-	// Recalculate for the category itself
-	s.calculateRecursiveActivity(categoryID)
+	// Recalculate for the space itself
+	s.calculateRecursiveActivity(spaceID)
 
 	// Recalculate for all descendants
-	descendants := s.catCache.GetDescendants(categoryID)
+	descendants := s.catCache.GetDescendants(spaceID)
 	for _, descID := range descendants {
 		s.calculateRecursiveActivity(descID)
 	}

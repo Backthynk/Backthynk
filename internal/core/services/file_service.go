@@ -73,7 +73,7 @@ func (s *FileService) UploadFile(postID int, file io.Reader, filename string, fi
 		return nil, fmt.Errorf("failed to save attachment info: %w", err)
 	}
 	
-	// Get post to find category for event
+	// Get post to find space for event
 	post, err := s.db.GetPost(postID)
 	if err == nil {
 		// Dispatch event
@@ -81,7 +81,7 @@ func (s *FileService) UploadFile(postID int, file io.Reader, filename string, fi
 			Type: events.FileUploaded,
 			Data: events.PostEvent{
 				PostID:     postID,
-				CategoryID: post.CategoryID,
+				SpaceID: post.SpaceID,
 				FileSize:   written,
 				FileCount:  1,
 			},

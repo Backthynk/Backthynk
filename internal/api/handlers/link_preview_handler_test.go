@@ -21,10 +21,10 @@ type linkPreviewTestSetup struct {
 	postHandler         *PostHandler
 	linkPreviewHandler  *LinkPreviewHandler
 	postService         *services.PostService
-	categoryService     *services.CategoryService
+	spaceService     *services.SpaceService
 	fileService         *services.FileService
 	db                  *storage.DB
-	cache               *cache.CategoryCache
+	cache               *cache.SpaceCache
 	dispatcher          *events.Dispatcher
 	options             *config.OptionsConfig
 	tempDir             string
@@ -57,16 +57,16 @@ func setupLinkPreviewTest() (*linkPreviewTestSetup, error) {
 	}
 
 	// Setup cache and dispatcher
-	categoryCache := cache.NewCategoryCache()
+	spaceCache := cache.NewSpaceCache()
 	dispatcher := events.NewDispatcher()
 
 	// Setup services
-	categoryService := services.NewCategoryService(db, categoryCache, dispatcher)
-	postService := services.NewPostService(db, categoryCache, dispatcher)
+	spaceService := services.NewSpaceService(db, spaceCache, dispatcher)
+	postService := services.NewPostService(db, spaceCache, dispatcher)
 	fileService := services.NewFileService(db, dispatcher)
 
 	// Initialize cache
-	if err := categoryService.InitializeCache(); err != nil {
+	if err := spaceService.InitializeCache(); err != nil {
 		return nil, err
 	}
 
@@ -86,10 +86,10 @@ func setupLinkPreviewTest() (*linkPreviewTestSetup, error) {
 		postHandler:        postHandler,
 		linkPreviewHandler: linkPreviewHandler,
 		postService:        postService,
-		categoryService:    categoryService,
+		spaceService:    spaceService,
 		fileService:        fileService,
 		db:                 db,
-		cache:              categoryCache,
+		cache:              spaceCache,
 		dispatcher:         dispatcher,
 		options:            options,
 		tempDir:            tempDir,
@@ -112,10 +112,10 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test category
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	// Create test space
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	tests := []struct {
@@ -128,7 +128,7 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 		{
 			name: "Valid post with single link preview",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "Check out this link: https://example.com",
 				"link_previews": []map[string]interface{}{
 					{
@@ -147,7 +147,7 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 		{
 			name: "Valid post with multiple link previews",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "Multiple links: https://example.com and https://test.com",
 				"link_previews": []map[string]interface{}{
 					{
@@ -173,7 +173,7 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 		{
 			name: "Valid post with link preview missing some fields",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "Link with minimal data: https://minimal.com",
 				"link_previews": []map[string]interface{}{
 					{
@@ -190,7 +190,7 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 		{
 			name: "Valid post with empty link previews array",
 			requestBody: map[string]interface{}{
-				"category_id":   category.ID,
+				"space_id":   space.ID,
 				"content":       "Post without link previews",
 				"link_previews": []map[string]interface{}{},
 			},
@@ -201,7 +201,7 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 		{
 			name: "Valid post without link_previews field",
 			requestBody: map[string]interface{}{
-				"category_id": category.ID,
+				"space_id": space.ID,
 				"content":     "Post without link_previews field",
 			},
 			expectedStatus: http.StatusCreated,
@@ -226,7 +226,7 @@ func TestPostHandler_CreatePostWithLinkPreviews(t *testing.T) {
 			if !tt.expectError && w.Code == http.StatusCreated {
 				var createdPost struct {
 					ID         int    `json:"id"`
-					CategoryID int    `json:"category_id"`
+					SpaceID int    `json:"space_id"`
 					Content    string `json:"content"`
 					Created    int64  `json:"created"`
 				}
@@ -301,15 +301,15 @@ func TestLinkPreviewHandler_GetLinkPreviewsByPost(t *testing.T) {
 	}
 	defer setup.cleanup()
 
-	// Create test category and post
-	category, err := setup.categoryService.Create("Test Category", nil, "Test desc")
+	// Create test space and post
+	space, err := setup.spaceService.Create("Test Space", nil, "Test desc")
 	if err != nil {
-		t.Fatalf("Failed to create test category: %v", err)
+		t.Fatalf("Failed to create test space: %v", err)
 	}
 
 	// Create post with link previews using the post handler
 	requestBody := map[string]interface{}{
-		"category_id": category.ID,
+		"space_id": space.ID,
 		"content":     "Test post with link previews",
 		"link_previews": []map[string]interface{}{
 			{

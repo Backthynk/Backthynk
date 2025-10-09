@@ -28,9 +28,9 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 func (h *Handler) GetActivityPeriod(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	categoryID, err := strconv.Atoi(vars["id"])
+	spaceID, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, config.ErrInvalidCategoryID, http.StatusBadRequest)
+		http.Error(w, config.ErrInvalidSpaceID, http.StatusBadRequest)
 		return
 	}
 	
@@ -61,7 +61,7 @@ func (h *Handler) GetActivityPeriod(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	req := ActivityPeriodRequest{
-		CategoryID:   categoryID,
+		SpaceID:   spaceID,
 		Recursive:    recursive,
 		StartDate:    query.Get("start_date"),
 		EndDate:      query.Get("end_date"),

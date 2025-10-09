@@ -1,37 +1,37 @@
 // Global state management
-let currentCategory = null;
-let categories = [];
-let expandedCategories = new Set();
+let currentSpace = null;
+let spaces = [];
+let expandedSpaces = new Set();
 let selectedFiles = new Map(); // Store selected files with unique IDs
 let fileCounter = 0;
 let modalSelectedFiles = new Map(); // Store modal-specific selected files
 let modalFileCounter = 0;
 let currentImageGallery = [];
 let currentImageIndex = window.AppConstants.UI_CONFIG.defaultImageIndex;
-let categoryStats = {};
+let spaceStats = {};
 let globalStats = { totalPosts: 0, totalFiles: 0, totalSize: 0 };
-let categoryActivity = {};
+let spaceActivity = {};
 let currentActivityPeriod = window.AppConstants.UI_CONFIG.currentActivityPeriod; // 0 = current 6 months, -1 = previous 6 months, etc.
 let activityEnabled = true; // Global activity system state
 let fileStatsEnabled = true; // Global file statistics system state
 
-// Local storage for last selected category
-function saveLastCategory(categoryId) {
-    localStorage.setItem(window.AppConstants.STORAGE_KEYS.lastCategory, categoryId);
+// Local storage for last selected space
+function saveLastSpace(spaceId) {
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.lastSpace, spaceId);
 }
 
-function getLastCategory() {
-    return localStorage.getItem(window.AppConstants.STORAGE_KEYS.lastCategory);
+function getLastSpace() {
+    return localStorage.getItem(window.AppConstants.STORAGE_KEYS.lastSpace);
 }
 
-function saveExpandedCategories() {
-    localStorage.setItem(window.AppConstants.STORAGE_KEYS.expandedCategories, JSON.stringify([...expandedCategories]));
+function saveExpandedSpaces() {
+    localStorage.setItem(window.AppConstants.STORAGE_KEYS.expandedSpaces, JSON.stringify([...expandedSpaces]));
 }
 
-function loadExpandedCategories() {
-    const saved = localStorage.getItem(window.AppConstants.STORAGE_KEYS.expandedCategories);
+function loadExpandedSpaces() {
+    const saved = localStorage.getItem(window.AppConstants.STORAGE_KEYS.expandedSpaces);
     if (saved) {
-        expandedCategories = new Set(JSON.parse(saved));
+        expandedSpaces = new Set(JSON.parse(saved));
     }
 }
 

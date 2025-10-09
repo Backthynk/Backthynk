@@ -288,9 +288,9 @@ function getFileIcon(fileExtension) {
     const ext = fileExtension.toLowerCase();
 
     // Search through FILE_ICON_MAP to find matching extension
-    for (const category of Object.values(window.AppConstants.FILE_ICON_MAP)) {
-        if (category.extensions.includes(ext)) {
-            return category.icon;
+    for (const space of Object.values(window.AppConstants.FILE_ICON_MAP)) {
+        if (space.extensions.includes(ext)) {
+            return space.icon;
         }
     }
 

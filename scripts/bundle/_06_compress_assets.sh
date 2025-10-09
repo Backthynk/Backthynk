@@ -34,6 +34,7 @@ compress_file() {
 # Use dynamically constructed paths from config
 BUNDLE_CSS_DIR=$(get_bundle_css_dir)
 BUNDLE_JS_DIR=$(get_bundle_js_dir)
+BUNDLE_TEMPLATES_DIR=$(get_bundle_templates_dir)
 
 # Compress CSS bundle
 CSS_BUNDLE="$BUNDLE_CSS_DIR/bundle.css"
@@ -47,6 +48,13 @@ JS_BUNDLE="$BUNDLE_JS_DIR/bundle.js"
 if [ -f "$JS_BUNDLE" ]; then
     log_substep "Compressing JS bundle..."
     compress_file "$JS_BUNDLE"
+fi
+
+# Compress HTML template
+HTML_BUNDLE="$BUNDLE_TEMPLATES_DIR/index.html"
+if [ -f "$HTML_BUNDLE" ]; then
+    log_substep "Compressing HTML template..."
+    compress_file "$HTML_BUNDLE"
 fi
 
 # Calculate compression ratios
