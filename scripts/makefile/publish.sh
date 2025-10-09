@@ -84,7 +84,7 @@ echo ""
 
 # Generate checksums for binaries (not archives)
 cd "$VERSION_DIR"
-for archive in *.tar.gz *.zip 2>/dev/null; do
+for archive in *.tar.gz *.zip; do
     [ -e "$archive" ] || continue
 
     # Extract binary name from archive
