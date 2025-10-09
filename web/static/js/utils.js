@@ -24,12 +24,13 @@ function generateSlug(name) {
 }
 
 // Validate space display name (matches backend validation)
-// Only letters and numbers can appear consecutively - all special chars must be separated
+// Must start AND end with letter or number, only letters and numbers can appear consecutively - all special chars must be separated
 function validateSpaceDisplayName(name) {
     if (!name || name.length === 0) return false;
 
-    // First check: only allowed characters (letters, numbers, spaces, hyphens, underscores, apostrophes, periods)
-    const basicPattern = /^[a-zA-Z0-9\s\-_'.]+$/;
+    // First check: must start AND end with letter or number, then allow letters, numbers, spaces, hyphens, underscores, apostrophes, periods in between
+    // Pattern allows single character (letter or number) OR multiple chars starting and ending with letter/number
+    const basicPattern = /^[a-zA-Z0-9]([a-zA-Z0-9\s\-_'.])*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
     if (!basicPattern.test(name)) {
         return false;
     }

@@ -345,6 +345,69 @@ func TestSpaceHandler_CreateSpace(t *testing.T) {
 			expectError:    false,
 		},
 		{
+			name: "Valid space name starting with number",
+			requestBody: map[string]interface{}{
+				"name":        "2024 Reports",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusCreated,
+			expectError:    false,
+		},
+		{
+			name: "Valid space name with special chars in middle",
+			requestBody: map[string]interface{}{
+				"name":        "My-Project_v2.0",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusCreated,
+			expectError:    false,
+		},
+		{
+			name: "Invalid space name starting with space",
+			requestBody: map[string]interface{}{
+				"name":        " Invalid Space",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "Invalid space name starting with hyphen",
+			requestBody: map[string]interface{}{
+				"name":        "-Invalid Space",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "Invalid space name starting with underscore",
+			requestBody: map[string]interface{}{
+				"name":        "_Invalid Space",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "Invalid space name starting with period",
+			requestBody: map[string]interface{}{
+				"name":        ".Invalid Space",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name: "Invalid space name starting with apostrophe",
+			requestBody: map[string]interface{}{
+				"name":        "'Invalid Space",
+				"description": "Test Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
 			name: "Missing name",
 			requestBody: map[string]interface{}{
 				"description": "Test Description",
@@ -449,6 +512,36 @@ func TestSpaceHandler_UpdateSpace(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			expectError:    false,
+		},
+		{
+			name:       "Valid update with number at start",
+			spaceID: strconv.Itoa(cat.ID),
+			requestBody: map[string]interface{}{
+				"name":        "2024 Updated",
+				"description": "Updated Description",
+			},
+			expectedStatus: http.StatusOK,
+			expectError:    false,
+		},
+		{
+			name:       "Invalid update - name starting with hyphen",
+			spaceID: strconv.Itoa(cat.ID),
+			requestBody: map[string]interface{}{
+				"name":        "-Invalid",
+				"description": "Updated Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name:       "Invalid update - name starting with space",
+			spaceID: strconv.Itoa(cat.ID),
+			requestBody: map[string]interface{}{
+				"name":        " Invalid",
+				"description": "Updated Description",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
 		},
 		{
 			name:       "Invalid space ID",

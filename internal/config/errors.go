@@ -34,7 +34,7 @@ const (
 
 	// Space Errors
 	ErrSpaceNotFound          = "Space not found"
-	ErrSpaceNameInvalidFormat = "Space name must contain only letters, numbers, and single spaces between words"
+	ErrSpaceNameInvalidFormat = "Space name must start with a letter or number, and can only contain letters, numbers, spaces, hyphens, underscores, apostrophes, and periods"
 
 	// Settings Errors
 	ErrFailedToMarshalSettings = "Failed to marshal settings"

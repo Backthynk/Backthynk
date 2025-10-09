@@ -57,7 +57,7 @@ const USER_MESSAGES = {
     error: {
         spaceNameEmpty: 'Space name cannot be empty',
         spaceNameTooLong: 'Space name must be {0} characters or less',
-        spaceNameInvalidChars: 'Space name can only contain letters, numbers, spaces, hyphens, underscores, apostrophes, and periods',
+        spaceNameInvalidChars: 'Space name must start AND end with a letter or number, and can only contain letters, numbers, spaces, hyphens, underscores, apostrophes, and periods (no consecutive special characters)',
         spaceDescTooLong: 'Description cannot exceed {0} characters',
         noSpaceSelected: 'No space selected',
         pleaseSelectSpace: 'Please select a space first',

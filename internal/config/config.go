@@ -54,7 +54,8 @@ const (
 	FilePermissions      = 0644
 
 	// Patterns (updated to allow more flexible display names)
-	SpaceNamePattern = `^[a-zA-Z0-9\s\-_'.]+$`
+	// Must start AND end with letter or number, then allow letters, numbers, spaces, hyphens, underscores, apostrophes, and periods in between
+	SpaceNamePattern = `^[a-zA-Z0-9]([a-zA-Z0-9\s\-_'.])*[a-zA-Z0-9]$|^[a-zA-Z0-9]$`
 
 	// Route Names
 	RouteAPI      = "api"

@@ -577,6 +577,56 @@ func TestValidateDisplayName(t *testing.T) {
 			input: "My Project  ",
 			valid: false,
 		},
+		{
+			name:  "Invalid name ending with space",
+			input: "MyProject ",
+			valid: false,
+		},
+		{
+			name:  "Invalid name ending with hyphen",
+			input: "MyProject-",
+			valid: false,
+		},
+		{
+			name:  "Invalid name ending with underscore",
+			input: "MyProject_",
+			valid: false,
+		},
+		{
+			name:  "Invalid name ending with period",
+			input: "MyProject.",
+			valid: false,
+		},
+		{
+			name:  "Invalid name ending with apostrophe",
+			input: "MyProject'",
+			valid: false,
+		},
+		{
+			name:  "Invalid name starting with space",
+			input: " MyProject",
+			valid: false,
+		},
+		{
+			name:  "Invalid name starting with hyphen",
+			input: "-MyProject",
+			valid: false,
+		},
+		{
+			name:  "Invalid name starting with underscore",
+			input: "_MyProject",
+			valid: false,
+		},
+		{
+			name:  "Invalid name starting with period",
+			input: ".MyProject",
+			valid: false,
+		},
+		{
+			name:  "Invalid name starting with apostrophe",
+			input: "'MyProject",
+			valid: false,
+		},
 
 		// Edge cases
 		{
@@ -587,7 +637,7 @@ func TestValidateDisplayName(t *testing.T) {
 		{
 			name:  "Only single space",
 			input: " ",
-			valid: true, // Single space is allowed
+			valid: false, // Must start and end with alphanumeric
 		},
 		{
 			name:  "Only spaces (multiple)",
@@ -602,7 +652,7 @@ func TestValidateDisplayName(t *testing.T) {
 		{
 			name:  "Single hyphen",
 			input: "-",
-			valid: true, // Single special char is allowed
+			valid: false, // Must start and end with alphanumeric
 		},
 		{
 			name:  "Emoji (invalid)",

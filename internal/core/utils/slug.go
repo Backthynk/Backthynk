@@ -36,13 +36,13 @@ func GenerateSlug(name string) string {
 
 // ValidateDisplayName checks if the display name meets requirements
 // Allows: letters, numbers, spaces, hyphens, underscores, apostrophes, periods
-// BUT: Only letters and numbers can appear consecutively - all special chars must be separated
+// BUT: Must start AND end with letter or number, and no consecutive special chars
 func ValidateDisplayName(name string) bool {
 	if len(name) == 0 {
 		return false
 	}
 
-	// First check: only allowed characters (letters, numbers, spaces, hyphens, underscores, apostrophes, periods)
+	// First check: must start and end with letter or number, only allowed characters in between
 	basicPattern := regexp.MustCompile(config.SpaceNamePattern)
 	if !basicPattern.MatchString(name) {
 		return false
