@@ -1,8 +1,15 @@
-{{CHANGELOG}}
+<details><summary>See patch note</summary>
 
 <br />
 
+{{CHANGELOG}}
+
+<br />
+</details>
+
 ---
+
+</details>
 
 ## Download & Installation
 
@@ -17,12 +24,12 @@ Choose the archive for your platform below:
 
 ### Important Notice
 
-As this is an open-source project, the binaries are not signed with paid developer certificates.
+As this is an open-source project, the binaries are not signed with **paid developer certificates**.
 
 **On macOS:**
-- Right-click the binary and select "Open"
-- Click "Open" again in the security dialog
-- Or run: `xattr -d com.apple.quarantine backthynk-v{{VERSION}}`
+- Before running the binary : `./backthynk-v{{VERSION}}`
+- You need to bypass Apple's dictatorship by running : `xattr -d com.apple.quarantine backthynk-v{{VERSION}}`
+- You can also do it in "Settings" → "Security & Privacy" 
 
 **On Windows:**
 - Windows Defender may show a SmartScreen warning
@@ -30,6 +37,10 @@ As this is an open-source project, the binaries are not signed with paid develop
 - Or add an exception in Windows Security
 
 ## Build Verification
+
+<details><summary>See build verification process guide</summary>
+
+<br />
 
 **Commit:** [`{{COMMIT_SHORT}}`]({{REPO_URL}}/commit/{{COMMIT_SHA}})
 
@@ -73,6 +84,8 @@ Get-FileHash backthynk-v{{VERSION}}.exe -Algorithm SHA256
 ```
 
 If the checksums match, the binary is authentic and unmodified.
+
+</details>
 
 ### SHA256 Checksums
 ```
