@@ -23,6 +23,8 @@ Or right-click the binary → "Open" → click "Open" again in the dialog.
 
 ---
 
+
+
 ## Verify Authenticity (Optional)
 
 Want to verify the binary is legitimate? Here's how:
@@ -36,22 +38,25 @@ shasum -a 256 backthynk-v{{VERSION}}
 
 **Step 3:** You'll see output like:
 ```
-a1b2c3d4e5f6...  backthynk-v{{VERSION}}
+a1b2c3d4e5f6... backthynk-v{{VERSION}}
 ```
 
-**Step 4:** Compare this hash with the official one from the release page:
-```
-{{SHA256}}
-```
-
-If they match exactly, the binary is authentic and unmodified.
-
-**Go deeper:** [View the source code]({{REPO_URL}}/tree/{{COMMIT_SHA}}) for this build on GitHub.
-
-Build it yourself:
+**Step 4:** Clone and checkout the release commit
 ```bash
 git clone {{REPO_URL}}.git
 cd backthynk
 git checkout {{COMMIT_SHA}}
+```
+
+**Step 5:** Build using Docker (ensures identical build environment)
+```bash
 make build-with-docker
 ```
+
+**Step 6:** Compare the freshly built binary hash with the released one
+ ```bash
+shasum -a 256 backthynk-v{{VERSION}}
+shasum -a 256 releases/macos-arm64/backthynk-v{{VERSION}}
+```
+
+If they match exactly, the binary is authentic and unmodified from the open sourced code.

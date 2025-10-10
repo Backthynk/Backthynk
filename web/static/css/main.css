@@ -242,8 +242,9 @@ button:active {
 
 /* URL link styles in posts */
 .post-content {
-    word-wrap: break-word;
-    overflow-wrap: anywhere;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
 }
 
 .post-content a {

@@ -256,11 +256,11 @@ function createPostElement(post) {
     let processedContent = post.content;
     if (!isMarkdownEnabled) {
         processedContent = formatTextWithUrls(post.content);
-        contentDiv.innerHTML = `<div class="text-gray-900 dark:text-gray-100">${processedContent}</div>`;
+        contentDiv.innerHTML = processedContent;
     } else {
-        contentDiv.innerHTML = `<div class="markdown-body text-gray-900 dark:text-gray-100">${processedContent}</div>`;
+        contentDiv.classList.add('markdown-body');
+        contentDiv.innerHTML = processedContent;
     }
-    const contentHtml = contentDiv.innerHTML;
 
     // Priority logic: Show attachments if available, otherwise show link previews
     // If there are attachments, do NOT show link previews
@@ -333,7 +333,16 @@ function createPostElement(post) {
         attachmentsHtml += '</div>';
     }
 
-    div.innerHTML = headerHtml + contentHtml + linkPreviewsHtml + attachmentsHtml;
+    // Build the post structure by inserting header HTML, then appending the content element
+    div.innerHTML = headerHtml + linkPreviewsHtml + attachmentsHtml;
+
+    // Insert contentDiv as the second child (after header, before linkPreviews/attachments)
+    const headerElement = div.firstElementChild;
+    if (headerElement) {
+        headerElement.after(contentDiv);
+    } else {
+        div.insertBefore(contentDiv, div.firstChild);
+    }
 
     // Setup navigation buttons for attachments
     if (totalAttachments > 0) {

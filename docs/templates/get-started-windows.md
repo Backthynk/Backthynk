@@ -42,19 +42,22 @@ Algorithm       Hash
 SHA256          A1B2C3D4E5F6...
 ```
 
-**Step 4:** Compare this hash with the official one from the release page:
-```
-{{SHA256}}
-```
-
-If they match exactly, the binary is authentic and unmodified.
-
-**Go deeper:** [View the source code]({{REPO_URL}}/tree/{{COMMIT_SHA}}) for this build on GitHub.
-
-Build it yourself:
+**Step 4:** Clone and checkout the release commit
 ```bash
 git clone {{REPO_URL}}.git
 cd backthynk
 git checkout {{COMMIT_SHA}}
+```
+
+**Step 5:** Build using Docker (ensures identical build environment)
+```bash
 make build-with-docker
 ```
+
+**Step 6:** Compare the freshly built binary hash with the released one
+```powershell
+Get-FileHash backthynk-v{{VERSION}}.exe -Algorithm SHA256
+Get-FileHash releases/windows-amd64/backthynk-v{{VERSION}}.exe -Algorithm SHA256
+```
+
+If they match exactly, the binary is authentic and unmodified from the open sourced code.
