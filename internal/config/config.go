@@ -16,8 +16,6 @@ const (
 )
 
 const (
-	VERSION = "0.1.0"
-
 	// Space Limits
 	MaxSpaceDepth             = 2
 	MaxSpaceNameLength        = 30

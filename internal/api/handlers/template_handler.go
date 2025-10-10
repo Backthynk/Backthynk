@@ -35,6 +35,7 @@ type PageData struct {
 	SpaceBreadcrumb string
 	MarkdownEnabled    bool
 	Dev                bool
+	Version            string
 	GithubURL          string
 	NewIssueURL        string
 }
@@ -49,6 +50,7 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 		URL:             r.Host + path,
 		MarkdownEnabled: h.options.Features.Markdown.Enabled,
 		Dev:             config.GetAppMode() == config.APP_MODE_DEV,
+		Version:         sharedCfg.App.Version,
 		GithubURL:       sharedCfg.URLs.GithubURL,
 		NewIssueURL:     sharedCfg.URLs.NewIssueURL,
 	}

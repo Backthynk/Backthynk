@@ -281,7 +281,7 @@ function shortenUrl(url, maxLength = window.AppConstants.UI_CONFIG.maxUrlDisplay
         return shortened;
     } catch (e) {
         // If URL parsing fails, just truncate the original
-        return url.length > maxLength ? url.substring(0, maxLength - 3) + window.AppConstants.UI_TEXT.ellipsis : url;
+        return url.length > maxLength ? url.substring(0, maxLength - 3) + '...' : url;
     }
 }
 

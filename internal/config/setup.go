@@ -247,8 +247,9 @@ func isPortAvailable(port int) bool {
 
 // PrintStartupInfo displays a clean startup summary with enabled features, port, and RAM usage
 func PrintStartupInfo(port string, opts *OptionsConfig) {
+	sharedCfg := GetSharedConfig()
 	fmt.Printf("\n%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorBold, colorCyan, colorReset)
-	fmt.Printf("%s%s  BackThynk Server Started%s\n", colorBold, colorCyan, colorReset)
+	fmt.Printf("%s%s  BackThynk Server Started (v%s)%s\n", colorBold, colorCyan, sharedCfg.App.Version, colorReset)
 	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n\n", colorBold, colorCyan, colorReset)
 
 	// Server info

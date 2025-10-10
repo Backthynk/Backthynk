@@ -229,7 +229,7 @@ function generateHeatmapFromCache(activityData) {
     const postsText = activityData.stats.total_posts === 1 ? window.AppConstants.UI_TEXT.post : window.AppConstants.UI_TEXT.posts;
     const daysText = activityData.stats.active_days === 1 ? window.AppConstants.UI_TEXT.day : window.AppConstants.UI_TEXT.days;
     document.getElementById('activity-summary').textContent =
-        `${activityData.stats.total_posts} ${postsText} ${window.AppConstants.UI_TEXT.on} ${activityData.stats.active_days} ${daysText}`;
+        `${activityData.stats.total_posts} ${postsText} ${'on'} ${activityData.stats.active_days} ${daysText}`;
 
     // Update navigation buttons
     document.getElementById('activity-next').disabled = currentActivityPeriod >= 0;

@@ -10,24 +10,29 @@ module.exports = {
       fontFamily: {
         // UI font - used for interface elements (buttons, headers, labels, etc.)
         sans: [
-          'Roboto',
-          '"Segoe UI"',
+          '"Mona Sans"',
+          'ui-sans-serif',
           '-apple-system',
           'BlinkMacSystemFont',
-          '"Helvetica Neue"',
+          '"Segoe UI"',
+          'Helvetica',
           'Arial',
           'sans-serif',
           '"Apple Color Emoji"',
-          '"Segoe UI Emoji"',
-          '"Segoe UI Symbol"'
+          '"Segoe UI Emoji"'
         ],
         // Content font - used for post content and dynamic text
         content: [
-          'Georgia',
-          'Cambria',
-          '"Times New Roman"',
-          'Times',
-          'serif'
+          '"Mona Sans"',
+          'ui-sans-serif',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Helvetica',
+          'Arial',
+          'sans-serif',
+          '"Apple Color Emoji"',
+          '"Segoe UI Emoji"'
         ],
       },
     },

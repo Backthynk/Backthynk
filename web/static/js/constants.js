@@ -188,20 +188,9 @@ const UI_TEXT = {
     posts: 'posts',
     day: 'day',
     days: 'days',
-    on: 'on',
     less: 'Less',
     more: 'More',
-    all: 'All',
-    spaces: 'Spaces',
     allSpaces: 'All Spaces',
-    settings: 'Settings',
-
-    // Time expressions
-    now: 'now',
-    ago: 'ago',
-    minutesAgo: 'm ago',
-    hoursAgo: 'h ago',
-    daysAgo: 'd ago',
 
     // File sizes
     bytes: 'Bytes',
@@ -210,52 +199,9 @@ const UI_TEXT = {
     gb: 'GB',
     zeroBytes: '0 Bytes',
 
-    // Common actions
-    save: 'Save',
-    cancel: 'Cancel',
-    delete: 'Delete',
-    edit: 'Edit',
-    create: 'Create',
-    update: 'Update',
-    loading: 'Loading',
-
-    // Error messages
-    error: 'Error',
-    failed: 'Failed',
-    success: 'Success',
-
-    // Navigation
-    next: 'Next',
-    previous: 'Previous',
-
-    // File operations
-    file: 'file',
-    files: 'files',
-    upload: 'Upload',
-    download: 'Download',
-
-    // Form labels (common ones found in HTML)
-    content: 'Content',
-    attachments: 'Attachments',
-    createNewPost: 'Create New Post',
-
-    // Settings spaces
-    fileUploadSettings: 'File Upload Settings',
-    contentSettings: 'Content Settings',
-    performanceSettings: 'Performance Settings',
-    activityTracking: 'Activity Tracking',
-    fileStatistics: 'Space Detailed',
-
     // Empty state messages
     noPostsYet: 'No posts yet. Create your first post!',
     noSpacesYet: 'No spaces yet. Create your first space!',
-    noFilesSelected: 'No files selected',
-    chooseFiles: 'Choose Files',
-
-    // Punctuation
-    ellipsis: '...',
-    colon: ':',
-    dash: '-'
 };
 
 // Retroactive Posting Constants
