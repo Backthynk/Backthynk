@@ -1,3 +1,8 @@
+body {
+    overflow-x: hidden;
+}
+
+
 /* Dark Mode CSS Variables */
 :root {
     /* Light mode colors (GitHub light) */
@@ -72,6 +77,11 @@
 }
 .space-item {
     margin-bottom: 1px;
+}
+
+/* Add spacing between parent and first child when expanded */
+.space-item.has-expanded-children > .flex {
+    margin-bottom: 4px;
 }
 
 /* Modern space styling to match activity section */
@@ -242,6 +252,7 @@ button:active {
 
 /* URL link styles in posts */
 .post-content {
+    font-size: 15px;
     word-wrap: break-word !important;
     overflow-wrap: anywhere !important;
     white-space: pre-wrap !important;
@@ -281,6 +292,10 @@ button:active {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-left: calc(-100vw + 100%);
+    margin-right: calc(-100vw + 100%);
+    padding-left: calc(100vw - 100%);
+    padding-right: calc(100vw - 100%);
 }
 
 .dark #timeline-header.scrolled {
@@ -296,7 +311,10 @@ button:active {
 
 @media (min-width: 1024px) {
     #timeline-header.scrolled #timeline-title {
-        transform: translateX(calc(-100% / 3 - 4.5rem));
+        transform: translateX(-300px);
+        @media (max-width: 1200px) {
+            transform: translateX(-250px); /* disgusting fix, better know it */
+        }
     }
 
     .sticky {

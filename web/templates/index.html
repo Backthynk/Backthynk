@@ -61,29 +61,24 @@
                 extend: {
                     fontFamily: {
                         sans: [
-                            '"Mona Sans"',
-                            'ui-sans-serif',
-                            '-apple-system',
-                            'BlinkMacSystemFont',
-                            '"Segoe UI"',
-                            'Helvetica',
-                            'Arial',
-                            'sans-serif',
-                            '"Apple Color Emoji"',
-                            '"Segoe UI Emoji"'
-
+                            '-apple-system', 
+                            'BlinkMacSystemFont', '"Segoe UI"', 
+                            'Roboto', 
+                            'Helvetica', 
+                            'Arial', 
+                            'sans-serif', 
+                            '"Apple Color Emoji"', 
+                            '"Segoe UI Emoji"', 
+                            '"Segoe UI Symbol"'
                         ],
                         content: [
-                            '"Mona Sans"',
-                            'ui-sans-serif',
-                            '-apple-system',
-                            'BlinkMacSystemFont',
-                            '"Segoe UI"',
-                            'Helvetica',
-                            'Arial',
-                            'sans-serif',
-                            '"Apple Color Emoji"',
-                            '"Segoe UI Emoji"'
+                            'ui-monospace', 
+                            'SFMono-Regular', 
+                            'SF Mono', 
+                            'Menlo', 
+                            'Consolas', 
+                            '"Liberation Mono"', 
+                            'monospace'
                         ],
                     }
                 }
@@ -94,9 +89,8 @@
     {{if .MarkdownEnabled}}
     <link id="markdown-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css" integrity="sha512-BrOPA520KmDMqieeM7XFe6a3u3Sb3F1JBaQnrIAmWg3EYrciJ+Qqe6ZcKCdfPv26rGcgTrJnZ/IdQEct8h3Zhw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     {{end}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
     <link href="/static/css/main.css" rel="stylesheet">
 </head>
@@ -104,9 +98,9 @@
 
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans transition-colors duration-200">
     <div class="container mx-auto px-4 py-8 max-w-7xl">
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-8 gap-6">
             <!-- Sidebar - Spaces -->
-            <div class="lg:col-span-1">
+            <div class="lg:col-span-2">
                 <!-- Sticky wrapper for both containers -->
                 <div class="sticky top-4 space-y-4">
                     <!-- Spaces Container -->
@@ -207,8 +201,7 @@
             </div>
 
             <!-- Main Content -->
-            <div class="lg:col-span-3">
-
+            <div class="lg:col-span-4">
                 <div>
                     <div id="timeline-header" class="py-4 mb-6">
                         <div class="timeline-content">
@@ -743,7 +736,7 @@
                             <textarea
                                 id="modal-post-content"
                                 rows="4"
-                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 dark:bg-gray-700 dark:text-gray-100"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200 dark:bg-gray-700 dark:text-gray-100 font-content"
                                 placeholder="Share your thoughts..."
                                 style="min-height: 100px; max-height: 200px; overflow-y: auto;"
                             ></textarea>

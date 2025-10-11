@@ -30,11 +30,12 @@ function renderSpaces() {
 
 function createSpaceElement(space, level = 0) {
     const div = document.createElement('div');
-    div.className = 'space-item mb-1';
-
     const hasChildren = spaces.some(cat => cat.parent_id === space.id);
     const isExpanded = expandedSpaces.has(space.id);
     const shouldShowChildren = isExpanded;
+
+    // Add class to indicate expanded children for CSS styling
+    div.className = `space-item mb-1 ${hasChildren && shouldShowChildren ? 'has-expanded-children' : ''}`;
 
     const mainDiv = document.createElement('div');
     mainDiv.className = 'flex items-center group';
@@ -61,10 +62,14 @@ function createSpaceElement(space, level = 0) {
     }`;
     spaceButton.dataset.spaceId = space.id; // Add data attribute for easy identification
 
+    // Calculate font size based on depth: depth 0 = 14px, then decrease by 1px per level
+    const baseFontSize = 15; // Increased from 13px (text-sm ~13px) to 14px
+    const fontSize = Math.max(baseFontSize - level, 10); // Minimum 10px to ensure readability
+
     spaceButton.innerHTML = `
         <div class="flex items-center min-w-0">
             <i class="fas fa-folder${isSelected ? '-open' : ''} mr-2 flex-shrink-0 text-xs ${isSelected ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'}"></i>
-            <span class="text-sm truncate" title="${space.name}">${space.name}</span>
+            <span class="truncate" style="font-size: ${fontSize}px" title="${space.name}">${space.name}</span>
         </div>
     `;
 
