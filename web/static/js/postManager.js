@@ -103,9 +103,12 @@ function renderPosts(posts, reset = true) {
 
         if (posts.length === 0) {
             container.innerHTML = `
-                <div class="text-center text-gray-500 dark:text-gray-400 py-8">
-                    <i class="fas fa-inbox text-4xl mb-4"></i>
-                    <p>${window.AppConstants.UI_TEXT.noPostsYet}</p>
+                <div class="text-center py-16 px-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700/50 mb-4">
+                        <i class="fas fa-inbox text-2xl text-gray-400 dark:text-gray-500"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">${window.AppConstants.UI_TEXT.noPostsYet}</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">${window.AppConstants.UI_TEXT.noPostsYetSubtext}</p>
                 </div>
             `;
             return;

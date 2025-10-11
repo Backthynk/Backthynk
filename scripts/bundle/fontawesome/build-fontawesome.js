@@ -16,6 +16,7 @@ const ICON_UNICODES = {
   'fa-coffee': '\\f0f4',
   'fa-cog': '\\f013',
   'fa-database': '\\f1c0',
+  'fa-discord': '\\f392',
   'fa-edit': '\\f044',
   'fa-ellipsis-h': '\\f141',
   'fa-exchange-alt': '\\f362',
@@ -48,11 +49,13 @@ const ICON_UNICODES = {
   'fa-plus': '\\f067',
   'fa-save': '\\f0c7',
   'fa-sitemap': '\\f0e8',
+  'fa-sliders-h': '\\f1de',
   'fa-sort-alpha-down': '\\f15d',
   'fa-sort-alpha-up': '\\f15e',
   'fa-sort-numeric-down': '\\f162',
   'fa-sort-numeric-up': '\\f163',
   'fa-spinner': '\\f110',
+  'fa-sun': '\\f185',
   'fa-sync': '\\f021',
   'fa-table': '\\f0ce',
   'fa-terminal': '\\f120',
@@ -181,6 +184,17 @@ function generateIconCSS(usedIcons) {
   font-weight: 400;
 }
 
+.fab {
+  font-family: "Font Awesome 6 Brands";
+  font-weight: 400;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Font face definitions */
 @font-face {
   font-family: "Font Awesome 6 Free";
@@ -196,6 +210,14 @@ function generateIconCSS(usedIcons) {
   font-weight: 900;
   font-display: block;
   src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/webfonts/fa-solid-900.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Font Awesome 6 Brands";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/webfonts/fa-brands-400.woff2") format("woff2");
 }
 
 /* Icon definitions */

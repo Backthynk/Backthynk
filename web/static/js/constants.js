@@ -199,8 +199,10 @@ const UI_TEXT = {
     zeroBytes: '0 Bytes',
 
     // Empty state messages
-    noPostsYet: 'No posts yet. Create your first post!',
-    noSpacesYet: 'No spaces yet. Create your first space!',
+    noPostsYet: 'Your canvas awaits',
+    noPostsYetSubtext: 'Share your first thought and bring this space to life',
+    noSpacesYet: 'Begin your journey',
+    noSpacesYetSubtext: 'Create your first space to organize your world',
 };
 
 // Retroactive Posting Constants
