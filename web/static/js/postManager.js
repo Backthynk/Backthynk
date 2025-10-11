@@ -179,7 +179,13 @@ function addLoadingIndicator(container) {
 
 function createPostElement(post) {
     const div = document.createElement('div');
-    div.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6 hover:shadow-md transition-shadow group max-w-full';
+    const hasAttachments = post.attachments && post.attachments.length > 0;
+    const hasLinkPreviews = post.link_previews && post.link_previews.length > 0;
+    const isTextOnly = !hasAttachments && !hasLinkPreviews;
+
+    // Use less padding for text-only posts
+    const paddingClass = 'p-4'
+    div.className = `bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 ${paddingClass} hover:shadow-md transition-shadow group max-w-full`;
     div.setAttribute('data-post-id', post.id);
 
     const images = post.attachments ? post.attachments.filter(att => att.file_type.startsWith('image/')) : [];
@@ -202,8 +208,9 @@ function createPostElement(post) {
         '';
 
     // Redesigned header
+    const headerMargin = isTextOnly ? 'mb-3' : 'mb-4';
     const headerHtml = `
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between ${headerMargin}">
             <div class="flex items-center space-x-2">
                 ${clickableSpaceBreadcrumb}
                 <span class="relative group/time text-sm text-gray-600 dark:text-gray-400 font-sans cursor-default">
@@ -241,7 +248,9 @@ function createPostElement(post) {
 
     // Content with markdown formatting or link conversion
     const contentDiv = document.createElement('div');
-    contentDiv.className = 'mb-4 post-content font-content text-gray-900 dark:text-gray-100';
+    // Use less margin for text-only posts
+    const contentMargin = isTextOnly ? 'mb-0' : 'mb-4';
+    contentDiv.className = `${contentMargin} post-content font-content text-gray-900 dark:text-gray-100`;
 
     // Hide content if it's link-only and we have a link preview
     if (shouldHideContent) {
@@ -269,7 +278,7 @@ function createPostElement(post) {
     // Enhanced attachments display
     let attachmentsHtml = '';
     if (totalAttachments > 0) {
-        attachmentsHtml = '<div class="border-t pt-3 mt-4">';
+        attachmentsHtml = '<div class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-4">';
 
         // Combine all attachments for a unified display
         const allAttachments = [...images, ...otherFiles];
@@ -278,19 +287,19 @@ function createPostElement(post) {
         attachmentsHtml += `
             <div>
                 <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Attachments</h4>
+                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-500">Attachments</h4>
                     <div class="flex items-center space-x-2">
                         <button type="button" class="post-attachment-prev p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="scrollAttachments(this, -1)">
                             <i class="fas fa-chevron-left text-xs"></i>
                         </button>
-                        <span class="post-attachment-counter text-xs text-gray-500 dark:text-gray-400">${totalAttachments} / ${totalAttachments}</span>
-                        <button type="button" class="post-attachment-next p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" disabled onclick="scrollAttachments(this, 1)">
+                        <span class="post-attachment-counter text-xs text-gray-500 dark:text-gray-400">1 / ${totalAttachments}</span>
+                        <button type="button" class="post-attachment-next p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30" onclick="scrollAttachments(this, 1)">
                             <i class="fas fa-chevron-right text-xs"></i>
                         </button>
                     </div>
                 </div>
                 <div class="relative overflow-hidden">
-                    <div class="flex items-center space-x-3 overflow-x-auto pb-2 scroll-smooth" data-attachment-container>
+                    <div class="flex items-center space-x-3 transition-transform duration-300 ease-in-out" data-attachment-container>
                         ${allAttachments.map((attachment, idx) => {
                             const isImage = attachment.file_type.startsWith('image/');
                             const fileExtension = attachment.filename.split('.').pop().toLowerCase();
@@ -783,6 +792,8 @@ function updateHeaderButtons() {
         document.getElementById('recursive-toggle-btn').style.display = 'none';
         document.getElementById('space-actions-dropdown').style.display = 'none';
         document.getElementById('settings-btn-mobile').style.display = 'block';
+        document.getElementById('theme-toggle-btn-mobile').style.display = 'block';
+
         document.getElementById('new-post-btn-mobile').style.display = 'none';
         return;
     }
@@ -806,6 +817,7 @@ function updateHeaderButtons() {
     // Show dropdown and hide settings when a space is selected (mobile only)
     document.getElementById('space-actions-dropdown').style.display = 'block';
     document.getElementById('settings-btn-mobile').style.display = 'none';
+    document.getElementById('theme-toggle-btn-mobile').style.display = 'none';
 
     // Show new post button on mobile
     const newPostBtnMobile = document.getElementById('new-post-btn-mobile');
@@ -879,6 +891,8 @@ function updateAllSpacesDisplay(fileStats) {
     document.getElementById('recursive-toggle-btn').style.display = 'none';
     document.getElementById('space-actions-dropdown').style.display = 'none';
     document.getElementById('settings-btn-mobile').style.display = 'block';
+    document.getElementById('theme-toggle-btn-mobile').style.display = 'block';
+
     const newPostBtnMobile = document.getElementById('new-post-btn-mobile');
     if (newPostBtnMobile) {
         newPostBtnMobile.style.display = 'none';
@@ -944,31 +958,140 @@ function setupAttachmentNavigation(postElement) {
     const container = postElement.querySelector('[data-attachment-container]');
     const leftBtn = postElement.querySelector('.post-attachment-prev');
     const rightBtn = postElement.querySelector('.post-attachment-next');
+    const counter = postElement.querySelector('.post-attachment-counter');
 
-    if (!container || !leftBtn || !rightBtn) return;
+    if (!container || !leftBtn || !rightBtn || !counter) return;
 
-    function updateButtonVisibility() {
-        const canScrollLeft = container.scrollLeft > 0;
-        const canScrollRight = container.scrollLeft < (container.scrollWidth - container.clientWidth);
+    // Initialize current index
+    container.dataset.currentIndex = '0';
 
-        leftBtn.disabled = !canScrollLeft;
-        rightBtn.disabled = !canScrollRight;
+    // Calculate initial state
+    const children = Array.from(container.children);
+    const containerParent = container.parentElement;
+    const containerWidth = containerParent.offsetWidth;
+
+    // Find how many items are initially visible
+    let rightmostVisibleIndex = 0;
+    let accumulatedWidth = 0;
+
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        const childWidth = child.offsetWidth;
+        const gap = 12; // space-x-3 = 0.75rem = 12px
+
+        if (i === 0 || accumulatedWidth + childWidth <= containerWidth) {
+            rightmostVisibleIndex = i;
+            accumulatedWidth += childWidth + (i < children.length - 1 ? gap : 0);
+        } else {
+            // Check if partially visible
+            if (accumulatedWidth < containerWidth) {
+                rightmostVisibleIndex = i;
+            }
+            break;
+        }
     }
 
-    container.addEventListener('scroll', updateButtonVisibility);
-    updateButtonVisibility();
+    // Update initial state
+    leftBtn.disabled = true;
+    rightBtn.disabled = rightmostVisibleIndex >= children.length - 1;
+    counter.textContent = `${rightmostVisibleIndex + 1} / ${children.length}`;
 }
 
 function scrollAttachments(button, direction) {
-    // Find the container by traversing up to find the attachment section
-    const attachmentSection = button.closest('div').parentNode.querySelector('[data-attachment-container]');
-    if (!attachmentSection) return;
+    // Find the post element and then the container within it
+    const postElement = button.closest('[data-post-id]');
+    if (!postElement) {
+        console.error('Could not find post element');
+        return;
+    }
 
-    const scrollAmount = 200; // pixels to scroll
-    attachmentSection.scrollBy({
-        left: direction * scrollAmount,
-        behavior: 'smooth'
-    });
+    const attachmentSection = postElement.querySelector('[data-attachment-container]');
+    if (!attachmentSection) {
+        console.error('Could not find attachment container');
+        return;
+    }
+
+    const children = Array.from(attachmentSection.children);
+    if (children.length === 0) return;
+
+    const containerParent = attachmentSection.parentElement;
+    const containerWidth = containerParent.offsetWidth;
+
+    // Get current index
+    let currentIndex = parseInt(attachmentSection.dataset.currentIndex || '0', 10);
+
+    // Calculate target index
+    let targetIndex = currentIndex + direction;
+    targetIndex = Math.max(0, targetIndex);
+
+    // Don't allow going beyond the last item
+    if (targetIndex >= children.length) return;
+
+    // Calculate the translateX for the target (scroll one item at a time)
+    const targetChild = children[targetIndex];
+    if (!targetChild) return;
+
+    let translateX = -targetChild.offsetLeft;
+
+    // Check what would be visible with this normal translation
+    const lastChild = children[children.length - 1];
+    const lastChildRight = lastChild.offsetLeft + lastChild.offsetWidth;
+    let visibleRightEdge = -translateX + containerWidth;
+
+    // Calculate the rightmost item that would be visible
+    let wouldShowRightmostIndex = targetIndex;
+    for (let i = targetIndex; i < children.length; i++) {
+        const child = children[i];
+        const childRight = child.offsetLeft + child.offsetWidth;
+        if (childRight <= visibleRightEdge + 1) {
+            wouldShowRightmostIndex = i;
+        }
+    }
+
+    // ONLY adjust if we would be showing the last item but it's cut off
+    if (wouldShowRightmostIndex === children.length - 1 && lastChildRight > visibleRightEdge) {
+        // Last item is partially visible, adjust ONLY the necessary amount to show it fully
+        translateX = -(lastChildRight - containerWidth);
+    }
+
+    // Check if we're already at this position (prevent duplicate clicks)
+    const currentTransformMatch = attachmentSection.style.transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+    const currentX = currentTransformMatch ? parseFloat(currentTransformMatch[1]) : 0;
+
+    if (Math.abs(currentX - translateX) < 1) {
+        return;
+    }
+
+    // Update the index and transform
+    attachmentSection.dataset.currentIndex = targetIndex.toString();
+    attachmentSection.style.transform = `translateX(${translateX}px)`;
+
+    // Calculate which attachments are actually visible after transform
+    let actualRightmostIndex = 0;
+    const actualVisibleLeft = -translateX;
+    const actualVisibleRight = actualVisibleLeft + containerWidth;
+
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        const childLeft = child.offsetLeft;
+        const childRight = childLeft + child.offsetWidth;
+
+        if (childRight > actualVisibleLeft && childLeft < actualVisibleRight) {
+            actualRightmostIndex = i;
+        }
+    }
+
+    // Update button states and counter
+    const leftBtn = postElement.querySelector('.post-attachment-prev');
+    const rightBtn = postElement.querySelector('.post-attachment-next');
+    const counter = postElement.querySelector('.post-attachment-counter');
+
+    if (leftBtn) leftBtn.disabled = targetIndex === 0;
+    if (rightBtn) {
+        const lastChildFullyVisible = lastChildRight <= actualVisibleRight + 1;
+        rightBtn.disabled = lastChildFullyVisible;
+    }
+    if (counter) counter.textContent = `${actualRightmostIndex + 1} / ${children.length}`;
 }
 
 // Make function globally accessible for onclick handlers

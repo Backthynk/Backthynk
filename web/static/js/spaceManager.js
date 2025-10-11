@@ -531,7 +531,7 @@ async function deleteSpace(space) {
     const allDescendants = await getAllDescendantSpaces(space.id);
     const totalSubspaces = allDescendants.length;
 
-    let message = `${window.AppConstants.USER_MESSAGES.confirm.deleteSpace} "${space.name}"?`;
+    let message = `${window.AppConstants.USER_MESSAGES.confirm.deleteSpace} **"${space.name}"**?`;
 
     if (totalSubspaces > 0) {
         message += `\n\nThis will also delete **${totalSubspaces}** subspace(ies)`;

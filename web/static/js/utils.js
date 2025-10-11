@@ -193,16 +193,27 @@ function showConfirmation(title, message, detailsHtml = null) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirmation-modal');
         const titleElement = document.getElementById('confirmation-title');
+        const titleWrapper = document.getElementById('confirmation-title-wrapper');
         const messageElement = document.getElementById('confirmation-message');
         const detailsElement = document.getElementById('confirmation-details');
+        const iconElement = document.getElementById('confirmation-icon');
         const confirmButton = document.getElementById('confirmation-confirm');
         const cancelButton = document.getElementById('confirmation-cancel');
 
         // Set content
         titleElement.textContent = title;
         // Parse bold formatting in message
-        const formattedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-black">$1</strong>');
+        const formattedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-gray-100">$1</strong>');
         messageElement.innerHTML = formattedMessage.replace(/\n/g, '<br>');
+
+        // Hide icon for Delete Post, show for others
+        if (title === 'Delete Post') {
+            iconElement.style.display = 'none';
+            titleWrapper.classList.remove('ml-4');
+        } else {
+            iconElement.style.display = 'flex';
+            titleWrapper.classList.add('ml-4');
+        }
 
         // Handle details section
         if (detailsHtml) {
