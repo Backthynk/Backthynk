@@ -37,7 +37,7 @@ type PageData struct {
 	Dev                bool
 	Version            string
 	GithubURL          string
-	NewIssueURL        string
+	DiscordURL        string
 }
 
 func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +52,7 @@ func (h *TemplateHandler) ServePage(w http.ResponseWriter, r *http.Request) {
 		Dev:             config.GetAppMode() == config.APP_MODE_DEV,
 		Version:         sharedCfg.App.Version,
 		GithubURL:       sharedCfg.URLs.GithubURL,
-		NewIssueURL:     sharedCfg.URLs.NewIssueURL,
+		DiscordURL:     sharedCfg.URLs.NewIssueURL,
 	}
 
 	// Check if this is a space path

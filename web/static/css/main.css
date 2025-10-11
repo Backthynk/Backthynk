@@ -235,6 +235,60 @@ button:active {
     }
 }
 
+/* Recursive badge styles */
+.recursive-badge {
+    display: inline-block;
+    min-width: 1.375rem;
+    height: 1.375rem;
+    padding: 0 0.375rem;
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.375rem;
+    text-align: center;
+    vertical-align: baseline;
+    margin-left: 0.375rem;
+    position: relative;
+    cursor: help;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.recursive-badge:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+}
+
+/* Tooltip for recursive badge */
+.recursive-badge::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    background-color: #1f2937;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+}
+
+.recursive-badge:hover::after {
+    opacity: 1;
+}
+
+.dark .recursive-badge::after {
+    background-color: #374151;
+}
+
 /* Link preview styles */
 .line-clamp-2 {
     display: -webkit-box;
@@ -277,55 +331,7 @@ button:active {
 }
 
 
-#timeline-header {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 0;
-    margin-left: 0;
-    margin-right: 0;
-}
-
-#timeline-header.scrolled {
-    background: rgba(249, 250, 251, 0.75);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    margin-left: calc(-100vw + 100%);
-    margin-right: calc(-100vw + 100%);
-    padding-left: calc(100vw - 100%);
-    padding-right: calc(100vw - 100%);
-}
-
-.dark #timeline-header.scrolled {
-    background: rgba(17, 24, 39, 0.75);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.timeline-content {
-    max-width: none;
-    margin: 0;
-    padding: 0;
-}
-
-@media (min-width: 1024px) {
-    #timeline-header.scrolled #timeline-title {
-        transform: translateX(-300px);
-        @media (max-width: 1200px) {
-            transform: translateX(-250px); /* disgusting fix, better know it */
-        }
-    }
-
-    .sticky {
-        transition: top 1.5s cubic-bezier(0.8, 0.0, 0.0, 1);
-    }
-
-    body.header-scrolled .sticky {
-        top: 6rem !important;
-        transition: top 0.4s cubic-bezier(0.2, 0.1, 0.1, 1);
-    }
-}
+/* Header styles removed - desktop uses simple title, mobile uses lg:hidden header */
 
 /* Z-Index Hierarchy:
    - 9999: Alerts (highest priority)

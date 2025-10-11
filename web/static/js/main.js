@@ -112,8 +112,8 @@ function updateSpaceContainerHeight() {
     // Get viewport height
     const viewportHeight = window.innerHeight;
 
-    // Always assume header is scrolled (worst case = 96px) for consistent sizing
-    const headerHeight = 96;
+    // Account for top padding and other spacing
+    const topPadding = 32; // py-8 on container
 
     // Activity container: if visible, assume fixed height of 330px
     let activityHeight = 0;
@@ -135,7 +135,7 @@ function updateSpaceContainerHeight() {
 
     // Calculate maximum available height for the entire space container
     const maxHeight = viewportHeight
-        - headerHeight
+        - topPadding
         - topSpacing * 2
         - activityHeight
         - footerHeight
@@ -188,8 +188,6 @@ async function initializeApp() {
 
     // Wait for spaces to complete (if it was started)
     await spacesPromise;
-
-    initializeStickyHeader();
 
     // Initialize components that need settings
     initializeModalCharacterCounter();
@@ -293,8 +291,73 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Post creation events
+    // Post creation events - Desktop and Mobile
     document.getElementById('new-post-btn').onclick = showCreatePost;
+    const newPostBtnMobile = document.getElementById('new-post-btn-mobile');
+    if (newPostBtnMobile) {
+        newPostBtnMobile.onclick = showCreatePost;
+    }
+
+    // Settings button - Desktop and Mobile
+    const settingsBtnMobile = document.getElementById('settings-btn-mobile');
+    if (settingsBtnMobile) {
+        settingsBtnMobile.onclick = function() { document.getElementById('settings-btn').click(); };
+    }
+
+    // Theme toggle - Mobile
+    const themeToggleMobile = document.getElementById('theme-toggle-btn-mobile');
+    if (themeToggleMobile) {
+        themeToggleMobile.onclick = function() { document.getElementById('theme-toggle-btn').click(); };
+    }
+
+    // Desktop space action dropdown
+    const desktopSpaceActionsBtn = document.getElementById('desktop-space-actions-btn');
+    const desktopSpaceActionsMenu = document.getElementById('desktop-space-actions-menu');
+
+    if (desktopSpaceActionsBtn && desktopSpaceActionsMenu) {
+        desktopSpaceActionsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            desktopSpaceActionsMenu.classList.toggle('hidden');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (desktopSpaceActionsBtn && !desktopSpaceActionsBtn.contains(e.target) && !desktopSpaceActionsMenu.contains(e.target)) {
+                desktopSpaceActionsMenu.classList.add('hidden');
+            }
+        });
+    }
+
+    // Desktop space action buttons
+    const editSpaceBtnDesktop = document.getElementById('edit-space-btn-desktop');
+    const deleteSpaceBtnDesktop = document.getElementById('delete-space-btn-desktop');
+    const recursiveToggleBtnDesktop = document.getElementById('recursive-toggle-btn-desktop');
+
+    if (editSpaceBtnDesktop) {
+        editSpaceBtnDesktop.addEventListener('click', () => {
+            if (currentSpace) {
+                showEditSpaceModal();
+                desktopSpaceActionsMenu?.classList.add('hidden');
+            }
+        });
+    }
+
+    if (deleteSpaceBtnDesktop) {
+        deleteSpaceBtnDesktop.addEventListener('click', () => {
+            if (currentSpace) {
+                deleteSpace(currentSpace);
+                desktopSpaceActionsMenu?.classList.add('hidden');
+            }
+        });
+    }
+
+    if (recursiveToggleBtnDesktop) {
+        recursiveToggleBtnDesktop.addEventListener('click', () => {
+            if (currentSpace) {
+                toggleRecursiveMode(currentSpace);
+            }
+        });
+    }
 
     // Modal post creation events
     document.getElementById('close-post-modal').onclick = handleModalClose;

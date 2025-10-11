@@ -160,8 +160,6 @@ function selectSpace(space, fromUserClick = false) {
 
     // Update UI
     document.getElementById('new-post-btn').style.display = 'block';
-    document.getElementById('settings-btn').style.display = 'none';
-    document.getElementById('theme-toggle-btn').style.display = 'none';
     document.getElementById('space-actions-dropdown').style.display = 'block';
 
     // Ensure all parent spaces are expanded
@@ -281,8 +279,6 @@ function deselectSpace() {
 
     // Update UI
     document.getElementById('new-post-btn').style.display = 'none';
-    document.getElementById('settings-btn').style.display = 'block';
-    document.getElementById('theme-toggle-btn').style.display = 'block';
     document.getElementById('space-actions-dropdown').style.display = 'none';
 
     // Update header immediately with cached post counts
@@ -585,8 +581,6 @@ async function deleteSpace(space) {
                 localStorage.removeItem(window.AppConstants.STORAGE_KEYS.lastSpace);
                 document.getElementById('timeline-title').textContent = '';
                 document.getElementById('new-post-btn').style.display = 'none';
-                document.getElementById('settings-btn').style.display = 'block';
-                document.getElementById('theme-toggle-btn').style.display = 'block';
                 document.getElementById('recursive-toggle-btn').style.display = 'none';
                 document.getElementById('space-actions-dropdown').style.display = 'none';
                 document.getElementById('posts-container').innerHTML = '';

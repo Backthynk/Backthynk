@@ -176,25 +176,26 @@
                     </div>
 
                     <!-- Footer Links -->
-                    <div id="footer-links" class="hidden lg:block bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-3">
-                        <div class="text-xs text-center text-gray-500 dark:text-gray-400 space-y-1">
-                            <div>
-                                {{if .GithubURL}}
-                                <a href="{{.GithubURL}}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-                                    Backthynk@v{{.Version}}
+                    <div id="footer-links" class="hidden lg:block space-y-3">
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-2 py-1.5">
+                            <div class="flex items-center justify-center gap-2">
+                                <button id="theme-toggle-btn" class="flex items-center justify-center w-9 h-9 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Toggle theme">
+                                    <i class="fas fa-moon text-sm dark:hidden"></i>
+                                    <i class="fas fa-sun text-sm hidden dark:inline-block"></i>
+                                </button>
+                                <button id="settings-btn" class="flex items-center justify-center w-9 h-9 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Settings">
+                                    <i class="fas fa-sliders-h text-sm"></i>
+                                </button>
+                                {{if .DiscordURL}}
+                                <a href="{{.DiscordURL}}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center w-9 h-9 text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Chat with the dev">
+                                    <i class="fab fa-discord text-sm"></i>
                                 </a>
-                                {{else}}
-                                Backthynk@v{{.Version}}
                                 {{end}}
-                                © <span id="copyright-year"></span>
                             </div>
-                            {{if .NewIssueURL}}
-                            <div>
-                                <a href="{{.NewIssueURL}}" target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
-                                    <i class="fas fa-bug mr-1"></i>Report Bug
-                                </a>
-                            </div>
-                            {{end}}
+                        </div>
+                        <div style="font-size: 10.5px;" class="text-center text-gray-400 dark:text-gray-500 space-y-1">
+                            <div>Powered by Backthynk</div>
+                            <div>v{{.Version}} © <span id="copyright-year"></span></div>
                         </div>
                     </div>
                 </div>
@@ -203,10 +204,11 @@
             <!-- Main Content -->
             <div class="lg:col-span-4">
                 <div>
-                    <div id="timeline-header" class="py-4 mb-6">
+                    <!-- Header - Mobile only (sticky) -->
+                    <div id="timeline-header" class="sticky top-0 z-40 bg-gray-50 dark:bg-gray-900 py-4 mb-6 lg:hidden">
                         <div class="timeline-content">
                             <div class="flex items-center justify-between">
-                                <div id="timeline-title" class="flex-1 min-w-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)]">
+                                <div id="timeline-title" class="flex-1 min-w-0">
                                     <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100"></h2>
                                 </div>
                                 <div class="flex items-center space-x-3">
@@ -236,15 +238,15 @@
                                         </div>
                                     </div>
 
-                                    <button id="theme-toggle-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" title="Toggle dark mode">
+                                    <button id="theme-toggle-btn-mobile" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors" title="Toggle dark mode">
                                         <i class="fas fa-lightbulb text-xs dark:hidden"></i>
                                         <i class="fas fa-moon text-xs hidden dark:inline-block"></i>
                                     </button>
-                                    <button id="settings-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
+                                    <button id="settings-btn-mobile" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400 focus:border-gray-500 transition-colors">
                                         <i class="fas fa-cog text-xs mr-1"></i>
                                         <span>Settings</span>
                                     </button>
-                                    <button id="new-post-btn" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" style="display: none;">
+                                    <button id="new-post-btn-mobile" class="flex items-center justify-center h-8 px-3 text-sm font-medium text-white bg-green-600 hover:bg-green-700 border border-transparent rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" style="display: none;">
                                         <i class="fas fa-plus text-xs mr-1"></i>
                                         <span>New Post</span>
                                     </button>
@@ -252,9 +254,73 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="posts-container" class="space-y-6">
                         <!-- Posts will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Companion Panel - Desktop only -->
+            <div class="hidden lg:block lg:col-span-2">
+                <div class="sticky top-4 space-y-4">
+                    <!-- Search Input Card -->
+                    <div class="flex items-center gap-2">
+                        <!-- Recursive Toggle Button - Shows when space has children -->
+                        <button id="recursive-toggle-btn-desktop" class="flex items-center justify-center w-9 h-9 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" style="display: none;" title="Toggle recursive view">
+                            <i class="fas fa-sitemap text-sm"></i>
+                        </button>
+                        <div class="flex-1 relative">
+                            <input
+                                type="text"
+                                id="desktop-search-input"
+                                class="w-full px-3 py-2 text-sm bg-white dark:bg-gray-900 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 rounded-md cursor-not-allowed"
+                                placeholder="Coming soon..."
+                                disabled
+                                readonly
+                            >
+                        </div>
+                    </div>
+
+                    <!-- Space Title & Info (when space selected) -->
+                    <div id="desktop-space-header" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4" style="display: none;">
+                        <div class="flex items-start justify-between mb-2">
+                            <div id="desktop-title-content" class="flex-1 min-w-0">
+                                <!-- Will be populated with space title, breadcrumb, stats -->
+                            </div>
+                            <!-- Space Actions Menu Icon -->
+                            <div id="desktop-space-actions-icon" class="relative ml-2" style="display: none;">
+                                <button id="desktop-space-actions-btn" class="flex items-center justify-center w-8 h-8 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <div id="desktop-space-actions-menu" class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50 hidden">
+                                    <div class="py-1">
+                                        <button id="edit-space-btn-desktop" class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                            <i class="fas fa-edit text-xs mr-3"></i>
+                                            Edit Space
+                                        </button>
+                                        <button id="delete-space-btn-desktop" class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                                            <i class="fas fa-trash-alt text-xs mr-3"></i>
+                                            Delete Space
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="desktop-space-description" class="hidden">
+                            <!-- Description will be shown here if it exists -->
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions Card -->
+                    <div id="desktop-actions-card" class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4" style="display: none;">
+                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Actions</h3>
+
+                        <!-- New Post Button - Always visible when space selected -->
+                        <button id="new-post-btn" class="w-full flex items-center justify-center px-4 py-2.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                            <i class="fas fa-plus text-xs mr-2"></i>
+                            New Post
+                        </button>
                     </div>
                 </div>
             </div>
@@ -855,7 +921,6 @@
     <script src="/static/js/imageViewer.js"></script>
     <script src="/static/js/linkPreview.js"></script>
     <script src="/static/js/activityTracker.js"></script>
-    <script src="/static/js/stickyHeader.js"></script>
     <script src="/static/js/settings.js"></script>
     <script src="/static/js/main.js"></script>
 </body>

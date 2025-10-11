@@ -134,7 +134,6 @@ const UI_CONFIG = {
     // UI Timing
     debounceDelay: 500,
     successMessageDelay: 1500,
-    scrollThreshold: 50,
     settingsTransitionDelay: 100,
 
     // File Size Display

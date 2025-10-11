@@ -90,6 +90,19 @@ async function fetchActivityPeriod(spaceId, recursive = false, period = 0) {
     return await fetchActivityData(spaceId, recursive, period);
 }
 
+// Helper function to count all descendant spaces recursively
+function countDescendantSpaces(parentId) {
+    let count = 0;
+    const directChildren = spaces.filter(cat => cat.parent_id === parentId);
+
+    for (const child of directChildren) {
+        count++; // Count this child
+        count += countDescendantSpaces(child.id); // Count its descendants
+    }
+
+    return count;
+}
+
 // Update space breadcrumb display
 function updateActivitySpaceBreadcrumb() {
     const breadcrumbElement = document.getElementById('activity-space-breadcrumb');
@@ -144,19 +157,18 @@ function updateActivitySpaceBreadcrumb() {
         }).join(' <span class="text-gray-400 dark:text-gray-500 mx-1">></span> ');
     }
 
-    breadcrumbElement.innerHTML = breadcrumbHtml;
-
-    // Update recursive mode badge
-    const recursiveBadgeElement = document.getElementById('activity-recursive-badge');
-    if (recursiveBadgeElement) {
-        if (currentSpace.recursiveMode) {
-            recursiveBadgeElement.innerHTML = `<span class="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 mr-2" title="Recursive mode: showing posts from this space and all child spaces">
-                   <i class="fas fa-sitemap"></i>
-               </span>`;
-        } else {
-            recursiveBadgeElement.innerHTML = '';
+    // Add recursive badge if in recursive mode
+    if (currentSpace.recursiveMode) {
+        const descendantCount = countDescendantSpaces(currentSpace.id);
+        if (descendantCount > 0) {
+            const displayCount = descendantCount > 99 ? '99+' : descendantCount;
+            const subspacesText = descendantCount === 1 ? 'subspace' : 'subspaces';
+            const tooltip = `Exploring ${currentSpace.name} and ${descendantCount} of its ${subspacesText}`;
+            breadcrumbHtml += ` <span class="text-gray-400 dark:text-gray-500">/</span><span class="recursive-badge" data-tooltip="${tooltip}">${displayCount}</span>`;
         }
     }
+
+    breadcrumbElement.innerHTML = breadcrumbHtml;
 }
 
 // Generate heatmap from cached activity data
@@ -170,7 +182,6 @@ function generateHeatmapFromCache(activityData) {
                 <div id="activity-space-breadcrumb">
                     <!-- Breadcrumb will be generated dynamically -->
                 </div>
-                <span id="activity-recursive-badge"></span>
             </div>
             <div class="flex items-center justify-center mb-4">
                 <button id="activity-prev" class="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-30 mr-3" onclick="changeActivityPeriod(-1)">

@@ -634,23 +634,147 @@ function updateSpaceStatsDisplay(stats) {
         ? currentSpace.description
         : `Created ${creationDate}`;
 
-    document.getElementById('timeline-title').innerHTML = `
-        <div class="group relative">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${spaceBreadcrumb}</h2>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
-                <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
-                <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
-            </p>
-            ${currentSpace.description && currentSpace.description.trim() ? `
-                <div class="absolute left-0 top-full mt-1 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-md">
-                    ${currentSpace.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-                </div>
-            ` : ''}
-        </div>
-    `;
+    // Update mobile header (timeline-title)
+    const mobileTitle = document.getElementById('timeline-title');
+    if (mobileTitle) {
+        mobileTitle.innerHTML = `
+            <div class="group relative">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${spaceBreadcrumb}</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
+                    <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
+                    <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
+                </p>
+                ${currentSpace.description && currentSpace.description.trim() ? `
+                    <div class="absolute left-0 top-full mt-1 px-3 py-2 bg-gray-900 dark:bg-gray-700 text-white text-sm rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 max-w-md">
+                        ${currentSpace.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // Update desktop companion panel
+    updateDesktopCompanionPanel(stats, spaceBreadcrumb, statsText, creationDate);
 
     // Update button visibility and states
     updateHeaderButtons();
+}
+
+// Helper function to count all descendant spaces recursively
+function countDescendantSpaces(parentId) {
+    let count = 0;
+    const directChildren = spaces.filter(cat => cat.parent_id === parentId);
+
+    for (const child of directChildren) {
+        count++; // Count this child
+        count += countDescendantSpaces(child.id); // Count its descendants
+    }
+
+    return count;
+}
+
+// Function to update desktop companion panel
+function updateDesktopCompanionPanel(stats, spaceBreadcrumb, statsText, creationDate) {
+    const desktopSpaceHeader = document.getElementById('desktop-space-header');
+    const desktopTitleContent = document.getElementById('desktop-title-content');
+    const desktopSpaceDescription = document.getElementById('desktop-space-description');
+    const desktopSpaceActionsIcon = document.getElementById('desktop-space-actions-icon');
+    const desktopActionsCard = document.getElementById('desktop-actions-card');
+    const recursiveToggleBtnDesktop = document.getElementById('recursive-toggle-btn-desktop');
+
+    // Handle "All Spaces" view
+    if (!currentSpace || currentSpace.id === window.AppConstants.ALL_SPACES_ID) {
+        // Show header with "All Spaces"
+        if (desktopSpaceHeader) desktopSpaceHeader.style.display = 'block';
+
+        if (desktopTitleContent) {
+            desktopTitleContent.innerHTML = `
+                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">${spaceBreadcrumb || window.AppConstants.UI_TEXT.allSpaces}</h2>
+                <div class="group/stats relative">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        <span class="transition-opacity group-hover/stats:opacity-0">${statsText || ''}</span>
+                        <span class="absolute top-0 left-0 opacity-0 group-hover/stats:opacity-100 transition-opacity">${creationDate || ''}</span>
+                    </p>
+                </div>
+            `;
+        }
+
+        // Hide space-specific elements
+        if (desktopSpaceDescription) {
+            desktopSpaceDescription.className = 'hidden';
+            desktopSpaceDescription.innerHTML = '';
+        }
+        if (desktopSpaceActionsIcon) desktopSpaceActionsIcon.style.display = 'none';
+        if (desktopActionsCard) desktopActionsCard.style.display = 'none';
+        if (recursiveToggleBtnDesktop) recursiveToggleBtnDesktop.style.display = 'none';
+        return;
+    }
+
+    // Show space header
+    if (desktopSpaceHeader) desktopSpaceHeader.style.display = 'block';
+
+    // Add recursive badge if in recursive mode
+    let breadcrumbWithBadge = spaceBreadcrumb;
+    if (currentSpace.recursiveMode) {
+        const descendantCount = countDescendantSpaces(currentSpace.id);
+        if (descendantCount > 0) {
+            const displayCount = descendantCount > 99 ? '99+' : descendantCount;
+            const subspacesText = descendantCount === 1 ? 'subspace' : 'subspaces';
+            const tooltip = `Exploring ${currentSpace.name} and ${descendantCount} of its ${subspacesText}`;
+            breadcrumbWithBadge += ` <span class="text-gray-400 dark:text-gray-500">/</span><span class="recursive-badge" data-tooltip="${tooltip}">${displayCount}</span>`;
+        }
+    }
+
+    // Populate space title with breadcrumb and stats (with hover effect)
+    if (desktopTitleContent) {
+        desktopTitleContent.innerHTML = `
+            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">${breadcrumbWithBadge}</h2>
+            <div class="group/stats relative">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <span class="transition-opacity group-hover/stats:opacity-0">${statsText}</span>
+                    <span class="absolute top-0 left-0 opacity-0 group-hover/stats:opacity-100 transition-opacity">${creationDate}</span>
+                </p>
+            </div>
+        `;
+    }
+
+    // Show description below separator if it exists
+    if (desktopSpaceDescription && currentSpace.description && currentSpace.description.trim()) {
+        desktopSpaceDescription.className = 'pt-3 mt-3 border-t border-gray-200 dark:border-gray-700';
+        desktopSpaceDescription.innerHTML = `
+            <p class="text-xs text-gray-600 dark:text-gray-400 italic">
+                "${currentSpace.description.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}"
+            </p>
+        `;
+    } else if (desktopSpaceDescription) {
+        desktopSpaceDescription.className = 'hidden';
+        desktopSpaceDescription.innerHTML = '';
+    }
+
+    // Show space actions menu icon
+    if (desktopSpaceActionsIcon) desktopSpaceActionsIcon.style.display = 'block';
+
+    // Show actions card
+    if (desktopActionsCard) desktopActionsCard.style.display = 'block';
+
+    // Handle recursive toggle button
+    const hasSubspaces = spaces.some(cat => cat.parent_id === currentSpace.id);
+    if (recursiveToggleBtnDesktop) {
+        if (hasSubspaces) {
+            recursiveToggleBtnDesktop.style.display = 'flex';
+
+            // Update button styling based on recursive mode
+            if (currentSpace.recursiveMode) {
+                recursiveToggleBtnDesktop.className = 'flex items-center justify-center w-9 h-9 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors';
+                recursiveToggleBtnDesktop.title = 'Viewing with subspaces (click to toggle)';
+            } else {
+                recursiveToggleBtnDesktop.className = 'flex items-center justify-center w-9 h-9 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors';
+                recursiveToggleBtnDesktop.title = 'Viewing this space only (click to toggle)';
+            }
+        } else {
+            recursiveToggleBtnDesktop.style.display = 'none';
+        }
+    }
 }
 
 // Function to update header button visibility and states
@@ -658,7 +782,8 @@ function updateHeaderButtons() {
     if (!currentSpace) {
         document.getElementById('recursive-toggle-btn').style.display = 'none';
         document.getElementById('space-actions-dropdown').style.display = 'none';
-        document.getElementById('settings-btn').style.display = 'block';
+        document.getElementById('settings-btn-mobile').style.display = 'block';
+        document.getElementById('new-post-btn-mobile').style.display = 'none';
         return;
     }
 
@@ -678,9 +803,15 @@ function updateHeaderButtons() {
         recursiveToggleBtn.style.display = 'none';
     }
 
-    // Show dropdown and hide settings when a space is selected
+    // Show dropdown and hide settings when a space is selected (mobile only)
     document.getElementById('space-actions-dropdown').style.display = 'block';
-    document.getElementById('settings-btn').style.display = 'none';
+    document.getElementById('settings-btn-mobile').style.display = 'none';
+
+    // Show new post button on mobile
+    const newPostBtnMobile = document.getElementById('new-post-btn-mobile');
+    if (newPostBtnMobile) {
+        newPostBtnMobile.style.display = 'block';
+    }
 }
 
 // Function to navigate to a space when clicked from a post
@@ -727,20 +858,31 @@ function updateAllSpacesDisplay(fileStats) {
         statsText += ` • ${fileStats.file_count} file${fileStats.file_count !== 1 ? 's' : ''} • ${formatFileSize(fileStats.total_size)}`;
     }
 
-    document.getElementById('timeline-title').innerHTML = `
-        <div class="group">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${window.AppConstants.UI_TEXT.allSpaces}</h2>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
-                <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
-                <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
-            </p>
-        </div>
-    `;
+    // Update mobile header
+    const mobileTitle = document.getElementById('timeline-title');
+    if (mobileTitle) {
+        mobileTitle.innerHTML = `
+            <div class="group">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">${window.AppConstants.UI_TEXT.allSpaces}</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 relative">
+                    <span class="transition-opacity group-hover:opacity-0">${statsText}</span>
+                    <span class="absolute top-0 left-0 opacity-0 group-hover:opacity-100 transition-opacity">${creationDate}</span>
+                </p>
+            </div>
+        `;
+    }
+
+    // Update desktop companion panel - hide space-specific elements
+    updateDesktopCompanionPanel(null, window.AppConstants.UI_TEXT.allSpaces, statsText, creationDate);
 
     // Update button visibility - hide space-specific buttons
     document.getElementById('recursive-toggle-btn').style.display = 'none';
     document.getElementById('space-actions-dropdown').style.display = 'none';
-    document.getElementById('settings-btn').style.display = 'block';
+    document.getElementById('settings-btn-mobile').style.display = 'block';
+    const newPostBtnMobile = document.getElementById('new-post-btn-mobile');
+    if (newPostBtnMobile) {
+        newPostBtnMobile.style.display = 'none';
+    }
 }
 
 // Helper function to check if spaceId is a descendant of parentId

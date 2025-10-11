@@ -106,7 +106,7 @@ func createOptionsConfig() error {
 				Description string `json:"description"`
 			}{
 				Title:       "Backthynk",
-				Description: "Self-hosted micro-blogging platform for people with messy thoughts.",
+				Description: "A simple, lightweight micro-blogging service for people who think too fast.",
 			},
 		}
 
