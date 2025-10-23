@@ -15,10 +15,10 @@ https://github.com/user-attachments/assets/9034c9f5-1ed8-4ef6-a70b-7673624be742
 
 ## Quickstart
 
-<details open><summary><b>Linux</b></summary>
+<details open><summary><b>Linux AMD64</b></summary>
 
 ```bash
-# Download and extract (AMD64)
+# Download and extract
 curl -s https://api.github.com/repos/Backthynk/Backthynk/releases/latest | grep "browser_download_url.*linux-amd64.tar.gz" | cut -d '"' -f 4 | wget -qi -
 tar -xzf backthynk-*-linux-amd64.tar.gz
 
@@ -29,14 +29,28 @@ chmod +x backthynk-*
 # Open your browser at http://localhost:1369
 ```
 
-**Note:** For ARM64, replace `linux-amd64` with `linux-arm64`.
+</details>
+
+<details><summary><b>Linux ARM64</b></summary>
+
+```bash
+# Download and extract
+curl -s https://api.github.com/repos/Backthynk/Backthynk/releases/latest | grep "browser_download_url.*linux-arm64.tar.gz" | cut -d '"' -f 4 | wget -qi -
+tar -xzf backthynk-*-linux-arm64.tar.gz
+
+# Make executable and run
+chmod +x backthynk-*
+./backthynk-*
+
+# Open your browser at http://localhost:1369
+```
 
 </details>
 
-<details><summary><b>macOS</b></summary>
+<details><summary><b>macOS Apple Silicon (ARM64)</b></summary>
 
 ```bash
-# Download and extract (Apple Silicon)
+# Download and extract
 curl -s https://api.github.com/repos/Backthynk/Backthynk/releases/latest | grep "browser_download_url.*macos-arm64.tar.gz" | cut -d '"' -f 4 | xargs curl -LO
 tar -xzf backthynk-*-macos-arm64.tar.gz
 
@@ -47,7 +61,21 @@ xattr -d com.apple.quarantine backthynk-*
 # Open your browser at http://localhost:1369
 ```
 
-**Note:** For Intel Macs, replace `macos-arm64` with `macos-amd64`.
+</details>
+
+<details><summary><b>macOS Intel (AMD64)</b></summary>
+
+```bash
+# Download and extract
+curl -s https://api.github.com/repos/Backthynk/Backthynk/releases/latest | grep "browser_download_url.*macos-amd64.tar.gz" | cut -d '"' -f 4 | xargs curl -LO
+tar -xzf backthynk-*-macos-amd64.tar.gz
+
+# Remove quarantine and run
+xattr -d com.apple.quarantine backthynk-*
+./backthynk-*
+
+# Open your browser at http://localhost:1369
+```
 
 </details>
 
@@ -68,7 +96,23 @@ Expand-Archive -Path backthynk.zip -DestinationPath .
 
 **Note:** Windows Defender may block the app. Click "More info" → "Run anyway" to proceed.
 
-That's it.
+</details>
+
+<details><summary><b>Docker Build</b></summary>
+
+```bash
+# Clone and build
+git clone https://github.com/Backthynk/backthynk.git
+cd backthynk
+make build-with-docker # Image building can take ~10-30 minutes first time, depending on your connection.
+
+# Navigate to your platform's release folder and run
+cd releases
+# cd to your platform folder
+./backthynk-*
+
+# Open your browser at http://localhost:1369
+```
 
 </details>
 
@@ -139,21 +183,6 @@ Easy on the eyes at 3 AM.
 <div align="center">
  <img alt="home" src="https://raw.githubusercontent.com/Backthynk/assets/refs/heads/main/home2.png" width="100%">
 </div>
-<br />
-
-## Extra Installation Options
-
-### Build it yourself with docker
-
-```bash
-git clone https://github.com/Backthynk/backthynk.git
-cd backthynk
-make build-with-docker # Image building can take ~10-30 minutes first time, depending on your connexion.
-cd releases
-# cd to your platform 
-backthynk
-```
-
 <br />
 
 ## The Philosophy
