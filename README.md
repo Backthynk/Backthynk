@@ -1,6 +1,7 @@
 # BackThynk
 <div align="center">
 A lightweight, self-hosted micro-blogging platform for people with messy thoughts
+
 [GIF/VIDEO PLACEHOLDER - Quick demo showing creating a space and adding a post]
 </div>
 
@@ -61,20 +62,21 @@ Expand-Archive -Path backthynk.zip -DestinationPath .
 
 **Note:** Windows Defender may block the app. Click "More info" → "Run anyway" to proceed.
 
-</details>
-
 That's it.
+
+</details>
 
 <br />
 
 ## What is this?
 
-BackThynk is a personal knowledge dump. Not a blog, not a wiki - something in between.
-Think Twitter timeline but for your brain. Create spaces, nest them, throw in quick thoughts, attach files, and actually 
-find them later.
+BackThynk is a personal knowledge dump. 
+Not a blog, not a wiki - something in between.
+Think Twitter timeline but for your brain. 
+Create spaces, nest them, throw in quick thoughts, attach files, and actually find them later.
 
 <div align="center">
-[SCREENSHOT PLACEHOLDER - Main interface showing nested spaces and timeline]
+ <img alt="home" src="https://raw.githubusercontent.com/Backthynk/assets/refs/heads/main/home.png" width="100%">
 </div>
 
 <br />
@@ -116,9 +118,8 @@ Easy on the eyes at 3 AM.
 
 
 <div align="center">
-[SCREENSHOT PLACEHOLDER - ]
+ <img alt="home" src="https://raw.githubusercontent.com/Backthynk/assets/refs/heads/main/home2.png" width="100%">
 </div>
-
 <br />
 
 ## Extra Installation Options
@@ -146,14 +147,14 @@ Most note-taking apps want you to write documents, but I just wanted somewhere t
 
 1. **Blogs are too heavy** - I don't want to write an introduction, body, and conclusion for a Docker command I'll forget
 2. **Wikis are too structured** - Not everything fits in a knowledge graph
-3. **Social media is too public** - These are my thoughts and I dont want to give them away to feed some ML model.
+3. **Social media is too public** - These are my thoughts and I dont want models to be built with them.
 4. **Most note apps are too complex** - I don't need databases, tags, backlinks, and 47 different views
 
 ### Design Principles
 
 - **Start minimal**, add as needed - Features are opt-in, not opt-out
 - **No feature coupling** - Enable file uploads without enabling markdown. Each feature stands alone.
-- **Respect the user's machine** - 38KB for a full app in 2024 is a statement
+- **Respect the user's machine** - 38KB for a full app.
 - **No surprises** - Vanilla JS might be "harder" but it's predictable
 - **Own your data** - SQLite database you can read with any tool
 
@@ -193,13 +194,21 @@ Key files:
 - internal/storage/ - Database layer
 - web/static/js/main.js - Frontend logic
 
----
 
-### License
-Creative Commons
+<br />
 
-### Contact
-[Your contact info / Discord / Matrix]
+### Discord
+
+If you use and like it, please join the discord channel I've created for this project and let's have a chat.
+
+<br />
+
+<p align="center">
+  <a target="_blank" href="https://discord.com/invite/W8xDXRQPcm">
+    <img width="64px" src="https://cdn-icons-png.flaticon.com/512/3670/3670157.png"/>
+  </a>
+</p>
+
 
 <br />
 

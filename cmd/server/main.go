@@ -124,12 +124,8 @@ func main() {
 
 Todo now: 
 
-1. Finish to clean the front-end code, list the last bugs and fix them.
+Add a way to start the app on docker.
 
-
-5. Ajouter un moyen simple de lancer l'application sur docker (en mode production)
-max - 1. Ajouter un setup script to configure the app when starting
-max . New readme adapted to current version
 
 
 Todo later:
