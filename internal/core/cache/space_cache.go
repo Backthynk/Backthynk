@@ -124,24 +124,6 @@ func (c *SpaceCache) getAncestorsUnlocked(spaceID int) []int {
 	return ancestors
 }
 
-func (c *SpaceCache) isDescendantUnlockedWithVisited(childID, parentID int, visited map[int]bool) bool {
-	cat, ok := c.spaces[childID]
-	if !ok || cat.ParentID == nil {
-		return false
-	}
-
-	if *cat.ParentID == parentID {
-		return true
-	}
-
-	// Check for circular references
-	if visited[*cat.ParentID] {
-		return false
-	}
-
-	visited[childID] = true
-	return c.isDescendantUnlockedWithVisited(*cat.ParentID, parentID, visited)
-}
 
 func (c *SpaceCache) GetChildren(parentID int) []int {
 	c.mu.RLock()

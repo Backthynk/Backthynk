@@ -14,6 +14,7 @@ import (
 	"net/http"
 )
 
+
 func main() {
 	// Ensure config files exist (interactive setup if needed)
 	if err := config.EnsureConfigFiles(); err != nil {
@@ -111,6 +112,8 @@ func main() {
 		config.GetServiceConfig(),
 	)
 
+	Export(spaceCache, db)
+
 	// Display startup info with features summary and RAM usage
 	config.PrintStartupInfo(serviceConfig.Server.Port, opts)
 
@@ -124,12 +127,7 @@ func main() {
 
 Todo now: 
 
-1. Finish to clean the front-end code, list the last bugs and fix them.
-
-
 5. Ajouter un moyen simple de lancer l'application sur docker (en mode production)
-max - 1. Ajouter un setup script to configure the app when starting
-max . New readme adapted to current version
 
 
 Todo later:
