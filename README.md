@@ -1,4 +1,6 @@
 # BackThynk
+<br />
+
 <div align="center">
 
 https://github.com/user-attachments/assets/9034c9f5-1ed8-4ef6-a70b-7673624be742
@@ -6,7 +8,6 @@ https://github.com/user-attachments/assets/9034c9f5-1ed8-4ef6-a70b-7673624be742
 <br />
 
 **A lightweight, self-hosted micro-blogging platform for people with messy thoughts**
-
 
 </div>
 
@@ -76,8 +77,11 @@ That's it.
 ## What is this?
 
 BackThynk is a personal knowledge dump. 
+
 Not a blog, not a wiki - something in between.
+
 Think Twitter timeline but for your brain. 
+
 Create spaces, nest them, throw in quick thoughts, attach files, and actually find them later.
 
 <div align="center">
@@ -89,16 +93,26 @@ Create spaces, nest them, throw in quick thoughts, attach files, and actually fi
 ## Core Features
 
 ### 🎯 Spaces & Subspaces
-Organize thoughts hierarchically. Create "Work > Projects > ClientName" or "Learning > Go > Snippets"
+Organize thoughts hierarchically. 
+
+Create "Work > Projects > ClientName" or "Learning > Go > Snippets"
 
 ### 📝 Quick Posts
-No titles, no formatting pressure. Just write and post. 140 or 10,000 characters - your choice. Markdown support (coming soon)
+No titles, no formatting pressure. 
+
+Just write and post. 140 or 10,000 characters - your choice. 
+
+Markdown support (coming soon)
 
 ### 📎 File Attachments
-Drag & drop anything. PDFs, videos, images. They live with your thoughts, not in some separate media library.
+Drag & drop anything. PDFs, videos, images. 
+
+They live with your thoughts, not in some separate media library.
 
 ### 📅 Timeline View
-See everything chronologically. Filter by space. Search (coming soon).
+See everything chronologically. 
+
+Filter by space. Search (coming soon).
 
 ### 🌙 Dark/Light Mode
 Easy on the eyes at 3 AM.
@@ -202,9 +216,9 @@ Key files:
 
 <br />
 
-### Discord
+## Let's chat !
 
-If you use and like it, please join the discord channel I've created for this project and let's have a chat.
+If you use it and like it, please join the discord channel I've created for this project and let's have a chat.
 
 <br />
 
