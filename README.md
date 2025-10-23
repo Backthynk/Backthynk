@@ -2,7 +2,7 @@
 <div align="center">
 A lightweight, self-hosted micro-blogging platform for people with messy thoughts
 
-[GIF/VIDEO PLACEHOLDER - Quick demo showing creating a space and adding a post]
+https://github.com/user-attachments/assets/9034c9f5-1ed8-4ef6-a70b-7673624be742
 </div>
 
 <br />
