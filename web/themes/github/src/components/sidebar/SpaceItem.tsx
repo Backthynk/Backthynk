@@ -1,5 +1,6 @@
 import { useLocation } from 'preact-iso';
 import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, getRecursivePostCount } from '@core/state';
+import { generateSlug } from '@core/utils';
 import { sidebarStyles } from '../../styles/sidebar';
 import type { Space } from '@core/api';
 
@@ -30,7 +31,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
     const path: string[] = [];
     let current: Space | null = space;
     while (current) {
-      path.unshift(current.name.toLowerCase().replace(/\s+/g, '-'));
+      path.unshift(generateSlug(current.name));
       if (current.parent_id) {
         current = getSpaceById(current.parent_id) || null;
       } else {

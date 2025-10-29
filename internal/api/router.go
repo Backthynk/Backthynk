@@ -34,7 +34,7 @@ func NewRouter(
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
 	logsHandler := handlers.NewLogsHandler()
-	spaHandler := handlers.NewSPAHandler("web/themes")
+	spaHandler := handlers.NewSPAHandler("web/themes", spaceService)
 	
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()

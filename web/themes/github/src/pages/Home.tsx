@@ -2,6 +2,7 @@ import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
 import { spaces, loadExpandedSpaces } from '@core/state';
 import { fetchSpaces as fetchSpacesApi } from '@core/api';
+import { generateSlug } from '@core/utils';
 import { Layout } from '../components/Layout';
 import { Sidebar } from '../components/Sidebar';
 import { FooterLinks } from '../components/sidebar';
@@ -30,7 +31,7 @@ export function Home() {
 
     for (const segment of pathSegments) {
       const found = spacesList.find(s =>
-        s.name.toLowerCase().replace(/\s+/g, '-') === segment &&
+        generateSlug(s.name) === segment &&
         s.parent_id === currentParentId
       );
 
@@ -46,11 +47,15 @@ export function Home() {
   const currentSpace = findSpaceByPath(route.path);
 
   useEffect(() => {
-    // Load spaces on mount
+    // Load expanded spaces from localStorage
     loadExpandedSpaces();
-    fetchSpacesApi().then((fetchedSpaces) => {
-      spaces.value = fetchedSpaces;
-    });
+
+    // Only fetch spaces if not already hydrated from SSR
+    if (spaces.value.length === 0) {
+      fetchSpacesApi().then((fetchedSpaces) => {
+        spaces.value = fetchedSpaces;
+      });
+    }
   }, []);
 
   return (

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { sidebarStyles } from '../styles/sidebar';
 import { SpaceContainer } from './sidebar/SpaceContainer';
 import { SortControls, type SortField, type SortPreference } from './sidebar/SortControls';
+import { CreateSpaceModal } from './CreateSpaceModal';
 import { appSettings } from '@core/state';
 import { activityContainerHeightRem, shouldShowActivity } from '@core/state/activity';
 
@@ -24,6 +25,7 @@ export function Sidebar() {
   };
 
   const [sortPref, setSortPref] = useState<SortPreference>(loadSortPreference());
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   // Save sort preference to localStorage
   useEffect(() => {
@@ -51,15 +53,26 @@ export function Sidebar() {
   const maxHeight = `min(${calculatedMaxHeight}, 800px)`;
 
   return (
-    <Container style={{ maxHeight }}>
-      <Header>
-        <h2>Spaces</h2>
-        <AddButton>
-          <i class="fas fa-plus" />
-        </AddButton>
-      </Header>
-      <SpaceContainer sortPref={sortPref} />
-      <SortControls sortPref={sortPref} onSort={handleSort} />
-    </Container>
+    <>
+      <Container style={{ maxHeight }}>
+        <Header>
+          <h2>Spaces</h2>
+          <AddButton onClick={() => setIsCreateModalOpen(true)}>
+            <i class="fas fa-plus" />
+          </AddButton>
+        </Header>
+        <SpaceContainer sortPref={sortPref} />
+        <SortControls sortPref={sortPref} onSort={handleSort} />
+      </Container>
+
+      <CreateSpaceModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={() => {
+          // Modal will handle closing itself, we could add a toast notification here
+          console.log('Space created successfully');
+        }}
+      />
+    </>
   );
 }
