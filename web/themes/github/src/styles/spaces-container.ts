@@ -1,6 +1,6 @@
 import { styled } from 'goober';
 
-export const sidebarStyles = {
+export const spacesContainerStyles = {
   container: styled('div')`
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);

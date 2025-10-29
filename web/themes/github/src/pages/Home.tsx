@@ -4,15 +4,15 @@ import { spaces, loadExpandedSpaces } from '@core/state';
 import { fetchSpaces as fetchSpacesApi } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { Layout } from '../components/Layout';
-import { Sidebar } from '../components/Sidebar';
-import { FooterLinks } from '../components/sidebar';
+import { SpacesContainer } from '../components/SpacesContainer';
+import { FooterLinks } from '../components/spaces-container';
 import { ActivityTracker } from '../components/activity';
 import { layoutStyles } from '../styles/layout';
 import type { Space } from '@core/api';
 
 const Container = layoutStyles.container;
 const Grid = layoutStyles.grid;
-const SidebarWrapper = layoutStyles.sidebar;
+const LeftPanel = layoutStyles.leftPanel;
 const Main = layoutStyles.main;
 const Companion = layoutStyles.companion;
 
@@ -62,7 +62,7 @@ export function Home() {
     <Layout>
       <Container>
         <Grid>
-          <SidebarWrapper>
+          <LeftPanel>
             <div style={{
               position: 'sticky',
               top: '1rem',
@@ -70,11 +70,11 @@ export function Home() {
               flexDirection: 'column',
               gap: '1rem'
             }}>
-              <Sidebar />
+              <SpacesContainer />
               <ActivityTracker currentSpace={currentSpace} />
               <FooterLinks />
             </div>
-          </SidebarWrapper>
+          </LeftPanel>
 
           <Main>
             {/* Main content area - timeline will go here later */}

@@ -1,15 +1,15 @@
 import { useLocation } from 'preact-iso';
 import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, getRecursivePostCount } from '@core/state';
 import { generateSlug } from '@core/utils';
-import { sidebarStyles } from '../../styles/sidebar';
+import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
 
-const SpaceRow = sidebarStyles.spaceRow;
-const ExpandButton = sidebarStyles.expandButton;
-const SpaceName = sidebarStyles.spaceName;
-const PostCount = sidebarStyles.postCount;
-const Children = sidebarStyles.children;
-const StyledSpaceItem = sidebarStyles.spaceItem;
+const SpaceRow = spacesContainerStyles.spaceRow;
+const ExpandButton = spacesContainerStyles.expandButton;
+const SpaceName = spacesContainerStyles.spaceName;
+const PostCount = spacesContainerStyles.postCount;
+const Children = spacesContainerStyles.children;
+const StyledSpaceItem = spacesContainerStyles.spaceItem;
 
 interface SpaceItemProps {
   space: Space;

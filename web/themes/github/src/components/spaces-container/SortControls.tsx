@@ -1,8 +1,8 @@
-import { sidebarStyles } from '../../styles/sidebar';
+import { spacesContainerStyles } from '../../styles/spaces-container';
 
-const Footer = sidebarStyles.footer;
-const SortOptions = sidebarStyles.sortOptions;
-const SortButton = sidebarStyles.sortButton;
+const Footer = spacesContainerStyles.footer;
+const SortOptions = spacesContainerStyles.sortOptions;
+const SortButton = spacesContainerStyles.sortButton;
 
 export type SortField = 'name' | 'posts' | 'created';
 

@@ -1,10 +1,10 @@
 import { theme, toggleTheme } from '@core/state';
-import { sidebarStyles } from '../../styles/sidebar';
+import { spacesContainerStyles } from '../../styles/spaces-container';
 
-const FooterContainer = sidebarStyles.footerLinks;
-const ActionsCard = sidebarStyles.footerActionsCard;
-const ActionButton = sidebarStyles.footerActionButton;
-const InfoText = sidebarStyles.footerInfoText;
+const FooterContainer = spacesContainerStyles.footerLinks;
+const ActionsCard = spacesContainerStyles.footerActionsCard;
+const ActionButton = spacesContainerStyles.footerActionButton;
+const InfoText = spacesContainerStyles.footerInfoText;
 
 export function FooterLinks() {
   const currentYear = new Date().getFullYear();

@@ -1,10 +1,10 @@
 import { spaces, getRecursivePostCount } from '@core/state';
-import { sidebarStyles } from '../../styles/sidebar';
+import { spacesContainerStyles } from '../../styles/spaces-container';
 import { SpaceItem } from './SpaceItem';
 import type { Space } from '@core/api';
 import type { SortPreference } from './SortControls';
 
-const SpacesList = sidebarStyles.spacesList;
+const SpacesList = spacesContainerStyles.spacesList;
 
 interface SpaceContainerProps {
   sortPref: SortPreference;

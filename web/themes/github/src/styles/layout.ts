@@ -1,7 +1,7 @@
 import { styled } from 'goober';
 
-// Breakpoint for sidebar visibility (tablet and up)
-export const SIDEBAR_BREAKPOINT = 768; // in pixels
+// Breakpoint for left panel visibility (tablet and up)
+export const LEFT_PANEL_BREAKPOINT = 768; // in pixels
 
 export const layoutStyles = {
   root: styled('div')`
@@ -21,7 +21,7 @@ export const layoutStyles = {
     grid-template-columns: 1fr;
     gap: 1.5rem;
 
-    @media (min-width: ${SIDEBAR_BREAKPOINT}px) {
+    @media (min-width: ${LEFT_PANEL_BREAKPOINT}px) {
       grid-template-columns: 2fr 6fr;
     }
 
@@ -30,10 +30,10 @@ export const layoutStyles = {
     }
   `,
 
-  sidebar: styled('aside')`
+  leftPanel: styled('aside')`
     display: none;
 
-    @media (min-width: ${SIDEBAR_BREAKPOINT}px) {
+    @media (min-width: ${LEFT_PANEL_BREAKPOINT}px) {
       display: block;
     }
   `,

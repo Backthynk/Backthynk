@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'preact/hooks';
-import { sidebarStyles } from '../styles/sidebar';
-import { SpaceContainer } from './sidebar/SpaceContainer';
-import { SortControls, type SortField, type SortPreference } from './sidebar/SortControls';
+import { spacesContainerStyles } from '../styles/spaces-container';
+import { SpaceContainer } from './spaces-container/SpaceContainer';
+import { SortControls, type SortField, type SortPreference } from './spaces-container/SortControls';
 import { CreateSpaceModal } from './CreateSpaceModal';
 import { appSettings } from '@core/state';
 import { activityContainerHeightRem, shouldShowActivity } from '@core/state/activity';
 
-const Container = sidebarStyles.container;
-const Header = sidebarStyles.header;
-const AddButton = sidebarStyles.addButton;
+const Container = spacesContainerStyles.container;
+const Header = spacesContainerStyles.header;
+const AddButton = spacesContainerStyles.addButton;
 
 const SORT_STORAGE_KEY = 'spaceSortPref';
 
@@ -17,7 +17,7 @@ const FOOTER_HEIGHT = 7; // ~9rem for footer links
 const GAP = 1; // 1rem gap between components
 const PADDING = 2; // 2rem total padding (1rem top + 1rem bottom)
 
-export function Sidebar() {
+export function SpacesContainer() {
   // Load sort preference from localStorage
   const loadSortPreference = (): SortPreference => {
     const stored = localStorage.getItem(SORT_STORAGE_KEY);
