@@ -20,10 +20,12 @@ func main() {
 		log.Fatal("Failed to setup configuration:", err)
 	}
 
+	/* //disactivated 26.10.2025
 	// Load configuration
 	if err := config.LoadSharedConfig(); err != nil {
 		log.Fatal("Failed to load shared config:", err)
 	}
+	*/
 
 	if err := config.LoadServiceConfig(); err != nil {
 		log.Fatal("Failed to load service config:", err)
@@ -119,30 +121,3 @@ func main() {
 		log.Fatal("Server failed:", err)
 	}
 }
-
-/*
-
-Todo now: 
-
-Add a way to start the app on docker.
-
-
-
-Todo later:
-
-1. The activity is based on time UTC (which is "ok" if your timezone is based near UTC time but at UTC+9 your today's activity won't start before 9am)
--> we compute everything in the back-end : maybe the solution would be to compute activity hour to hour. 
-It will take more space in the cache but it would work for every timezone. -> we will have to make sure the entire activity is fetch once per space in the front-end -> to avoid as much as possible recomputing things 
-
-2. Setup zip compression for space/settings/posts/activity get methods with TTL LRU and invalidation when post is added/deleted && space is added/delete
-3. compression pour le index.html file avec caching
-
-4. Setup a stats page where information about traffic/network/hardware usage, errors, warnings
-
-5. Add a feature to have an api that gives all right when added in the browser (all methods to change the state of the app.)
-if the token is system is enabled and it's not entered in the cookies or somehwere then on the client side hide everything.
-
-6. When 4 is done then add a feature to make private/public a space (it will be a recursive feature), if set then you can only see space's content if the token is in the cookies.
-
-
-*/

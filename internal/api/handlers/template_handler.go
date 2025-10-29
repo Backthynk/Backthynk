@@ -1,5 +1,6 @@
 package handlers
 
+/* //disactivated 26.10.2025
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/core/models"
@@ -174,3 +175,5 @@ func IsSpacePath(path string) bool {
 
 	return true
 }
+
+*/

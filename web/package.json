@@ -1,0 +1,28 @@
+{
+  "name": "@backthynk/web",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run dev --workspace=@backthynk/theme-github",
+    "build": "npm run build --workspace=@backthynk/theme-github",
+    "build:github": "npm run build --workspace=@backthynk/theme-github",
+    "build:notion": "npm run build --workspace=@backthynk/theme-notion",
+    "preview": "npm run preview --workspace=@backthynk/theme-github"
+  },
+  "workspaces": [
+    "themes/*"
+  ],
+  "devDependencies": {
+    "@preact/preset-vite": "^2.9.3",
+    "@types/node": "^22.10.2",
+    "goober": "^2.1.16",
+    "preact": "^10.26.1",
+    "preact-iso": "^2.6.3",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "@preact/signals": "^1.3.0"
+  }
+}

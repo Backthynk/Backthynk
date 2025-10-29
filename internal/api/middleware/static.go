@@ -1,5 +1,7 @@
 package middleware
 
+/* //disactivated 26.10.2025
+
 import (
 	"backthynk/internal/config"
 	"backthynk/internal/embedded"
@@ -135,3 +137,5 @@ func setContentType(w http.ResponseWriter, path string) {
 		w.Header().Set("Content-Type", "application/octet-stream")
 	}
 }
+
+*/

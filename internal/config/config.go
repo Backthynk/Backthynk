@@ -113,6 +113,8 @@ type OptionsConfig struct {
 	} `json:"features"`
 }
 
+/* //disactivated 26.10.2025
+
 type SharedConfig struct {
 	App struct {
 		Name    string `json:"name"`
@@ -137,13 +139,13 @@ type SharedConfig struct {
 		NewIssueURL string                 `json:"new_issue_url"`
 	} `json:"urls"`
 }
-
+*/
 var (
 	serviceConfig *ServiceConfig
 	optionsConfig *OptionsConfig
-	sharedConfig  *SharedConfig
+//	sharedConfig  *SharedConfig //disactivated 26.10.2025
 )
-
+/*//disactivated 26.10.2025
 func LoadSharedConfig() error {
 	var data []byte
 	var err error
@@ -171,6 +173,7 @@ func LoadSharedConfig() error {
 	sharedConfig = &config
 	return nil
 }
+*/
 
 func LoadServiceConfig() error {
 	data, err := os.ReadFile("service.json")
@@ -217,6 +220,7 @@ func GetOptionsConfig() *OptionsConfig {
 	return optionsConfig
 }
 
+/* //disactivated 26.10.2025
 func GetSharedConfig() *SharedConfig {
 	return sharedConfig
 }
@@ -256,6 +260,7 @@ func GetConfigJSONPath() string {
 	sharedConfigPath, _ := filepath.Abs(configPath)
 	return sharedConfigPath
 }
+*/
 
 // SetServiceConfigForTest sets the service config for testing purposes
 func SetServiceConfigForTest(config *ServiceConfig) {
@@ -266,6 +271,7 @@ func SetServiceConfigForTest(config *ServiceConfig) {
 func SetOptionsConfigForTest(config *OptionsConfig) {
 	optionsConfig = config
 }
+
 
 // ANSI color codes
 const (
@@ -308,6 +314,7 @@ func PrintConfigPaths() {
 		fmt.Printf("  %s│%s  %s%s%s\n", colorCyan, colorReset, colorYellow, optionsConfigPath, colorReset)
 	}
 
+	/* //disactivated 26.10.2025
 	if mode != APP_MODE_PROD {
 		// Shared config
 		configPath := GetConfigJSONPath()
@@ -322,6 +329,7 @@ func PrintConfigPaths() {
 			fmt.Printf("    %s%s%s\n", colorYellow, absWebPath, colorReset)
 		}
 	}
+	*/
 
 
 

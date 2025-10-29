@@ -34,7 +34,7 @@ func NewRouter(
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
 	logsHandler := handlers.NewLogsHandler()
-	templateHandler := handlers.NewTemplateHandler(spaceService, opts, serviceConfig)
+	spaHandler := handlers.NewSPAHandler("web/themes")
 	
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
@@ -77,12 +77,11 @@ func NewRouter(
 		activityHandler.RegisterRoutes(r)
 	}
 	
-	// Static files
-	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", middleware.CreateStaticFileHandler()))
+	// Uploads
 	r.HandleFunc("/uploads/{filename}", uploadHandler.ServeFile).Methods("GET")
-	
-	// SPA routes
-	r.PathPrefix("/").HandlerFunc(templateHandler.ServePage).Methods("GET")
-	
+
+	// SPA - catch all routes and serve theme-based frontend
+	r.PathPrefix("/").Handler(spaHandler).Methods("GET")
+
 	return r
 }

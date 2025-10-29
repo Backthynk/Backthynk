@@ -38,7 +38,7 @@ func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		"allowedFileExtensions":            options.Features.FileUpload.AllowedExtensions,
 		
 		//version
-		"version": config.GetSharedConfig().App.Version,
+		"version": "1.0.0", //config.GetSharedConfig().App.Version, //disactivated 26.10.2025
 	}
 
 	w.Header().Set("Content-Type", "application/json")
