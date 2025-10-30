@@ -20,9 +20,10 @@ const CardMeta = postStyles.linkPreviewMeta;
 interface LinkPreviewsProps {
   previews: LinkPreview[];
   postId: number;
+  standalone?: boolean; // When true, show without header/navigation (for preview-only posts)
 }
 
-export function LinkPreviews({ previews, postId }: LinkPreviewsProps) {
+export function LinkPreviews({ previews, postId, standalone = false }: LinkPreviewsProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   if (!previews || previews.length === 0) return null;
@@ -33,6 +34,36 @@ export function LinkPreviews({ previews, postId }: LinkPreviewsProps) {
     if (newIndex >= previews.length) newIndex = 0;
     setCurrentIndex(newIndex);
   };
+
+  // For standalone mode (preview-only posts), show single preview without header
+  if (standalone && previews.length === 1) {
+    const preview = previews[0];
+    return (
+      <Container style={{ marginTop: '0.75rem' }}>
+        <Card href={preview.url} target="_blank" rel="noopener noreferrer">
+          {preview.image_url && (
+            <Image>
+              <img
+                src={preview.image_url}
+                alt=""
+                onError={(e) => {
+                  (e.target as HTMLElement).parentElement!.style.display = 'none';
+                }}
+              />
+            </Image>
+          )}
+          <CardContent>
+            <CardTitle>{preview.title || preview.url}</CardTitle>
+            {preview.description && <CardDescription>{preview.description}</CardDescription>}
+            <CardMeta>
+              <i class="fas fa-external-link-alt" />
+              <span>{preview.site_name ? preview.site_name : new URL(preview.url).hostname}</span>
+            </CardMeta>
+          </CardContent>
+        </Card>
+      </Container>
+    );
+  }
 
   return (
     <Section>

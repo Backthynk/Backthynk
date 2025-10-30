@@ -4,14 +4,27 @@ import { styled } from 'goober';
 const Article = styled('article')`
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
+  border-top: none;
+  border-radius: 0;
   padding: 1rem;
-  margin-bottom: 1.5rem;
   transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+  &:first-child {
+    border-top: 1px solid var(--border-primary);
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+  }
+
+  &:last-child {
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
 
   &:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border-color: var(--border-secondary);
+    position: relative;
+    z-index: 1;
   }
 `;
 
