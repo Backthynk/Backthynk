@@ -1,4 +1,5 @@
 // Base API client configuration
+import { showError } from '../components';
 
 export interface ApiRequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -44,7 +45,9 @@ export async function apiRequest<T = any>(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new ApiError(errorText || 'API request failed', response.status, response);
+    const errorMessage = errorText || 'API request failed';
+    showError(errorMessage);
+    throw new ApiError(errorMessage, response.status, response);
   }
 
   // Check if response has content

@@ -5,6 +5,7 @@ import { formStyles } from '../styles/modal';
 import { createSpace, type Space } from '@core/api';
 import { spaces } from '@core/state';
 import { generateSlug } from '@core/utils';
+import { showSuccess, showError } from '@core/components';
 
 const FormGroup = formStyles.formGroup;
 const Label = formStyles.label;
@@ -239,14 +240,15 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: C
       if (newSpace) {
         // Update local state
         spaces.value = [...spaces.value, newSpace];
+        showSuccess(`Space "${newSpace.name}" created successfully!`);
         onSuccess();
         onClose();
       } else {
-        setErrors({ name: 'Failed to create space' });
+        showError('Failed to create space');
       }
     } catch (error) {
       console.error('Failed to create space:', error);
-      setErrors({ name: 'Failed to create space. Please try again.' });
+      showError('Failed to create space. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

@@ -173,5 +173,3 @@ export function SpaceBreadcrumb({ spaceId, recursiveMode }: SpaceBreadcrumbProps
 
   return <Breadcrumb>{breadcrumbElements}</Breadcrumb>;
 }
-
-// const ACTIVITY_HEIGHT = (window.innerHeight > 900 ? 20 : 18); // ~20rem for activity tracker

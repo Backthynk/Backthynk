@@ -7,6 +7,7 @@ import { NotFound } from './pages/NotFound';
 
 // Core state initialization
 import { loadAppSettings, appSettings, initializeTheme } from '@core/state';
+import { DropdownAlert } from '@core/components';
 
 export function App() {
   useEffect(() => {
@@ -25,12 +26,15 @@ export function App() {
   }, []);
 
   return (
-    <LocationProvider>
-      <Router>
-        <Route path="/" component={Home} />
-        <Route path="/:spacePath*" component={Home} />
-        <Route default component={NotFound} />
-      </Router>
-    </LocationProvider>
+    <>
+      <DropdownAlert />
+      <LocationProvider>
+        <Router>
+          <Route path="/" component={Home} />
+          <Route path="/:spacePath*" component={Home} />
+          <Route default component={NotFound} />
+        </Router>
+      </LocationProvider>
+    </>
   );
 }

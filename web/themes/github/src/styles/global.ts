@@ -130,4 +130,63 @@ glob`
     font-family: inherit;
     font-size: inherit;
   }
+
+  /* Alert System Styles */
+  .alert-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  .alert-dropdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 16px;
+    transform: translateY(-100%);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .alert-dropdown.success {
+    background-color: #75C590;
+    min-height: 16px;
+  }
+
+  .alert-dropdown.error {
+    background-color: #E06E6B;
+    min-height: 32px;
+  }
+
+  .alert-dropdown.warning {
+    background-color: #EFB840;
+    min-height: 32px;
+  }
+
+  .alert-dropdown.info {
+    background-color: #74ACFF;
+    min-height: 32px;
+  }
+
+  .alert-dropdown.show {
+    transform: translateY(0);
+  }
+
+  .alert-dropdown.hide {
+    transform: translateY(-100%);
+    transition: transform 0.25s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  }
+
+  .alert-text {
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+  }
 `;

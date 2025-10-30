@@ -9,7 +9,7 @@ export const isRecursiveView = signal<boolean>(false);
 
 // Pagination state
 export const currentOffset = signal<number>(0);
-export const postsPerPage = 50;
+export const postsPerPage = 20;
 
 export const resetPosts = () => {
   posts.value = [];
