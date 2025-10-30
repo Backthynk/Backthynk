@@ -1,12 +1,13 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
-import { spaces, loadExpandedSpaces } from '@core/state';
+import { spaces, loadExpandedSpaces, expandParentSpaces } from '@core/state';
 import { fetchSpaces as fetchSpacesApi } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { Layout } from '../components/Layout';
 import { SpacesContainer } from '../components/SpacesContainer';
 import { FooterLinks } from '../components/spaces-container';
 import { ActivityTracker } from '../components/activity';
+import { Timeline } from '../components/Timeline';
 import { layoutStyles } from '../styles/layout';
 import type { Space } from '@core/api';
 
@@ -58,6 +59,21 @@ export function Home() {
     }
   }, []);
 
+  // Auto-expand and scroll to selected space
+  useEffect(() => {
+    if (currentSpace) {
+      expandParentSpaces(currentSpace.id);
+
+      // Scroll to the selected space after a short delay to allow DOM to update
+      setTimeout(() => {
+        const selectedElement = document.querySelector('.selected');
+        if (selectedElement) {
+          selectedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+    }
+  }, [currentSpace]);
+
   return (
     <Layout>
       <Container>
@@ -77,24 +93,7 @@ export function Home() {
           </LeftPanel>
 
           <Main>
-            {/* Main content area - timeline will go here later */}
-            <div style={{
-              background: 'var(--bg-secondary)',
-              border: '1px solid var(--border-primary)',
-              borderRadius: '8px',
-              padding: '2rem',
-              textAlign: 'center',
-              color: 'var(--text-secondary)',
-              transition: 'background-color 0.2s ease-in-out, border-color 0.2s ease-in-out, color 0.2s ease-in-out'
-            }}>
-              <p>Timeline coming soon...</p>
-              {currentSpace && (
-                <div style={{ marginTop: '1rem' }}>
-                  <p>Space: {currentSpace.name}</p>
-                  <p>Space ID: {currentSpace.id}</p>
-                </div>
-              )}
-            </div>
+            <Timeline spaceId={currentSpace?.id || null} recursive={false} />
           </Main>
 
           <Companion>

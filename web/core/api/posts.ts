@@ -4,18 +4,19 @@ export interface Post {
   id: number;
   space_id: number;
   content: string;
-  created_at: number;
-  updated_at: number;
+  created: number;
   files?: PostFile[];
   link_previews?: LinkPreview[];
+  attachments?: PostFile[]; // Backend sometimes uses 'attachments' instead of 'files'
 }
 
 export interface PostFile {
   id: number;
   filename: string;
-  size: number;
-  mime_type: string;
-  created_at: number;
+  file_path: string;  // Backend returns file_path
+  file_size: number;  // Backend returns file_size
+  file_type: string;  // Backend returns file_type (mime type)
+  created: number;
 }
 
 export interface LinkPreview {
@@ -39,14 +40,16 @@ export interface CreatePostPayload {
 }
 
 export async function fetchPosts(
-  spaceId: number,
+  spaceId: number | null,
   limit = 50,
   offset = 0,
   withMeta = false,
   recursive = false
 ): Promise<PostsResponse> {
   try {
-    const response = await apiRequest<PostsResponse>(`/spaces/${spaceId}/posts`, {
+    // Use spaceId 0 for fetching all posts
+    const id = spaceId === null ? 0 : spaceId;
+    const response = await apiRequest<PostsResponse | Post[]>(`/spaces/${id}/posts`, {
       params: {
         limit,
         offset,
@@ -54,7 +57,19 @@ export async function fetchPosts(
         recursive,
       },
     });
-    return response || { posts: [], has_more: false };
+
+    // Handle both response formats
+    if (!response) {
+      return { posts: [], has_more: false };
+    }
+
+    // If withMeta=true, backend returns { posts: [...], has_more: ... }
+    // If withMeta=false, backend returns just the array [...]
+    if (Array.isArray(response)) {
+      return { posts: response, has_more: response.length >= limit };
+    }
+
+    return response;
   } catch (error) {
     console.error('Failed to fetch posts:', error);
     return { posts: [], has_more: false };

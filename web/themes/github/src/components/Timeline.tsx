@@ -1,76 +1,253 @@
-import { useEffect } from 'preact/hooks';
-import { posts, resetPosts, appendPosts, isLoadingPosts } from '@core/state';
-import { fetchPosts } from '@core/api';
-import { timelineStyles } from '../styles/timeline';
+import { useEffect, useState } from 'preact/hooks';
+import { posts, resetPosts, appendPosts, isLoadingPosts, hasMorePosts, spaces } from '@core/state';
+import { fetchPosts, deletePost as deletePostApi } from '@core/api';
+import { generateSlug } from '@core/utils';
+import { Post } from './post';
+import { VirtualScroller } from '@core/components/VirtualScroller';
+import { styled } from 'goober';
+import { useLocation } from 'preact-iso';
+
+const Container = styled('main')`
+  min-height: 400px;
+`;
+
+const EmptyState = styled('div')`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+
+  i {
+    font-size: 3rem;
+    opacity: 0.3;
+  }
+
+  p {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+  }
+`;
+
+const PostsList = styled('div')`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+`;
+
+const LoadMoreSection = styled('div')`
+  text-align: center;
+  padding: 1rem 0;
+`;
+
+const LoadMoreText = styled('div')`
+  color: var(--text-secondary);
+
+  i {
+    margin-right: 0.5rem;
+  }
+`;
+
+const LoadMoreButton = styled('button')`
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+`;
 
 interface TimelineProps {
   spaceId: number | null;
+  recursive?: boolean;
 }
 
-export function Timeline({ spaceId }: TimelineProps) {
-  useEffect(() => {
-    if (!spaceId) {
-      resetPosts();
-      return;
-    }
+const VIRTUAL_SCROLL_THRESHOLD = 50;
+const POSTS_PER_PAGE = 50;
 
+export function Timeline({ spaceId, recursive = false }: TimelineProps) {
+  const [offset, setOffset] = useState(0);
+  const location = useLocation();
+
+  useEffect(() => {
     isLoadingPosts.value = true;
-    fetchPosts(spaceId, 50, 0, true, false)
+    setOffset(0);
+
+    // Pass null for spaceId to fetch all posts
+    fetchPosts(spaceId, POSTS_PER_PAGE, 0, true, recursive)
       .then((result) => {
         resetPosts();
         appendPosts(result.posts, result.has_more);
+        setOffset(result.posts.length);
       })
       .finally(() => {
         isLoadingPosts.value = false;
       });
-  }, [spaceId]);
+  }, [spaceId, recursive]);
 
   const postsList = posts.value;
   const loading = isLoadingPosts.value;
+  const hasMore = hasMorePosts.value;
 
-  if (!spaceId) {
-    return (
-      <main class={timelineStyles.timeline}>
-        <div class={timelineStyles.empty}>
-          <i class="fas fa-folder-open" style={{ fontSize: '3rem', opacity: 0.3 }} />
-          <p>Select a space to view posts</p>
-        </div>
-      </main>
-    );
-  }
+  const loadMore = () => {
+    if (loading || !hasMore) return;
+
+    isLoadingPosts.value = true;
+    fetchPosts(spaceId, POSTS_PER_PAGE, offset, true, recursive)
+      .then((result) => {
+        appendPosts(result.posts, result.has_more);
+        setOffset(offset + result.posts.length);
+      })
+      .finally(() => {
+        isLoadingPosts.value = false;
+      });
+  };
+
+  const handleDelete = async (postId: number) => {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await deletePostApi(postId);
+      posts.value = posts.value.filter((p) => p.id !== postId);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Failed to delete post. Please try again.');
+    }
+  };
+
+  const handleMove = (postId: number) => {
+    console.log('Move post:', postId);
+    alert('Move functionality coming soon!');
+  };
+
+  // Helper to get space breadcrumb for a post
+  const getSpaceBreadcrumb = (postSpaceId: number): string => {
+    const space = spaces.value.find(s => s.id === postSpaceId);
+    if (!space) return '';
+
+    // Build breadcrumb by traversing parent hierarchy
+    const breadcrumbs: string[] = [];
+    let current = space;
+
+    while (current) {
+      breadcrumbs.unshift(current.name);
+      if (current.parent_id === null) break;
+      current = spaces.value.find(s => s.id === current.parent_id)!;
+    }
+
+    return breadcrumbs.join(' / ');
+  };
+
+  // Show breadcrumbs when viewing all posts (no space selected)
+  const showBreadcrumbs = spaceId === null;
+
+  // Navigate to a space when clicking on breadcrumb
+  const handleBreadcrumbClick = (postSpaceId: number) => {
+    const space = spaces.value.find(s => s.id === postSpaceId);
+    if (!space) return;
+
+    // Build path by traversing parent hierarchy
+    const pathSegments: string[] = [];
+    let current = space;
+
+    while (current) {
+      pathSegments.unshift(generateSlug(current.name));
+      if (current.parent_id === null) break;
+      current = spaces.value.find(s => s.id === current.parent_id)!;
+    }
+
+    const path = '/' + pathSegments.join('/');
+    location.route(path);
+  };
 
   if (loading && postsList.length === 0) {
     return (
-      <main class={timelineStyles.timeline}>
-        <div class={timelineStyles.loading}>
-          <i class="fas fa-spinner fa-spin" style={{ fontSize: '2rem' }} />
+      <Container>
+        <EmptyState>
+          <i class="fas fa-spinner fa-spin" />
           <p>Loading posts...</p>
-        </div>
-      </main>
+        </EmptyState>
+      </Container>
     );
   }
 
   if (postsList.length === 0) {
     return (
-      <main class={timelineStyles.timeline}>
-        <div class={timelineStyles.empty}>
-          <i class="fas fa-comment-slash" style={{ fontSize: '3rem', opacity: 0.3 }} />
+      <Container>
+        <EmptyState>
+          <i class="fas fa-comment-slash" />
           <p>No posts yet</p>
-        </div>
-      </main>
+        </EmptyState>
+      </Container>
+    );
+  }
+
+  // Use virtual scrolling for large lists
+  const useVirtualScroll = postsList.length > VIRTUAL_SCROLL_THRESHOLD;
+
+  if (useVirtualScroll) {
+    return (
+      <Container>
+        <VirtualScroller
+          items={postsList}
+          itemHeight={200}
+          renderItem={(post) => (
+            <Post
+              post={post}
+              showSpaceBreadcrumb={showBreadcrumbs}
+              spaceBreadcrumb={showBreadcrumbs ? getSpaceBreadcrumb(post.space_id) : undefined}
+              onBreadcrumbClick={handleBreadcrumbClick}
+              onDelete={handleDelete}
+              onMove={handleMove}
+            />
+          )}
+          onLoadMore={loadMore}
+          hasMore={hasMore}
+          buffer={5}
+        />
+      </Container>
     );
   }
 
   return (
-    <main class={timelineStyles.timeline}>
-      {postsList.map((post) => (
-        <article key={post.id} class={timelineStyles.post}>
-          <div class={timelineStyles.postContent}>{post.content}</div>
-          <div class={timelineStyles.postMeta}>
-            <span>{new Date(post.created_at * 1000).toLocaleString()}</span>
-          </div>
-        </article>
-      ))}
-    </main>
+    <Container>
+      <PostsList>
+        {postsList.map((post) => (
+          <Post
+            key={post.id}
+            post={post}
+            showSpaceBreadcrumb={showBreadcrumbs}
+            spaceBreadcrumb={showBreadcrumbs ? getSpaceBreadcrumb(post.space_id) : undefined}
+            onBreadcrumbClick={handleBreadcrumbClick}
+            onDelete={handleDelete}
+            onMove={handleMove}
+          />
+        ))}
+      </PostsList>
+
+      {/* Load more indicator */}
+      {hasMore && (
+        <LoadMoreSection>
+          {loading ? (
+            <LoadMoreText>
+              <i class="fas fa-spinner fa-spin" />
+              Loading more posts...
+            </LoadMoreText>
+          ) : (
+            <LoadMoreButton onClick={loadMore}>Load more</LoadMoreButton>
+          )}
+        </LoadMoreSection>
+      )}
+    </Container>
   );
 }

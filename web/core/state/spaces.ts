@@ -77,3 +77,26 @@ export const getRecursivePostCount = (spaceId: number): number => {
 
   return total;
 };
+
+// Expand all parent spaces for a given space
+export const expandParentSpaces = (spaceId: number) => {
+  const space = getSpaceById(spaceId);
+  if (!space) return;
+
+  const current = new Set(expandedSpaces.value);
+  let currentSpace: Space | undefined = space;
+
+  // Walk up the parent hierarchy and expand all parents
+  while (currentSpace && currentSpace.parent_id !== null) {
+    const parent = getSpaceById(currentSpace.parent_id);
+    if (parent) {
+      current.add(parent.id);
+      currentSpace = parent;
+    } else {
+      break;
+    }
+  }
+
+  expandedSpaces.value = current;
+  localStorage.setItem('expandedSpaces', JSON.stringify([...current]));
+};

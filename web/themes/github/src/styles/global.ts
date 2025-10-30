@@ -48,6 +48,7 @@ glob`
     /* Activity UI Colors */
     --link-primary: #0969da;
     --link-hover: #0550ae;
+    --link-color: #0969da;
     --bg-tooltip: #24292f;
     --text-inverse: #ffffff;
     --text-secondary-inverse: #8c959f;
@@ -89,6 +90,7 @@ glob`
     /* Activity UI Colors - Dark Mode */
     --link-primary: #539bf5;
     --link-hover: #6cb6ff;
+    --link-color: #539bf5;
     --bg-tooltip: #21262d;
     --text-inverse: #e6edf3;
     --text-secondary-inverse: #8d96a0;
@@ -188,5 +190,165 @@ glob`
     font-weight: 500;
     text-align: center;
     line-height: 1.2;
+  }
+
+  /* Post Timeline Styles */
+  .post-content {
+    font-size: 15px;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
+    line-height: 1.6;
+  }
+
+  .post-content a {
+    color: var(--accent-primary);
+    word-break: break-all;
+    display: inline;
+    transition: color 0.2s ease;
+  }
+
+  .post-content a:hover {
+    color: var(--accent-hover);
+    text-decoration: underline;
+  }
+
+  /* Line clamping utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Transitions */
+  .transition-colors {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .transition-shadow {
+    transition: box-shadow 0.2s ease;
+  }
+
+  .transition-all {
+    transition: all 0.2s ease;
+  }
+
+  .transition-opacity {
+    transition: opacity 0.2s ease;
+  }
+
+  /* Animations */
+  @keyframes fadeInDown {
+    0% {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Utility classes */
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Custom scrollbar */
+  .timeline-scroll::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .timeline-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .timeline-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-primary);
+    border-radius: 4px;
+  }
+
+  .timeline-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--border-secondary);
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Backdrop blur for modals */
+  .backdrop-blur {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+  }
+
+  /* Button active state */
+  button:active {
+    transform: translateY(1px);
+  }
+
+  /* Focus states */
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  /* Selection colors */
+  ::selection {
+    background-color: var(--bg-active);
+    color: var(--text-primary);
+  }
+
+  /* Smooth scroll */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .post-content {
+      font-size: 14px;
+    }
   }
 `;
