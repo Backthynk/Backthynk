@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'preact/hooks';
+import { AlertContainer, AlertDropdown, AlertText } from '../styles/DropdownAlert.styles';
 
 export type AlertType = 'success' | 'error' | 'warning' | 'info';
 
@@ -82,18 +83,15 @@ export function DropdownAlert() {
     return null;
   }
 
-  const alertClasses = [
-    'alert-dropdown',
-    alert.type,
-    alert.isVisible && !alert.isHiding ? 'show' : '',
-    alert.isHiding ? 'hide' : '',
-  ].filter(Boolean).join(' ');
-
   return (
-    <div className="alert-container">
-      <div className={alertClasses}>
-        <span className="alert-text">{alert.message}</span>
-      </div>
-    </div>
+    <AlertContainer>
+      <AlertDropdown
+        type={alert.type}
+        isVisible={alert.isVisible && !alert.isHiding}
+        isHiding={alert.isHiding}
+      >
+        <AlertText>{alert.message}</AlertText>
+      </AlertDropdown>
+    </AlertContainer>
   );
 }

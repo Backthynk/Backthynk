@@ -77,7 +77,7 @@ export function VirtualScroller<T extends { id: number | string }>({
   return (
     <div ref={containerRef} class={`overflow-auto ${className}`} style={{ height: '100%' }}>
       <div style={{ height: `${totalHeight}px`, position: 'relative' }}>
-        <div style={{ transform: `translateY(${offsetY}px)` }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, transform: `translateY(${offsetY}px)` }}>
           {items.slice(visibleRange.startIndex, visibleRange.endIndex).map((item, idx) => (
             <div key={item.id} style={{ height: `${itemHeight}px` }}>
               {renderItem(item, visibleRange.startIndex + idx)}

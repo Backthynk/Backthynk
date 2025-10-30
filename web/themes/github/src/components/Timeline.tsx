@@ -70,7 +70,7 @@ interface TimelineProps {
   recursive?: boolean;
 }
 
-const VIRTUAL_SCROLL_THRESHOLD = 50;
+const VIRTUAL_SCROLL_THRESHOLD = 999999; // Disabled - posts have variable heights
 const POSTS_PER_PAGE = 50;
 
 export function Timeline({ spaceId, recursive = false }: TimelineProps) {

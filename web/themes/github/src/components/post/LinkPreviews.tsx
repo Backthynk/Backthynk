@@ -27,8 +27,6 @@ export function LinkPreviews({ previews, postId }: LinkPreviewsProps) {
 
   if (!previews || previews.length === 0) return null;
 
-  const currentPreview = previews[currentIndex];
-
   const navigatePreview = (direction: number) => {
     let newIndex = currentIndex + direction;
     if (newIndex < 0) newIndex = previews.length - 1;
