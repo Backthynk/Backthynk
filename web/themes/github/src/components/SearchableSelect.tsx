@@ -37,7 +37,7 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [dropdownStyle, setDropdownStyle] = useState<any>({ position: 'fixed', zIndex: 1100 });
+  const [dropdownStyle, setDropdownStyle] = useState<any>({ position: 'fixed', zIndex: 10001 });
   const wrapperRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +80,7 @@ export function SearchableSelect({
         top: `${rect.bottom + 4}px`,
         left: `${rect.left}px`,
         width: `${rect.width}px`,
-        zIndex: 1100,
+        zIndex: 10001,
       });
     }
   }, [isOpen]);
@@ -95,7 +95,7 @@ export function SearchableSelect({
           top: `${rect.bottom + 4}px`,
           left: `${rect.left}px`,
           width: `${rect.width}px`,
-          zIndex: 1100,
+          zIndex: 10001,
         });
       }
       setIsOpen(!isOpen);

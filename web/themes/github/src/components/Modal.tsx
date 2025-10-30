@@ -1,5 +1,6 @@
 import { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
+import { createPortal } from 'preact/compat';
 import { modalStyles } from '../styles/modal';
 
 const Overlay = modalStyles.overlay;
@@ -63,7 +64,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'medium
     }
   };
 
-  return (
+  return createPortal(
     <Overlay ref={overlayRef} onClick={handleOverlayClickEvent}>
       <Container className={size}>
         <Header>
@@ -75,6 +76,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'medium
         <Content>{children}</Content>
         {footer && <Footer>{footer}</Footer>}
       </Container>
-    </Overlay>
+    </Overlay>,
+    document.body
   );
 }

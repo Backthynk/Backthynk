@@ -11,7 +11,7 @@ export const modalStyles = {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 10000;
     padding: 1rem;
     backdrop-filter: blur(2px);
   `,
@@ -349,7 +349,7 @@ export const formStyles = {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     max-height: 280px;
     overflow-y: auto;
-    z-index: 1100;
+    z-index: 10001;
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
     /* Custom scrollbar styling */

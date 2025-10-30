@@ -6,6 +6,7 @@ import { Post } from './post';
 import { VirtualScroller } from '@core/components/VirtualScroller';
 import { styled } from 'goober';
 import { useLocation } from 'preact-iso';
+import { posts as postsConfig } from '@core/config';
 
 const Container = styled('main')`
   min-height: 400px;
@@ -71,7 +72,6 @@ interface TimelineProps {
 }
 
 const VIRTUAL_SCROLL_THRESHOLD = 999999; // Disabled - posts have variable heights
-const POSTS_PER_PAGE = 50;
 
 export function Timeline({ spaceId, recursive = false }: TimelineProps) {
   const [offset, setOffset] = useState(0);
@@ -82,7 +82,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
     setOffset(0);
 
     // Pass null for spaceId to fetch all posts
-    fetchPosts(spaceId, POSTS_PER_PAGE, 0, true, recursive)
+    fetchPosts(spaceId, postsConfig.postsPerPage, 0, true, recursive)
       .then((result) => {
         resetPosts();
         appendPosts(result.posts, result.has_more);
@@ -101,7 +101,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
     if (loading || !hasMore) return;
 
     isLoadingPosts.value = true;
-    fetchPosts(spaceId, POSTS_PER_PAGE, offset, true, recursive)
+    fetchPosts(spaceId, postsConfig.postsPerPage, offset, true, recursive)
       .then((result) => {
         appendPosts(result.posts, result.has_more);
         setOffset(offset + result.posts.length);

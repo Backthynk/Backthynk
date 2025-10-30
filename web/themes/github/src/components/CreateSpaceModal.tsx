@@ -6,6 +6,7 @@ import { createSpace, type Space } from '@core/api';
 import { spaces } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { showSuccess, showError } from '@core/components';
+import { space as spaceConfig } from '@core/config';
 
 const FormGroup = formStyles.formGroup;
 const Label = formStyles.label;
@@ -21,11 +22,6 @@ interface CreateSpaceModalProps {
   onSuccess: () => void;
   currentSpace: Space | null;
 }
-
-// Validation constants matching backend (config.go)
-const MAX_SPACE_NAME_LENGTH = 30;
-const MAX_SPACE_DESCRIPTION_LENGTH = 280;
-const SPACE_NAME_PATTERN = /^[a-zA-Z0-9]([a-zA-Z0-9\s\-_'.])*[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
 
 interface ValidationErrors {
   name?: string;
@@ -122,11 +118,11 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: C
       return 'Name is required';
     }
 
-    if (value.length > MAX_SPACE_NAME_LENGTH) {
-      return `Name must not exceed ${MAX_SPACE_NAME_LENGTH} characters`;
+    if (value.length > spaceConfig.name.maxLength) {
+      return `Name must not exceed ${spaceConfig.name.maxLength} characters`;
     }
 
-    if (!SPACE_NAME_PATTERN.test(value)) {
+    if (!spaceConfig.name.pattern.test(value)) {
       return 'Name must start with a letter or number, and can only contain letters, numbers, spaces, hyphens, underscores, apostrophes, and periods';
     }
 
@@ -315,14 +311,14 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: C
             value={name}
             onInput={(e) => setName((e.target as HTMLInputElement).value)}
             placeholder="My Space"
-            maxLength={MAX_SPACE_NAME_LENGTH}
+            maxLength={spaceConfig.name.maxLength}
             className={errors.name ? 'error' : ''}
             disabled={isSubmitting}
           />
           {errors.name && <Error>{errors.name}</Error>}
           {!errors.name && name && (
             <Hint>
-              URL slug: /{generateSlug(name)} ({name.length}/{MAX_SPACE_NAME_LENGTH})
+              URL slug: /{generateSlug(name)} ({name.length}/{spaceConfig.name.maxLength})
             </Hint>
           )}
         </FormGroup>
@@ -348,12 +344,12 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: C
             value={description}
             onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
             placeholder="Optional description..."
-            maxLength={MAX_SPACE_DESCRIPTION_LENGTH}
+            maxLength={spaceConfig.description.maxLength}
             disabled={isSubmitting}
           />
           {description && (
             <Hint>
-              {description.length}/{MAX_SPACE_DESCRIPTION_LENGTH}
+              {description.length}/{spaceConfig.description.maxLength}
             </Hint>
           )}
         </FormGroup>

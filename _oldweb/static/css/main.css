@@ -1,0 +1,759 @@
+body {
+    overflow-x: hidden;
+}
+
+
+/* Dark Mode CSS Variables */
+:root {
+    /* Light mode colors (GitHub light) */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f6f8fa;
+    --bg-tertiary: #f9fafb;
+    --bg-canvas: #fafbfc;
+
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --text-tertiary: #9ca3af;
+
+    --border-primary: #d1d5db;
+    --border-secondary: #e5e7eb;
+    --border-tertiary: #f3f4f6;
+
+    --link-color: #3b82f6;
+    --link-hover: #2563eb;
+
+    --success: #059669;
+    --success-bg: #d1fae5;
+    --error: #dc2626;
+    --error-bg: #fee2e2;
+
+    /* Activity heatmap - GitHub green scale */
+    --activity-none: #ebedf0;
+    --activity-low: #9be9a8;
+    --activity-medium: #40c463;
+    --activity-high: #30a14e;
+    --activity-very-high: #216e39;
+}
+
+.dark {
+    /* Dark mode colors (GitHub dark) */
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-tertiary: #21262d;
+    --bg-canvas: #010409;
+
+    --text-primary: #e6edf3;
+    --text-secondary: #7d8590;
+    --text-tertiary: #6e7681;
+
+    --border-primary: #30363d;
+    --border-secondary: #21262d;
+    --border-tertiary: #161b22;
+
+    --link-color: #58a6ff;
+    --link-hover: #79c0ff;
+
+    --success: #3fb950;
+    --success-bg: #1b4b2a;
+    --error: #f85149;
+    --error-bg: #6e1a1a;
+
+    /* Activity heatmap - GitHub dark green scale */
+    --activity-none: #161b22;
+    --activity-low: #0e4429;
+    --activity-medium: #006d32;
+    --activity-high: #26a641;
+    --activity-very-high: #39d353;
+}
+
+.file-preview {
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+}
+
+.grid.grid-cols-2 > div:first-child.row-span-2 {
+    grid-row: span 2;
+}
+.space-item {
+    margin-bottom: 1px;
+}
+
+/* Add spacing between parent and first child when expanded */
+.space-item.has-expanded-children > .flex {
+    margin-bottom: 4px;
+}
+
+/* Modern space styling to match activity section */
+.space-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.space-btn:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.space-btn.bg-blue-50:before {
+    background: #3b82f6;
+}
+#image-viewer-modal {
+    backdrop-filter: blur(5px);
+}
+#image-viewer-modal img {
+    transition: all 0.3s ease;
+}
+.transition-colors {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.transition-shadow {
+    transition: box-shadow 0.2s ease;
+}
+.transition-all {
+    transition: all 0.2s ease;
+}
+.transition-opacity {
+    transition: opacity 0.2s ease;
+}
+
+/* Custom scrollbar for spaces - subtle like activity section */
+#spaces-tree::-webkit-scrollbar {
+    width: 4px;
+}
+#spaces-tree::-webkit-scrollbar-track {
+    background: transparent;
+}
+#spaces-tree::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+.dark #spaces-tree::-webkit-scrollbar-thumb {
+    background: #374151;
+}
+#spaces-tree::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+.dark #spaces-tree::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+}
+
+/* Heatmap hover effects */
+.heatmap-cell:hover {
+    transform: scale(1.1);
+    transition: transform 0.1s ease;
+}
+
+/* Fixed size heatmap squares for consistent 10-per-row layout */
+.heatmap-square {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+}
+
+/* Ensure heatmap colors are visible in dark mode */
+.dark .heatmap-square {
+    /* Dark mode colors are already applied via classes, but ensure visibility */
+    opacity: 1;
+}
+
+/* Responsive adjustments for activity heatmap */
+@media (max-width: 1024px) {
+    .heatmap-square {
+        width: 10px;
+        height: 10px;
+    }
+    #activity-heatmap .w-8 {
+        width: 1.75rem; /* w-7 */
+        font-size: 0.75rem;
+    }
+}
+
+/* Space actions dropdown styles */
+#space-actions-menu {
+    animation: fadeInDown 0.15s ease-out;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+@keyframes fadeInDown {
+    0% {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Modal animation styles - GitHub-style */
+#space-modal:not(.hidden) .transform,
+#edit-space-modal:not(.hidden) .transform,
+#confirmation-modal:not(.hidden) .transform,
+#create-post-modal:not(.hidden) .transform {
+    animation: modalFadeIn 0.15s ease-out;
+}
+
+@keyframes modalFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Enhanced focus states for form inputs */
+input:focus,
+textarea:focus,
+select:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Better button active states */
+button:active {
+    transform: translateY(1px);
+}
+
+@media (max-width: 768px) {
+    .heatmap-square {
+        width: 8px;
+        height: 8px;
+    }
+    #activity-heatmap .w-8 {
+        width: 1.5rem; /* w-6 */
+        font-size: 0.625rem;
+    }
+}
+
+/* Recursive badge styles */
+.recursive-badge {
+    display: inline-block;
+    min-width: 1.375rem;
+    height: 1.375rem;
+    padding: 0 0.375rem;
+    background-color: #3b82f6;
+    color: white;
+    border-radius: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.375rem;
+    text-align: center;
+    vertical-align: baseline;
+    margin-left: 0.375rem;
+    position: relative;
+    cursor: help;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.recursive-badge:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+}
+
+/* Tooltip for recursive badge */
+.recursive-badge::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-4px);
+    background-color: #1f2937;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 100;
+}
+
+.recursive-badge:hover::after {
+    opacity: 1;
+}
+
+.dark .recursive-badge::after {
+    background-color: #374151;
+}
+
+/* Link preview styles */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* URL link styles in posts */
+.post-content {
+    font-size: 15px;
+    word-wrap: break-word !important;
+    overflow-wrap: anywhere !important;
+    white-space: pre-wrap !important;
+}
+
+.post-content a {
+    word-break: break-all;
+    display: inline;
+}
+
+.post-content a:hover {
+    text-decoration: underline;
+}
+
+/* Ensure the container background matches */
+.container {
+    background-color: rgb(249, 250, 251);
+}
+
+.dark .container {
+    background-color: rgb(17, 24, 39);
+}
+
+
+/* Header styles removed - desktop uses simple title, mobile uses lg:hidden header */
+
+/* Z-Index Hierarchy:
+   - 9999: Alerts (highest priority)
+   - 9998: Image viewer modal
+   - 50: All other modals (space, post, confirmation, etc.)
+   - 40: Sticky timeline header
+   - 10: Modal internal elements (delete buttons, etc.)
+   - 1: Regular content
+*/
+
+/* Alert System Styles */
+.alert-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.alert-dropdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px 16px;
+    transform: translateY(-100%);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 1;
+    visibility: visible;
+}
+
+.alert-dropdown.success {
+    background-color: #75C590;
+    min-height: 16px;
+}
+
+.alert-dropdown.error {
+    background-color: #E06E6B;
+    min-height: 32px;
+}
+
+.alert-dropdown.warning {
+    background-color: #EFB840;
+    min-height: 32px;
+}
+
+.alert-dropdown.info {
+    background-color: #74ACFF;
+    min-height: 32px;
+}
+
+.alert-dropdown.show {
+    transform: translateY(0);
+}
+
+.alert-dropdown.hide {
+    transform: translateY(-100%);
+    transition: transform 0.25s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+}
+
+.alert-text {
+    color: white;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+}
+
+/* Space Sort Footer Styles */
+#space-sort-footer {
+    transition: opacity 0.2s ease;
+}
+
+#space-sort-footer .sort-option {
+    transition: all 0.15s ease;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    position: relative;
+}
+
+#space-sort-footer .sort-option:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+#space-sort-footer .sort-option.text-blue-600 {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+#space-sort-footer .sort-option .sort-icon {
+    transition: transform 0.1s ease;
+}
+
+#space-sort-footer .sort-option:active .sort-icon {
+    transform: scale(0.95);
+}
+
+/* Modal file preview scrollbar styling */
+#modal-file-preview-list {
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+
+.dark #modal-file-preview-list {
+    scrollbar-color: #374151 transparent;
+}
+
+#modal-file-preview-list::-webkit-scrollbar {
+    height: 4px;
+}
+
+#modal-file-preview-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#modal-file-preview-list::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 2px;
+}
+
+.dark #modal-file-preview-list::-webkit-scrollbar-thumb {
+    background: #374151;
+}
+
+#modal-file-preview-list::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+
+.dark #modal-file-preview-list::-webkit-scrollbar-thumb:hover {
+    background: #4b5563;
+}
+
+/* Auto-resizing textarea */
+#modal-post-content {
+    transition: height 0.2s ease;
+}
+
+/* Mobile adjustments for all modals */
+@media (max-width: 768px) {
+    /* Full screen modal on mobile with proper bottom spacing for Safari */
+    .modal-mobile-full {
+        width: 100vw !important;
+        height: 100vh !important;
+        height: 100dvh !important; /* Dynamic viewport height for better mobile support */
+        max-width: none !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important; /* Safe area for mobile browsers */
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Make all modal containers full screen on mobile */
+    #create-post-modal .flex.items-center.justify-center,
+    #space-modal .flex.items-center.justify-center,
+    #edit-space-modal .flex.items-center.justify-center,
+    #move-modal .flex.items-center.justify-center,
+    #confirmation-modal.flex.items-center.justify-center {
+        padding: 0 !important;
+        min-height: 100vh;
+        min-height: 100dvh; /* Dynamic viewport height */
+    }
+
+    /* Ensure modal content doesn't get hidden behind browser UI */
+    #create-post-modal .bg-white.rounded-lg,
+    #space-modal .bg-white.rounded-lg,
+    #edit-space-modal .bg-white.rounded-lg,
+    #move-modal .bg-white.rounded-lg,
+    #confirmation-modal .bg-white.rounded-lg {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        padding-bottom: max(env(safe-area-inset-bottom, 0px), 20px); /* Extra padding for footer visibility */
+    }
+
+    /* Reduce padding on mobile for all modals */
+    #create-post-modal .px-4,
+    #create-post-modal .px-6,
+    #space-modal .px-6,
+    #edit-space-modal .px-6,
+    #move-modal .px-6,
+    #confirmation-modal .px-6 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    /* Optimize form inputs for mobile */
+    .modal-mobile-full input,
+    .modal-mobile-full textarea,
+    .modal-mobile-full select {
+        font-size: 16px !important; /* Prevent zoom on iOS */
+        padding: 12px !important; /* Larger touch targets */
+        border-radius: 8px !important; /* More mobile-friendly rounded corners */
+        transition: all 0.3s ease; /* Smooth transitions for keyboard interactions */
+    }
+
+    /* Keyboard optimization - use visual viewport when available */
+    .modal-mobile-full {
+        /* Use visual viewport height when keyboard is open */
+        height: 100vh !important;
+        height: 100svh !important; /* Small viewport height for keyboard compatibility */
+        max-height: 100vh !important;
+        max-height: 100svh !important;
+        overflow: hidden;
+    }
+
+    /* Ensure modal body is scrollable when keyboard appears */
+    .modal-mobile-full > div:not(:first-child):not(:last-child),
+    .modal-mobile-full .overflow-y-auto {
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+        overscroll-behavior: contain; /* Prevent body scroll */
+    }
+
+    /* Keyboard open state optimizations */
+    .modal-mobile-full.keyboard-open {
+        /* Adjust modal height when keyboard is open */
+        height: calc(100vh - var(--keyboard-height, 0px)) !important;
+        height: calc(100svh - var(--keyboard-height, 0px)) !important;
+    }
+
+    .modal-mobile-full.keyboard-open input:focus,
+    .modal-mobile-full.keyboard-open textarea:focus {
+        /* Highlight focused input when keyboard is open */
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+        background-color: #f8fafc;
+    }
+
+    /* Improved scrolling behavior for keyboard interactions */
+    .modal-mobile-full.keyboard-open .px-6,
+    .modal-mobile-full.keyboard-open .px-4 {
+        scroll-margin-top: 20px;
+        scroll-margin-bottom: 20px;
+    }
+
+    /* Ensure modal footers are always visible and accessible */
+    .modal-mobile-full .bg-gray-50:last-child,
+    .modal-mobile-full .border-t:last-child {
+        position: sticky;
+        bottom: 0;
+        margin-bottom: env(safe-area-inset-bottom, 0px);
+        z-index: 10;
+        background-color: rgb(249 250 251) !important; /* Ensure background color */
+    }
+
+    /* Dark mode background for modal footers on mobile */
+    .dark .modal-mobile-full .bg-gray-50:last-child,
+    .dark .modal-mobile-full .border-t:last-child {
+        background-color: rgb(17 24 39) !important; /* dark:bg-gray-900 */
+    }
+
+    /* Smaller file preview items on mobile */
+    #modal-file-preview-list .w-20 {
+        width: 4rem !important;
+    }
+
+    #modal-file-preview-list .h-20 {
+        height: 4rem !important;
+    }
+
+
+
+    /* Ensure footer is always visible on mobile */
+    #create-post-modal .bg-gray-50.border-t.border-gray-200:last-child {
+        position: sticky;
+        bottom: 0;
+        margin-bottom: env(safe-area-inset-bottom, 0px);
+        z-index: 10;
+    }
+
+    /* Keep buttons side by side on mobile, but adjust footer layout */
+    #create-post-modal .bg-gray-50.border-t.border-gray-200 .flex.items-center.justify-between {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: stretch;
+    }
+
+    #create-post-modal .bg-gray-50.border-t.border-gray-200 .flex.items-center.space-x-3 {
+        align-self: flex-end;
+        gap: 0.75rem;
+    }
+
+    /* Hide custom post date section on mobile - show only on tablet+ */
+    #modal-retroactive-section {
+        display: none !important;
+    }
+
+    /* Stack buttons on very small screens */
+    @media (max-width: 480px) {
+        /* Ensure even smaller screens have enough bottom space */
+        #create-post-modal .bg-white.rounded-lg {
+            padding-bottom: max(env(safe-area-inset-bottom, 0px), 40px);
+        }
+    }
+}
+
+/* Show custom post date section on tablet and larger screens */
+@media (min-width: 768px) {
+    #modal-retroactive-section {
+        display: block !important;
+    }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 768px) {
+    /* Hide button text on mobile, keep icons only */
+    #recursive-toggle-btn span,
+    #space-actions-btn span:not(.fas),
+    #settings-btn span,
+    #new-post-btn span {
+        display: none;
+    }
+
+    /* Adjust button padding and centering when text is hidden */
+    #recursive-toggle-btn,
+    #settings-btn,
+    #new-post-btn {
+        min-width: 2rem;
+        min-height: 2rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Make space actions button 1.5x larger as it contains 2 icons and feels cramped */
+    #space-actions-btn {
+        min-width: 3rem; /* 1.5x of 2rem */
+        min-height: 2rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Ensure proper spacing between icons when text is hidden */
+    #space-actions-btn .fas:first-child {
+        margin-left: 0.5rem;
+    }
+
+    #space-actions-btn .fas:last-child {
+        margin-right: 0.5rem;
+    }
+
+    /* Remove icon margins on mobile to ensure perfect centering */
+    #recursive-toggle-btn .fas,
+    #settings-btn .fas,
+    #new-post-btn .fas {
+        margin: 0 !important;
+        line-height: 1;
+    }
+
+    /* Reduce space name font size in header by 20% */
+    #timeline-title h2 {
+        font-size: 1rem; /* Down from 1.25rem (xl) */
+    }
+
+    /* Remove hover requirement for post action menu (move/delete) */
+    .opacity-0.group-hover\:opacity-100 {
+        opacity: 1 !important;
+    }
+
+    /* Fix attachment container height on mobile */
+    .post-attachments .w-20.h-20 {
+        width: 4rem !important;
+        height: 4rem !important;
+    }
+
+    /* Make action menu buttons shorter on mobile */
+    [id^="post-action-menu-"] button {
+        padding: 0.375rem 0.75rem !important;
+        font-size: 0.75rem !important;
+    }
+
+    /* Hide date overlay on mobile/tablet header - only show stats */
+    #timeline-title .absolute.top-0.left-0.opacity-0 {
+        display: none !important;
+    }
+
+    #timeline-title .transition-opacity.group-hover\:opacity-0 {
+        opacity: 1 !important;
+    }
+
+    /* Hide space description tooltip on mobile to prevent black container */
+    #timeline-title .absolute.left-0.top-full {
+        display: none !important;
+    }
+}
+
+@media (max-width: 1024px) {
+    /* Fix image preview aspect ratio on tablet - ensure square previews */
+    #modal-file-preview-list .w-20.h-20 {
+        width: 5rem !important;
+        height: 5rem !important;
+    }
+
+    /* Fix image viewer z-index to appear above modals but below alerts */
+    #image-viewer-modal {
+        z-index: 9998 !important;
+    }
+
+    /* Ensure inner content div of non-image previews maintains proper dimensions */
+    #modal-file-preview-list .w-20.h-20 > div {
+        width: 5rem !important;
+        height: 5rem !important;
+        min-height: 5rem !important;
+        max-height: 5rem !important;
+        overflow: hidden;
+    }
+}
+
+/* Hide scrollbar for post attachment containers */
+[data-attachment-container]::-webkit-scrollbar {
+    display: none;
+}
+
+[data-attachment-container] {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}

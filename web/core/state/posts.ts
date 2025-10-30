@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals';
 import type { Post } from '../api';
+import { posts as postsConfig } from '../config';
 
 // Global state for posts
 export const posts = signal<Post[]>([]);
@@ -9,7 +10,7 @@ export const isRecursiveView = signal<boolean>(false);
 
 // Pagination state
 export const currentOffset = signal<number>(0);
-export const postsPerPage = 20;
+export const postsPerPage = postsConfig.postsPerPage;
 
 export const resetPosts = () => {
   posts.value = [];
