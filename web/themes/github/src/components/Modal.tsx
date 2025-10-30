@@ -17,9 +17,10 @@ interface ModalProps {
   children: ComponentChildren;
   footer?: ComponentChildren;
   size?: 'small' | 'medium' | 'large';
+  onOverlayClick?: () => void; // Custom handler for overlay/backdrop clicks
 }
 
-export function Modal({ isOpen, onClose, title, children, footer, size = 'medium' }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, footer, size = 'medium', onOverlayClick }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Close on escape key
@@ -50,14 +51,20 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'medium
 
   if (!isOpen) return null;
 
-  const handleOverlayClick = (e: MouseEvent) => {
-    if (e.target === overlayRef.current) {
-      onClose();
+  const handleOverlayClickEvent = (e: any) => {
+    // Only close if clicking directly on the overlay (not on the modal content)
+    if (e.target === e.currentTarget) {
+      // Use custom handler if provided, otherwise use default onClose
+      if (onOverlayClick) {
+        onOverlayClick();
+      } else {
+        onClose();
+      }
     }
   };
 
   return (
-    <Overlay ref={overlayRef} onClick={handleOverlayClick}>
+    <Overlay ref={overlayRef} onClick={handleOverlayClickEvent}>
       <Container className={size}>
         <Header>
           <Title>{title}</Title>

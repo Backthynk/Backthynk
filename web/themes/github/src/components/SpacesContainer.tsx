@@ -5,6 +5,7 @@ import { SortControls, type SortField, type SortPreference } from './spaces-cont
 import { CreateSpaceModal } from './CreateSpaceModal';
 import { appSettings } from '@core/state';
 import { activityContainerHeightRem, shouldShowActivity } from '@core/state/activity';
+import type { Space } from '@core/api';
 
 const Container = spacesContainerStyles.container;
 const Header = spacesContainerStyles.header;
@@ -17,7 +18,11 @@ const FOOTER_HEIGHT = 7; // ~9rem for footer links
 const GAP = 1; // 1rem gap between components
 const PADDING = 2; // 2rem total padding (1rem top + 1rem bottom)
 
-export function SpacesContainer() {
+interface SpacesContainerProps {
+  currentSpace: Space | null;
+}
+
+export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
   // Load sort preference from localStorage
   const loadSortPreference = (): SortPreference => {
     const stored = localStorage.getItem(SORT_STORAGE_KEY);
@@ -72,6 +77,7 @@ export function SpacesContainer() {
           // Modal will handle closing itself, we could add a toast notification here
           console.log('Space created successfully');
         }}
+        currentSpace={currentSpace}
       />
     </>
   );

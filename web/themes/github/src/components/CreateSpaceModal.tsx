@@ -18,6 +18,7 @@ interface CreateSpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  currentSpace: Space | null;
 }
 
 // Validation constants matching backend (config.go)
@@ -30,23 +31,60 @@ interface ValidationErrors {
   parent?: string;
 }
 
-export function CreateSpaceModal({ isOpen, onClose, onSuccess }: CreateSpaceModalProps) {
+export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: CreateSpaceModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentId, setParentId] = useState<number | null>(null);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDiscardWarning, setShowDiscardWarning] = useState(false);
 
-  // Reset form when modal opens/closes
+  // Set default parent when modal opens based on currentSpace
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // Determine default parent based on currentSpace
+      let defaultParent: number | null = null;
+
+      if (currentSpace) {
+        // Check if currentSpace can be a parent (not at max depth)
+        // If it has a parent_id, it's at level 1, so we can add children (level 2)
+        // If it has no parent_id, it's at level 0 (root), so we can add children (level 1)
+        const canBeParent = currentSpace.parent_id === null ||
+          spaces.value.find(s => s.id === currentSpace.parent_id)?.parent_id === null;
+
+        if (canBeParent) {
+          defaultParent = currentSpace.id;
+        } else {
+          // Current space is at depth 2, can't add children, so use root (null)
+          defaultParent = null;
+        }
+      }
+
+      setParentId(defaultParent);
+    } else {
+      // Reset form when modal closes
       setName('');
       setDescription('');
       setParentId(null);
       setErrors({});
       setIsSubmitting(false);
+      setShowDiscardWarning(false);
     }
-  }, [isOpen]);
+  }, [isOpen, currentSpace]);
+
+  // Check if form has been partially filled
+  const isFormDirty = () => {
+    return name.trim().length > 0 || description.trim().length > 0;
+  };
+
+  // Handle close with discard warning
+  const handleClose = () => {
+    if (isFormDirty() && !showDiscardWarning) {
+      setShowDiscardWarning(true);
+    } else {
+      onClose();
+    }
+  };
 
   // Build parent space options with hierarchy
   const buildSpaceOptions = (): SelectOption[] => {
@@ -216,24 +254,55 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess }: CreateSpaceModa
 
   const isFormValid = !errors.name && !errors.parent && name.trim().length > 0;
 
-  const footer = (
+  // Discard warning modal footer
+  const discardWarningFooter = (
     <>
-      <Button type="button" className="secondary" onClick={onClose} disabled={isSubmitting}>
-        Cancel
+      <Button type="button" className="secondary" onClick={() => setShowDiscardWarning(false)}>
+        Continue Editing
       </Button>
-      <Button
-        type="submit"
-        className="primary"
-        onClick={handleSubmit}
-        disabled={!isFormValid || isSubmitting}
-      >
-        {isSubmitting ? 'Creating...' : 'Create Space'}
+      <Button type="button" className="danger" onClick={onClose}>
+        Discard Changes
       </Button>
     </>
   );
 
+  // Main form footer
+  const footer = (
+    <>
+      <Button type="button" className="secondary" onClick={handleClose} disabled={isSubmitting}>
+        Cancel
+      </Button>
+      <Button
+        type="submit"
+        className="success"
+        onClick={handleSubmit}
+        disabled={!isFormValid || isSubmitting}
+      >
+        {isSubmitting ? 'Creating...' : 'Create repository'}
+      </Button>
+    </>
+  );
+
+  // Show discard warning modal if form is dirty
+  if (showDiscardWarning) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={() => setShowDiscardWarning(false)}
+        onOverlayClick={() => setShowDiscardWarning(false)}
+        title="Discard changes?"
+        footer={discardWarningFooter}
+        size="small"
+      >
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
+          Are you sure you want to discard your changes? This action cannot be undone.
+        </p>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Space" footer={footer} size="medium">
+    <Modal isOpen={isOpen} onClose={handleClose} onOverlayClick={handleClose} title="Create New Space" footer={footer} size="medium">
       <form onSubmit={handleSubmit}>
         <FormGroup>
           <Label>

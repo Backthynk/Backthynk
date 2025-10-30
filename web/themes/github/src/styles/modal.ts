@@ -246,6 +246,44 @@ export const formStyles = {
         cursor: not-allowed;
       }
     }
+
+    &.success {
+      background: #1a7f37;
+      color: #ffffff;
+      border-color: rgba(27, 31, 36, 0.15);
+
+      &:hover:not(:disabled) {
+        background: #2da44e;
+      }
+
+      &:active:not(:disabled) {
+        background: #1a7f37;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    &.danger {
+      background: #d73a49;
+      color: #ffffff;
+      border-color: rgba(27, 31, 36, 0.15);
+
+      &:hover:not(:disabled) {
+        background: #cb2431;
+      }
+
+      &:active:not(:disabled) {
+        background: #b31d28;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
   `,
 
   selectWrapper: styled('div')`
@@ -304,7 +342,7 @@ export const formStyles = {
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    right: 0;
+    width: 100%;
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
     border-radius: 6px;

@@ -70,7 +70,7 @@ export function Home() {
               flexDirection: 'column',
               gap: '1rem'
             }}>
-              <SpacesContainer />
+              <SpacesContainer currentSpace={currentSpace} />
               <ActivityTracker currentSpace={currentSpace} />
               <FooterLinks />
             </div>
