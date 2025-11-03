@@ -3,6 +3,7 @@ import type { PostFile } from '@core/api';
 import { formatFileSize } from '@core/utils';
 import { getFileIcon, isImageFile } from '@core/utils/files';
 import { ImageViewer } from '@core/components/ImageViewer';
+import { LazyImage } from '@core/components';
 import { postStyles } from '../../styles/post';
 
 const Section = postStyles.attachmentsSection;
@@ -155,7 +156,7 @@ export function FileAttachments({ files }: FileAttachmentsProps) {
                   onClick={() => openImageGallery(idx)}
                   title={tooltipText}
                 >
-                  <img src={`/uploads/${file.file_path}`} alt={file.filename} />
+                  <LazyImage src={`/uploads/${file.file_path}`} alt={file.filename} />
                   <FileOverlay>
                     <p>{file.filename}</p>
                     <p class="size">{fileSizeText}</p>

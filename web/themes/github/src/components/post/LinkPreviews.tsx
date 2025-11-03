@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import type { LinkPreview } from '@core/api';
+import { LazyImage } from '@core/components';
 import { postStyles } from '../../styles/post';
 
 const Section = postStyles.attachmentsSection;
@@ -43,9 +44,10 @@ export function LinkPreviews({ previews, postId, standalone = false }: LinkPrevi
         <Card href={preview.url} target="_blank" rel="noopener noreferrer">
           {preview.image_url && (
             <Image>
-              <img
+              <LazyImage
                 src={preview.image_url}
                 alt=""
+                showError={false}
                 onError={(e) => {
                   (e.target as HTMLElement).parentElement!.style.display = 'none';
                 }}
@@ -66,10 +68,10 @@ export function LinkPreviews({ previews, postId, standalone = false }: LinkPrevi
   }
 
   return (
-    <Section>
-      <Header>
-        <Title>Link Previews</Title>
-        {previews.length > 1 && (
+    <Section style={previews.length === 1 ? { borderTop: 'none', paddingTop: '0', marginTop: '0.75rem' } : {}}>
+      {previews.length > 1 && (
+        <Header>
+          <Title>Link Previews</Title>
           <NavControls>
             <NavButton disabled={previews.length <= 1} onClick={() => navigatePreview(-1)}>
               <i class="fas fa-chevron-left" />
@@ -81,8 +83,8 @@ export function LinkPreviews({ previews, postId, standalone = false }: LinkPrevi
               <i class="fas fa-chevron-right" />
             </NavButton>
           </NavControls>
-        )}
-      </Header>
+        </Header>
+      )}
 
       <Container>
         <List style={{ transform: `translateX(calc(-${currentIndex} * (100% + 0.75rem)))` }}>
@@ -90,9 +92,10 @@ export function LinkPreviews({ previews, postId, standalone = false }: LinkPrevi
             <Card key={idx} href={preview.url} target="_blank" rel="noopener noreferrer">
               {preview.image_url && (
                 <Image>
-                  <img
+                  <LazyImage
                     src={preview.image_url}
                     alt=""
+                    showError={false}
                     onError={(e) => {
                       (e.target as HTMLElement).parentElement!.style.display = 'none';
                     }}

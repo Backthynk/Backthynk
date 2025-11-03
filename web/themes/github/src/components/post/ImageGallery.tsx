@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { PostFile } from '@core/api';
 import { ImageViewer } from '@core/components/ImageViewer';
+import { LazyImage } from '@core/components';
 import { styled } from 'goober';
 
 const GalleryContainer = styled('div')`
@@ -15,9 +16,12 @@ const SingleImageContainer = styled('div')`
   max-height: 500px;
   cursor: pointer;
 
-  img {
+  img, & > div {
     width: 100%;
     height: 100%;
+  }
+
+  img {
     object-fit: cover;
     display: block;
   }
@@ -28,6 +32,11 @@ const TwoImagesGrid = styled('div')`
   grid-template-columns: 1fr 1fr;
   gap: 2px;
   max-height: 400px;
+
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
 
   img {
     width: 100%;
@@ -49,6 +58,11 @@ const ThreeImagesGrid = styled('div')`
     grid-row: 1 / 3;
   }
 
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
+
   img {
     width: 100%;
     height: 100%;
@@ -64,6 +78,11 @@ const FourImagesGrid = styled('div')`
   grid-template-rows: 1fr 1fr;
   gap: 2px;
   max-height: 400px;
+
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
 
   img {
     width: 100%;
@@ -118,7 +137,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
       <>
         <GalleryContainer>
           <SingleImageContainer onClick={() => openImageViewer(0)}>
-            <img src={`/uploads/${images[0].file_path}`} alt={images[0].filename} />
+            <LazyImage src={`/uploads/${images[0].file_path}`} alt={images[0].filename} />
           </SingleImageContainer>
         </GalleryContainer>
         {showImageViewer && (
@@ -135,7 +154,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
         <GalleryContainer>
           <TwoImagesGrid>
             {images.map((img, idx) => (
-              <img
+              <LazyImage
                 key={img.id}
                 src={`/uploads/${img.file_path}`}
                 alt={img.filename}
@@ -157,18 +176,18 @@ export function ImageGallery({ images }: ImageGalleryProps) {
       <>
         <GalleryContainer>
           <ThreeImagesGrid>
-            <img
+            <LazyImage
               class="main"
               src={`/uploads/${images[0].file_path}`}
               alt={images[0].filename}
               onClick={() => openImageViewer(0)}
             />
-            <img
+            <LazyImage
               src={`/uploads/${images[1].file_path}`}
               alt={images[1].filename}
               onClick={() => openImageViewer(1)}
             />
-            <img
+            <LazyImage
               src={`/uploads/${images[2].file_path}`}
               alt={images[2].filename}
               onClick={() => openImageViewer(2)}
@@ -192,7 +211,7 @@ export function ImageGallery({ images }: ImageGalleryProps) {
         <FourImagesGrid>
           {displayImages.map((img, idx) => (
             <ImageContainer key={img.id} onClick={() => openImageViewer(idx)}>
-              <img src={`/uploads/${img.file_path}`} alt={img.filename} />
+              <LazyImage src={`/uploads/${img.file_path}`} alt={img.filename} />
               {idx === 3 && remainingCount > 0 && <MoreOverlay>+{remainingCount}</MoreOverlay>}
             </ImageContainer>
           ))}

@@ -2,21 +2,19 @@ import { render } from 'preact';
 import { App } from './App';
 import './styles/global';
 import { MIN_LOADING_TIME, MAX_LOADING_TIME } from '@core/constants';
-import { spaces } from '@core/state';
-import type { Space } from '@core/api';
-
-// Hydrate initial data from SSR if available
-declare global {
-  interface Window {
-    __INITIAL_DATA__?: {
-      spaces?: Space[];
-    };
-  }
-}
+import { spaces, clientConfig } from '@core/state';
 
 if (window.__INITIAL_DATA__?.spaces) {
   spaces.value = window.__INITIAL_DATA__.spaces;
-  // Clean up the initial data
+}
+
+// Load client config from injected data
+if (window.__INITIAL_DATA__?.config) {
+  clientConfig.value = window.__INITIAL_DATA__.config;
+}
+
+// Clean up the initial data after hydration
+if (window.__INITIAL_DATA__) {
   delete window.__INITIAL_DATA__;
 }
 

@@ -11,7 +11,7 @@ import {
   shouldShowActivity,
 } from '@core/state';
 
-import { appSettings } from '@core/state';
+import { clientConfig } from '@core/state';
 import { fetchActivityData } from '@core/api';
 import type { Space } from '@core/api';
 import { activityStyles } from '../../styles/activity';
@@ -38,10 +38,10 @@ interface ActivityTrackerProps {
 }
 
 export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
-  const settings = appSettings.value;
+  const config = clientConfig.value;
 
   // Don't render if activity is disabled or window too small
-  if (!settings.activityEnabled || !shouldShowActivity.value) {
+  if (!config.activity || !shouldShowActivity.value) {
     return null;
   }
 

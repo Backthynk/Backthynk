@@ -1,10 +1,6 @@
 import { signal } from '@preact/signals';
-import type { AppSettings } from '../api';
-import { DEFAULT_SETTINGS, loadAppSettings as loadSettingsAPI } from '../api';
+import type { ClientConfig } from '../api';
+import { DEFAULT_CONFIG } from '../api';
 
-// Global state for app settings
-export const appSettings = signal<AppSettings>({ ...DEFAULT_SETTINGS });
-export const isLoadingSettings = signal<boolean>(false);
-
-// Re-export the loadAppSettings function from API
-export { loadSettingsAPI as loadAppSettings };
+// Global state for client config
+export const clientConfig = signal<ClientConfig>({ ...DEFAULT_CONFIG });

@@ -3,7 +3,7 @@ import { spacesContainerStyles } from '../styles/spaces-container';
 import { SpaceContainer } from './spaces-container/SpaceContainer';
 import { SortControls, type SortField, type SortPreference } from './spaces-container/SortControls';
 import { CreateSpaceModal } from './CreateSpaceModal';
-import { appSettings } from '@core/state';
+import { clientConfig } from '@core/state';
 import { activityContainerHeightRem, shouldShowActivity } from '@core/state/activity';
 import type { Space } from '@core/api';
 
@@ -45,8 +45,8 @@ export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
   };
 
   // Calculate max height based on whether activity is enabled
-  const settings = appSettings.value;
-  const activityEnabled = settings.activityEnabled;
+  const config = clientConfig.value;
+  const activityEnabled = config.activity ?? false;
 
   // Calculate total height to subtract from viewport
   let subtractHeight = PADDING + FOOTER_HEIGHT + GAP; // Base: padding + footer + 1 gap

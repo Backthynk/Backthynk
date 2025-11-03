@@ -127,7 +127,7 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
       {!shouldHideContent && displayContent && (
         <Content
           style={{ marginBottom: isTextOnly ? '0' : '1rem' }}
-          dangerouslySetInnerHTML={{ __html: displayContent }}
+          dangerouslySetInnerHTML={{ __html: displayContent.trim() }}
         />
       )}
 
