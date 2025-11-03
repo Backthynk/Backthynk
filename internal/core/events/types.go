@@ -16,6 +16,8 @@ const (
 	// File events
 	FileUploaded EventType = "file.uploaded"
 	FileDeleted  EventType = "file.deleted"
+
+	PreviewGenerated EventType = "preview.generated"
 )
 
 type Event struct {
@@ -38,4 +40,12 @@ type SpaceEvent struct {
 	OldParentID   *int
 	NewParentID   *int
 	AffectedPosts []int
+}
+
+type PreviewEvent struct {
+	Filename     string
+	Size         string // "large", "medium", "small"
+	OriginalPath string
+	PreviewPath  string
+	Error        error
 }

@@ -21,9 +21,6 @@ func TestNewTestOptionsConfig(t *testing.T) {
 	if !options.Features.Activity.Enabled {
 		t.Error("Expected Activity to be enabled by default")
 	}
-	if options.Features.Activity.PeriodMonths != 4 {
-		t.Errorf("Expected Activity PeriodMonths 4, got %d", options.Features.Activity.PeriodMonths)
-	}
 	if !options.Features.DetailedStats.Enabled {
 		t.Error("Expected DetailedStats to be enabled by default")
 	}

@@ -4,10 +4,13 @@ import (
 	"backthynk/internal/api/handlers"
 	"backthynk/internal/api/middleware"
 	"backthynk/internal/config"
+	"backthynk/internal/core/events"
 	"backthynk/internal/core/services"
 	"backthynk/internal/features/activity"
 	"backthynk/internal/features/detailedstats"
+	"backthynk/internal/features/preview"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 )
@@ -18,6 +21,7 @@ func NewRouter(
 	fileService *services.FileService,
 	detailedStats *detailedstats.Service,
 	activityService *activity.Service,
+	dispatcher *events.Dispatcher,
 	opts *config.OptionsConfig,
 	serviceConfig *config.ServiceConfig,
 ) http.Handler {
@@ -27,10 +31,17 @@ func NewRouter(
 	r.Use(middleware.CORS)
 	r.Use(middleware.Logging)
 	
+	// Initialize preview service if enabled
+	var previewService *preview.Service
+	if opts.Features.Preview.Enabled {
+		uploadPath := filepath.Join(serviceConfig.Files.StoragePath, serviceConfig.Files.UploadsSubdir)
+		previewService = preview.NewService(uploadPath, dispatcher, opts)
+	}
+
 	// Initialize handlers
 	spaceHandler := handlers.NewSpaceHandler(spaceService)
 	postHandler := handlers.NewPostHandler(postService, fileService, opts)
-	uploadHandler := handlers.NewUploadHandler(fileService, opts)
+	uploadHandler := handlers.NewUploadHandler(fileService, previewService, opts)
 	linkPreviewHandler := handlers.NewLinkPreviewHandler(fileService)
 	settingsHandler := handlers.NewSettingsHandler()
 	logsHandler := handlers.NewLogsHandler()

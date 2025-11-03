@@ -92,7 +92,6 @@ type OptionsConfig struct {
 	Features struct {
 		Activity struct {
 			Enabled      bool `json:"enabled"`
-			PeriodMonths int  `json:"periodMonths"`
 		} `json:"activity"`
 		DetailedStats struct {
 			Enabled bool `json:"enabled"`
@@ -110,6 +109,16 @@ type OptionsConfig struct {
 			MaxFilesPerPost   int      `json:"maxFilesPerPost"`
 			AllowedExtensions []string `json:"allowedExtensions"`
 		} `json:"fileUpload"`
+		Preview struct {
+			Enabled            bool     `json:"enabled"`
+			SupportedFormats   []string `json:"supportedFormats"`
+			JpegQuality        int      `json:"jpegQuality"`
+			Sizes              struct {
+				Large  int `json:"large"`
+				Medium int `json:"medium"`
+				Small  int `json:"small"`
+			} `json:"sizes"`
+		} `json:"preview"`
 	} `json:"features"`
 }
 

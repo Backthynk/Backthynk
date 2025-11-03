@@ -72,7 +72,7 @@ func (s *FileService) UploadFile(postID int, file io.Reader, filename string, fi
 		logger.Error("Failed to save attachment info to database", zap.String("filename", filename), zap.Int("post_id", postID), zap.Error(err))
 		return nil, fmt.Errorf("failed to save attachment info: %w", err)
 	}
-	
+
 	// Get post to find space for event
 	post, err := s.db.GetPost(postID)
 	if err == nil {
@@ -81,13 +81,13 @@ func (s *FileService) UploadFile(postID int, file io.Reader, filename string, fi
 			Type: events.FileUploaded,
 			Data: events.PostEvent{
 				PostID:     postID,
-				SpaceID: post.SpaceID,
+				SpaceID:    post.SpaceID,
 				FileSize:   written,
 				FileCount:  1,
 			},
 		})
 	}
-	
+
 	return attachment, nil
 }
 
@@ -169,4 +169,8 @@ func getString(m map[string]interface{}, key string) string {
 
 func (s *FileService) GetTotalPostCount() (int, error) {
 	return s.db.GetTotalPostCount()
+}
+
+func (s *FileService) GetAttachmentCount(postID int) (int, error) {
+	return s.db.GetAttachmentCount(postID)
 }

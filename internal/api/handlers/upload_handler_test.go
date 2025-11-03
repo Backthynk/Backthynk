@@ -6,6 +6,7 @@ import (
 	"backthynk/internal/core/events"
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/services"
+	"backthynk/internal/features/preview"
 	"backthynk/internal/storage"
 	"bytes"
 	"encoding/json"
@@ -92,8 +93,11 @@ func setupUploadTest(t *testing.T) (*uploadTestSetup, func()) {
 	// Create test options with default settings
 	options := config.NewTestOptionsConfig()
 
+	// Create preview service
+	previewService := preview.NewService(uploadsDir, dispatcher, options)
+
 	// Create handler
-	handler := NewUploadHandler(fileService, options)
+	handler := NewUploadHandler(fileService, previewService, options)
 
 	setup := &uploadTestSetup{
 		handler:       handler,
@@ -472,6 +476,118 @@ func TestIsExtensionAllowed(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("Extension '%s': expected %v, got %v", tt.ext, tt.expected, result)
 		}
+	}
+}
+
+func TestUploadFile_MaxFilesPerPost(t *testing.T) {
+	setup, cleanup := setupUploadTest(t)
+	defer cleanup()
+
+	// Set max files per post to 3
+	setup.handler.options = config.NewTestOptionsConfig().WithMaxFilesPerPost(3)
+
+	// Create a test post
+	post, err := setup.postService.Create(1, "Test post", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Upload 3 files successfully
+	for i := 0; i < 3; i++ {
+		fileContent := []byte("test content")
+		filename := "test" + strconv.Itoa(i) + ".jpg"
+		req, _ := createMultipartRequest(t, strconv.Itoa(post.ID), filename, fileContent)
+
+		rr := httptest.NewRecorder()
+		setup.handler.UploadFile(rr, req)
+
+		if status := rr.Code; status != http.StatusCreated {
+			t.Errorf("File %d: Expected status %d, got %d. Body: %s", i, http.StatusCreated, status, rr.Body.String())
+		}
+	}
+
+	// Try to upload a 4th file - should fail
+	fileContent := []byte("test content")
+	req, _ := createMultipartRequest(t, strconv.Itoa(post.ID), "test3.jpg", fileContent)
+
+	rr := httptest.NewRecorder()
+	setup.handler.UploadFile(rr, req)
+
+	// Check response - should be bad request
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("Expected status %d (Bad Request), got %d. Body: %s", http.StatusBadRequest, status, rr.Body.String())
+	}
+
+	// Verify error message mentions the limit
+	body := rr.Body.String()
+	if !contains(body, "Maximum") || !contains(body, "limit") {
+		t.Errorf("Expected error message about maximum files limit, got: %s", body)
+	}
+}
+
+func TestUploadFile_MaxFilesPerPost_DifferentPosts(t *testing.T) {
+	setup, cleanup := setupUploadTest(t)
+	defer cleanup()
+
+	// Set max files per post to 2
+	setup.handler.options = config.NewTestOptionsConfig().WithMaxFilesPerPost(2)
+
+	// Create two test posts
+	post1, err := setup.postService.Create(1, "Test post 1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	post2, err := setup.postService.Create(1, "Test post 2", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Upload 2 files to post1
+	for i := 0; i < 2; i++ {
+		fileContent := []byte("test content")
+		filename := "test" + strconv.Itoa(i) + ".jpg"
+		req, _ := createMultipartRequest(t, strconv.Itoa(post1.ID), filename, fileContent)
+
+		rr := httptest.NewRecorder()
+		setup.handler.UploadFile(rr, req)
+
+		if status := rr.Code; status != http.StatusCreated {
+			t.Errorf("Post1 File %d: Expected status %d, got %d", i, http.StatusCreated, status)
+		}
+	}
+
+	// Upload 2 files to post2 - should still work since it's a different post
+	for i := 0; i < 2; i++ {
+		fileContent := []byte("test content")
+		filename := "test" + strconv.Itoa(i) + ".jpg"
+		req, _ := createMultipartRequest(t, strconv.Itoa(post2.ID), filename, fileContent)
+
+		rr := httptest.NewRecorder()
+		setup.handler.UploadFile(rr, req)
+
+		if status := rr.Code; status != http.StatusCreated {
+			t.Errorf("Post2 File %d: Expected status %d, got %d. Body: %s", i, http.StatusCreated, status, rr.Body.String())
+		}
+	}
+
+	// Verify both posts cannot accept more files
+	fileContent := []byte("test content")
+
+	// Try post1
+	req1, _ := createMultipartRequest(t, strconv.Itoa(post1.ID), "extra.jpg", fileContent)
+	rr1 := httptest.NewRecorder()
+	setup.handler.UploadFile(rr1, req1)
+	if status := rr1.Code; status != http.StatusBadRequest {
+		t.Errorf("Post1 extra file: Expected status %d, got %d", http.StatusBadRequest, status)
+	}
+
+	// Try post2
+	req2, _ := createMultipartRequest(t, strconv.Itoa(post2.ID), "extra.jpg", fileContent)
+	rr2 := httptest.NewRecorder()
+	setup.handler.UploadFile(rr2, req2)
+	if status := rr2.Code; status != http.StatusBadRequest {
+		t.Errorf("Post2 extra file: Expected status %d, got %d", http.StatusBadRequest, status)
 	}
 }
 

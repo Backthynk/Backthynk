@@ -12,7 +12,6 @@ func NewTestOptionsConfig() *OptionsConfig {
 		Features: struct {
 			Activity struct {
 				Enabled      bool `json:"enabled"`
-				PeriodMonths int  `json:"periodMonths"`
 			} `json:"activity"`
 			DetailedStats struct {
 				Enabled bool `json:"enabled"`
@@ -30,13 +29,21 @@ func NewTestOptionsConfig() *OptionsConfig {
 				MaxFilesPerPost   int      `json:"maxFilesPerPost"`
 				AllowedExtensions []string `json:"allowedExtensions"`
 			} `json:"fileUpload"`
+			Preview struct {
+				Enabled          bool     `json:"enabled"`
+				SupportedFormats []string `json:"supportedFormats"`
+				JpegQuality      int      `json:"jpegQuality"`
+				Sizes            struct {
+					Large  int `json:"large"`
+					Medium int `json:"medium"`
+					Small  int `json:"small"`
+				} `json:"sizes"`
+			} `json:"preview"`
 		}{
 			Activity: struct {
 				Enabled      bool `json:"enabled"`
-				PeriodMonths int  `json:"periodMonths"`
 			}{
 				Enabled:      true,
-				PeriodMonths: 4,
 			},
 			DetailedStats: struct {
 				Enabled bool `json:"enabled"`
@@ -65,6 +72,29 @@ func NewTestOptionsConfig() *OptionsConfig {
 				MaxFileSizeMB:     5,
 				MaxFilesPerPost:   25,
 				AllowedExtensions: []string{"jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "txt", "zip", "mp4", "mov", "avi"},
+			},
+			Preview: struct {
+				Enabled          bool     `json:"enabled"`
+				SupportedFormats []string `json:"supportedFormats"`
+				JpegQuality      int      `json:"jpegQuality"`
+				Sizes            struct {
+					Large  int `json:"large"`
+					Medium int `json:"medium"`
+					Small  int `json:"small"`
+				} `json:"sizes"`
+			}{
+				Enabled:          true,
+				SupportedFormats: []string{"jpg", "jpeg", "png", "gif", "webp"},
+				JpegQuality:      85,
+				Sizes: struct {
+					Large  int `json:"large"`
+					Medium int `json:"medium"`
+					Small  int `json:"small"`
+				}{
+					Large:  600,
+					Medium: 300,
+					Small:  150,
+				},
 			},
 		},
 	}
@@ -103,12 +133,6 @@ func (o *OptionsConfig) WithAllowedExtensions(extensions []string) *OptionsConfi
 // WithActivityEnabled sets the Activity.Enabled feature for tests
 func (o *OptionsConfig) WithActivityEnabled(enabled bool) *OptionsConfig {
 	o.Features.Activity.Enabled = enabled
-	return o
-}
-
-// WithActivityPeriodMonths sets the Activity.PeriodMonths feature for tests
-func (o *OptionsConfig) WithActivityPeriodMonths(months int) *OptionsConfig {
-	o.Features.Activity.PeriodMonths = months
 	return o
 }
 

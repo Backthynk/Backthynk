@@ -112,7 +112,6 @@ func createOptionsConfig() error {
 
 		// Initialize features
 		defaultConfig.Features.Activity.Enabled = true
-		defaultConfig.Features.Activity.PeriodMonths = 4
 		defaultConfig.Features.DetailedStats.Enabled = true
 		defaultConfig.Features.RetroactivePosting.Enabled = false
 		defaultConfig.Features.RetroactivePosting.TimeFormat = "24h"
@@ -125,6 +124,12 @@ func createOptionsConfig() error {
 			"7z", "mp3", "wav", "ogg", "flac", "m4a", "json", "csv",
 			"yaml", "yml", "md", "xml", "ppt", "pptx", "odt", "ods", "odp",
 		}
+		defaultConfig.Features.Preview.Enabled = true
+		defaultConfig.Features.Preview.SupportedFormats = []string{"jpg", "jpeg", "png", "gif", "webp", "pdf"}
+		defaultConfig.Features.Preview.JpegQuality = 85
+		defaultConfig.Features.Preview.Sizes.Large = 600
+		defaultConfig.Features.Preview.Sizes.Medium = 300
+		defaultConfig.Features.Preview.Sizes.Small = 150
 
 		data, err = json.MarshalIndent(defaultConfig, "", "  ")
 		if err != nil {

@@ -59,6 +59,16 @@ func (db *DB) GetAttachmentsByPost(postID int) ([]models.Attachment, error) {
 	return attachments, nil
 }
 
+func (db *DB) GetAttachmentCount(postID int) (int, error) {
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM attachments WHERE post_id = ?", postID).Scan(&count)
+	if err != nil {
+		logger.Error("Failed to get attachment count", zap.Int("post_id", postID), zap.Error(err))
+		return 0, fmt.Errorf("failed to get attachment count: %w", err)
+	}
+	return count, nil
+}
+
 func (db *DB) CreateLinkPreview(preview *models.LinkPreview) error {
 	query := `INSERT INTO link_previews (post_id, url, title, description, image_url, site_name)
 			  VALUES (?, ?, ?, ?, ?, ?)`
