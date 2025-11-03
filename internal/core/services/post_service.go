@@ -5,7 +5,6 @@ import (
 	"backthynk/internal/core/cache"
 	"backthynk/internal/core/events"
 	"backthynk/internal/core/models"
-	"backthynk/internal/core/utils"
 	"backthynk/internal/storage"
 	"fmt"
 )
@@ -43,11 +42,6 @@ func (s *PostService) Create(spaceID int, content string, customTimestamp *int64
 
 	if err != nil {
 		return nil, err
-	}
-
-	// Process content on-the-fly for the response
-	if s.options != nil && s.options.Features.Markdown.Enabled {
-		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 
 	// Update cache
@@ -160,13 +154,6 @@ func (s *PostService) GetBySpace(spaceID int, recursive bool, limit, offset int)
 		return nil, err
 	}
 
-	// Process content on-the-fly for each post
-	if s.options != nil && s.options.Features.Markdown.Enabled {
-		for i := range posts {
-			posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
-		}
-	}
-
 	return posts, nil
 }
 
@@ -174,13 +161,6 @@ func (s *PostService) GetAllPosts(limit, offset int) ([]models.PostWithAttachmen
 	posts, err := s.db.GetAllPosts(limit, offset)
 	if err != nil {
 		return nil, err
-	}
-
-	// Process content on-the-fly for each post
-	if s.options != nil && s.options.Features.Markdown.Enabled {
-		for i := range posts {
-			posts[i].Content = utils.ProcessMarkdown(posts[i].Content)
-		}
 	}
 
 	return posts, nil

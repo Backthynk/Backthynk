@@ -131,7 +131,7 @@ func (h *UploadHandler) ServeFile(w http.ResponseWriter, r *http.Request) {
 
 	// Check if preview is requested
 	size := r.URL.Query().Get("size")
-	if size != "" && h.previewService != nil {
+	if size != "" && h.previewService != nil && h.options.Features.Preview.Enabled {
 		// Check if preview is supported for this file
 		if h.previewService.IsPreviewSupported(filename) {
 			// Get the preview path

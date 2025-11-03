@@ -20,9 +20,6 @@ func NewTestOptionsConfig() *OptionsConfig {
 				Enabled    bool   `json:"enabled"`
 				TimeFormat string `json:"timeFormat"`
 			} `json:"retroactivePosting"`
-			Markdown struct {
-				Enabled bool `json:"enabled"`
-			} `json:"markdown"`
 			FileUpload struct {
 				Enabled           bool     `json:"enabled"`
 				MaxFileSizeMB     int      `json:"maxFileSizeMB"`
@@ -56,11 +53,6 @@ func NewTestOptionsConfig() *OptionsConfig {
 			}{
 				Enabled:    false,
 				TimeFormat: "24h",
-			},
-			Markdown: struct {
-				Enabled bool `json:"enabled"`
-			}{
-				Enabled: false,
 			},
 			FileUpload: struct {
 				Enabled           bool     `json:"enabled"`
@@ -151,11 +143,5 @@ func (o *OptionsConfig) WithRetroactivePostingEnabled(enabled bool) *OptionsConf
 // WithRetroactivePostingTimeFormat sets the RetroactivePosting.TimeFormat for tests
 func (o *OptionsConfig) WithRetroactivePostingTimeFormat(format string) *OptionsConfig {
 	o.Features.RetroactivePosting.TimeFormat = format
-	return o
-}
-
-// WithMarkdownEnabled sets the Markdown.Enabled feature for tests
-func (o *OptionsConfig) WithMarkdownEnabled(enabled bool) *OptionsConfig {
-	o.Features.Markdown.Enabled = enabled
 	return o
 }

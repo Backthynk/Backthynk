@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"backthynk/internal/config"
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/services"
 	"backthynk/internal/core/utils"
@@ -126,6 +127,7 @@ func (h *SPAHandler) serveIndexWithData(w http.ResponseWriter, r *http.Request, 
 
 	// Fetch all spaces from the service
 	spaces := h.spaceService.GetAll()
+	configuration := config.GetOptionsConfig().ToClientFormat()
 
 	// Create JSON data for hydration
 	spacesJSON, err := json.Marshal(spaces)
@@ -133,8 +135,13 @@ func (h *SPAHandler) serveIndexWithData(w http.ResponseWriter, r *http.Request, 
 		spacesJSON = []byte("[]")
 	}
 
+	configurationJSON, err := json.Marshal(configuration)
+	if err != nil {
+		configurationJSON = []byte("{}")
+	}
+
 	// Create the script tag to inject spaces data
-	initialDataScript := `<script>window.__INITIAL_DATA__={spaces:` + string(spacesJSON) + `};</script>`
+	initialDataScript := `<script>window.__INITIAL_DATA__={spaces:` + string(spacesJSON) + `, config:` + string(configurationJSON) + `};</script>`
 
 	// Generate SEO-friendly HTML for spaces
 	spacesHTML := h.generateSpacesHTML(spaces)

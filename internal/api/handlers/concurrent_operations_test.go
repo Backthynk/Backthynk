@@ -80,8 +80,7 @@ func setupConcurrentTest() (*concurrentTestSetup, error) {
 		WithMaxContentLength(1000).
 		WithMaxFileSizeMB(10).
 		WithMaxFilesPerPost(5).
-		WithRetroactivePostingEnabled(true).
-		WithMarkdownEnabled(false)
+		WithRetroactivePostingEnabled(true)
 
 	// Setup handlers
 	spaceHandler := NewSpaceHandler(spaceService)

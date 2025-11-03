@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+const VERSION = "0.2.0"
 
 const (
 	APP_MODE_DEV        = "development"   //back-end && front-end in dev mode
@@ -100,9 +101,6 @@ type OptionsConfig struct {
 			Enabled    bool   `json:"enabled"`
 			TimeFormat string `json:"timeFormat"`
 		} `json:"retroactivePosting"`
-		Markdown struct {
-			Enabled bool `json:"enabled"`
-		} `json:"markdown"`
 		FileUpload struct {
 			Enabled           bool     `json:"enabled"`
 			MaxFileSizeMB     int      `json:"maxFileSizeMB"`
@@ -122,67 +120,44 @@ type OptionsConfig struct {
 	} `json:"features"`
 }
 
-/* //disactivated 26.10.2025
+func (o *OptionsConfig) ToClientFormat() map[string]interface{} {
+	//only features
+	features := make(map[string]interface{})
+	features["core"] = map[string]interface{}{
+		"max_content_length": o.Core.MaxContentLength,
+	}
 
-type SharedConfig struct {
-	App struct {
-		Name    string `json:"name"`
-		Version string `json:"version"`
-	} `json:"app"`
-	Paths struct {
-		BuildDir     string `json:"build_dir"`
-		Dir struct {
-			Development string `json:"development"`
-			PreProduction string `json:"pre-production"`
-		} `json:"dir"`
-		Source struct {
-			Static    string `json:"static"`
-			Templates string `json:"templates"`
-			JS        string `json:"js"`
-			CSS       string `json:"css"`
-		} `json:"source"`
-	} `json:"paths"`
-	URLs struct {
-		CDN         map[string]interface{} `json:"cdn"`
-		GithubURL   string                 `json:"github_url"`
-		NewIssueURL string                 `json:"new_issue_url"`
-	} `json:"urls"`
+	if o.Features.Activity.Enabled{
+		features["activity"] = o.Features.Activity.Enabled
+	}
+	if o.Features.DetailedStats.Enabled{
+		features["space_stats"] = o.Features.DetailedStats.Enabled
+	}
+	if o.Features.RetroactivePosting.Enabled {
+		features["retroactive_posting"] = map[string]interface{}{
+			"time_format": o.Features.RetroactivePosting.TimeFormat,
+		}
+	}
+	if o.Features.FileUpload.Enabled {
+		features["file_upload"] = map[string]interface{}{
+			"max_file_size_mb":     o.Features.FileUpload.MaxFileSizeMB,
+			"max_files_per_post":   o.Features.FileUpload.MaxFilesPerPost,
+			"allowed_extensions":   o.Features.FileUpload.AllowedExtensions,
+		}
+	}
+	if o.Features.Preview.Enabled {
+		features["preview"] = map[string]interface{}{
+			"supported_formats": o.Features.Preview.SupportedFormats,
+		}
+	}
+	
+	return features
 }
-*/
+
 var (
 	serviceConfig *ServiceConfig
 	optionsConfig *OptionsConfig
-//	sharedConfig  *SharedConfig //disactivated 26.10.2025
 )
-/*//disactivated 26.10.2025
-func LoadSharedConfig() error {
-	var data []byte
-	var err error
-
-	// In production mode, use embedded config if available
-	if GetAppMode() == APP_MODE_PROD {
-		data = getEmbeddedConfig()
-		if len(data) == 0 {
-			return fmt.Errorf("embedded config not available in production mode")
-		}
-	} else {
-		// In dev/pre-prod mode, read from file system
-		configPath := GetConfigJSONPath()
-		data, err = os.ReadFile(configPath)
-		if err != nil {
-			return fmt.Errorf("failed to read shared config from %s: %w", configPath, err)
-		}
-	}
-
-	var config SharedConfig
-	if err := json.Unmarshal(data, &config); err != nil {
-		return fmt.Errorf("failed to parse shared config: %w", err)
-	}
-
-	sharedConfig = &config
-	return nil
-}
-*/
 
 func LoadServiceConfig() error {
 	data, err := os.ReadFile("service.json")
@@ -215,9 +190,6 @@ func LoadOptionsConfig() error {
 	}
 
 	optionsConfig = &config
-	//06/10/2025
-	//Force disable markdown
-	optionsConfig.WithMarkdownEnabled(false)
 	return nil
 }
 
@@ -228,48 +200,6 @@ func GetServiceConfig() *ServiceConfig {
 func GetOptionsConfig() *OptionsConfig {
 	return optionsConfig
 }
-
-/* //disactivated 26.10.2025
-func GetSharedConfig() *SharedConfig {
-	return sharedConfig
-}
-
-
-func (sc *SharedConfig) GetRessourcesRootPath() string {
-	if sc == nil {
-		return ""
-	}
-	if GetAppMode() == APP_MODE_PRE_PROD {
-		return sc.Paths.Dir.PreProduction
-	}
-	return sc.Paths.Dir.Development
-}
-
-func (sc *SharedConfig) GetWebStaticPath() string {
-	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.Static)
-}
-
-func (sc *SharedConfig) GetWebTemplatesPath() string {
-	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.Templates)
-}	
-
-func (sc *SharedConfig) GetWebJSPath() string {
-	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.JS)
-}
-
-func (sc *SharedConfig) GetWebCSSPath() string {
-	return filepath.Join(sc.GetRessourcesRootPath(), sc.Paths.Source.CSS)
-}
-
-func GetConfigJSONPath() string {
-	configPath := ".config.json"
-	if _, err := os.Stat("scripts/common"); err == nil {
-		configPath = "scripts/.config.json"
-	}
-	sharedConfigPath, _ := filepath.Abs(configPath)
-	return sharedConfigPath
-}
-*/
 
 // SetServiceConfigForTest sets the service config for testing purposes
 func SetServiceConfigForTest(config *ServiceConfig) {
@@ -322,24 +252,4 @@ func PrintConfigPaths() {
 		fmt.Printf("  %s├─%s options.json\n", colorCyan, colorReset)
 		fmt.Printf("  %s│%s  %s%s%s\n", colorCyan, colorReset, colorYellow, optionsConfigPath, colorReset)
 	}
-
-	/* //disactivated 26.10.2025
-	if mode != APP_MODE_PROD {
-		// Shared config
-		configPath := GetConfigJSONPath()
-		fmt.Printf("  %s└─%s .config.json\n", colorCyan, colorReset)
-		fmt.Printf("    %s%s%s\n\n", colorYellow, configPath, colorReset)
-		// Web resources
-		fmt.Printf("%s%sWeb Resources:%s\n", colorBold, colorPurple, colorReset)
-
-		if sharedConfig != nil {
-			absWebPath, _ := filepath.Abs(sharedConfig.GetRessourcesRootPath())
-			fmt.Printf("  %s└─%s %s\n", colorCyan, colorReset, mode)
-			fmt.Printf("    %s%s%s\n", colorYellow, absWebPath, colorReset)
-		}
-	}
-	*/
-
-
-
 }

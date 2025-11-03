@@ -32,11 +32,8 @@ func NewRouter(
 	r.Use(middleware.Logging)
 	
 	// Initialize preview service if enabled
-	var previewService *preview.Service
-	if opts.Features.Preview.Enabled {
-		uploadPath := filepath.Join(serviceConfig.Files.StoragePath, serviceConfig.Files.UploadsSubdir)
-		previewService = preview.NewService(uploadPath, dispatcher, opts)
-	}
+	uploadPath := filepath.Join(serviceConfig.Files.StoragePath, serviceConfig.Files.UploadsSubdir)
+	previewService := preview.NewService(uploadPath, dispatcher, opts)
 
 	// Initialize handlers
 	spaceHandler := handlers.NewSpaceHandler(spaceService)

@@ -4,12 +4,12 @@ import (
 	"backthynk/internal/config"
 	"backthynk/internal/core/models"
 	"backthynk/internal/core/services"
-	"backthynk/internal/core/utils"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -58,6 +58,8 @@ func (h *PostHandler) CreatePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, config.ErrValidSpaceIDRequired, http.StatusBadRequest)
 		return
 	}
+
+	req.Content = strings.TrimSpace(req.Content);
 	
 	// Validate content length
 	if len(req.Content) > h.options.Core.MaxContentLength {
@@ -106,11 +108,6 @@ func (h *PostHandler) GetPost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
-	}
-
-	// Process content on-the-fly for the response
-	if h.options != nil && h.options.Features.Markdown.Enabled {
-		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 
 	// Filter attachments by allowed extensions
@@ -168,11 +165,6 @@ func (h *PostHandler) MovePost(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, config.ErrFailedToRetrievePost, http.StatusInternalServerError)
 		return
-	}
-
-	// Process content on-the-fly for the response
-	if h.options != nil && h.options.Features.Markdown.Enabled {
-		post.Content = utils.ProcessMarkdown(post.Content)
 	}
 
 	// Filter attachments by allowed extensions

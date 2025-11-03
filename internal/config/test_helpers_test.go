@@ -27,9 +27,6 @@ func TestNewTestOptionsConfig(t *testing.T) {
 	if options.Features.RetroactivePosting.Enabled {
 		t.Error("Expected RetroactivePosting to be disabled by default")
 	}
-	if options.Features.Markdown.Enabled {
-		t.Error("Expected Markdown to be disabled by default")
-	}
 }
 
 func TestOptionsConfigChaining(t *testing.T) {
@@ -40,7 +37,6 @@ func TestOptionsConfigChaining(t *testing.T) {
 		WithMaxFilesPerPost(5).
 		WithActivityEnabled(false).
 		WithRetroactivePostingEnabled(true).
-		WithMarkdownEnabled(false).
 		WithFileUploadEnabled(false)
 
 	if options.Core.MaxContentLength != 1000 {
@@ -60,8 +56,5 @@ func TestOptionsConfigChaining(t *testing.T) {
 	}
 	if !options.Features.RetroactivePosting.Enabled {
 		t.Error("Expected RetroactivePosting to be enabled")
-	}
-	if options.Features.Markdown.Enabled {
-		t.Error("Expected Markdown to be disabled")
 	}
 }

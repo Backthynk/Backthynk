@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"go.uber.org/zap"
 )
@@ -20,31 +19,19 @@ func NewSettingsHandler() *SettingsHandler {
 func (h *SettingsHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	options := config.GetOptionsConfig()
 
-	// Convert to frontend format
-	response := map[string]interface{}{
-		"maxContentLength":                 options.Core.MaxContentLength,
-		"siteTitle":                        options.Metadata.Title,
-		"siteDescription":                  options.Metadata.Description,
-		"retroactivePostingEnabled":        options.Features.RetroactivePosting.Enabled,
-		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
-		"activityEnabled":                  options.Features.Activity.Enabled,
-		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
-		//06/10/2025 force disable markdown
-		"markdownEnabled":                  false, //options.Features.Markdown.Enabled,
-		"fileUploadEnabled":                options.Features.FileUpload.Enabled,
-		"maxFileSizeMB":                    options.Features.FileUpload.MaxFileSizeMB,
-		"maxFilesPerPost":                  options.Features.FileUpload.MaxFilesPerPost,
-		"allowedFileExtensions":            options.Features.FileUpload.AllowedExtensions,
-		
-		//version
-		"version": "1.0.0", //config.GetSharedConfig().App.Version, //disactivated 26.10.2025
+	jsonned, err := json.Marshal(options)
+	if err != nil {
+		http.Error(w, config.ErrFailedToMarshalSettings, http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(jsonned)
 }
 
 func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
+	/*
+	
 	var req map[string]interface{}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, config.ErrInvalidJSON, http.StatusBadRequest)
@@ -83,13 +70,6 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 			options.Features.RetroactivePosting.TimeFormat = val
 		}
 	}
-	/*
-	//06/10/2025 force disable markdown
-	if val, ok := req["markdownEnabled"].(bool); ok {
-		options.Features.Markdown.Enabled = val
-	}
-	*/
-
 	// Update file upload settings
 	if val, ok := req["fileUploadEnabled"].(bool); ok {
 		options.Features.FileUpload.Enabled = val
@@ -139,9 +119,6 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 		"retroactivePostingTimeFormat":     options.Features.RetroactivePosting.TimeFormat,
 		"activityEnabled":                  options.Features.Activity.Enabled,
 		"fileStatsEnabled":                 options.Features.DetailedStats.Enabled,
-		//06/10/2025 force disable markdown
-		"markdownEnabled":                  false,
-		//"markdownEnabled":                  options.Features.Markdown.Enabled,
 		"fileUploadEnabled":                options.Features.FileUpload.Enabled,
 		"maxFileSizeMB":                    options.Features.FileUpload.MaxFileSizeMB,
 		"maxFilesPerPost":                  options.Features.FileUpload.MaxFilesPerPost,
@@ -150,6 +127,8 @@ func (h *SettingsHandler) UpdateSettings(w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+	*/
+	http.Error(w, "UpdateSettings not implemented", http.StatusNotImplemented)
 }
 
 func (h *SettingsHandler) validateSettings(options *config.OptionsConfig) error {
