@@ -7,9 +7,19 @@ export interface LinkifyOptions {
   excludeUrls?: string[];
 }
 
-const URL_REGEX = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
+// URL pattern: matches http(s) URLs with proper domains
+const HTTP_URL_REGEX = /https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)/gi;
+
+// Bare domain pattern: matches www.example.com or example.com (common TLDs only to avoid false positives)
+const BARE_DOMAIN_REGEX = /(?:^|[^@\w])(www\.[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{2,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*))/gi;
+
+// Email pattern: standard email format
 const EMAIL_REGEX = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
-const PHONE_REGEX = /(\+?\d{1,4}[\s-]?)?\(?\d{1,4}\)?[\s-]?\d{1,4}[\s-]?\d{1,9}/g;
+
+// Phone pattern: matches phone numbers with country code or clear separator patterns
+// Must have separators (spaces, dots, or dashes) or start with +
+// Examples: +33 1 23 45 67 89, 123-456-7890, +1 (234) 567-8900
+const PHONE_REGEX = /(?:\+\d{1,3}[\s.-]?(?:\(?\d{1,4}\)?[\s.-]?)+\d{1,4})|(?:(?:\d{1,4}[\s.-])+\d{4,})/g;
 
 /**
  * Convert URLs, emails, and phone numbers in text to clickable HTML links
@@ -23,16 +33,38 @@ export function linkifyText(text: string, options: LinkifyOptions = {}): string 
   // Store original positions to avoid overlapping replacements
   const replacements: Array<{ start: number; end: number; replacement: string }> = [];
 
-  // Find all URLs
+  // Find all HTTP(S) URLs
   let match: RegExpExecArray | null;
-  const urlRegex = new RegExp(URL_REGEX.source, URL_REGEX.flags);
-  while ((match = urlRegex.exec(text)) !== null) {
+  const httpUrlRegex = new RegExp(HTTP_URL_REGEX.source, HTTP_URL_REGEX.flags);
+  while ((match = httpUrlRegex.exec(text)) !== null) {
     const url = match[0];
     if (!excludeUrls.includes(url)) {
       replacements.push({
         start: match.index,
         end: match.index + url.length,
         replacement: `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
+      });
+    }
+  }
+
+  // Find bare domains (www.example.com)
+  const bareDomainRegex = new RegExp(BARE_DOMAIN_REGEX.source, BARE_DOMAIN_REGEX.flags);
+  while ((match = bareDomainRegex.exec(text)) !== null) {
+    // Extract just the domain part (without the preceding character)
+    const fullMatch = match[0];
+    const domain = match[1]; // Captured group is the actual domain
+    const domainStart = match.index + (fullMatch.length - domain.length);
+
+    // Check if not already in replacements and not in excludeUrls
+    const isInOther = replacements.some(
+      (r) => domainStart >= r.start && domainStart + domain.length <= r.end
+    );
+    const href = `http://${domain}`;
+    if (!isInOther && !excludeUrls.includes(href) && !excludeUrls.includes(`https://${domain}`)) {
+      replacements.push({
+        start: domainStart,
+        end: domainStart + domain.length,
+        replacement: `<a href="${href}" target="_blank" rel="noopener noreferrer">${domain}</a>`,
       });
     }
   }
@@ -54,13 +86,19 @@ export function linkifyText(text: string, options: LinkifyOptions = {}): string 
     }
   }
 
-  // Find all phone numbers (basic detection, not perfect)
+  // Find all phone numbers
   const phoneRegex = new RegExp(PHONE_REGEX.source, PHONE_REGEX.flags);
   while ((match = phoneRegex.exec(text)) !== null) {
     const phone = match[0].trim();
-    // Only linkify if it looks like a real phone number (has at least 7 digits)
     const digitCount = phone.replace(/\D/g, '').length;
-    if (digitCount >= 7 && digitCount <= 15) {
+
+    // Validate: must have 8-15 digits total
+    // Must either start with + or have clear separator patterns (spaces, dots, dashes)
+    const hasCountryCode = phone.startsWith('+');
+    const hasSeparators = /[\s.-]/.test(phone);
+    const isValidLength = digitCount >= 8 && digitCount <= 15;
+
+    if (isValidLength && (hasCountryCode || hasSeparators)) {
       // Check if this phone is not inside a URL or email
       const isInOther = replacements.some(
         (r) => match!.index >= r.start && match!.index + phone.length <= r.end
@@ -69,7 +107,7 @@ export function linkifyText(text: string, options: LinkifyOptions = {}): string 
         replacements.push({
           start: match.index,
           end: match.index + phone.length,
-          replacement: `<a href="tel:${phone.replace(/\s/g, '')}">${phone}</a>`,
+          replacement: `<a href="tel:${phone.replace(/[\s.-]/g, '')}">${phone}</a>`,
         });
       }
     }
@@ -91,8 +129,18 @@ export function linkifyText(text: string, options: LinkifyOptions = {}): string 
  */
 export function extractUrls(text: string): string[] {
   if (!text) return [];
-  const matches = text.match(URL_REGEX);
-  return matches || [];
+  const httpMatches = text.match(HTTP_URL_REGEX) || [];
+
+  // Also find bare domains and convert them to http URLs
+  const bareMatches: string[] = [];
+  const bareDomainRegex = new RegExp(BARE_DOMAIN_REGEX.source, BARE_DOMAIN_REGEX.flags);
+  let match: RegExpExecArray | null;
+  while ((match = bareDomainRegex.exec(text)) !== null) {
+    const domain = match[1];
+    bareMatches.push(`http://${domain}`);
+  }
+
+  return [...httpMatches, ...bareMatches];
 }
 
 /**

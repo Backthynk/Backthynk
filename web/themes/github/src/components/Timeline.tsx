@@ -1,15 +1,30 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState, useRef } from 'preact/hooks';
 import { posts, resetPosts, appendPosts, isLoadingPosts, hasMorePosts, spaces } from '@core/state';
 import { fetchPosts, deletePost as deletePostApi } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { Post } from './post';
 import { VirtualScroller } from '@core/components/VirtualScroller';
-import { styled } from 'goober';
+import { styled, keyframes } from 'goober';
 import { useLocation } from 'preact-iso';
 import { posts as postsConfig } from '@core/config';
 
+const fadeSlideIn = keyframes`
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
 const Container = styled('main')`
   min-height: 400px;
+
+  &.animating {
+    animation: ${fadeSlideIn} 0.4s ease-out;
+  }
 `;
 
 const EmptyState = styled('div')`
@@ -75,9 +90,18 @@ const VIRTUAL_SCROLL_THRESHOLD = 999999; // Disabled - posts have variable heigh
 
 export function Timeline({ spaceId, recursive = false }: TimelineProps) {
   const [offset, setOffset] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const containerRef = useRef<HTMLElement>(null);
   const location = useLocation();
+  const prevRecursive = useRef(recursive);
 
   useEffect(() => {
+    // Trigger animation only when recursive mode changes (not on initial load or space change)
+    if (prevRecursive.current !== recursive && containerRef.current) {
+      setIsAnimating(true);
+    }
+    prevRecursive.current = recursive;
+
     isLoadingPosts.value = true;
     setOffset(0);
 
@@ -87,6 +111,13 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
         resetPosts();
         appendPosts(result.posts, result.has_more);
         setOffset(result.posts.length);
+
+        // End animation after data is loaded
+        setTimeout(() => setIsAnimating(false), 400);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch posts:', error);
+        setIsAnimating(false);
       })
       .finally(() => {
         isLoadingPosts.value = false;
@@ -148,8 +179,8 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
     return breadcrumbs.join(' / ');
   };
 
-  // Show breadcrumbs when viewing all posts (no space selected)
-  const showBreadcrumbs = spaceId === null;
+  // Show breadcrumbs when viewing all posts (no space selected) or in recursive mode
+  const showBreadcrumbs = spaceId === null || recursive;
 
   // Navigate to a space when clicking on breadcrumb
   const handleBreadcrumbClick = (postSpaceId: number) => {
@@ -172,7 +203,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   if (loading && postsList.length === 0) {
     return (
-      <Container>
+      <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
         <EmptyState>
           <i class="fas fa-spinner fa-spin" />
           <p>Loading posts...</p>
@@ -183,7 +214,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   if (postsList.length === 0) {
     return (
-      <Container>
+      <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
         <EmptyState>
           <i class="fas fa-comment-slash" />
           <p>No posts yet</p>
@@ -197,7 +228,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   if (useVirtualScroll) {
     return (
-      <Container>
+      <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
         <VirtualScroller
           items={postsList}
           itemHeight={200}
@@ -220,7 +251,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
   }
 
   return (
-    <Container>
+    <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
       <PostsList>
         {postsList.map((post) => (
           <Post

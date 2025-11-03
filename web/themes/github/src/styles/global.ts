@@ -32,6 +32,8 @@ glob`
 
     --accent-primary: #0969da;
     --accent-hover: #0550ae;
+    --accent-recursive: #8250df;
+    --accent-recursive-hover: #6639ba;
 
     --count-bg: #e6eaef;
     --count-text: #656d76;
@@ -74,6 +76,8 @@ glob`
 
     --accent-primary: #539bf5;
     --accent-hover: #6cb6ff;
+    --accent-recursive: #a371f7;
+    --accent-recursive-hover: #b083f0;
 
     --count-bg: #30363d;
     --count-text: #8d96a0;

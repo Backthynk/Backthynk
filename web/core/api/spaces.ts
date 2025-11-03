@@ -8,7 +8,6 @@ export interface Space {
   post_count: number;
   created_at: number;
   updated_at: number;
-  recursiveMode?: boolean; // Optional: tracks if viewing this space recursively
 }
 
 export interface CreateSpacePayload {

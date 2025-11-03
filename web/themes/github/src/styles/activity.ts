@@ -39,30 +39,14 @@ export const SpaceBreadcrumb = styled('div')`
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--activity-low);
-    color: var(--text-primary);
+    background: var(--accent-recursive);
+    color: var(--text-inverted);
     font-size: 10px;
     font-weight: 600;
     padding: 2px 6px;
     border-radius: 20px;
     margin-left: 4px;
-    position: relative;
-
-    &:hover::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--bg-tooltip);
-      color: var(--text-inverse);
-      padding: 4px 8px;
-      border-radius: 6px;
-      white-space: nowrap;
-      font-size: 12px;
-      margin-bottom: 4px;
-      z-index: 50;
-    }
+    cursor: default;
   }
 `;
 

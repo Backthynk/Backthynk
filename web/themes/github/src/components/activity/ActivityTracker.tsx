@@ -9,6 +9,8 @@ import {
   canNavigateNext,
   activityPeriodMonths,
   shouldShowActivity,
+  isRecursiveMode,
+  recursiveSpaces,
 } from '@core/state';
 
 import { clientConfig } from '@core/state';
@@ -45,23 +47,31 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
     return null;
   }
 
-  // Load activity data when space changes or period changes
+  // Get recursive mode from global state
+  const isRecursive = currentSpace ? isRecursiveMode(currentSpace.id) : false;
+
+  // Load activity data when space, recursive mode, or period changes
   useEffect(() => {
     loadActivityData();
-  }, [currentSpace?.id, currentSpace?.recursiveMode, currentActivityPeriod.value, activityPeriodMonths.value]);
+  }, [currentSpace?.id, isRecursive, currentActivityPeriod.value, activityPeriodMonths.value, recursiveSpaces.value]);
 
-  // Reset activity state when space changes
+  // Update activity state when space or recursive mode changes
   useEffect(() => {
     if (currentSpace) {
-      currentActivityPeriod.value = 0;
+      const previousSpaceId = activitySpaceId.value;
       activitySpaceId.value = currentSpace.id;
-      activityRecursiveMode.value = currentSpace.recursiveMode || false;
+      activityRecursiveMode.value = isRecursive;
+
+      // Only reset period when space changes (not when recursive mode changes)
+      if (previousSpaceId !== currentSpace.id) {
+        currentActivityPeriod.value = 0;
+      }
     } else {
       currentActivityPeriod.value = 0;
       activitySpaceId.value = 0; // All spaces
       activityRecursiveMode.value = false;
     }
-  }, [currentSpace?.id]);
+  }, [currentSpace?.id, isRecursive]);
 
   const loadActivityData = async () => {
     // Prevent duplicate calls
@@ -73,7 +83,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
 
     try {
       const spaceId = currentSpace?.id || 0;
-      const recursive = currentSpace?.recursiveMode || false;
+      const recursive = isRecursive;
       const periodMonths = activityPeriodMonths.value;
 
       const data = await fetchActivityData(

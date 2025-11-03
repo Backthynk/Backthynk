@@ -5,6 +5,7 @@ import type { Space } from '../api';
 export const spaces = signal<Space[]>([]);
 export const currentSpace = signal<Space | null>(null);
 export const expandedSpaces = signal<Set<number>>(new Set());
+export const recursiveSpaces = signal<Set<number>>(new Set());
 
 // Computed values
 export const rootSpaces = computed(() => {
@@ -99,4 +100,48 @@ export const expandParentSpaces = (spaceId: number) => {
 
   expandedSpaces.value = current;
   localStorage.setItem('expandedSpaces', JSON.stringify([...current]));
+};
+
+// Check if a space is in recursive mode
+export const isRecursiveMode = (spaceId: number): boolean => {
+  return recursiveSpaces.value.has(spaceId);
+};
+
+// Toggle recursive mode for a space
+export const toggleRecursiveMode = (spaceId: number) => {
+  const current = new Set(recursiveSpaces.value);
+  if (current.has(spaceId)) {
+    current.delete(spaceId);
+  } else {
+    current.add(spaceId);
+  }
+  recursiveSpaces.value = current;
+
+  // Persist to localStorage
+  localStorage.setItem('recursiveSpaces', JSON.stringify([...current]));
+};
+
+// Load recursive modes from localStorage
+export const loadRecursiveModes = () => {
+  const saved = localStorage.getItem('recursiveSpaces');
+  if (saved) {
+    try {
+      recursiveSpaces.value = new Set(JSON.parse(saved));
+    } catch (error) {
+      console.error('Failed to load recursive modes:', error);
+    }
+  }
+};
+
+// Get all descendant space IDs for a given space (for recursive fetching)
+export const getDescendantSpaceIds = (spaceId: number): number[] => {
+  const result: number[] = [];
+  const children = getChildSpaces(spaceId);
+
+  for (const child of children) {
+    result.push(child.id);
+    result.push(...getDescendantSpaceIds(child.id));
+  }
+
+  return result;
 };

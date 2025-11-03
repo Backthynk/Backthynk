@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
-import { spaces, loadExpandedSpaces, expandParentSpaces } from '@core/state';
+import { spaces, loadExpandedSpaces, expandParentSpaces, loadRecursiveModes, toggleRecursiveMode, isRecursiveMode } from '@core/state';
 import { fetchSpaces as fetchSpacesApi } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { Layout } from '../components/Layout';
@@ -8,6 +8,7 @@ import { SpacesContainer } from '../components/SpacesContainer';
 import { FooterLinks } from '../components/spaces-container';
 import { ActivityTracker } from '../components/activity';
 import { Timeline } from '../components/Timeline';
+import { CompanionPanel } from '../components/companion';
 import { layoutStyles } from '../styles/layout';
 import type { Space } from '@core/api';
 
@@ -55,7 +56,12 @@ export function Home() {
     if (spaces.value.length === 0) {
       fetchSpacesApi().then((fetchedSpaces) => {
         spaces.value = fetchedSpaces;
+        // Load recursive modes after spaces are loaded
+        loadRecursiveModes();
       });
+    } else {
+      // Load recursive modes if spaces are already loaded
+      loadRecursiveModes();
     }
   }, []);
 
@@ -73,6 +79,12 @@ export function Home() {
       }, 100);
     }
   }, [currentSpace]);
+
+  const handleRecursiveToggle = () => {
+    if (currentSpace) {
+      toggleRecursiveMode(currentSpace.id);
+    }
+  };
 
   return (
     <Layout>
@@ -93,11 +105,17 @@ export function Home() {
           </LeftPanel>
 
           <Main>
-            <Timeline spaceId={currentSpace?.id || null} recursive={false} />
+            <Timeline
+              spaceId={currentSpace?.id || null}
+              recursive={currentSpace ? isRecursiveMode(currentSpace.id) : false}
+            />
           </Main>
 
           <Companion>
-            {/* Right companion panel - will be added later */}
+            <CompanionPanel
+              space={currentSpace}
+              onRecursiveToggle={handleRecursiveToggle}
+            />
           </Companion>
         </Grid>
       </Container>

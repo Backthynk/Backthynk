@@ -116,6 +116,27 @@ export const spacesContainerStyles = {
       span:not([class*="postCount"]) {
         color: var(--text-on-active);
       }
+
+      &.recursive {
+        background: rgba(130, 80, 223, 0.15);
+        color: var(--accent-recursive);
+
+        .dark & {
+          background: rgba(163, 113, 247, 0.15);
+        }
+
+        & > * {
+          color: var(--accent-recursive);
+        }
+
+        i {
+          color: var(--accent-recursive) !important;
+        }
+
+        span:not([class*="postCount"]) {
+          color: var(--accent-recursive);
+        }
+      }
     }
   `,
 

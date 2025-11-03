@@ -1,4 +1,4 @@
-import { spaces } from '@core/state';
+import { spaces, isRecursiveMode } from '@core/state';
 import type { Space } from '@core/api';
 import { activityStyles } from '../../styles/activity';
 
@@ -6,24 +6,26 @@ const Breadcrumb = activityStyles.breadcrumb;
 
 interface SpaceBreadcrumbProps {
   spaceId: number;
-  recursiveMode: boolean;
+  recursiveMode?: boolean; // Optional now, we'll get it from state
 }
 
-// Helper function to count all descendant spaces recursively
-function countDescendantSpaces(parentId: number, allSpaces: Space[]): number {
-  let count = 0;
+// Helper function to get all descendant spaces recursively
+function getAllDescendantSpaces(parentId: number, allSpaces: Space[]): Space[] {
+  const descendants: Space[] = [];
   const directChildren = allSpaces.filter((cat) => cat.parent_id === parentId);
 
   for (const child of directChildren) {
-    count++; // Count this child
-    count += countDescendantSpaces(child.id, allSpaces); // Count its descendants
+    descendants.push(child); // Add this child
+    descendants.push(...getAllDescendantSpaces(child.id, allSpaces)); // Add its descendants
   }
 
-  return count;
+  return descendants;
 }
 
-export function SpaceBreadcrumb({ spaceId, recursiveMode }: SpaceBreadcrumbProps) {
+export function SpaceBreadcrumb({ spaceId, recursiveMode: recursiveModeProp }: SpaceBreadcrumbProps) {
   const allSpaces = spaces.value;
+  // Use prop if provided (for backwards compatibility), otherwise get from global state
+  const recursiveMode = recursiveModeProp !== undefined ? recursiveModeProp : isRecursiveMode(spaceId);
 
   // If spaceId is 0, show "All Spaces"
   if (spaceId === 0) {
@@ -152,11 +154,23 @@ export function SpaceBreadcrumb({ spaceId, recursiveMode }: SpaceBreadcrumbProps
 
   // Add recursive badge if in recursive mode
   if (recursiveMode) {
-    const descendantCount = countDescendantSpaces(currentSpace.id, allSpaces);
-    if (descendantCount > 0) {
-      const displayCount = descendantCount > 99 ? '99+' : descendantCount;
-      const subspacesText = descendantCount === 1 ? 'subspace' : 'subspaces';
-      const tooltip = `Exploring ${currentSpace.name} and ${descendantCount} of its ${subspacesText}`;
+    const descendants = getAllDescendantSpaces(currentSpace.id, allSpaces);
+    if (descendants.length > 0) {
+      const displayCount = descendants.length > 9 ? '9+' : descendants.length.toString();
+
+      // Build tooltip with space names
+      const maxDisplay = 9;
+      const spacesToShow = descendants.slice(0, maxDisplay);
+      const remaining = descendants.length - maxDisplay;
+
+      let tooltipLines = [`Exploring recursively:\n${currentSpace.name}`];
+      spacesToShow.forEach(space => {
+        tooltipLines.push(`  • ${space.name}`);
+      });
+      if (remaining > 0) {
+        tooltipLines.push(`  ...and ${remaining} more`);
+      }
+      const tooltip = tooltipLines.join('\n');
 
       breadcrumbElements.push(
         <span key="sep-recursive" class="breadcrumb-separator">

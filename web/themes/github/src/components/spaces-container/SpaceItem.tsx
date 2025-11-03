@@ -1,5 +1,5 @@
 import { useLocation } from 'preact-iso';
-import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, getRecursivePostCount } from '@core/state';
+import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, getRecursivePostCount, isRecursiveMode } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
@@ -95,7 +95,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
   return (
     <StyledSpaceItem>
       <SpaceRow
-        className={isSelected ? 'selected' : ''}
+        className={`${isSelected ? 'selected' : ''} ${isSelected && isRecursiveMode(space.id) ? 'recursive' : ''}`}
         style={{ paddingLeft: `${0.75 + depth * 0.625}rem` }}
         onClick={handleRowClick}
         onDblClick={handleDoubleClick}

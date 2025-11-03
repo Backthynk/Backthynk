@@ -3,6 +3,7 @@ import type { PostFile } from '@core/api';
 import { ImageViewer } from '@core/components/ImageViewer';
 import { LazyImage } from '@core/components';
 import { isImageFile } from '@core/utils/files';
+import { formatFileSize } from '@core/utils/format';
 import { styled } from 'goober';
 
 const GalleryContainer = styled('div')`
@@ -12,40 +13,24 @@ const GalleryContainer = styled('div')`
   border: 1px solid var(--border-primary);
 `;
 
-const SingleImageContainer = styled('div')`
-  width: 100%;
-  max-height: 400px;
-  cursor: pointer;
-
-  img, & > div {
-    width: 100%;
-    height: 100%;
-  }
-
-  img {
-    object-fit: cover;
-    display: block;
-  }
-`;
-
 const TwoImagesGrid = styled('div')`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
-  max-height: 288px;
+  max-height: 400px;
 
   & > div {
     width: 100%;
     height: 100%;
-    min-height: 288px;
+    max-height: 400px;
   }
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    cursor: pointer;
-    display: block;
+  & > div:first-child {
+    border-radius: 12px 0 0 12px;
+  }
+
+  & > div:last-child {
+    border-radius: 0 12px 12px 0;
   }
 `;
 
@@ -54,34 +39,30 @@ const ThreeImagesGrid = styled('div')`
   grid-template-columns: 2fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 2px;
-  height: 288px;
+  max-height: 400px;
+  height: 400px;
 
   & > div:first-child {
     grid-row: 1 / 3;
     grid-column: 1;
+    border-radius: 12px 0 0 12px;
   }
 
   & > div:nth-child(2) {
     grid-row: 1;
     grid-column: 2;
+    border-radius: 0 12px 0 0;
   }
 
   & > div:nth-child(3) {
     grid-row: 2;
     grid-column: 2;
+    border-radius: 0 0 12px 0;
   }
 
   & > div {
     width: 100%;
     height: 100%;
-  }
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    cursor: pointer;
-    display: block;
   }
 `;
 
@@ -90,20 +71,28 @@ const FourImagesGrid = styled('div')`
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
   gap: 2px;
-  max-height: 288px;
-  height: 288px;
+  max-height: 400px;
+  height: 400px;
 
   & > div {
     width: 100%;
     height: 100%;
   }
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    cursor: pointer;
-    display: block;
+  & > div:nth-child(1) {
+    border-radius: 12px 0 0 0;
+  }
+
+  & > div:nth-child(2) {
+    border-radius: 0 12px 0 0;
+  }
+
+  & > div:nth-child(3) {
+    border-radius: 0 0 0 12px;
+  }
+
+  & > div:nth-child(4) {
+    border-radius: 0 0 12px 0;
   }
 `;
 
@@ -123,6 +112,50 @@ const MoreOverlay = styled('div')`
 const ImageContainer = styled('div')`
   position: relative;
   overflow: hidden;
+  cursor: pointer;
+  max-height: 500px;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &:hover .file-overlay {
+    opacity: 1;
+  }
+
+  &:first-child:last-child {
+    border-radius: 12px;
+  }
+`;
+
+const FileOverlay = styled('div')`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  padding: 0.5rem;
+  border-radius: inherit;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  p {
+    color: white;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .size {
+    opacity: 0.8;
+    font-size: 0.75rem;
+  }
 `;
 
 interface ImageGalleryProps {
@@ -164,16 +197,25 @@ export function ImageGallery({ images }: ImageGalleryProps) {
 
   // Single image
   if (images.length === 1) {
+    const file = images[0];
+    const isImage = isImageFile(file.file_type);
+
     return (
       <>
         <GalleryContainer>
-          <SingleImageContainer onClick={() => handleImageClick(0)}>
+          <ImageContainer onClick={() => handleImageClick(0)}>
             <LazyImage
-              src={`/uploads/${images[0].file_path}`}
-              alt={images[0].filename}
+              src={`/uploads/${file.file_path}`}
+              alt={file.filename}
               previewSize="large"
             />
-          </SingleImageContainer>
+            {!isImage && (
+              <FileOverlay className="file-overlay">
+                <p>{file.filename}</p>
+                <p className="size">{formatFileSize(file.file_size)}</p>
+              </FileOverlay>
+            )}
+          </ImageContainer>
         </GalleryContainer>
         {showImageViewer && imageData.length > 0 && (
           <ImageViewer images={imageData} startIndex={imageViewerIndex} onClose={() => setShowImageViewer(false)} />
@@ -188,15 +230,24 @@ export function ImageGallery({ images }: ImageGalleryProps) {
       <>
         <GalleryContainer>
           <TwoImagesGrid>
-            {images.map((img, idx) => (
-              <LazyImage
-                key={img.id}
-                src={`/uploads/${img.file_path}`}
-                alt={img.filename}
-                onClick={() => handleImageClick(idx)}
-                previewSize="large"
-              />
-            ))}
+            {images.map((img, idx) => {
+              const isImage = isImageFile(img.file_type);
+              return (
+                <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
+                  <LazyImage
+                    src={`/uploads/${img.file_path}`}
+                    alt={img.filename}
+                    previewSize="large"
+                  />
+                  {!isImage && (
+                    <FileOverlay className="file-overlay">
+                      <p>{img.filename}</p>
+                      <p className="size">{formatFileSize(img.file_size)}</p>
+                    </FileOverlay>
+                  )}
+                </ImageContainer>
+              );
+            })}
           </TwoImagesGrid>
         </GalleryContainer>
         {showImageViewer && imageData.length > 0 && (
@@ -212,24 +263,25 @@ export function ImageGallery({ images }: ImageGalleryProps) {
       <>
         <GalleryContainer>
           <ThreeImagesGrid>
-            <LazyImage
-              src={`/uploads/${images[0].file_path}`}
-              alt={images[0].filename}
-              onClick={() => handleImageClick(0)}
-              previewSize="large"
-            />
-            <LazyImage
-              src={`/uploads/${images[1].file_path}`}
-              alt={images[1].filename}
-              onClick={() => handleImageClick(1)}
-              previewSize="medium"
-            />
-            <LazyImage
-              src={`/uploads/${images[2].file_path}`}
-              alt={images[2].filename}
-              onClick={() => handleImageClick(2)}
-              previewSize="medium"
-            />
+            {images.map((img, idx) => {
+              const isImage = isImageFile(img.file_type);
+              const previewSize = idx === 0 ? 'large' : 'medium';
+              return (
+                <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
+                  <LazyImage
+                    src={`/uploads/${img.file_path}`}
+                    alt={img.filename}
+                    previewSize={previewSize}
+                  />
+                  {!isImage && (
+                    <FileOverlay className="file-overlay">
+                      <p>{img.filename}</p>
+                      <p className="size">{formatFileSize(img.file_size)}</p>
+                    </FileOverlay>
+                  )}
+                </ImageContainer>
+              );
+            })}
           </ThreeImagesGrid>
         </GalleryContainer>
         {showImageViewer && imageData.length > 0 && (
@@ -247,16 +299,25 @@ export function ImageGallery({ images }: ImageGalleryProps) {
     <>
       <GalleryContainer>
         <FourImagesGrid>
-          {displayImages.map((img, idx) => (
-            <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
-              <LazyImage
-                src={`/uploads/${img.file_path}`}
-                alt={img.filename}
-                previewSize="medium"
-              />
-              {idx === 3 && remainingCount > 0 && <MoreOverlay>+{remainingCount}</MoreOverlay>}
-            </ImageContainer>
-          ))}
+          {displayImages.map((img, idx) => {
+            const isImage = isImageFile(img.file_type);
+            return (
+              <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
+                <LazyImage
+                  src={`/uploads/${img.file_path}`}
+                  alt={img.filename}
+                  previewSize="medium"
+                />
+                {!isImage && (
+                  <FileOverlay className="file-overlay">
+                    <p>{img.filename}</p>
+                    <p className="size">{formatFileSize(img.file_size)}</p>
+                  </FileOverlay>
+                )}
+                {idx === 3 && remainingCount > 0 && <MoreOverlay>+{remainingCount}</MoreOverlay>}
+              </ImageContainer>
+            );
+          })}
         </FourImagesGrid>
       </GalleryContainer>
       {showImageViewer && imageData.length > 0 && (
