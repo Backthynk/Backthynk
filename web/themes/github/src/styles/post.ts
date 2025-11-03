@@ -295,22 +295,30 @@ const LinkPreviewCard = styled('a')`
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  text-decoration: none;
 
   &:hover {
     border-color: var(--border-secondary);
     background: var(--bg-hover);
+    text-decoration: none;
   }
 `;
 
 const LinkPreviewImage = styled('div')`
   flex-shrink: 0;
   width: 128px;
-  height: 96px;
+  align-self: stretch;
+
+  & > div {
+    width: 100%;
+    height: 100%;
+  }
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
   }
 `;
 

@@ -27,3 +27,31 @@ export function getFileIcon(fileExtension: string): string {
 export function isImageFile(mimeType: string | undefined): boolean {
   return mimeType?.startsWith('image/') ?? false;
 }
+
+/**
+ * Check if a file supports preview based on its filename extension and config.
+ * If config is not provided, returns false for non-image files.
+ */
+export function supportsPreview(filename: string, supportedFormats?: string[]): boolean {
+  if (!supportedFormats || supportedFormats.length === 0) {
+    return false;
+  }
+
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (!ext) return false;
+
+  return supportedFormats.includes(ext);
+}
+
+/**
+ * Check if a file should be rendered as an image (either native image or has preview support)
+ */
+export function canRenderAsImage(mimeType: string | undefined, filename: string, supportedFormats?: string[]): boolean {
+  // Native images always render as images
+  if (isImageFile(mimeType)) {
+    return true;
+  }
+
+  // Check if preview is supported
+  return supportsPreview(filename, supportedFormats);
+}

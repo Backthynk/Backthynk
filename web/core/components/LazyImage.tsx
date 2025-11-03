@@ -5,6 +5,8 @@ const ImageContainer = styled('div')`
   position: relative;
   overflow: hidden;
   background: var(--bg-secondary, #f6f8fa);
+  width: 100%;
+  height: 100%;
 `;
 
 const StyledImage = styled('img')<{ loaded: boolean }>`
@@ -12,6 +14,8 @@ const StyledImage = styled('img')<{ loaded: boolean }>`
   height: 100%;
   opacity: ${(props) => (props.loaded ? 1 : 0)};
   transition: opacity 0.3s ease-in-out;
+  display: block;
+  object-fit: cover;
 `;
 
 const Loader = styled('div')`
@@ -63,6 +67,7 @@ interface LazyImageProps extends Omit<JSX.HTMLAttributes<HTMLImageElement>, 'loa
   onError?: (e: Event) => void;
   showLoader?: boolean; // Show loading spinner (default: true)
   showError?: boolean; // Show error message on failure (default: true)
+  previewSize?: 'small' | 'medium' | 'large'; // Use preview size for image files (default: undefined = original)
 }
 
 export function LazyImage({
@@ -74,6 +79,7 @@ export function LazyImage({
   onError,
   showLoader = true,
   showError = true,
+  previewSize,
   ...props
 }: LazyImageProps) {
   const [loaded, setLoaded] = useState(false);
@@ -90,10 +96,13 @@ export function LazyImage({
     }
   };
 
+  // Construct URL with preview size parameter if specified
+  const imageSrc = previewSize ? `${src}?size=${previewSize}` : src;
+
   return (
     <ImageContainer className={className} style={style}>
       <StyledImage
-        src={src}
+        src={imageSrc}
         alt={alt}
         loaded={loaded}
         onLoad={handleLoad}

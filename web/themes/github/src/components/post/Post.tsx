@@ -7,7 +7,8 @@ import { ImageGallery } from './ImageGallery';
 import { PostActionMenu } from './PostActionMenu';
 import { postStyles } from '../../styles/post';
 import { linkifyText, extractUrls } from '../../utils/linkify';
-import { isImageFile } from '@core/utils/files';
+import { canRenderAsImage } from '@core/utils/files';
+import { clientConfig } from '@core/state/settings';
 
 const Article = postStyles.article;
 const Header = postStyles.header;
@@ -37,9 +38,18 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
   const hasLinkPreviews = post.link_previews && post.link_previews.length > 0;
   const isTextOnly = !hasAttachments && !hasLinkPreviews;
 
-  // Separate images from other files
-  const images = useMemo(() => files.filter(f => isImageFile(f.file_type)), [files]);
-  const otherFiles = useMemo(() => files.filter(f => !isImageFile(f.file_type)), [files]);
+  // Get preview supported formats from config
+  const previewFormats = clientConfig.value.preview?.supported_formats || [];
+
+  // Separate files that can render as images (native images + preview-supported files like PDFs)
+  const images = useMemo(
+    () => files.filter(f => canRenderAsImage(f.file_type, f.filename, previewFormats)),
+    [files, previewFormats]
+  );
+  const otherFiles = useMemo(
+    () => files.filter(f => !canRenderAsImage(f.file_type, f.filename, previewFormats)),
+    [files, previewFormats]
+  );
   const hasOnlyImages = hasAttachments && images.length > 0 && otherFiles.length === 0;
 
   // Extract URLs from content

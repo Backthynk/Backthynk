@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'preact/hooks';
 import type { PostFile } from '@core/api';
 import { formatFileSize } from '@core/utils';
-import { getFileIcon, isImageFile } from '@core/utils/files';
+import { getFileIcon, isImageFile, supportsPreview } from '@core/utils/files';
 import { ImageViewer } from '@core/components/ImageViewer';
 import { LazyImage } from '@core/components';
+import { clientConfig } from '@core/state/settings';
 import { postStyles } from '../../styles/post';
 
 const Section = postStyles.attachmentsSection;
@@ -145,18 +146,32 @@ export function FileAttachments({ files }: FileAttachmentsProps) {
         <List ref={containerRef}>
           {allFiles.map((file, idx) => {
             const isImage = isImageFile(file.file_type);
+            const previewFormats = clientConfig.value.preview?.supported_formats || [];
+            const hasPreview = supportsPreview(file.filename, previewFormats);
             const fileExtension = file.filename.split('.').pop()?.toLowerCase() || 'FILE';
             const fileSizeText = formatFileSize(file.file_size);
             const tooltipText = `${file.filename} • ${fileSizeText}`;
 
-            if (isImage) {
+            // Show preview thumbnail for images and preview-supported files
+            if (isImage || hasPreview) {
               return (
                 <Attachment
                   key={file.id}
-                  onClick={() => openImageGallery(idx)}
+                  onClick={() => {
+                    if (isImage) {
+                      openImageGallery(idx);
+                    } else {
+                      // For PDFs and other preview files, open directly
+                      window.open(`/uploads/${file.file_path}`, '_blank');
+                    }
+                  }}
                   title={tooltipText}
                 >
-                  <LazyImage src={`/uploads/${file.file_path}`} alt={file.filename} />
+                  <LazyImage
+                    src={`/uploads/${file.file_path}`}
+                    alt={file.filename}
+                    previewSize="small"
+                  />
                   <FileOverlay>
                     <p>{file.filename}</p>
                     <p class="size">{fileSizeText}</p>
