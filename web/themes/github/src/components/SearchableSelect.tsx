@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
-import { formStyles } from '../styles/modal';
+import { formStyles } from './modal';
 
 const SelectWrapper = formStyles.selectWrapper;
 const Select = formStyles.select;

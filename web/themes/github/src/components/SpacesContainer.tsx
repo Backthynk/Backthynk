@@ -2,7 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { spacesContainerStyles } from '../styles/spaces-container';
 import { SpaceContainer } from './spaces-container/SpaceContainer';
 import { SortControls, type SortField, type SortPreference } from './spaces-container/SortControls';
-import { CreateSpaceModal } from './CreateSpaceModal';
+import { CreateSpaceModal } from './spaces-container/CreateSpaceModal';
 import { clientConfig } from '@core/state';
 import { activityContainerHeightRem, shouldShowActivity } from '@core/state/activity';
 import type { Space } from '@core/api';

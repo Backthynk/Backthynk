@@ -141,7 +141,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   const canToggleRecursive = currentSpace ? hasChildren(currentSpace.id) : false;
 
   return (
-    <Container class={isRecursive ? 'recursive-mode' : ''}>
+    <Container className={isRecursive ? 'recursive' : ''}>
       {/* Space Breadcrumb */}
       <div style={{ marginBottom: '12px' }}>
         <TitleBreadcrumb

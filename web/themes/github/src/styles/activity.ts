@@ -8,8 +8,12 @@ export const ActivityContainer = styled('div')`
   padding: 16px;
   transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
-  &.recursive-mode {
-    border-color: rgba(130, 80, 223, 0.4);
+  &.recursive {
+      border: 1px solid rgba(130, 80, 223, 0.35);
+
+      .dark & {
+        border: 1px solid rgba(163, 113, 247, 0.2);
+      }
   }
 
   @media (max-width: 1024px) {

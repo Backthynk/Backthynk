@@ -1,15 +1,18 @@
 import { useState, useMemo } from 'preact/hooks';
 import type { Post as PostType } from '@core/api';
+import { deletePost } from '@core/api';
 import { formatRelativeDate, formatFullDateTime } from '@core/utils/date';
 import { FileAttachments } from './FileAttachments';
 import { LinkPreviews } from './LinkPreviews';
 import { ImageGallery } from './ImageGallery';
 import { PostActionMenu } from './PostActionMenu';
+import { ConfirmModal } from '../modal';
+import { MovePostModal } from './MovePostModal';
 import { postStyles } from '../../styles/post';
 import { linkifyText, extractUrls } from '../../utils/linkify';
 import { canRenderAsImage } from '@core/utils/files';
 import { clientConfig } from '@core/state/settings';
-import { useTooltip } from '@core/components';
+import { useTooltip, showError, showSuccess } from '@core/components';
 
 const Article = postStyles.article;
 const Header = postStyles.header;
@@ -25,12 +28,14 @@ interface PostProps {
   showSpaceBreadcrumb?: boolean;
   spaceBreadcrumb?: string;
   onBreadcrumbClick?: (spaceId: number) => void;
-  onDelete?: (postId: number) => void;
-  onMove?: (postId: number) => void;
+  onPostDeleted?: (postId: number) => void;
+  onPostMoved?: (updatedPost: PostType) => void;
 }
 
-export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbClick, onDelete, onMove }: PostProps) {
+export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbClick, onPostDeleted, onPostMoved }: PostProps) {
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
   const { show, hide, TooltipPortal } = useTooltip();
 
   // Backend can return either 'files' or 'attachments'
@@ -118,6 +123,33 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
     setMenuPosition({ x: rect.left - 128, y: rect.top });
   };
 
+  // Handle delete confirmation
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deletePost(post.id);
+      showSuccess('Post deleted successfully');
+      onPostDeleted?.(post.id);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      showError('Failed to delete post. Please try again.');
+    }
+  };
+
+  // Handle move
+  const handleMoveClick = () => {
+    setMenuPosition(null);
+    setShowMoveModal(true);
+  };
+
+  const handleMoveSuccess = (updatedPost: PostType) => {
+    onPostMoved?.(updatedPost);
+  };
+
   return (
     <Article data-post-id={post.id} onContextMenu={handleContextMenu}>
       {/* Header */}
@@ -175,10 +207,30 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
           x={menuPosition.x}
           y={menuPosition.y}
           onClose={() => setMenuPosition(null)}
-          onDelete={onDelete}
-          onMove={onMove}
+          onDelete={handleDeleteClick}
+          onMove={handleMoveClick}
         />
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete post"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
+
+      {/* Move Post Modal */}
+      <MovePostModal
+        isOpen={showMoveModal}
+        onClose={() => setShowMoveModal(false)}
+        post={post}
+        onSuccess={handleMoveSuccess}
+      />
     </Article>
   );
 }

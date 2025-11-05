@@ -96,6 +96,15 @@ export const companionStyles = {
     padding: 16px;
     box-shadow: var(--shadow-sm);
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+
+    &.recursive {
+        border: 1px solid rgba(130, 80, 223, 0.35);
+
+        .dark & {
+          border: 1px solid rgba(163, 113, 247, 0.2);
+        }
+    }
+
   `,
 
   headerContent: styled('div')`

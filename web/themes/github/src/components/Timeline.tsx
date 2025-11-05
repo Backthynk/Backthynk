@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'preact/hooks';
 import { posts, resetPosts, appendPosts, isLoadingPosts, hasMorePosts, spaces } from '@core/state';
-import { fetchPosts, deletePost as deletePostApi } from '@core/api';
+import { fetchPosts, type Post as PostType } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { Post } from './post';
 import { VirtualScroller } from '@core/components/VirtualScroller';
@@ -131,23 +131,27 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
       });
   };
 
-  const handleDelete = async (postId: number) => {
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await deletePostApi(postId);
-      posts.value = posts.value.filter((p) => p.id !== postId);
-    } catch (error) {
-      console.error('Failed to delete post:', error);
-      alert('Failed to delete post. Please try again.');
-    }
+  const handlePostDeleted = (postId: number) => {
+    // Remove the post from the list
+    posts.value = posts.value.filter((p) => p.id !== postId);
   };
 
-  const handleMove = (postId: number) => {
-    console.log('Move post:', postId);
-    alert('Move functionality coming soon!');
+  const handlePostMoved = (updatedPost: PostType) => {
+    // Check if post should remain in current view
+    const shouldRemoveFromView =
+      spaceId !== null && // We're viewing a specific space
+      !recursive && // Not in recursive mode
+      updatedPost.space_id !== spaceId; // Post moved to different space
+
+    if (shouldRemoveFromView) {
+      // Remove from view
+      posts.value = posts.value.filter((p) => p.id !== updatedPost.id);
+    } else {
+      // Update the post in place (for recursive or all posts view)
+      posts.value = posts.value.map((p) =>
+        p.id === updatedPost.id ? updatedPost : p
+      );
+    }
   };
 
   // Helper to get space breadcrumb for a post
@@ -227,8 +231,8 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
               showSpaceBreadcrumb={showBreadcrumbs}
               spaceBreadcrumb={showBreadcrumbs ? getSpaceBreadcrumb(post.space_id) : undefined}
               onBreadcrumbClick={handleBreadcrumbClick}
-              onDelete={handleDelete}
-              onMove={handleMove}
+              onPostDeleted={handlePostDeleted}
+              onPostMoved={handlePostMoved}
             />
           )}
           onLoadMore={loadMore}
@@ -249,8 +253,8 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
             showSpaceBreadcrumb={showBreadcrumbs}
             spaceBreadcrumb={showBreadcrumbs ? getSpaceBreadcrumb(post.space_id) : undefined}
             onBreadcrumbClick={handleBreadcrumbClick}
-            onDelete={handleDelete}
-            onMove={handleMove}
+            onPostDeleted={handlePostDeleted}
+            onPostMoved={handlePostMoved}
           />
         ))}
       </PostsList>

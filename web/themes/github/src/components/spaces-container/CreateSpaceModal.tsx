@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Modal } from './Modal';
-import { SearchableSelect, type SelectOption } from './SearchableSelect';
-import { formStyles } from '../styles/modal';
+import { Modal, formStyles } from '../modal';
+import { SpaceSelector } from '../SpaceSelector';
 import { createSpace, type Space } from '@core/api';
 import { spaces } from '@core/state';
 import { generateSlug } from '@core/utils';
@@ -83,34 +82,6 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: C
     }
   };
 
-  // Build parent space options with hierarchy
-  const buildSpaceOptions = (): SelectOption[] => {
-    const allSpaces = spaces.value;
-    const options: SelectOption[] = [{ value: null, label: 'None (Root Space)' }];
-
-    // Get root spaces (no parent)
-    const rootSpaces = allSpaces.filter((s) => s.parent_id === null);
-
-    // Add root spaces and their children
-    rootSpaces.forEach((rootSpace) => {
-      options.push({
-        value: rootSpace.id,
-        label: rootSpace.name,
-      });
-
-      // Add children with indent
-      const children = allSpaces.filter((s) => s.parent_id === rootSpace.id);
-      children.forEach((child) => {
-        options.push({
-          value: child.id,
-          label: `${rootSpace.name} / ${child.name}`,
-          indent: true,
-        });
-      });
-    });
-
-    return options;
-  };
 
   // Validate space name format
   const validateName = (value: string): string | undefined => {
@@ -325,12 +296,10 @@ export function CreateSpaceModal({ isOpen, onClose, onSuccess, currentSpace }: C
 
         <FormGroup>
           <Label>Parent Space</Label>
-          <SearchableSelect
-            options={buildSpaceOptions()}
+          <SpaceSelector
             value={parentId}
-            onChange={(value) => setParentId(value as number | null)}
+            onChange={(value) => setParentId(value)}
             placeholder="None (Root Space)"
-            searchPlaceholder="Search spaces..."
             error={!!errors.parent}
             disabled={isSubmitting}
           />

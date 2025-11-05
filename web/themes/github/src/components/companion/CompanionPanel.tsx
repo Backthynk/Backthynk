@@ -83,7 +83,7 @@ export function CompanionPanel({ space }: CompanionPanelProps) {
       </SearchContainer>
 
       {/* Space Info Card */}
-      <SpaceHeader style={{border: space && isRecursiveMode(space.id) ? '1px solid var(--accent-recursive)' : '1px solid var(--border-primary)'}} ref={headerRef} data-space-header class={isRecursiveMode(space?.id || 0) ? 'recursive-mode' : ''}>
+      <SpaceHeader className={space && isRecursiveMode(space.id) ? "recursive" : ""}>
         {/* Space Breadcrumb */}
         <div style={{ marginBottom: '12px' }}>
           <TitleBreadcrumb
