@@ -1,41 +1,15 @@
-import { useEffect, useRef } from 'preact/hooks';
-import { postStyles } from '../../styles/post';
-
-const ActionMenu = postStyles.actionMenu;
-const MenuButton = postStyles.menuButton;
+import { ContextMenu, MenuItem } from '@core/components';
 
 interface PostActionMenuProps {
   postId: number;
+  x: number;
+  y: number;
   onClose: () => void;
   onDelete?: (postId: number) => void;
   onMove?: (postId: number) => void;
 }
 
-export function PostActionMenu({ postId, onClose, onDelete, onMove }: PostActionMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [onClose]);
-
+export function PostActionMenu({ postId, x, y, onClose, onDelete, onMove }: PostActionMenuProps) {
   const handleMove = () => {
     onMove?.(postId);
     onClose();
@@ -47,17 +21,15 @@ export function PostActionMenu({ postId, onClose, onDelete, onMove }: PostAction
   };
 
   return (
-    <ActionMenu ref={menuRef}>
-      <div style={{ padding: '0.25rem 0' }}>
-        <MenuButton onClick={handleMove}>
-          <i class="fas fa-exchange-alt" />
-          Move
-        </MenuButton>
-        <MenuButton class="danger" onClick={handleDelete}>
-          <i class="fas fa-trash-alt" />
-          Delete
-        </MenuButton>
-      </div>
-    </ActionMenu>
+    <ContextMenu x={x} y={y} onClose={onClose}>
+      <MenuItem onClick={handleMove}>
+        <i class="fas fa-exchange-alt" />
+        Move
+      </MenuItem>
+      <MenuItem className="danger" onClick={handleDelete}>
+        <i className="fas fa-trash-alt" />
+        Delete
+      </MenuItem>
+    </ContextMenu>
   );
 }

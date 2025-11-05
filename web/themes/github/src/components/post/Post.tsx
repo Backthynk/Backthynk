@@ -30,7 +30,7 @@ interface PostProps {
 }
 
 export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbClick, onDelete, onMove }: PostProps) {
-  const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const { show, hide, TooltipPortal } = useTooltip();
 
   // Backend can return either 'files' or 'attachments'
@@ -102,8 +102,24 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
     return linkifyText(content, { excludeUrls: previewUrls });
   }, [post.content, hasLinkPreviews, post.link_previews, contentUrls, previewUrls]);
 
+  // Handle right-click to show context menu
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    setMenuPosition({ x: e.clientX, y: e.clientY });
+  };
+
+  // Handle button click to show menu
+  const handleButtonClick = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    // Position menu to the left of the button, aligned at the top
+    setMenuPosition({ x: rect.left - 128, y: rect.top });
+  };
+
   return (
-    <Article data-post-id={post.id}>
+    <Article data-post-id={post.id} onContextMenu={handleContextMenu}>
       {/* Header */}
       <Header class={isTextOnly ? '' : 'with-content'}>
         <HeaderLeft>
@@ -121,19 +137,9 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
         </HeaderLeft>
 
         {/* Action menu */}
-        <div style={{ position: 'relative' }}>
-          <ActionButton onClick={() => setShowMenu(!showMenu)}>
-            <i class="fas fa-ellipsis-h" />
-          </ActionButton>
-          {showMenu && (
-            <PostActionMenu
-              postId={post.id}
-              onClose={() => setShowMenu(false)}
-              onDelete={onDelete}
-              onMove={onMove}
-            />
-          )}
-        </div>
+        <ActionButton onClick={handleButtonClick}>
+          <i class="fas fa-ellipsis-h" />
+        </ActionButton>
       </Header>
 
       {/* Content */}
@@ -161,6 +167,18 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
 
       {/* Tooltip */}
       {TooltipPortal}
+
+      {/* Context Menu */}
+      {menuPosition && (
+        <PostActionMenu
+          postId={post.id}
+          x={menuPosition.x}
+          y={menuPosition.y}
+          onClose={() => setMenuPosition(null)}
+          onDelete={onDelete}
+          onMove={onMove}
+        />
+      )}
     </Article>
   );
 }
