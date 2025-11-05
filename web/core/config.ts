@@ -32,8 +32,9 @@ export const space = {
  */
 export const app = {
   /**
-   * Current application version
-   */
+  * Current application version
+  */
+  
   version: '0.2.0',
 
   /**

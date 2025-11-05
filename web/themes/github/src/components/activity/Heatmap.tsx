@@ -1,7 +1,7 @@
-import { useState } from 'preact/hooks';
 import { activityStyles } from '../../styles/activity';
 import { generateCalendarDays, generateMonthLabels, formatDayLabel } from './utils';
 import type { ActivityData } from '@core/api';
+import { Tooltip, useTooltip } from '@core/components';
 
 const HeatmapWrapper = activityStyles.heatmapWrapper;
 const HeatmapGrid = activityStyles.heatmapGrid;
@@ -10,7 +10,6 @@ const HeatmapRow = activityStyles.heatmapRow;
 const MonthLabel = activityStyles.monthLabel;
 const SquaresContainer = activityStyles.squaresContainer;
 const HeatmapSquare = activityStyles.heatmapSquare;
-const Tooltip = activityStyles.tooltip;
 
 interface HeatmapProps {
   activityData: ActivityData;
@@ -19,13 +18,7 @@ interface HeatmapProps {
 const SQUARES_PER_ROW = 10;
 
 export function Heatmap({ activityData }: HeatmapProps) {
-  const [tooltip, setTooltip] = useState<{
-    visible: boolean;
-    x: number;
-    y: number;
-    count: number;
-    date: string;
-  }>({ visible: false, x: 0, y: 0, count: 0, date: '' });
+   const { show, hide, TooltipPortal } = useTooltip();
 
   // Convert activity days array to map for O(1) lookups
   const activityMap: Record<string, number> = {};
@@ -63,20 +56,14 @@ export function Heatmap({ activityData }: HeatmapProps) {
   const nRowGap = Math.round(30 / SQUARES_PER_ROW);
 
   const handleMouseEnter = (e: MouseEvent, day: any) => {
-    const target = e.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-
-    setTooltip({
-      visible: true,
-      x: rect.left + rect.width / 2,
-      y: rect.top,
-      count: day.count,
-      date: day.date,
+    show(e.currentTarget as HTMLElement, {
+      title: `${day.count} ${day.count === 1 ? 'post' : 'posts'}`,
+      lines: [formatDayLabel(day.date)]
     });
   };
 
   const handleMouseLeave = () => {
-    setTooltip({ visible: false, x: 0, y: 0, count: 0, date: '' });
+    hide();
   };
 
   return (
@@ -116,14 +103,7 @@ export function Heatmap({ activityData }: HeatmapProps) {
         </HeatmapContent>
       </HeatmapGrid>
 
-      {tooltip.visible && (
-        <Tooltip style={{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }}>
-          <div>
-            <strong>{tooltip.count} {tooltip.count === 1 ? 'post' : 'posts'}</strong>
-          </div>
-          <div class="tooltip-date">{formatDayLabel(tooltip.date)}</div>
-        </Tooltip>
-      )}
+      {TooltipPortal}
     </HeatmapWrapper>
   );
 }

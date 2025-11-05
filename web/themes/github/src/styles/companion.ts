@@ -54,42 +54,6 @@ const badgeDisappear = keyframes`
   }
 `;
 
-const Breadcrumb = styled('div')`
-  margin-bottom: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-
-  .breadcrumb-separator {
-    color: var(--text-tertiary);
-    margin: 0 4px;
-  }
-
-  .breadcrumb-link {
-    color: var(--link-primary);
-    cursor: pointer;
-    transition: color 0.2s;
-
-    &:hover {
-      color: var(--link-hover);
-    }
-  }
-
-  .recursive-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-recursive);
-    color: var(--text-inverted);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 20px;
-    margin-left: 4px;
-    cursor: default;
-  }
-`;
-
 export const companionStyles = {
   container: styled('div')`
     position: sticky;
@@ -98,8 +62,6 @@ export const companionStyles = {
     flex-direction: column;
     gap: 16px;
   `,
-
-  breadcrumb: Breadcrumb,
 
   searchContainer: styled('div')`
     display: flex;
@@ -134,10 +96,6 @@ export const companionStyles = {
     padding: 16px;
     box-shadow: var(--shadow-sm);
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-
-    &.animating {
-      animation: ${pulseAnimation} 0.6s ease-out;
-    }
   `,
 
   headerContent: styled('div')`

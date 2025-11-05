@@ -9,14 +9,14 @@ import { postStyles } from '../../styles/post';
 import { linkifyText, extractUrls } from '../../utils/linkify';
 import { canRenderAsImage } from '@core/utils/files';
 import { clientConfig } from '@core/state/settings';
+import { useTooltip } from '@core/components';
 
 const Article = postStyles.article;
 const Header = postStyles.header;
 const HeaderLeft = postStyles.headerLeft;
 const Breadcrumb = postStyles.breadcrumb;
-const Timestamp = postStyles.timestamp;
+const TimestampWrapper = postStyles.timestamp;
 const TimestampText = postStyles.timestampText;
-const TimestampTooltip = postStyles.timestampTooltip;
 const ActionButton = postStyles.actionButton;
 const Content = postStyles.content;
 
@@ -31,6 +31,7 @@ interface PostProps {
 
 export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbClick, onDelete, onMove }: PostProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const { show, hide, TooltipPortal } = useTooltip();
 
   // Backend can return either 'files' or 'attachments'
   const files = post.files || post.attachments || [];
@@ -111,10 +112,12 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
               {spaceBreadcrumb}
             </Breadcrumb>
           )}
-          <Timestamp>
+          <TimestampWrapper
+            onMouseEnter={(e: any) => show(e.currentTarget as HTMLElement, formatFullDateTime(post.created))}
+            onMouseLeave={hide}
+          >
             <TimestampText>{formatRelativeDate(post.created)}</TimestampText>
-            <TimestampTooltip>{formatFullDateTime(post.created)}</TimestampTooltip>
-          </Timestamp>
+          </TimestampWrapper>
         </HeaderLeft>
 
         {/* Action menu */}
@@ -155,6 +158,9 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
 
       {/* File Attachments (for mixed or non-image files) */}
       {hasAttachments && !hasOnlyImages && <FileAttachments files={files} />}
+
+      {/* Tooltip */}
+      {TooltipPortal}
     </Article>
   );
 }

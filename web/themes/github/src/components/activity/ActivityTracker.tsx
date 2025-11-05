@@ -11,13 +11,15 @@ import {
   shouldShowActivity,
   isRecursiveMode,
   recursiveSpaces,
+  toggleRecursiveMode,
+  hasChildren,
 } from '@core/state';
 
 import { clientConfig } from '@core/state';
 import { fetchActivityData } from '@core/api';
 import type { Space } from '@core/api';
 import { activityStyles } from '../../styles/activity';
-import { SpaceBreadcrumb } from './SpaceBreadcrumb';
+import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
 import { Heatmap } from './Heatmap';
 import { formatPeriodLabel } from './utils';
 
@@ -130,13 +132,25 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   const cache = activityCache.value;
   const loading = isLoadingActivity.value;
 
+  const handleBreadcrumbClick = () => {
+    if (currentSpace && hasChildren(currentSpace.id)) {
+      toggleRecursiveMode(currentSpace.id);
+    }
+  };
+
+  const canToggleRecursive = currentSpace ? hasChildren(currentSpace.id) : false;
+
   return (
-    <Container>
+    <Container class={isRecursive ? 'recursive-mode' : ''}>
       {/* Space Breadcrumb */}
-      <SpaceBreadcrumb
-        spaceId={activitySpaceId.value}
-        recursiveMode={activityRecursiveMode.value}
-      />
+      <div style={{ marginBottom: '12px' }}>
+        <TitleBreadcrumb
+          spaceId={activitySpaceId.value}
+          onClick={handleBreadcrumbClick}
+          clickable={canToggleRecursive}
+          size="small"
+        />
+      </div>
 
       {/* Period Navigation */}
       <PeriodNav>

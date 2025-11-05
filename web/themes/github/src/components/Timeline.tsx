@@ -22,9 +22,6 @@ const fadeSlideIn = keyframes`
 const Container = styled('main')`
   min-height: 400px;
 
-  &.animating {
-    animation: ${fadeSlideIn} 0.4s ease-out;
-  }
 `;
 
 const EmptyState = styled('div')`
@@ -90,34 +87,26 @@ const VIRTUAL_SCROLL_THRESHOLD = 999999; // Disabled - posts have variable heigh
 
 export function Timeline({ spaceId, recursive = false }: TimelineProps) {
   const [offset, setOffset] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
   const location = useLocation();
   const prevRecursive = useRef(recursive);
 
   useEffect(() => {
-    // Trigger animation only when recursive mode changes (not on initial load or space change)
-    if (prevRecursive.current !== recursive && containerRef.current) {
-      setIsAnimating(true);
-    }
     prevRecursive.current = recursive;
 
+    resetPosts();
     isLoadingPosts.value = true;
     setOffset(0);
 
     // Pass null for spaceId to fetch all posts
     fetchPosts(spaceId, postsConfig.postsPerPage, 0, true, recursive)
       .then((result) => {
-        resetPosts();
         appendPosts(result.posts, result.has_more);
         setOffset(result.posts.length);
 
-        // End animation after data is loaded
-        setTimeout(() => setIsAnimating(false), 400);
       })
       .catch((error) => {
         console.error('Failed to fetch posts:', error);
-        setIsAnimating(false);
       })
       .finally(() => {
         isLoadingPosts.value = false;
@@ -203,7 +192,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   if (loading && postsList.length === 0) {
     return (
-      <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
+      <Container ref={containerRef}>
         <EmptyState>
           <i class="fas fa-spinner fa-spin" />
           <p>Loading posts...</p>
@@ -214,7 +203,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   if (postsList.length === 0) {
     return (
-      <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
+      <Container ref={containerRef}>
         <EmptyState>
           <i class="fas fa-comment-slash" />
           <p>No posts yet</p>
@@ -228,7 +217,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   if (useVirtualScroll) {
     return (
-      <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
+      <Container ref={containerRef}>
         <VirtualScroller
           items={postsList}
           itemHeight={200}
@@ -251,7 +240,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
   }
 
   return (
-    <Container ref={containerRef} className={isAnimating ? 'animating' : ''}>
+    <Container ref={containerRef}>
       <PostsList>
         {postsList.map((post) => (
           <Post

@@ -8,45 +8,12 @@ export const ActivityContainer = styled('div')`
   padding: 16px;
   transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
+  &.recursive-mode {
+    border-color: rgba(130, 80, 223, 0.4);
+  }
+
   @media (max-width: 1024px) {
     display: none; /* Hidden on mobile */
-  }
-`;
-
-// Space Breadcrumb
-export const SpaceBreadcrumb = styled('div')`
-  margin-bottom: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-primary);
-
-  .breadcrumb-separator {
-    color: var(--text-tertiary);
-    margin: 0 4px;
-  }
-
-  .breadcrumb-link {
-    color: var(--link-primary);
-    cursor: pointer;
-    transition: color 0.2s;
-
-    &:hover {
-      color: var(--link-hover);
-    }
-  }
-
-  .recursive-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-recursive);
-    color: var(--text-inverted);
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 20px;
-    margin-left: 4px;
-    cursor: default;
   }
 `;
 
@@ -335,45 +302,9 @@ export const SkeletonSquare = styled('div')`
   }
 `;
 
-// Tooltip
-export const Tooltip = styled('div')`
-  position: fixed;
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 4px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-  z-index: 999;
-  white-space: nowrap;
-  transform: translate(-50%, -100%);
-  margin-top: -8px;
-
-  .dark & {
-    background: rgba(255, 255, 255, 0.95);
-    color: #1b1f23;
-  }
-
-  .tooltip-count {
-    font-weight: 600;
-  }
-
-  .tooltip-date {
-    color: rgba(255, 255, 255, 0.8);
-    margin-top: 2px;
-    font-size: 11px;
-
-    .dark & {
-      color: rgba(27, 31, 35, 0.7);
-    }
-  }
-`;
-
 // Export all styles as a namespace
 export const activityStyles = {
   container: ActivityContainer,
-  breadcrumb: SpaceBreadcrumb,
   periodNav: PeriodNav,
   navButton: NavButton,
   periodLabel: PeriodLabel,
@@ -396,5 +327,4 @@ export const activityStyles = {
   skeletonMonthLabel: SkeletonMonthLabel,
   skeletonSquares: SkeletonSquares,
   skeletonSquare: SkeletonSquare,
-  tooltip: Tooltip,
 };

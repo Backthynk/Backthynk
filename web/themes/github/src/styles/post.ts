@@ -61,35 +61,10 @@ const Breadcrumb = styled('span')`
   }
 `;
 
-const TimestampTooltip = styled('div')`
-  position: absolute;
-  left: 0;
-  top: 100%;
-  margin-top: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  background: #24292f;
-  color: white;
-  font-size: 0.75rem;
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-  white-space: nowrap;
-  z-index: 100;
-
-  .dark & {
-    background: var(--bg-tooltip);
-  }
-`;
-
 const Timestamp = styled('div')`
   position: relative;
   display: inline-block;
-
-  &:hover ${TimestampTooltip} {
-    opacity: 1;
-  }
+  cursor: default;
 `;
 
 const TimestampText = styled('span')`
@@ -426,7 +401,6 @@ export const postStyles = {
   breadcrumb: Breadcrumb,
   timestamp: Timestamp,
   timestampText: TimestampText,
-  timestampTooltip: TimestampTooltip,
   actionButton: ActionButton,
   content: Content,
   attachmentsSection: AttachmentsSection,
