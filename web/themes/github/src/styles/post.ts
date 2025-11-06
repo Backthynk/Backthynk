@@ -75,7 +75,11 @@ const TimestampText = styled('span')`
 
 const ActionButton = styled('button')`
   opacity: 0;
-  padding: 0.25rem;
+  padding-left: 1rem;
+  padding-top: 0.25rem;
+  padding-bottom: 1rem;
+  padding-right: 0.25rem;
+
   color: var(--text-tertiary);
   border-radius: 4px;
   transition: all 0.2s ease;
@@ -86,7 +90,6 @@ const ActionButton = styled('button')`
 
   &:hover {
     color: var(--text-secondary);
-    background: var(--bg-hover);
   }
 
   i {

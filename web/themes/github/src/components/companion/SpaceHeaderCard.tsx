@@ -2,18 +2,50 @@ import { useRef, useState, useEffect } from 'preact/hooks';
 import { computed } from '@preact/signals';
 import { spaces as spacesSignal, isRecursiveMode, toggleRecursiveMode, isEligibleForRecursive } from '@core/state';
 import type { Space, SpaceStats } from '@core/api';
-import { fetchSpaceStats } from '@core/api';
+import { fetchSpaceStats, deleteSpace } from '@core/api';
 import { formatFileSize } from '@core/utils';
 import { formatFullDateTime } from '@core/utils/date';
 import { clientConfig } from '@core/state/settings';
-import { useTooltip } from '@core/components';
+import { useTooltip, showSuccess, showError } from '@core/components';
 import { companionStyles } from '../../styles/companion';
 import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
+import { SpaceActionMenu } from './SpaceActionMenu';
+import { UpdateSpaceModal } from './UpdateSpaceModal';
+import { ConfirmModal } from '../modal/ConfirmModal';
+import { styled } from 'goober';
 
 const SpaceHeader = companionStyles.spaceHeader;
 const HeaderContent = companionStyles.headerContent;
 const TitleSection = companionStyles.titleSection;
 const Description = companionStyles.description;
+
+const MenuButton = styled('button')`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0;
+
+  &:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-primary);
+    color: var(--text-primary);
+  }
+
+  i {
+    font-size: 14px;
+  }
+`;
 
 interface SpaceHeaderCardProps {
   space: Space | null;
@@ -23,6 +55,10 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
   const [spaceStats, setSpaceStats] = useState<SpaceStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [isCardHovering, setIsCardHovering] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { show, hide, TooltipPortal } = useTooltip();
 
   // Fetch space stats when space changes or recursive mode changes
@@ -147,24 +183,92 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     }
   };
 
+  const handleMenuButtonClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    const button = e.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    setMenuPosition({
+      x: rect.right - 8,
+      y: rect.bottom + 4,
+    });
+  };
+
+  const handleEnableRecursive = (spaceId: number) => {
+    const targetSpace = spacesSignal.value.find((s) => s.id === spaceId);
+    if (targetSpace && isEligibleForRecursive(targetSpace.id)) {
+      toggleRecursiveMode(targetSpace.id);
+    }
+  };
+
+  const handleUpdate = (spaceId: number) => {
+    setShowUpdateModal(true);
+  };
+
+  const handleDelete = async (spaceId: number) => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!space) return;
+
+    try {
+      await deleteSpace(space.id);
+      // Update local state
+      spacesSignal.value = spacesSignal.value.filter((s) => s.id !== space.id);
+      showSuccess(`Space "${space.name}" deleted successfully!`);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete space:', error);
+      showError('Failed to delete space. Please try again.');
+    }
+  };
+
+  const handleModalSuccess = () => {
+    // Refetch stats after successful update
+    if (space) {
+      const recursive = isRecursiveMode(space.id);
+      fetchSpaceStats(space.id, recursive)
+        .then(stats => {
+          setSpaceStats(stats);
+        })
+        .catch(err => {
+          console.error('Failed to fetch space stats:', err);
+        });
+    }
+  };
+
   return (
     <>
       <SpaceHeader
         onClick={handleCardClick}
         style={{
           cursor: canToggleRecursive ? 'pointer' : 'default',
+          position: 'relative',
         }}
         onMouseEnter={() => {
           if (canToggleRecursive) {
             setIsHovering(true);
           }
+          setIsCardHovering(true);
         }}
         onMouseLeave={() => {
           if (canToggleRecursive) {
             setIsHovering(false);
           }
+          setIsCardHovering(false);
         }}
       >
+        {/* Three-dot menu button - only show for actual spaces, not "All Spaces" */}
+        {space && (
+          <MenuButton
+            onClick={handleMenuButtonClick}
+            style={{
+              opacity: isCardHovering ? 1 : 0,
+            }}
+          >
+            <i class="fas fa-ellipsis-h" />
+          </MenuButton>
+        )}
         {/* Space Breadcrumb */}
         <div style={{ marginBottom: '12px' }}>
           <TitleBreadcrumb
@@ -259,6 +363,42 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
 
       {/* Tooltip */}
       {TooltipPortal}
+
+      {/* Space Action Menu */}
+      {menuPosition && space && (
+        <SpaceActionMenu
+          spaceId={space.id}
+          x={menuPosition.x}
+          y={menuPosition.y}
+          onClose={() => setMenuPosition(null)}
+          onEnableRecursive={handleEnableRecursive}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {/* Update Space Modal */}
+      {showUpdateModal && space && (
+        <UpdateSpaceModal
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
+          onSuccess={handleModalSuccess}
+          space={space}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && space && (
+        <ConfirmModal
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={confirmDelete}
+          title="Delete Space"
+          message={`Are you sure you want to delete "${space.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          variant="danger"
+        />
+      )}
     </>
   );
 }

@@ -1,8 +1,14 @@
+import { useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
-import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, isRecursiveMode } from '@core/state';
+import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, isRecursiveMode, isEligibleForRecursive, toggleRecursiveMode, spaces as spacesSignal } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
+import { deleteSpace } from '@core/api';
+import { showSuccess, showError } from '@core/components';
+import { SpaceActionMenu } from '../companion/SpaceActionMenu';
+import { UpdateSpaceModal } from '../companion/UpdateSpaceModal';
+import { ConfirmModal } from '../modal/ConfirmModal';
 
 const SpaceRow = spacesContainerStyles.spaceRow;
 const ExpandButton = spacesContainerStyles.expandButton;
@@ -29,6 +35,9 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
   const isExpanded = expanded.has(space.id);
   const hasChildrenSpaces = hasChildren(space.id);
   const recursivePostCount = space.recursive_post_count || 0;
+  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Get space path for URL
   const getSpacePath = (space: Space): string => {
@@ -96,6 +105,54 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
     }
   };
 
+  const handleContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Clear any pending single click
+    if (clickTimeout) {
+      clearTimeout(clickTimeout);
+      clickTimeout = null;
+    }
+
+    setMenuPosition({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleEnableRecursive = (spaceId: number) => {
+    const targetSpace = spacesSignal.value.find((s) => s.id === spaceId);
+    if (targetSpace && isEligibleForRecursive(targetSpace.id)) {
+      toggleRecursiveMode(targetSpace.id);
+    }
+  };
+
+  const handleUpdate = (spaceId: number) => {
+    setShowUpdateModal(true);
+  };
+
+  const handleDelete = async (spaceId: number) => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteSpace(space.id);
+      // Update local state
+      spacesSignal.value = spacesSignal.value.filter((s) => s.id !== space.id);
+      showSuccess(`Space "${space.name}" deleted successfully!`);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Failed to delete space:', error);
+      showError('Failed to delete space. Please try again.');
+    }
+  };
+
+  const handleModalSuccess = () => {
+    // No specific action needed on success - state is updated by the modal
+  };
+
   const isRecursive = isSelected && isRecursiveMode(space.id);
   const isChildOfRecursive = parentRecursive && !isSelected;
   const hasExpandedChildren = isExpanded && sortedChildren.length > 0;
@@ -129,6 +186,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
         style={{ paddingLeft: `${0.75 + depth * 0.625}rem` }}
         onClick={handleRowClick}
         onDblClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
       >
         {hasChildrenSpaces ? (
           <ExpandButton onClick={(e: MouseEvent) => {
@@ -155,6 +213,42 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
             renderSpace(child, depth + 1, isRecursive || parentRecursive, index, sortedChildren.length)
           )}
         </Children>
+      )}
+
+      {/* Space Action Menu */}
+      {menuPosition && (
+        <SpaceActionMenu
+          spaceId={space.id}
+          x={menuPosition.x}
+          y={menuPosition.y}
+          onClose={() => setMenuPosition(null)}
+          onEnableRecursive={handleEnableRecursive}
+          onUpdate={handleUpdate}
+          onDelete={handleDelete}
+        />
+      )}
+
+      {/* Update Space Modal */}
+      {showUpdateModal && (
+        <UpdateSpaceModal
+          isOpen={showUpdateModal}
+          onClose={() => setShowUpdateModal(false)}
+          onSuccess={handleModalSuccess}
+          space={space}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <ConfirmModal
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          onConfirm={confirmDelete}
+          title="Delete Space"
+          message={`Are you sure you want to delete "${space.name}"? This action cannot be undone.`}
+          confirmText="Delete"
+          variant="danger"
+        />
       )}
     </StyledSpaceItem>
   );
