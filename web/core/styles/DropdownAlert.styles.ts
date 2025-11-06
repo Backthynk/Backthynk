@@ -1,11 +1,12 @@
 import { styled } from 'goober';
+import { zIndex } from './zIndex';
 
 export const AlertContainer = styled('div')`
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 9999;
+  z-index: ${zIndex.alert};
   pointer-events: none;
 `;
 

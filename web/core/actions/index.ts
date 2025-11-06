@@ -137,11 +137,10 @@ export async function executeAction<TResult = void>(
       return undefined;
     }
 
-    // Execute error callback or rethrow
+    // Execute error callback and rethrow
     if (context.onError) {
       context.onError(error as Error);
-    } else {
-      throw error;
     }
+    throw error;
   }
 }

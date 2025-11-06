@@ -5,11 +5,10 @@ import { SpaceFormModal } from './SpaceFormModal';
 interface UpdateSpaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: (updatedSpace: Space) => void;
   space: Space | null;
 }
 
-export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSpaceModalProps) {
+export function UpdateSpaceModal({ isOpen, onClose, space }: UpdateSpaceModalProps) {
   const handleSubmit = async (data: { name: string; description: string; parent_id: number | null }) => {
     if (!space) return;
 
@@ -20,11 +19,6 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
           name: data.name,
           description: data.description,
           parent_id: data.parent_id,
-        },
-        onSuccess: (updatedSpace) => {
-          if (onSuccess) {
-            onSuccess(updatedSpace);
-          }
         },
       });
     } catch (error) {

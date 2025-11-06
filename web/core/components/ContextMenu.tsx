@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
 import { styled } from 'goober';
 import { ComponentChildren } from 'preact';
+import { zIndex } from '../styles/zIndex';
 
 const MenuContainer = styled('div')`
   position: fixed;
@@ -10,7 +11,7 @@ const MenuContainer = styled('div')`
   border: 1px solid var(--border-primary);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: ${zIndex.contextMenu};
   animation: fadeInScale 0.15s ease-out;
 
   @keyframes fadeInScale {

@@ -11,6 +11,7 @@ import { posts, isLoadingPosts, currentOffset } from '../state/posts';
 import { spaces, getSpaceById } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
+import { invalidateCurrentActivityPeriod } from '../cache/activityCache';
 
 export interface DeletePostOptions {
   postId: number;
@@ -113,6 +114,9 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
           isLoadingPosts.value = false;
         }
       }
+
+      // Invalidate activity cache for current period (since post count changed)
+      invalidateCurrentActivityPeriod();
 
       showSuccess('Post deleted successfully');
     },
@@ -239,6 +243,9 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
           p.id === updatedPost.id ? updatedPost : p
         );
       }
+
+      // Invalidate activity cache for current period (space counts may have changed)
+      invalidateCurrentActivityPeriod();
 
       showSuccess('Post moved successfully');
     },

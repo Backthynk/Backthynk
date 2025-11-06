@@ -102,4 +102,44 @@ export const cache = {
      */
     smartRefetchThreshold: 0.7, // 70%
   },
+
+  /**
+   * Space stats cache settings
+   */
+  spaceStats: {
+    /**
+     * Maximum number of cached space stats
+     */
+    maxSize: 100,
+
+    /**
+     * Time to live in milliseconds (5 minutes default)
+     */
+    ttl: 5 * 60 * 1000,
+
+    /**
+     * Enable debug logging
+     */
+    debug: false,
+  },
+
+  /**
+   * Activity data cache settings
+   */
+  activity: {
+    /**
+     * Maximum number of cached activity data queries
+     */
+    maxSize: 50,
+
+    /**
+     * Time to live in milliseconds (10 minutes default)
+     */
+    ttl: 10 * 60 * 1000,
+
+    /**
+     * Enable debug logging
+     */
+    debug: false,
+  },
 } as const;

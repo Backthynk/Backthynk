@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
 import { computed } from '@preact/signals';
-import { spaces as spacesSignal, isRecursiveMode, isEligibleForRecursive, getTotalPostCount, getSpacePostCount, getEarliestSpaceCreationDate } from '@core/state';
-import type { Space, SpaceStats } from '@core/api';
-import { fetchSpaceStats } from '@core/api';
+import { spaces as spacesSignal, isRecursiveMode, isEligibleForRecursive, getTotalPostCount, getSpacePostCount, getEarliestSpaceCreationDate, getOrFetchSpaceStats, getSpaceStats, isLoadingStats } from '@core/state';
+import type { Space } from '@core/api';
 import { formatFileSize } from '@core/utils';
 import { formatFullDateTime } from '@core/utils/date';
 import { clientConfig } from '@core/state/settings';
@@ -52,8 +51,6 @@ interface SpaceHeaderCardProps {
 }
 
 export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
-  const [spaceStats, setSpaceStats] = useState<SpaceStats | null>(null);
-  const [loadingStats, setLoadingStats] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [isCardHovering, setIsCardHovering] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
@@ -65,47 +62,31 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     const spaceStatsEnabled = clientConfig.value.space_stats;
 
     if (!spaceStatsEnabled) {
-      setSpaceStats(null);
-      setLoadingStats(false);
       return;
     }
 
-    setLoadingStats(true);
-
     if (!space) {
       // Fetch global stats (id=0)
-      fetchSpaceStats(0, false)
-        .then(stats => {
-          setSpaceStats(stats);
-          setLoadingStats(false);
-        })
-        .catch(err => {
-          console.error('Failed to fetch global stats:', err);
-          setLoadingStats(false);
-        });
+      getOrFetchSpaceStats(0, false);
     } else {
       const recursive = isRecursiveMode(space.id);
-      fetchSpaceStats(space.id, recursive)
-        .then(stats => {
-          setSpaceStats(stats);
-          setLoadingStats(false);
-        })
-        .catch(err => {
-          console.error('Failed to fetch space stats:', err);
-          setLoadingStats(false);
-        });
+      getOrFetchSpaceStats(space.id, recursive);
     }
   }, [space?.id, space && isRecursiveMode(space.id)]);
 
   // Calculate stats
   const stats = computed(() => {
+    const spaceStatsData = !space
+      ? getSpaceStats(0, false)
+      : getSpaceStats(space.id, isRecursiveMode(space.id));
+
     if (!space) {
       // "All Spaces" - sum everything
       const totalPosts = getTotalPostCount();
       return {
         posts: totalPosts,
-        files: spaceStats?.file_count || 0,
-        size: spaceStats?.total_size || 0,
+        files: spaceStatsData?.file_count || 0,
+        size: spaceStatsData?.total_size || 0,
       };
     }
 
@@ -114,8 +95,8 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
 
     return {
       posts,
-      files: spaceStats?.file_count || 0,
-      size: spaceStats?.total_size || 0,
+      files: spaceStatsData?.file_count || 0,
+      size: spaceStatsData?.total_size || 0,
     };
   });
 
@@ -195,18 +176,6 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     });
   };
 
-  const handleModalSuccess = (updatedSpace: Space) => {
-    // Refetch stats after successful update
-    const recursive = isRecursiveMode(updatedSpace.id);
-    fetchSpaceStats(updatedSpace.id, recursive)
-      .then(stats => {
-        setSpaceStats(stats);
-      })
-      .catch(err => {
-        console.error('Failed to fetch space stats:', err);
-      });
-  };
-
   return (
     <>
       <SpaceHeader
@@ -271,16 +240,16 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
               <span>{postCount.value} post{postCount.value !== 1 ? 's' : ''}</span>
 
               {/* File stats inline - only show if loading or has files */}
-              {clientConfig.value.space_stats && (loadingStats || fileStats.value.count > 0) && (
+              {clientConfig.value.space_stats && (isLoadingStats(space?.id || 0, !space ? false : isRecursiveMode(space.id)) || fileStats.value.count > 0) && (
                 <>
                   <span style={{ fontSize: '11px', opacity: 0.7, marginLeft: 2 }}>
-                    {loadingStats ? (
+                    {isLoadingStats(space?.id || 0, !space ? false : isRecursiveMode(space.id)) ? (
                       ''
                     ) : (
                       `(${fileStats.value.count} file${fileStats.value.count !== 1 ? 's' : ''}`
                     )}
                   </span>
-                  {!loadingStats && fileStats.value.count > 0 && (
+                  {!isLoadingStats(space?.id || 0, !space ? false : isRecursiveMode(space.id)) && fileStats.value.count > 0 && (
                     <>
                       <span style={{ opacity: 0.5 }}>/</span>
                       <span style={{ fontSize: '11px', opacity: 0.7 }}>
@@ -352,7 +321,6 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
         <UpdateSpaceModal
           isOpen={showUpdateModal}
           onClose={() => setShowUpdateModal(false)}
-          onSuccess={handleModalSuccess}
           space={space}
         />
       )}

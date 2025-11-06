@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
 import { styled } from 'goober';
+import { zIndex } from '../styles/zIndex';
 
 const TooltipContainer = styled('div')<{ maxWidth?: string }>`
   position: fixed;
@@ -11,7 +12,7 @@ const TooltipContainer = styled('div')<{ maxWidth?: string }>`
   border-radius: 4px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
   pointer-events: none;
-  z-index: 999;
+  z-index: ${zIndex.tooltip};
   white-space: nowrap;
   line-height: 1.4;
   max-width: ${props => props.maxWidth || '250px'};

@@ -21,6 +21,8 @@ import {
   recursiveSpaces,
   currentSpace as currentSpaceSignal,
 } from '../state/spaces';
+import { invalidateSpaceStats, prefetchSpaceStats } from '../cache/spaceStatsCache';
+import { invalidateActivityForSpace, invalidateCurrentActivityPeriod } from '../cache/activityCache';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
 import { posts, resetPosts } from '../state/posts';
@@ -153,6 +155,11 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
         resetPosts();
       }
 
+      // Invalidate activity cache for all deleted spaces
+      allDeletedSpaceIds.forEach(id => invalidateActivityForSpace(id));
+      // Also invalidate current period since post counts changed
+      invalidateCurrentActivityPeriod();
+
       showSuccess(`Space "${spaceName}" deleted successfully!`);
 
       if (onSuccess) {
@@ -227,6 +234,13 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
       spacesSignal.value = spacesSignal.value.map((s) =>
         s.id === spaceId ? updatedSpace : s
       );
+
+      // Invalidate and refetch stats for the updated space
+      invalidateSpaceStats(spaceId);
+      prefetchSpaceStats(spaceId);
+
+      // Invalidate activity cache for this space if it changed
+      invalidateActivityForSpace(spaceId);
 
       showSuccess('Space updated successfully!');
 

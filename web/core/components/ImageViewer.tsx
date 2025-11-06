@@ -1,6 +1,7 @@
 import { useEffect } from 'preact/hooks';
 import { signal } from '@preact/signals';
 import { styled } from 'goober';
+import { zIndex } from '../styles/zIndex';
 
 interface ImageData {
   url: string;
@@ -18,7 +19,7 @@ const Backdrop = styled('div')`
   inset: 0;
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(5px);
-  z-index: 9998;
+  z-index: ${zIndex.imageViewer};
   display: flex;
   align-items: center;
   justify-content: center;

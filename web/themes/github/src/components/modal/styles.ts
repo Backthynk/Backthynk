@@ -1,4 +1,5 @@
 import { styled } from 'goober';
+import { zIndex } from '@core/styles/zIndex';
 
 export const modalStyles = {
   overlay: styled('div')`
@@ -11,7 +12,7 @@ export const modalStyles = {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
+    z-index: ${zIndex.modalOverlay};
     padding: 1rem;
     backdrop-filter: blur(2px);
   `,
@@ -349,7 +350,7 @@ export const formStyles = {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     max-height: 280px;
     overflow-y: auto;
-    z-index: 10001;
+    z-index: ${zIndex.modalDropdown};
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
     /* Custom scrollbar styling */

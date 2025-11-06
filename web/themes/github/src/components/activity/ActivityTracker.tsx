@@ -14,7 +14,7 @@ import {
 } from '@core/state';
 
 import { clientConfig } from '@core/state';
-import { fetchActivityData } from '@core/api';
+import { fetchActivityDataCached } from '@core/cache/activityCache';
 import type { Space } from '@core/api';
 import { activityStyles } from '../../styles/activity';
 import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
@@ -86,15 +86,20 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
       const recursive = isRecursive;
       const periodMonths = activityPeriodMonths.value;
 
-      const data = await fetchActivityData(
+      const result = await fetchActivityDataCached(
         spaceId,
         recursive,
         currentActivityPeriod.value,
         periodMonths
       );
 
-      if (data) {
-        activityCache.value = data;
+      if (result.data) {
+        activityCache.value = result.data;
+
+        // Log cache hit/miss for debugging
+        if (result.fromCache) {
+          console.log('[ActivityTracker] Loaded from cache');
+        }
       } else {
         // If fetch failed, set empty cache
         activityCache.value = null;

@@ -1,4 +1,5 @@
 import { styled } from 'goober';
+import { zIndex } from '@core/styles/zIndex';
 
 // Define styled components separately first
 const Article = styled('article')`
@@ -24,7 +25,7 @@ const Article = styled('article')`
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     border-color: var(--border-secondary);
     position: relative;
-    z-index: 1;
+    z-index: ${zIndex.postImage};
   }
 `;
 
@@ -354,7 +355,7 @@ const ActionMenu = styled('div')`
   border: 1px solid var(--border-primary);
   border-radius: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  z-index: 50;
+  z-index: ${zIndex.postLoadingBar};
   animation: fadeInDown 0.15s ease-out;
 
   @keyframes fadeInDown {
