@@ -56,8 +56,11 @@ export function SpaceContainer({ sortPref }: SpaceContainerProps) {
 
   const showPostCount = sortPref.field === 'posts';
 
-  const renderSpace = (space: Space, depth = 0, parentRecursive = false) => {
+  const renderSpace = (space: Space, depth = 0, parentRecursive = false, index = 0, total = 0) => {
     const children = sortSpaces(spacesList.filter((s) => s.parent_id === space.id));
+    const isFirstChild = index === 0 && total > 0;
+    const isLastChild = index === total - 1 && total > 0;
+    const isOnlyChild = total === 1;
 
     return (
       <SpaceItem
@@ -68,6 +71,9 @@ export function SpaceContainer({ sortPref }: SpaceContainerProps) {
         renderSpace={renderSpace}
         showPostCount={showPostCount}
         parentRecursive={parentRecursive}
+        isFirstChild={isFirstChild}
+        isLastChild={isLastChild}
+        isOnlyChild={isOnlyChild}
       />
     );
   };

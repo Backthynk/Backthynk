@@ -15,12 +15,15 @@ interface SpaceItemProps {
   space: Space;
   depth?: number;
   sortedChildren: Space[];
-  renderSpace: (space: Space, depth: number, parentRecursive?: boolean) => any;
+  renderSpace: (space: Space, depth: number, parentRecursive?: boolean, index?: number, total?: number) => any;
   showPostCount?: boolean;
   parentRecursive?: boolean;
+  isFirstChild?: boolean;
+  isLastChild?: boolean;
+  isOnlyChild?: boolean;
 }
 
-export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showPostCount = false, parentRecursive = false }: SpaceItemProps) {
+export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showPostCount = false, parentRecursive = false, isFirstChild = false, isLastChild = false, isOnlyChild = false }: SpaceItemProps) {
   const location = useLocation();
   const expanded = expandedSpaces.value;
   const isExpanded = expanded.has(space.id);
@@ -95,11 +98,34 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
 
   const isRecursive = isSelected && isRecursiveMode(space.id);
   const isChildOfRecursive = parentRecursive && !isSelected;
+  const hasExpandedChildren = isExpanded && sortedChildren.length > 0;
+
+  // Build class names for recursive children
+  let childRecursiveClass = '';
+  if (isChildOfRecursive) {
+    if (isOnlyChild) {
+      childRecursiveClass = 'child-recursive child-recursive-only';
+    } else if (isFirstChild) {
+      childRecursiveClass = 'child-recursive child-recursive-first';
+    } else if (isLastChild) {
+      childRecursiveClass = 'child-recursive child-recursive-last';
+    } else {
+      childRecursiveClass = 'child-recursive';
+    }
+  }
+
+  // Add has-expanded-children class if this child has expanded children
+  if (hasExpandedChildren && isChildOfRecursive) {
+    childRecursiveClass += ' has-expanded-children';
+  }
+
+  // Add has-children class for recursive parent with children
+  const hasChildrenClass = isRecursive && hasExpandedChildren ? 'has-children' : '';
 
   return (
-    <StyledSpaceItem>
+    <StyledSpaceItem className={isChildOfRecursive ? 'no-gap' : ''}>
       <SpaceRow
-        className={`${isSelected ? 'selected' : ''} ${isRecursive ? 'recursive' : ''} ${isChildOfRecursive ? 'child-recursive' : ''}`}
+        className={`${isSelected ? 'selected' : ''} ${isRecursive ? 'recursive' : ''} ${hasChildrenClass} ${childRecursiveClass}`}
         style={{ paddingLeft: `${0.75 + depth * 0.625}rem` }}
         onClick={handleRowClick}
         onDblClick={handleDoubleClick}
@@ -124,7 +150,9 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
       </SpaceRow>
       {isExpanded && sortedChildren.length > 0 && (
         <Children>
-          {sortedChildren.map((child) => renderSpace(child, depth + 1, isRecursive || parentRecursive))}
+          {sortedChildren.map((child, index) =>
+            renderSpace(child, depth + 1, isRecursive || parentRecursive, index, sortedChildren.length)
+          )}
         </Children>
       )}
     </StyledSpaceItem>

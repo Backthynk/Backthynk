@@ -136,11 +136,36 @@ export const spacesContainerStyles = {
         span:not([class*="postCount"]) {
           color: var(--recursive-text);
         }
+
+        &.has-children {
+          border-radius: 6px 6px 0 0;
+        }
       }
     }
 
     &.child-recursive {
       background: var(--recursive-bg-child);
+      border-radius: 0;
+    }
+
+    &.child-recursive-first {
+      border-radius: 0;
+    }
+
+    &.child-recursive-last {
+      border-radius: 0 0 6px 6px;
+
+      &.has-expanded-children {
+        border-radius: 0;
+      }
+    }
+
+    &.child-recursive-only {
+      border-radius: 0 0 6px 6px;
+
+      &.has-expanded-children {
+        border-radius: 0;
+      }
     }
   `,
 
