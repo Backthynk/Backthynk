@@ -134,7 +134,8 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
           <ExpandButton onClick={(e: MouseEvent) => {
             e.stopPropagation();
             toggleSpaceExpanded(space.id);
-          }}>
+          }}
+          >
             <i class={`fas fa-chevron-${isExpanded ? 'down' : 'right'}`} />
           </ExpandButton>
         ) : (

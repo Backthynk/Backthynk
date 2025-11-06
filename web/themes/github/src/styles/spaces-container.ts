@@ -169,24 +169,40 @@ export const spacesContainerStyles = {
     }
   `,
 
-  expandButton: styled('button')`
-    width: 1rem;
-    height: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    flex-shrink: 0;
-    transition: color 0.2s;
+expandButton: styled('button')`
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  transition: color 0.2s;
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
 
-    &:hover {
-      color: var(--text-primary);
-    }
+  /* Invisible clickable overlay that extends to the left */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    left: -12px;  /* Extend to the left edge */
+    right: -4px;   /* Extend slightly to the right */
+    cursor: pointer;
+  }
 
-    i {
-      font-size: 0.625rem;
-    }
-  `,
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  i {
+    font-size: 0.625rem;
+    pointer-events: none;  /* Make sure clicks go through to button */
+  }
+`,
 
   spaceName: styled('div')`
     flex: 1;
