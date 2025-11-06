@@ -24,3 +24,19 @@ export const ui = {
     dropdownTransition: 150,
   },
 } as const;
+
+/**
+ * Keyboard shortcuts configuration
+ */
+export const keyboard = {
+  /**
+   * Toggle recursive mode shortcut
+   */
+  toggleRecursive: {
+    key: 'r',
+    requireCtrl: false,
+    requireAlt: false,
+    requireMeta: false,
+    requireShift: false,
+  },
+} as const;

@@ -11,6 +11,7 @@ import { ActivityTracker } from '../components/activity';
 import { Timeline } from '../components/Timeline';
 import { CompanionPanel } from '../components/companion';
 import { layoutStyles } from '../styles/layout';
+import { keyboard } from '../config';
 import type { Space } from '@core/api';
 
 const Container = layoutStyles.container;
@@ -95,8 +96,15 @@ export function Home() {
   // Keyboard handler for 'R' key to toggle recursive mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only toggle if 'R' key is pressed without modifiers and no input is focused
-      if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+      const config = keyboard.toggleRecursive;
+      // Only toggle if configured key is pressed with required modifiers and no input is focused
+      if (
+        (e.key.toLowerCase() === config.key.toLowerCase()) &&
+        e.ctrlKey === config.requireCtrl &&
+        e.altKey === config.requireAlt &&
+        e.metaKey === config.requireMeta &&
+        e.shiftKey === config.requireShift
+      ) {
         const activeElement = document.activeElement;
         const isInputFocused =
           activeElement instanceof HTMLInputElement ||

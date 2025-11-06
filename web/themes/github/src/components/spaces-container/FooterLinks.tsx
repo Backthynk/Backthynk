@@ -1,4 +1,5 @@
 import { theme, toggleTheme } from '@core/state';
+import { app } from '@core/config';
 import { spacesContainerStyles } from '../../styles/spaces-container';
 
 const FooterContainer = spacesContainerStyles.footerLinks;
@@ -35,7 +36,7 @@ export function FooterLinks() {
       </ActionsCard>
       <InfoText>
         <div>Powered by Backthynk</div>
-        <div>v0.2.0 © {currentYear}</div>
+        <div>v{app.version} © {currentYear}</div>
       </InfoText>
     </FooterContainer>
   );
