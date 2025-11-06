@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from 'preact/hooks';
-import { posts, resetPosts, appendPosts, isLoadingPosts, hasMorePosts, spaces } from '@core/state';
-import { fetchPosts, type Post as PostType } from '@core/api';
-import { generateSlug } from '@core/utils';
+import { posts, resetPosts, appendPosts, isLoadingPosts, spaces, getSpaceById } from '@core/state';
+import { fetchPostsCached } from '@core/cache/postsCache';
 import { Post } from './post';
 import { VirtualScroller } from '@core/components/VirtualScroller';
 import { styled, keyframes } from 'goober';
 import { useLocation } from 'preact-iso';
 import { posts as postsConfig } from '@core/config';
+import { navigateToSpace } from '@core/actions/spaceActions';
 
 const fadeSlideIn = keyframes`
   0% {
@@ -83,6 +83,12 @@ interface TimelineProps {
   recursive?: boolean;
 }
 
+// Context for passing timeline state to child components
+export interface TimelineContext {
+  spaceId: number | null;
+  recursive: boolean;
+}
+
 const VIRTUAL_SCROLL_THRESHOLD = 999999; // Disabled - posts have variable heights
 
 export function Timeline({ spaceId, recursive = false }: TimelineProps) {
@@ -98,12 +104,16 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
     isLoadingPosts.value = true;
     setOffset(0);
 
-    // Pass null for spaceId to fetch all posts
-    fetchPosts(spaceId, postsConfig.postsPerPage, 0, true, recursive)
+    // Fetch posts with caching
+    fetchPostsCached(spaceId, postsConfig.postsPerPage, 0, true, recursive)
       .then((result) => {
-        appendPosts(result.posts, result.has_more);
+        appendPosts(result.posts);
         setOffset(result.posts.length);
 
+        // Log cache hit/miss for debugging
+        if (result.fromCache) {
+          console.log('[Timeline] Loaded from cache');
+        }
       })
       .catch((error) => {
         console.error('Failed to fetch posts:', error);
@@ -115,43 +125,43 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
 
   const postsList = posts.value;
   const loading = isLoadingPosts.value;
-  const hasMore = hasMorePosts.value;
+
+  // Determine if there are more posts using space post counts
+  const hasMore = (() => {
+    if (spaceId === null) {
+      // "All Spaces" view - check if total posts loaded is less than sum of all space posts
+      return false; // For now, disable pagination in "All Spaces" view
+    }
+
+    const space = getSpaceById(spaceId);
+    if (!space) return false;
+
+    const totalPostsInSpace = recursive ? space.recursive_post_count : space.post_count;
+    return postsList.length < totalPostsInSpace;
+  })();
+
+  // Timeline context to pass to child components
+  const timelineContext: TimelineContext = {
+    spaceId,
+    recursive,
+  };
 
   const loadMore = () => {
     if (loading || !hasMore) return;
 
     isLoadingPosts.value = true;
-    fetchPosts(spaceId, postsConfig.postsPerPage, offset, true, recursive)
+    fetchPostsCached(spaceId, postsConfig.postsPerPage, offset, true, recursive)
       .then((result) => {
-        appendPosts(result.posts, result.has_more);
+        appendPosts(result.posts);
         setOffset(offset + result.posts.length);
+
+        if (result.fromCache) {
+          console.log('[Timeline] Loaded more from cache');
+        }
       })
       .finally(() => {
         isLoadingPosts.value = false;
       });
-  };
-
-  const handlePostDeleted = (postId: number) => {
-    // Remove the post from the list
-    posts.value = posts.value.filter((p) => p.id !== postId);
-  };
-
-  const handlePostMoved = (updatedPost: PostType) => {
-    // Check if post should remain in current view
-    const shouldRemoveFromView =
-      spaceId !== null && // We're viewing a specific space
-      !recursive && // Not in recursive mode
-      updatedPost.space_id !== spaceId; // Post moved to different space
-
-    if (shouldRemoveFromView) {
-      // Remove from view
-      posts.value = posts.value.filter((p) => p.id !== updatedPost.id);
-    } else {
-      // Update the post in place (for recursive or all posts view)
-      posts.value = posts.value.map((p) =>
-        p.id === updatedPost.id ? updatedPost : p
-      );
-    }
   };
 
   // Helper to get space breadcrumb for a post
@@ -180,18 +190,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
     const space = spaces.value.find(s => s.id === postSpaceId);
     if (!space) return;
 
-    // Build path by traversing parent hierarchy
-    const pathSegments: string[] = [];
-    let current = space;
-
-    while (current) {
-      pathSegments.unshift(generateSlug(current.name));
-      if (current.parent_id === null) break;
-      current = spaces.value.find(s => s.id === current.parent_id)!;
-    }
-
-    const path = '/' + pathSegments.join('/');
-    location.route(path);
+    navigateToSpace(space, location);
   };
 
   if (loading && postsList.length === 0) {
@@ -231,8 +230,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
               showSpaceBreadcrumb={showBreadcrumbs}
               spaceBreadcrumb={showBreadcrumbs ? getSpaceBreadcrumb(post.space_id) : undefined}
               onBreadcrumbClick={handleBreadcrumbClick}
-              onPostDeleted={handlePostDeleted}
-              onPostMoved={handlePostMoved}
+              timelineContext={timelineContext}
             />
           )}
           onLoadMore={loadMore}
@@ -253,8 +251,7 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
             showSpaceBreadcrumb={showBreadcrumbs}
             spaceBreadcrumb={showBreadcrumbs ? getSpaceBreadcrumb(post.space_id) : undefined}
             onBreadcrumbClick={handleBreadcrumbClick}
-            onPostDeleted={handlePostDeleted}
-            onPostMoved={handlePostMoved}
+            timelineContext={timelineContext}
           />
         ))}
       </PostsList>

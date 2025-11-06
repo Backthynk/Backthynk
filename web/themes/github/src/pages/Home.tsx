@@ -1,8 +1,9 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
-import { spaces, loadExpandedSpaces, expandParentSpaces, loadRecursiveModes, toggleRecursiveMode, isRecursiveMode, isEligibleForRecursive } from '@core/state';
+import { spaces, loadExpandedSpaces, loadRecursiveModes, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal } from '@core/state';
 import { fetchSpaces as fetchSpacesApi } from '@core/api';
 import { generateSlug } from '@core/utils';
+import { expandParentSpaces, toggleRecursiveMode, selectSpace } from '@core/actions/spaceActions';
 import { Layout } from '../components/Layout';
 import { SpacesContainer } from '../components/SpacesContainer';
 import { FooterLinks } from '../components/spaces-container';
@@ -21,32 +22,43 @@ const Companion = layoutStyles.companion;
 export function Home() {
   const route = useRoute();
 
-  // Find space from URL path
-  const findSpaceByPath = (path: string): Space | null => {
-    if (path === '/') return null;
+  // Sync URL with currentSpace state
+  useEffect(() => {
+    // Find space from URL path
+    const findSpaceByPath = (path: string): Space | null => {
+      if (path === '/') return null;
 
-    const pathSegments = path.split('/').filter(Boolean);
-    const spacesList = spaces.value;
+      const pathSegments = path.split('/').filter(Boolean);
+      const spacesList = spaces.value;
 
-    let currentSpace: Space | null = null;
-    let currentParentId: number | null = null;
+      let foundSpace: Space | null = null;
+      let currentParentId: number | null = null;
 
-    for (const segment of pathSegments) {
-      const found = spacesList.find(s =>
-        generateSlug(s.name) === segment &&
-        s.parent_id === currentParentId
-      );
+      for (const segment of pathSegments) {
+        const found = spacesList.find(s =>
+          generateSlug(s.name) === segment &&
+          s.parent_id === currentParentId
+        );
 
-      if (!found) return null;
+        if (!found) return null;
 
-      currentSpace = found;
-      currentParentId = found.id;
+        foundSpace = found;
+        currentParentId = found.id;
+      }
+
+      return foundSpace;
+    };
+
+    const spaceFromUrl = findSpaceByPath(route.path);
+
+    // Update state to match URL
+    if (spaceFromUrl?.id !== currentSpaceSignal.value?.id) {
+      selectSpace(spaceFromUrl);
     }
+  }, [route.path, spaces.value]);
 
-    return currentSpace;
-  };
-
-  const currentSpace = findSpaceByPath(route.path);
+  // Use the signal value, not URL-derived value
+  const currentSpace = currentSpaceSignal.value;
 
   useEffect(() => {
     // Load expanded spaces from localStorage
@@ -65,7 +77,7 @@ export function Home() {
     }
   }, []);
 
-  // Auto-expand and scroll to selected space
+  // Auto-expand and scroll when currentSpace changes
   useEffect(() => {
     if (currentSpace) {
       expandParentSpaces(currentSpace.id);

@@ -1,17 +1,17 @@
 import { useRef, useState, useEffect } from 'preact/hooks';
 import { computed } from '@preact/signals';
-import { spaces as spacesSignal, isRecursiveMode, toggleRecursiveMode, isEligibleForRecursive } from '@core/state';
+import { spaces as spacesSignal, isRecursiveMode, isEligibleForRecursive } from '@core/state';
 import type { Space, SpaceStats } from '@core/api';
-import { fetchSpaceStats, deleteSpace } from '@core/api';
+import { fetchSpaceStats } from '@core/api';
 import { formatFileSize } from '@core/utils';
 import { formatFullDateTime } from '@core/utils/date';
 import { clientConfig } from '@core/state/settings';
-import { useTooltip, showSuccess, showError } from '@core/components';
+import { useTooltip } from '@core/components';
+import { deleteSpaceAction, toggleRecursiveMode } from '@core/actions/spaceActions';
 import { companionStyles } from '../../styles/companion';
 import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
 import { SpaceActionMenu } from './SpaceActionMenu';
 import { UpdateSpaceModal } from './UpdateSpaceModal';
-import { ConfirmModal } from '../modal/ConfirmModal';
 import { styled } from 'goober';
 
 const SpaceHeader = companionStyles.spaceHeader;
@@ -58,7 +58,6 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
   const [isCardHovering, setIsCardHovering] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { show, hide, TooltipPortal } = useTooltip();
 
   // Fetch space stats when space changes or recursive mode changes
@@ -204,23 +203,13 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     setShowUpdateModal(true);
   };
 
-  const handleDelete = async (spaceId: number) => {
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
+  const handleDelete = async () => {
     if (!space) return;
 
-    try {
-      await deleteSpace(space.id);
-      // Update local state
-      spacesSignal.value = spacesSignal.value.filter((s) => s.id !== space.id);
-      showSuccess(`Space "${space.name}" deleted successfully!`);
-      setShowDeleteConfirm(false);
-    } catch (error) {
-      console.error('Failed to delete space:', error);
-      showError('Failed to delete space. Please try again.');
-    }
+    await deleteSpaceAction({
+      spaceId: space.id,
+      spaceName: space.name,
+    });
   };
 
   const handleModalSuccess = () => {
@@ -384,19 +373,6 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
           onClose={() => setShowUpdateModal(false)}
           onSuccess={handleModalSuccess}
           space={space}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && space && (
-        <ConfirmModal
-          isOpen={showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(false)}
-          onConfirm={confirmDelete}
-          title="Delete Space"
-          message={`Are you sure you want to delete "${space.name}"? This action cannot be undone.`}
-          confirmText="Delete"
-          variant="danger"
         />
       )}
     </>

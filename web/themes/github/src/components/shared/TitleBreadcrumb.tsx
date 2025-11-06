@@ -1,7 +1,7 @@
 import { useLocation } from 'preact-iso';
 import { spaces, getSpaceById, isRecursiveMode } from '@core/state';
-import { generateSlug } from '@core/utils';
 import type { Space } from '@core/api';
+import { navigateToSpace } from '@core/actions/spaceActions';
 
 interface TitleBreadcrumbProps {
   spaceId: number;
@@ -16,14 +16,7 @@ export function TitleBreadcrumb({ spaceId, size = 'small', showBadgeOnHover = fa
   const navigate = (space: Space, e: MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    const pathSegments: string[] = [];
-    let current: Space | undefined = space;
-    while (current) {
-      pathSegments.unshift(generateSlug(current.name));
-      current = current.parent_id ? getSpaceById(current.parent_id) : undefined;
-    }
-    location.route('/' + pathSegments.join('/'));
+    navigateToSpace(space, location);
   };
 
   if (spaceId === 0) {

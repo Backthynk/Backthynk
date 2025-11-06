@@ -71,3 +71,35 @@ export const posts = {
    */
   postsPerPage: 20,
 } as const;
+
+/**
+ * Cache configuration
+ */
+export const cache = {
+  /**
+   * Posts cache settings
+   */
+  posts: {
+    /**
+     * Maximum number of cached query results
+     */
+    maxSize: 50,
+
+    /**
+     * Time to live in milliseconds (5 minutes default)
+     */
+    ttl: 5 * 60 * 1000,
+
+    /**
+     * Enable debug logging
+     */
+    debug: false,
+
+    /**
+     * Smart refetch threshold (percentage of page size)
+     * When list drops below this threshold after deletions/moves,
+     * automatically fetch more posts if available
+     */
+    smartRefetchThreshold: 0.7, // 70%
+  },
+} as const;

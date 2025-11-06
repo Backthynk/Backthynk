@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Modal, formStyles } from '../modal';
 import { SpaceSelector } from '../SpaceSelector';
-import { movePost, type Post } from '@core/api';
+import { type Post } from '@core/api';
 import { spaces } from '@core/state';
-import { showSuccess, showError } from '@core/components';
+import { showError } from '@core/components';
+import { movePostAction } from '@core/actions/postActions';
+import type { TimelineContext } from '../Timeline';
 
 const FormGroup = formStyles.formGroup;
 const Label = formStyles.label;
@@ -14,10 +16,10 @@ interface MovePostModalProps {
   isOpen: boolean;
   onClose: () => void;
   post: Post | null;
-  onSuccess: (updatedPost: Post) => void;
+  timelineContext?: TimelineContext;
 }
 
-export function MovePostModal({ isOpen, onClose, post, onSuccess }: MovePostModalProps) {
+export function MovePostModal({ isOpen, onClose, post, timelineContext }: MovePostModalProps) {
   const [targetSpaceId, setTargetSpaceId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,21 +61,17 @@ export function MovePostModal({ isOpen, onClose, post, onSuccess }: MovePostModa
     setIsSubmitting(true);
 
     try {
-      const updatedPost = await movePost(post.id, targetSpaceId);
+      await movePostAction({
+        postId: post.id,
+        newSpaceId: targetSpaceId,
+        currentSpaceId: timelineContext?.spaceId,
+        recursive: timelineContext?.recursive,
+      });
 
-      if (updatedPost) {
-        const targetSpace = spaces.value.find(s => s.id === targetSpaceId);
-        const targetSpaceName = targetSpace ? targetSpace.name : 'selected space';
-
-        showSuccess(`Post moved to ${targetSpaceName}`);
-        onSuccess(updatedPost);
-        onClose();
-      } else {
-        showError('Failed to move post');
-      }
+      onClose();
     } catch (error) {
-      console.error('Failed to move post:', error);
-      showError('Failed to move post. Please try again.');
+      // Error handling is done in the action
+      console.error('Move post action failed:', error);
     } finally {
       setIsSubmitting(false);
     }

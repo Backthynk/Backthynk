@@ -29,7 +29,6 @@ export interface LinkPreview {
 
 export interface PostsResponse {
   posts: Post[];
-  has_more: boolean;
 }
 
 export interface CreatePostPayload {
@@ -60,19 +59,24 @@ export async function fetchPosts(
 
     // Handle both response formats
     if (!response) {
-      return { posts: [], has_more: false };
+      return { posts: [] };
     }
 
-    // If withMeta=true, backend returns { posts: [...], has_more: ... }
+    // If withMeta=true, backend returns { posts: [...] }
     // If withMeta=false, backend returns just the array [...]
     if (Array.isArray(response)) {
-      return { posts: response, has_more: response.length >= limit };
+      return { posts: response };
+    }
+
+    // Ensure posts is always an array, even if backend returns null
+    if (!response.posts) {
+      return { posts: [] };
     }
 
     return response;
   } catch (error) {
     console.error('Failed to fetch posts:', error);
-    return { posts: [], has_more: false };
+    return { posts: [] };
   }
 }
 

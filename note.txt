@@ -1,0 +1,10 @@
+2. Rajouter une icone 3 petits points sur le cote dans le CompanionPanel
+-> Pour ouvrir le menu
+    - Enable Recursive
+    - Update space
+    - Delete space
+-> Ajoute ce meme menu en click droit dans le spaceItem
+
+3. Ajouter un systeme dans core qui conserve en memoire l'historique des donnees telecharger.
+-> par exemple pour les posts, spaces stats, activity etc..
+-> Implementer un systeme de reset lorsqu'une action specific est effectue, par exemple lorsqu'un post est ajoute/supprime/bouger de space

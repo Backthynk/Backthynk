@@ -4,7 +4,6 @@ import { posts as postsConfig } from '../config';
 
 // Global state for posts
 export const posts = signal<Post[]>([]);
-export const hasMorePosts = signal<boolean>(false);
 export const isLoadingPosts = signal<boolean>(false);
 export const isRecursiveView = signal<boolean>(false);
 
@@ -14,14 +13,12 @@ export const postsPerPage = postsConfig.postsPerPage;
 
 export const resetPosts = () => {
   posts.value = [];
-  hasMorePosts.value = false;
   currentOffset.value = 0;
   isLoadingPosts.value = false;
 };
 
-export const appendPosts = (newPosts: Post[], hasMore: boolean) => {
+export const appendPosts = (newPosts: Post[]) => {
   const postsToAppend = newPosts || [];
   posts.value = [...posts.value, ...postsToAppend];
-  hasMorePosts.value = hasMore;
   currentOffset.value += postsToAppend.length;
 };

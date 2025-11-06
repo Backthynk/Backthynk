@@ -8,6 +8,7 @@ import { NotFound } from './pages/NotFound';
 // Core state initialization
 import { initializeTheme } from '@core/state';
 import { DropdownAlert } from '@core/components';
+import { GlobalConfirmModal } from '@core/actions/GlobalConfirmModal';
 
 export function App() {
   useEffect(() => {
@@ -18,6 +19,7 @@ export function App() {
   return (
     <>
       <DropdownAlert />
+      <GlobalConfirmModal />
       <LocationProvider>
         <Router>
           <Route path="/" component={Home} />

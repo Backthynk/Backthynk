@@ -1,14 +1,11 @@
 import { useState } from 'preact/hooks';
 import { useLocation } from 'preact-iso';
-import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, isRecursiveMode, isEligibleForRecursive, toggleRecursiveMode, spaces as spacesSignal } from '@core/state';
-import { generateSlug } from '@core/utils';
+import { expandedSpaces, hasChildren, isRecursiveMode, isEligibleForRecursive, spaces as spacesSignal, currentSpace } from '@core/state';
 import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
-import { deleteSpace } from '@core/api';
-import { showSuccess, showError } from '@core/components';
+import { deleteSpaceAction, toggleSpaceExpanded, toggleRecursiveMode, navigateToSpace, navigateToAllSpaces } from '@core/actions/spaceActions';
 import { SpaceActionMenu } from '../companion/SpaceActionMenu';
 import { UpdateSpaceModal } from '../companion/UpdateSpaceModal';
-import { ConfirmModal } from '../modal/ConfirmModal';
 
 const SpaceRow = spacesContainerStyles.spaceRow;
 const ExpandButton = spacesContainerStyles.expandButton;
@@ -37,26 +34,9 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
   const recursivePostCount = space.recursive_post_count || 0;
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Get space path for URL
-  const getSpacePath = (space: Space): string => {
-    const path: string[] = [];
-    let current: Space | null = space;
-    while (current) {
-      path.unshift(generateSlug(current.name));
-      if (current.parent_id) {
-        current = getSpaceById(current.parent_id) || null;
-      } else {
-        break;
-      }
-    }
-    return '/' + path.join('/');
-  };
-
-  // Check if space is selected
-  const spacePath = getSpacePath(space);
-  const isSelected = location.url === spacePath;
+  // Check if space is selected by comparing with state signal
+  const isSelected = currentSpace.value?.id === space.id;
 
   let clickTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -81,9 +61,9 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
       clickTimeout = null;
       // If the space is already selected, navigate to root
       if (isSelected) {
-        location.route('/');
+        navigateToAllSpaces(location);
       } else {
-        location.route(spacePath);
+        navigateToSpace(space, location);
       }
     }, 150);
   };
@@ -132,21 +112,11 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
     setShowUpdateModal(true);
   };
 
-  const handleDelete = async (spaceId: number) => {
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = async () => {
-    try {
-      await deleteSpace(space.id);
-      // Update local state
-      spacesSignal.value = spacesSignal.value.filter((s) => s.id !== space.id);
-      showSuccess(`Space "${space.name}" deleted successfully!`);
-      setShowDeleteConfirm(false);
-    } catch (error) {
-      console.error('Failed to delete space:', error);
-      showError('Failed to delete space. Please try again.');
-    }
+  const handleDelete = async () => {
+    await deleteSpaceAction({
+      spaceId: space.id,
+      spaceName: space.name,
+    });
   };
 
   const handleModalSuccess = () => {
@@ -235,19 +205,6 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
           onClose={() => setShowUpdateModal(false)}
           onSuccess={handleModalSuccess}
           space={space}
-        />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <ConfirmModal
-          isOpen={showDeleteConfirm}
-          onClose={() => setShowDeleteConfirm(false)}
-          onConfirm={confirmDelete}
-          title="Delete Space"
-          message={`Are you sure you want to delete "${space.name}"? This action cannot be undone.`}
-          confirmText="Delete"
-          variant="danger"
         />
       )}
     </StyledSpaceItem>

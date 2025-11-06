@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Modal, formStyles } from '../modal';
 import { SpaceSelector } from '../SpaceSelector';
-import { updateSpace, type Space } from '@core/api';
+import { type Space } from '@core/api';
 import { spaces } from '@core/state';
 import { generateSlug } from '@core/utils';
-import { showSuccess, showError } from '@core/components';
+import { showError } from '@core/components';
 import { space as spaceConfig } from '@core/config';
+import { updateSpaceAction } from '@core/actions/spaceActions';
 
 const FormGroup = formStyles.formGroup;
 const Label = formStyles.label;
@@ -203,26 +204,21 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
     setIsSubmitting(true);
 
     try {
-      const updatedSpace = await updateSpace(space.id, {
-        name: name.trim(),
-        description: description.trim(),
-        parent_id: parentId,
+      await updateSpaceAction({
+        spaceId: space.id,
+        payload: {
+          name: name.trim(),
+          description: description.trim(),
+          parent_id: parentId,
+        },
+        onSuccess: () => {
+          onSuccess();
+          onClose();
+        },
       });
-
-      if (updatedSpace) {
-        // Update local state
-        spaces.value = spaces.value.map((s) =>
-          s.id === space.id ? updatedSpace : s
-        );
-        showSuccess(`Space "${updatedSpace.name}" updated successfully!`);
-        onSuccess();
-        onClose();
-      } else {
-        showError('Failed to update space');
-      }
     } catch (error) {
-      console.error('Failed to update space:', error);
-      showError('Failed to update space. Please try again.');
+      // Error handling is done in the action
+      console.error('Update space action failed:', error);
     } finally {
       setIsSubmitting(false);
     }

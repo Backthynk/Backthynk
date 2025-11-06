@@ -11,8 +11,6 @@ import {
   shouldShowActivity,
   isRecursiveMode,
   recursiveSpaces,
-  toggleRecursiveMode,
-  hasChildren,
 } from '@core/state';
 
 import { clientConfig } from '@core/state';
@@ -132,22 +130,12 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   const cache = activityCache.value;
   const loading = isLoadingActivity.value;
 
-  const handleBreadcrumbClick = () => {
-    if (currentSpace && hasChildren(currentSpace.id)) {
-      toggleRecursiveMode(currentSpace.id);
-    }
-  };
-
-  const canToggleRecursive = currentSpace ? hasChildren(currentSpace.id) : false;
-
   return (
     <Container>
       {/* Space Breadcrumb */}
       <div style={{ marginBottom: '12px' }}>
         <TitleBreadcrumb
           spaceId={activitySpaceId.value}
-          onClick={handleBreadcrumbClick}
-          clickable={canToggleRecursive}
           size="small"
         />
       </div>
