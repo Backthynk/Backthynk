@@ -1,5 +1,5 @@
 import { useLocation } from 'preact-iso';
-import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, getRecursivePostCount, isRecursiveMode } from '@core/state';
+import { expandedSpaces, toggleSpaceExpanded, hasChildren, getSpaceById, isRecursiveMode } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
@@ -24,7 +24,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
   const expanded = expandedSpaces.value;
   const isExpanded = expanded.has(space.id);
   const hasChildrenSpaces = hasChildren(space.id);
-  const recursivePostCount = getRecursivePostCount(space.id);
+  const recursivePostCount = space.recursive_post_count || 0;
 
   // Get space path for URL
   const getSpacePath = (space: Space): string => {

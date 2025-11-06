@@ -63,22 +63,6 @@ export const getLastSpaceId = (): number | null => {
   return saved ? parseInt(saved, 10) : null;
 };
 
-// Calculate recursive post count for a space (includes all child spaces)
-export const getRecursivePostCount = (spaceId: number): number => {
-  const space = getSpaceById(spaceId);
-  if (!space) return 0;
-
-  let total = space.post_count || 0;
-
-  // Add post counts from all descendants recursively
-  const children = getChildSpaces(spaceId);
-  for (const child of children) {
-    total += getRecursivePostCount(child.id);
-  }
-
-  return total;
-};
-
 // Expand all parent spaces for a given space
 export const expandParentSpaces = (spaceId: number) => {
   const space = getSpaceById(spaceId);

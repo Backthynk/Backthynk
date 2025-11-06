@@ -1,4 +1,4 @@
-import { spaces, getRecursivePostCount } from '@core/state';
+import { spaces } from '@core/state';
 import { spacesContainerStyles } from '../../styles/spaces-container';
 import { SpaceItem } from './SpaceItem';
 import type { Space } from '@core/api';
@@ -26,12 +26,12 @@ export function SpaceContainer({ sortPref }: SpaceContainerProps) {
           bValue = b.name.toLowerCase();
           break;
         case 'posts':
-          aValue = getRecursivePostCount(a.id);
-          bValue = getRecursivePostCount(b.id);
+          aValue = a.recursive_post_count || 0;
+          bValue = b.recursive_post_count || 0;
           break;
         case 'created':
-          aValue = (a as any).created || a.created_at || 0;
-          bValue = (b as any).created || b.created_at || 0;
+          aValue = (a as any).created || 0;
+          bValue = (b as any).created || 0;
           break;
         default:
           return 0;
