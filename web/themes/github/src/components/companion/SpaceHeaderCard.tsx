@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'preact/hooks';
 import { computed } from '@preact/signals';
-import { spaces as spacesSignal, isRecursiveMode } from '@core/state';
+import { spaces as spacesSignal, isRecursiveMode, toggleRecursiveMode, isEligibleForRecursive } from '@core/state';
 import type { Space, SpaceStats } from '@core/api';
 import { fetchSpaceStats } from '@core/api';
 import { formatFileSize } from '@core/utils';
@@ -20,9 +20,9 @@ interface SpaceHeaderCardProps {
 }
 
 export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
-  const headerRef = useRef<HTMLDivElement | null>(null);
   const [spaceStats, setSpaceStats] = useState<SpaceStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const { show, hide, TooltipPortal } = useTooltip();
 
   // Fetch space stats when space changes or recursive mode changes
@@ -139,14 +139,38 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     ? formatFullDateTime(creationDate.value / 1000)
     : null;
 
+  const canToggleRecursive = isEligibleForRecursive(space?.id);
+
+  const handleCardClick = () => {
+    if (canToggleRecursive && space) {
+      toggleRecursiveMode(space.id);
+    }
+  };
+
   return (
     <>
-      <SpaceHeader className={space && isRecursiveMode(space.id) ? "recursive" : ""}>
+      <SpaceHeader
+        onClick={handleCardClick}
+        style={{
+          cursor: canToggleRecursive ? 'pointer' : 'default',
+        }}
+        onMouseEnter={() => {
+          if (canToggleRecursive) {
+            setIsHovering(true);
+          }
+        }}
+        onMouseLeave={() => {
+          if (canToggleRecursive) {
+            setIsHovering(false);
+          }
+        }}
+      >
         {/* Space Breadcrumb */}
         <div style={{ marginBottom: '12px' }}>
           <TitleBreadcrumb
             spaceId={space?.id || 0}
             size="large"
+            showBadgeOnHover={canToggleRecursive && isHovering}
           />
         </div>
 
@@ -159,7 +183,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
               gap: '4px',
               marginBottom: '8px',
               fontSize: '13px',
-              color: 'var(--text-secondary)',
+              color: space && isRecursiveMode(space.id) ? 'var(--recursive-text)' : 'var(--text-secondary)',
             }}>
               <svg
                 width="14"
@@ -177,7 +201,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
                 <>
                   <span style={{ fontSize: '11px', opacity: 0.7, marginLeft: 2 }}>
                     {loadingStats ? (
-                      '(loading...)'
+                      ''
                     ) : (
                       `(${fileStats.value.count} file${fileStats.value.count !== 1 ? 's' : ''}`
                     )}

@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
-import { spaces, loadExpandedSpaces, expandParentSpaces, loadRecursiveModes, toggleRecursiveMode, isRecursiveMode } from '@core/state';
+import { spaces, loadExpandedSpaces, expandParentSpaces, loadRecursiveModes, toggleRecursiveMode, isRecursiveMode, isEligibleForRecursive } from '@core/state';
 import { fetchSpaces as fetchSpacesApi } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { Layout } from '../components/Layout';
@@ -80,11 +80,28 @@ export function Home() {
     }
   }, [currentSpace]);
 
-  const handleRecursiveToggle = () => {
-    if (currentSpace) {
-      toggleRecursiveMode(currentSpace.id);
-    }
-  };
+  // Keyboard handler for 'R' key to toggle recursive mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only toggle if 'R' key is pressed without modifiers and no input is focused
+      if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) {
+        const activeElement = document.activeElement;
+        const isInputFocused =
+          activeElement instanceof HTMLInputElement ||
+          activeElement instanceof HTMLTextAreaElement ||
+          activeElement instanceof HTMLSelectElement ||
+          (activeElement as HTMLElement)?.isContentEditable;
+
+        if (!isInputFocused && isEligibleForRecursive(currentSpace?.id)) {
+          e.preventDefault();
+          toggleRecursiveMode(currentSpace!.id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentSpace]);
 
   return (
     <Layout>
@@ -112,10 +129,7 @@ export function Home() {
           </Main>
 
           <Companion>
-            <CompanionPanel
-              space={currentSpace}
-              onRecursiveToggle={handleRecursiveToggle}
-            />
+            <CompanionPanel space={currentSpace} />
           </Companion>
         </Grid>
       </Container>

@@ -209,12 +209,12 @@ export function ImageGallery({ images }: ImageGalleryProps) {
               alt={file.filename}
               previewSize="large"
             />
-            {!isImage && (
+
               <FileOverlay className="file-overlay">
-                <p>{file.filename}</p>
-                <p className="size">{formatFileSize(file.file_size)}</p>
+                {!isImage && <p>{file.filename}</p>}
+                {!isImage && <p className="size">{formatFileSize(file.file_size)}</p>}
               </FileOverlay>
-            )}
+            
           </ImageContainer>
         </GalleryContainer>
         {showImageViewer && imageData.length > 0 && (
@@ -239,12 +239,10 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     alt={img.filename}
                     previewSize="large"
                   />
-                  {!isImage && (
-                    <FileOverlay className="file-overlay">
-                      <p>{img.filename}</p>
-                      <p className="size">{formatFileSize(img.file_size)}</p>
-                    </FileOverlay>
-                  )}
+                  <FileOverlay className="file-overlay">
+                    {!isImage && <p>{img.filename}</p>}
+                    {!isImage && <p className="size">{formatFileSize(img.file_size)}</p>}
+                  </FileOverlay>
                 </ImageContainer>
               );
             })}
@@ -273,12 +271,10 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                     alt={img.filename}
                     previewSize={previewSize}
                   />
-                  {!isImage && (
-                    <FileOverlay className="file-overlay">
-                      <p>{img.filename}</p>
-                      <p className="size">{formatFileSize(img.file_size)}</p>
-                    </FileOverlay>
-                  )}
+                  <FileOverlay className="file-overlay">
+                    {!isImage && <p>{img.filename}</p>}
+                    {!isImage && <p className="size">{formatFileSize(img.file_size)}</p>}
+                  </FileOverlay>
                 </ImageContainer>
               );
             })}
@@ -308,12 +304,10 @@ export function ImageGallery({ images }: ImageGalleryProps) {
                   alt={img.filename}
                   previewSize="medium"
                 />
-                {!isImage && (
-                  <FileOverlay className="file-overlay">
-                    <p>{img.filename}</p>
-                    <p className="size">{formatFileSize(img.file_size)}</p>
-                  </FileOverlay>
-                )}
+                <FileOverlay className="file-overlay">
+                  {!isImage && <p>{img.filename}</p>}
+                  {!isImage && <p className="size">{formatFileSize(img.file_size)}</p>}
+                </FileOverlay>
                 {idx === 3 && remainingCount > 0 && <MoreOverlay>+{remainingCount}</MoreOverlay>}
               </ImageContainer>
             );

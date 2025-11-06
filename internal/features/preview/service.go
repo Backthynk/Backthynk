@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/disintegration/imaging"
 	"github.com/unidoc/unipdf/v3/model"
@@ -17,11 +18,26 @@ import (
 
 const PreviewSubdir = "previews"
 
+// previewResult holds the result of a preview generation
+type previewResult struct {
+	path string
+	err  error
+}
+
+// inFlightPreview tracks an in-progress preview generation
+type inFlightPreview struct {
+	done chan struct{}
+	result previewResult
+	once sync.Once
+}
+
 type Service struct {
 	uploadPath  string
 	previewPath string
 	dispatcher  *events.Dispatcher
 	options     *config.OptionsConfig
+	// inFlight tracks currently generating previews to prevent duplicate work
+	inFlight sync.Map // map[string]*inFlightPreview
 }
 
 func NewService(uploadPath string, dispatcher *events.Dispatcher, options *config.OptionsConfig) *Service {
@@ -74,6 +90,8 @@ func (s *Service) PreviewExists(previewPath string) bool {
 }
 
 // GeneratePreview creates a preview image at the specified size
+// It ensures that the same file is only processed once even if multiple
+// concurrent requests arrive for the same preview.
 func (s *Service) GeneratePreview(originalPath string, originalFilename string, size string) (string, error) {
 	if !s.options.Features.Preview.Enabled {
 		return "", fmt.Errorf("preview feature is disabled")
@@ -85,6 +103,45 @@ func (s *Service) GeneratePreview(originalPath string, originalFilename string, 
 		return "", fmt.Errorf("invalid preview size")
 	}
 
+	// Create a unique key for this preview generation task
+	// This ensures different sizes of the same file are tracked separately
+	key := fmt.Sprintf("%s:%s", originalFilename, size)
+
+	// Try to load or create an in-flight preview tracker
+	actual, loaded := s.inFlight.LoadOrStore(key, &inFlightPreview{
+		done: make(chan struct{}),
+	})
+
+	flight := actual.(*inFlightPreview)
+
+	if loaded {
+		// Another goroutine is already generating this preview
+		// Wait for it to complete
+		<-flight.done
+		return flight.result.path, flight.result.err
+	}
+
+	// We're the first one to request this preview, so we'll generate it
+	// Use sync.Once to ensure cleanup happens exactly once
+	defer flight.once.Do(func() {
+		s.inFlight.Delete(key)
+		close(flight.done)
+	})
+
+	// Generate the preview
+	previewPath, err := s.doGeneratePreview(originalPath, originalFilename, size)
+
+	// Store the result for any waiting goroutines
+	flight.result = previewResult{
+		path: previewPath,
+		err:  err,
+	}
+
+	return previewPath, err
+}
+
+// doGeneratePreview performs the actual preview generation work
+func (s *Service) doGeneratePreview(originalPath string, originalFilename string, size string) (string, error) {
 	// Get the target width for this size
 	width := s.getWidthForSize(size)
 	if width == 0 {

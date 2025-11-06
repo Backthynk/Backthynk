@@ -20,13 +20,6 @@ func main() {
 		log.Fatal("Failed to setup configuration:", err)
 	}
 
-	/* //disactivated 26.10.2025
-	// Load configuration
-	if err := config.LoadSharedConfig(); err != nil {
-		log.Fatal("Failed to load shared config:", err)
-	}
-	*/
-
 	if err := config.LoadServiceConfig(); err != nil {
 		log.Fatal("Failed to load service config:", err)
 	}
@@ -76,31 +69,25 @@ func main() {
 	opts := config.GetOptionsConfig()
 
 	// Detailed Stats feature
-	var detailedStatsService *detailedstats.Service
-	if opts.Features.DetailedStats.Enabled {
-		detailedStatsService = detailedstats.NewService(db, spaceCache, true)
-		if err := detailedStatsService.Initialize(); err != nil {
-			log.Fatal("Failed to initialize detailed stats:", err)
-		}
-		dispatcher.Subscribe(events.FileUploaded, detailedStatsService.HandleEvent)
-		dispatcher.Subscribe(events.FileDeleted, detailedStatsService.HandleEvent)
-		dispatcher.Subscribe(events.PostDeleted, detailedStatsService.HandleEvent)
-		dispatcher.Subscribe(events.PostMoved, detailedStatsService.HandleEvent)
-		dispatcher.Subscribe(events.SpaceUpdated, detailedStatsService.HandleEvent)
+	detailedStatsService := detailedstats.NewService(db, spaceCache, true)
+	if err := detailedStatsService.Initialize(); err != nil {
+		log.Fatal("Failed to initialize detailed stats:", err)
 	}
+	dispatcher.Subscribe(events.FileUploaded, detailedStatsService.HandleEvent)
+	dispatcher.Subscribe(events.FileDeleted, detailedStatsService.HandleEvent)
+	dispatcher.Subscribe(events.PostDeleted, detailedStatsService.HandleEvent)
+	dispatcher.Subscribe(events.PostMoved, detailedStatsService.HandleEvent)
+	dispatcher.Subscribe(events.SpaceUpdated, detailedStatsService.HandleEvent)
 
 	// Activity feature
-	var activityService *activity.Service
-	if opts.Features.Activity.Enabled {
-		activityService = activity.NewService(db, spaceCache, true)
-		if err := activityService.Initialize(); err != nil {
-			log.Fatal("Failed to initialize activity:", err)
-		}
-		dispatcher.Subscribe(events.PostCreated, activityService.HandleEvent)
-		dispatcher.Subscribe(events.PostDeleted, activityService.HandleEvent)
-		dispatcher.Subscribe(events.PostMoved, activityService.HandleEvent)
-		dispatcher.Subscribe(events.SpaceUpdated, activityService.HandleEvent)
+	activityService := activity.NewService(db, spaceCache, true)
+	if err := activityService.Initialize(); err != nil {
+		log.Fatal("Failed to initialize activity:", err)
 	}
+	dispatcher.Subscribe(events.PostCreated, activityService.HandleEvent)
+	dispatcher.Subscribe(events.PostDeleted, activityService.HandleEvent)
+	dispatcher.Subscribe(events.PostMoved, activityService.HandleEvent)
+	dispatcher.Subscribe(events.SpaceUpdated, activityService.HandleEvent)
 
 	// Initialize API router
 	apiRouter := api.NewRouter(
@@ -109,6 +96,7 @@ func main() {
 		fileService,
 		detailedStatsService,
 		activityService,
+		dispatcher,
 		opts,
 		config.GetServiceConfig(),
 	)

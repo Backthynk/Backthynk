@@ -15,11 +15,12 @@ interface SpaceItemProps {
   space: Space;
   depth?: number;
   sortedChildren: Space[];
-  renderSpace: (space: Space, depth: number) => any;
+  renderSpace: (space: Space, depth: number, parentRecursive?: boolean) => any;
   showPostCount?: boolean;
+  parentRecursive?: boolean;
 }
 
-export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showPostCount = false }: SpaceItemProps) {
+export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showPostCount = false, parentRecursive = false }: SpaceItemProps) {
   const location = useLocation();
   const expanded = expandedSpaces.value;
   const isExpanded = expanded.has(space.id);
@@ -92,10 +93,13 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
     }
   };
 
+  const isRecursive = isSelected && isRecursiveMode(space.id);
+  const isChildOfRecursive = parentRecursive && !isSelected;
+
   return (
     <StyledSpaceItem>
       <SpaceRow
-        className={`${isSelected ? 'selected' : ''} ${isSelected && isRecursiveMode(space.id) ? 'recursive' : ''}`}
+        className={`${isSelected ? 'selected' : ''} ${isRecursive ? 'recursive' : ''} ${isChildOfRecursive ? 'child-recursive' : ''}`}
         style={{ paddingLeft: `${0.75 + depth * 0.625}rem` }}
         onClick={handleRowClick}
         onDblClick={handleDoubleClick}
@@ -120,7 +124,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
       </SpaceRow>
       {isExpanded && sortedChildren.length > 0 && (
         <Children>
-          {sortedChildren.map((child) => renderSpace(child, depth + 1))}
+          {sortedChildren.map((child) => renderSpace(child, depth + 1, isRecursive || parentRecursive))}
         </Children>
       )}
     </StyledSpaceItem>

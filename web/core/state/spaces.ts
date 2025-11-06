@@ -91,6 +91,12 @@ export const isRecursiveMode = (spaceId: number): boolean => {
   return recursiveSpaces.value.has(spaceId);
 };
 
+// Check if a space is eligible for recursive mode (has children)
+export const isEligibleForRecursive = (spaceId: number | null | undefined): boolean => {
+  if (!spaceId) return false;
+  return hasChildren(spaceId);
+};
+
 // Toggle recursive mode for a space
 export const toggleRecursiveMode = (spaceId: number) => {
   const current = new Set(recursiveSpaces.value);

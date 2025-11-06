@@ -1,14 +1,15 @@
 import { useLocation } from 'preact-iso';
-import { spaces, getSpaceById } from '@core/state';
+import { spaces, getSpaceById, isRecursiveMode } from '@core/state';
 import { generateSlug } from '@core/utils';
 import type { Space } from '@core/api';
 
 interface TitleBreadcrumbProps {
   spaceId: number;
   size?: 'small' | 'large';
+  showBadgeOnHover?: boolean;
 }
 
-export function TitleBreadcrumb({ spaceId, size = 'small' }: TitleBreadcrumbProps) {
+export function TitleBreadcrumb({ spaceId, size = 'small', showBadgeOnHover = false }: TitleBreadcrumbProps) {
   const location = useLocation();
   const fontSize = size === 'large' ? '16px' : '13px';
 
@@ -82,17 +83,42 @@ export function TitleBreadcrumb({ spaceId, size = 'small' }: TitleBreadcrumbProp
     });
   }
 
+  const isRecursive = spaceId !== 0 && isRecursiveMode(spaceId);
+
   return (
     <div style={{
-      display: '-webkit-box',
-      WebkitLineClamp: 2,
-      WebkitBoxOrient: 'vertical',
-      overflow: 'hidden',
-      fontSize,
-      fontWeight: 600,
-      lineHeight: '1.4',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
     }}>
-      {items}
+      <div style={{
+        display: '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+        overflow: 'hidden',
+        fontSize,
+        fontWeight: 600,
+        lineHeight: '1.4',
+      }}>
+        {items}
+      </div>
+      {(isRecursive || showBadgeOnHover) && (
+        <div style={{
+          fontSize: '9px',
+          fontWeight: 600,
+          color: 'var(--accent-recursive)',
+          background: 'var(--accent-recursive-hover)',
+          padding: '2px 6px',
+          borderRadius: '4px',
+          flexShrink: 0,
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px',
+          opacity: showBadgeOnHover && !isRecursive ? 0.5 : 1,
+          transition: 'opacity 0.2s ease-in-out',
+        }}>
+          R
+        </div>
+      )}
     </div>
   );
 }

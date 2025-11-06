@@ -141,7 +141,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   const canToggleRecursive = currentSpace ? hasChildren(currentSpace.id) : false;
 
   return (
-    <Container className={isRecursive ? 'recursive' : ''}>
+    <Container>
       {/* Space Breadcrumb */}
       <div style={{ marginBottom: '12px' }}>
         <TitleBreadcrumb
@@ -181,7 +181,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
           </div>
 
           {/* Legend */}
-          <Footer>
+          <Footer style={{ marginTop: '2rem' }}>
             <Legend>
               <LegendLabel>Less</LegendLabel>
               <LegendSquare intensity={0} />
@@ -213,7 +213,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
           </SkeletonHeatmap>
 
           {/* Legend (visible during loading) */}
-          <Footer>
+          <Footer style={{ marginTop: '2rem' }}>
             <Legend>
               <LegendLabel>Less</LegendLabel>
               <LegendSquare intensity={0} />

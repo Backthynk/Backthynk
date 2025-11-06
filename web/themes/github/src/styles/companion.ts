@@ -3,17 +3,17 @@ import { styled, keyframes } from 'goober';
 const pulseAnimation = keyframes`
   0% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(130, 80, 223, 0.7);
+    box-shadow: 0 0 0 0 var(--recursive-pulse-start);
     border-color: var(--border-primary);
   }
   50% {
     transform: scale(1.03);
-    box-shadow: 0 0 0 12px rgba(130, 80, 223, 0);
-    border-color: rgba(130, 80, 223, 0.5);
+    box-shadow: 0 0 0 12px var(--recursive-pulse-mid);
+    border-color: var(--recursive-pulse-border);
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 0 0 0 rgba(130, 80, 223, 0);
+    box-shadow: 0 0 0 0 var(--recursive-pulse-mid);
     border-color: var(--border-primary);
   }
 `;
@@ -96,15 +96,6 @@ export const companionStyles = {
     padding: 16px;
     box-shadow: var(--shadow-sm);
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
-
-    &.recursive {
-        border: 1px solid rgba(130, 80, 223, 0.35);
-
-        .dark & {
-          border: 1px solid rgba(163, 113, 247, 0.2);
-        }
-    }
-
   `,
 
   headerContent: styled('div')`

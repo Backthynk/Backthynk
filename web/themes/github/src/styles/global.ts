@@ -32,8 +32,21 @@ glob`
 
     --accent-primary: #0969da;
     --accent-hover: #0550ae;
-    --accent-recursive: #8250df;
-    --accent-recursive-hover: #6639ba;
+
+    /* Recursive mode colors - Purple theme */
+    --recursive-primary: #8250df;
+    --recursive-hover: #6639ba;
+    --recursive-bg: rgba(130, 80, 223, 0.15);
+    --recursive-bg-hover: rgba(130, 80, 223, 0.25);
+    --recursive-bg-child: rgba(130, 80, 223, 0.06);
+    --recursive-text: #8250df;
+    --recursive-pulse-start: rgba(130, 80, 223, 0.7);
+    --recursive-pulse-mid: rgba(130, 80, 223, 0);
+    --recursive-pulse-border: rgba(130, 80, 223, 0.5);
+
+    /* Legacy - kept for compatibility */
+    --accent-recursive: var(--recursive-primary);
+    --accent-recursive-hover: var(--recursive-bg-hover);
 
     --count-bg: #e6eaef;
     --count-text: #656d76;
@@ -76,8 +89,21 @@ glob`
 
     --accent-primary: #539bf5;
     --accent-hover: #6cb6ff;
-    --accent-recursive: #a371f7;
-    --accent-recursive-hover: #b083f0;
+
+    /* Recursive mode colors - Purple theme (Dark mode) */
+    --recursive-primary: #a371f7;
+    --recursive-hover: #b58aff;
+    --recursive-bg: rgba(163, 113, 247, 0.15);
+    --recursive-bg-hover: rgba(163, 113, 247, 0.25);
+    --recursive-bg-child: rgba(163, 113, 247, 0.06);
+    --recursive-text: #a371f7;
+    --recursive-pulse-start: rgba(163, 113, 247, 0.7);
+    --recursive-pulse-mid: rgba(163, 113, 247, 0);
+    --recursive-pulse-border: rgba(163, 113, 247, 0.5);
+
+    /* Legacy - kept for compatibility */
+    --accent-recursive: var(--recursive-primary);
+    --accent-recursive-hover: var(--recursive-bg-hover);
 
     --count-bg: #30363d;
     --count-text: #8d96a0;

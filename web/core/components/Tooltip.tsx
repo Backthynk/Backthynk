@@ -57,7 +57,6 @@ export function Tooltip({ rect, content, maxWidth, offset = 8 }: TooltipProps) {
       // Get the actual DOM element - goober styled components store it in 'base'
       const tooltip = ref.current.base || ref.current;
       if (!tooltip || typeof tooltip.getBoundingClientRect !== 'function') {
-        console.error('Tooltip ref is not a valid DOM element:', tooltip);
         return;
       }
 

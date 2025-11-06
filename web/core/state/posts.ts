@@ -20,7 +20,8 @@ export const resetPosts = () => {
 };
 
 export const appendPosts = (newPosts: Post[], hasMore: boolean) => {
-  posts.value = [...posts.value, ...newPosts];
+  const postsToAppend = newPosts || [];
+  posts.value = [...posts.value, ...postsToAppend];
   hasMorePosts.value = hasMore;
-  currentOffset.value += newPosts.length;
+  currentOffset.value += postsToAppend.length;
 };

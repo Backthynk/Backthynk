@@ -77,6 +77,10 @@ export const spacesContainerStyles = {
 
   spaceItem: styled('div')`
     margin-bottom: 1px;
+
+    &.no-gap {
+      margin-bottom: 0;
+    }
   `,
 
   spaceRow: styled('div')`
@@ -118,25 +122,25 @@ export const spacesContainerStyles = {
       }
 
       &.recursive {
-        background: rgba(130, 80, 223, 0.15);
-        color: var(--accent-recursive);
-
-        .dark & {
-          background: rgba(163, 113, 247, 0.15);
-        }
+        background: var(--recursive-bg);
+        color: var(--recursive-text);
 
         & > * {
-          color: var(--accent-recursive);
+          color: var(--recursive-text);
         }
 
         i {
-          color: var(--accent-recursive) !important;
+          color: var(--recursive-text) !important;
         }
 
         span:not([class*="postCount"]) {
-          color: var(--accent-recursive);
+          color: var(--recursive-text);
         }
       }
+    }
+
+    &.child-recursive {
+      background: var(--recursive-bg-child);
     }
   `,
 
