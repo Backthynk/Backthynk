@@ -9,6 +9,7 @@
  */
 
 import { signal } from '@preact/signals';
+import { postsCache } from '../cache/postsCache';
 
 export interface ConfirmationConfig {
   title: string;
@@ -85,9 +86,6 @@ export function confirm(config: ConfirmationConfig): Promise<void> {
  * Apply cache invalidation strategies
  */
 function applyCacheInvalidation(strategies: CacheInvalidationStrategy | CacheInvalidationStrategy[]): void {
-  // Import cache managers lazily to avoid circular dependencies
-  const { postsCache } = require('../cache/postsCache');
-
   const strategyArray = Array.isArray(strategies) ? strategies : [strategies];
 
   for (const strategy of strategyArray) {

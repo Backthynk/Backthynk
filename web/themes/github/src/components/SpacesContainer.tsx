@@ -73,10 +73,6 @@ export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
       <CreateSpaceModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={() => {
-          // Modal will handle closing itself, we could add a toast notification here
-          console.log('Space created successfully');
-        }}
         currentSpace={currentSpace}
       />
     </>

@@ -5,7 +5,7 @@ import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
 import { deleteSpaceAction, toggleSpaceExpanded, toggleRecursiveMode, navigateToSpace, navigateToAllSpaces } from '@core/actions/spaceActions';
 import { SpaceActionMenu } from '../companion/SpaceActionMenu';
-import { UpdateSpaceModal } from '../companion/UpdateSpaceModal';
+import { UpdateSpaceModal } from './UpdateSpaceModal';
 
 const SpaceRow = spacesContainerStyles.spaceRow;
 const ExpandButton = spacesContainerStyles.expandButton;
@@ -119,10 +119,6 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
     });
   };
 
-  const handleModalSuccess = () => {
-    // No specific action needed on success - state is updated by the modal
-  };
-
   const isRecursive = isSelected && isRecursiveMode(space.id);
   const isChildOfRecursive = parentRecursive && !isSelected;
   const hasExpandedChildren = isExpanded && sortedChildren.length > 0;
@@ -203,7 +199,6 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
         <UpdateSpaceModal
           isOpen={showUpdateModal}
           onClose={() => setShowUpdateModal(false)}
-          onSuccess={handleModalSuccess}
           space={space}
         />
       )}

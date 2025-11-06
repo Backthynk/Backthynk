@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'preact/hooks';
-import { posts, resetPosts, appendPosts, isLoadingPosts, spaces, getSpaceById } from '@core/state';
+import { posts, resetPosts, appendPosts, isLoadingPosts, getSpaceById, getSpaceBreadcrumb } from '@core/state';
 import { fetchPostsCached } from '@core/cache/postsCache';
 import { Post } from './post';
 import { VirtualScroller } from '@core/components/VirtualScroller';
@@ -164,30 +164,13 @@ export function Timeline({ spaceId, recursive = false }: TimelineProps) {
       });
   };
 
-  // Helper to get space breadcrumb for a post
-  const getSpaceBreadcrumb = (postSpaceId: number): string => {
-    const space = spaces.value.find(s => s.id === postSpaceId);
-    if (!space) return '';
-
-    // Build breadcrumb by traversing parent hierarchy
-    const breadcrumbs: string[] = [];
-    let current = space;
-
-    while (current) {
-      breadcrumbs.unshift(current.name);
-      if (current.parent_id === null) break;
-      current = spaces.value.find(s => s.id === current.parent_id)!;
-    }
-
-    return breadcrumbs.join(' / ');
-  };
 
   // Show breadcrumbs when viewing all posts (no space selected) or in recursive mode
   const showBreadcrumbs = spaceId === null || recursive;
 
   // Navigate to a space when clicking on breadcrumb
   const handleBreadcrumbClick = (postSpaceId: number) => {
-    const space = spaces.value.find(s => s.id === postSpaceId);
+    const space = getSpaceById(postSpaceId);
     if (!space) return;
 
     navigateToSpace(space, location);

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'preact/hooks';
 import { Modal, formStyles } from '../modal';
 import { SpaceSelector } from '../SpaceSelector';
 import { type Post } from '@core/api';
-import { spaces } from '@core/state';
+import { getSpaceBreadcrumb } from '@core/state';
 import { showError } from '@core/components';
 import { movePostAction } from '@core/actions/postActions';
 import type { TimelineContext } from '../Timeline';
@@ -34,20 +34,8 @@ export function MovePostModal({ isOpen, onClose, post, timelineContext }: MovePo
   // Get current space breadcrumb
   const getCurrentSpaceBreadcrumb = (): string => {
     if (!post) return '';
-
-    const space = spaces.value.find(s => s.id === post.space_id);
-    if (!space) return 'Unknown Space';
-
-    const breadcrumbs: string[] = [];
-    let current = space;
-
-    while (current) {
-      breadcrumbs.unshift(current.name);
-      if (current.parent_id === null) break;
-      current = spaces.value.find(s => s.id === current.parent_id)!;
-    }
-
-    return breadcrumbs.join(' / ');
+    const breadcrumb = getSpaceBreadcrumb(post.space_id);
+    return breadcrumb || 'Unknown Space';
   };
 
   const handleSubmit = async (e: Event) => {

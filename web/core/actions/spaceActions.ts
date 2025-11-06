@@ -8,8 +8,10 @@
 import {
   deleteSpace as apiDeleteSpace,
   updateSpace as apiUpdateSpace,
+  createSpace as apiCreateSpace,
   type Space,
-  type UpdateSpacePayload
+  type UpdateSpacePayload,
+  type CreateSpacePayload
 } from '../api/spaces';
 import {
   spaces as spacesSignal,
@@ -34,6 +36,57 @@ export interface UpdateSpaceOptions {
   spaceId: number;
   payload: UpdateSpacePayload;
   onSuccess?: (updatedSpace: Space) => void;
+}
+
+export interface AddSpaceOptions {
+  payload: CreateSpacePayload;
+  onSuccess?: (newSpace: Space) => void;
+}
+
+/**
+ * Add/Create a new space with automatic state updates and parent count increments
+ */
+export async function addSpaceAction(options: AddSpaceOptions): Promise<void> {
+  const { payload, onSuccess } = options;
+
+  await executeAction<Space | null>({
+    execute: async () => {
+      return await apiCreateSpace(payload);
+    },
+    onSuccess: async (newSpace) => {
+      if (!newSpace) return;
+
+      // Add the new space to state
+      spacesSignal.value = [...spacesSignal.value, newSpace];
+
+      // Update parent spaces' recursive counts if this space has a parent
+      const parentId = newSpace.parent_id;
+      if (parentId !== null && parentId !== undefined) {
+        let currentParent = getSpaceById(parentId);
+        while (currentParent) {
+          // New space contributes its recursive_post_count to all ancestors
+          currentParent.recursive_post_count += newSpace.recursive_post_count;
+          if (currentParent.parent_id !== null) {
+            currentParent = getSpaceById(currentParent.parent_id);
+          } else {
+            break;
+          }
+        }
+      }
+
+      showSuccess(`Space "${newSpace.name}" created successfully!`);
+
+      if (onSuccess) {
+        onSuccess(newSpace);
+      }
+    },
+    onError: (error) => {
+      console.error('Failed to create space:', error);
+      showError('Failed to create space. Please try again.');
+    },
+    // No cache invalidation needed for new spaces
+    cacheInvalidation: { type: 'none' },
+  });
 }
 
 /**

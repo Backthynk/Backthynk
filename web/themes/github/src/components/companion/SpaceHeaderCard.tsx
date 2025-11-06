@@ -1,6 +1,6 @@
-import { useRef, useState, useEffect } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { computed } from '@preact/signals';
-import { spaces as spacesSignal, isRecursiveMode, isEligibleForRecursive } from '@core/state';
+import { spaces as spacesSignal, isRecursiveMode, isEligibleForRecursive, getTotalPostCount, getSpacePostCount, getEarliestSpaceCreationDate } from '@core/state';
 import type { Space, SpaceStats } from '@core/api';
 import { fetchSpaceStats } from '@core/api';
 import { formatFileSize } from '@core/utils';
@@ -11,7 +11,7 @@ import { deleteSpaceAction, toggleRecursiveMode } from '@core/actions/spaceActio
 import { companionStyles } from '../../styles/companion';
 import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
 import { SpaceActionMenu } from './SpaceActionMenu';
-import { UpdateSpaceModal } from './UpdateSpaceModal';
+import { UpdateSpaceModal } from '../spaces-container/UpdateSpaceModal';
 import { styled } from 'goober';
 
 const SpaceHeader = companionStyles.spaceHeader;
@@ -101,8 +101,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
   const stats = computed(() => {
     if (!space) {
       // "All Spaces" - sum everything
-      const allSpaces = spacesSignal.value;
-      const totalPosts = allSpaces.reduce((sum, s) => sum + (s.post_count || 0), 0);
+      const totalPosts = getTotalPostCount();
       return {
         posts: totalPosts,
         files: spaceStats?.file_count || 0,
@@ -111,9 +110,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     }
 
     // Individual space
-    const posts = isRecursiveMode(space.id)
-      ? space.recursive_post_count || 0
-      : space.post_count || 0;
+    const posts = getSpacePostCount(space);
 
     return {
       posts,
@@ -125,12 +122,9 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
   // Calculate individual stat values
   const postCount = computed(() => {
     if (!space) {
-      const allSpaces = spacesSignal.value;
-      return allSpaces.reduce((sum, s) => sum + (s.post_count || 0), 0);
+      return getTotalPostCount();
     }
-    return isRecursiveMode(space.id)
-      ? space.recursive_post_count || 0
-      : space.post_count || 0;
+    return getSpacePostCount(space);
   });
 
   const fileStats = computed(() => {
@@ -146,18 +140,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     if (space?.created) {
       return space.created;
     }
-    // When no space is selected, find the earliest created space
-    const allSpaces = spacesSignal.value;
-    if (allSpaces.length === 0) return null;
-
-    const earliestSpace = allSpaces.reduce((earliest, current) => {
-      if (!earliest || current.created < earliest.created) {
-        return current;
-      }
-      return earliest;
-    });
-
-    return earliestSpace.created;
+    return getEarliestSpaceCreationDate();
   });
 
   // Format creation date for display
@@ -212,18 +195,16 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     });
   };
 
-  const handleModalSuccess = () => {
+  const handleModalSuccess = (updatedSpace: Space) => {
     // Refetch stats after successful update
-    if (space) {
-      const recursive = isRecursiveMode(space.id);
-      fetchSpaceStats(space.id, recursive)
-        .then(stats => {
-          setSpaceStats(stats);
-        })
-        .catch(err => {
-          console.error('Failed to fetch space stats:', err);
-        });
-    }
+    const recursive = isRecursiveMode(updatedSpace.id);
+    fetchSpaceStats(updatedSpace.id, recursive)
+      .then(stats => {
+        setSpaceStats(stats);
+      })
+      .catch(err => {
+        console.error('Failed to fetch space stats:', err);
+      });
   };
 
   return (

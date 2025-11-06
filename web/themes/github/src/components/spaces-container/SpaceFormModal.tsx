@@ -2,11 +2,9 @@ import { useState, useEffect } from 'preact/hooks';
 import { Modal, formStyles } from '../modal';
 import { SpaceSelector } from '../SpaceSelector';
 import { type Space } from '@core/api';
-import { spaces } from '@core/state';
+import { spaces, checkDuplicateSlug, validateParentSpace, canBeParent } from '@core/state';
 import { generateSlug } from '@core/utils';
-import { showError } from '@core/components';
 import { space as spaceConfig } from '@core/config';
-import { updateSpaceAction } from '@core/actions/spaceActions';
 
 const FormGroup = formStyles.formGroup;
 const Label = formStyles.label;
@@ -16,19 +14,33 @@ const Error = formStyles.error;
 const Hint = formStyles.hint;
 const Button = formStyles.button;
 
-interface UpdateSpaceModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  space: Space | null;
-}
-
 interface ValidationErrors {
   name?: string;
   parent?: string;
 }
 
-export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSpaceModalProps) {
+interface SpaceFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: { name: string; description: string; parent_id: number | null }) => Promise<void>;
+  mode: 'create' | 'update';
+  initialData?: {
+    name: string;
+    description: string;
+    parent_id: number | null;
+    space_id?: number;
+  };
+  currentSpace?: Space | null;
+}
+
+export function SpaceFormModal({
+  isOpen,
+  onClose,
+  onSubmit,
+  mode,
+  initialData,
+  currentSpace,
+}: SpaceFormModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [parentId, setParentId] = useState<number | null>(null);
@@ -36,12 +48,36 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDiscardWarning, setShowDiscardWarning] = useState(false);
 
-  // Initialize form when modal opens or space changes
+  const isCreateMode = mode === 'create';
+  const title = isCreateMode ? 'Create New Space' : 'Update Space';
+  const submitText = isCreateMode ? 'Create repository' : 'Update space';
+  const submittingText = isCreateMode ? 'Creating...' : 'Updating...';
+
+  // Initialize form when modal opens
   useEffect(() => {
-    if (isOpen && space) {
-      setName(space.name);
-      setDescription(space.description || '');
-      setParentId(space.parent_id);
+    if (isOpen) {
+      if (initialData) {
+        // Update mode - use initialData
+        setName(initialData.name);
+        setDescription(initialData.description || '');
+        setParentId(initialData.parent_id);
+      } else if (currentSpace && isCreateMode) {
+        // Create mode - determine default parent based on currentSpace
+        let defaultParent: number | null = null;
+
+        if (currentSpace && canBeParent(currentSpace.id)) {
+          defaultParent = currentSpace.id;
+        }
+
+        setName('');
+        setDescription('');
+        setParentId(defaultParent);
+      } else {
+        // Create mode without currentSpace
+        setName('');
+        setDescription('');
+        setParentId(null);
+      }
     } else {
       // Reset form when modal closes
       setName('');
@@ -51,16 +87,20 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
       setIsSubmitting(false);
       setShowDiscardWarning(false);
     }
-  }, [isOpen, space]);
+  }, [isOpen, initialData, currentSpace, isCreateMode]);
 
   // Check if form has been modified
   const isFormDirty = () => {
-    if (!space) return false;
-    return (
-      name.trim() !== space.name ||
-      description.trim() !== (space.description || '') ||
-      parentId !== space.parent_id
-    );
+    if (initialData) {
+      // Update mode - check if values changed
+      return (
+        name.trim() !== initialData.name ||
+        description.trim() !== (initialData.description || '') ||
+        parentId !== initialData.parent_id
+      );
+    }
+    // Create mode - check if any field has content
+    return name.trim().length > 0 || description.trim().length > 0;
   };
 
   // Handle close with discard warning
@@ -89,79 +129,26 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
     return undefined;
   };
 
-  // Check if slug/name already exists at the same level (excluding current space)
-  const checkDuplicateSlug = (value: string, parent: number | null): string | undefined => {
-    if (!space) return undefined;
-
-    const slug = generateSlug(value);
-    const allSpaces = spaces.value;
-
-    // Find spaces with the same parent, excluding the current space
-    const siblingsSpaces = allSpaces.filter((s) => s.parent_id === parent && s.id !== space.id);
-
-    // Check if any sibling has the same slug
-    const duplicate = siblingsSpaces.find((s) => generateSlug(s.name) === slug);
-
-    if (duplicate) {
-      return `A space with this name already exists at this level (conflicts with "${duplicate.name}")`;
-    }
-
-    return undefined;
-  };
-
-  // Validate parent selection (check depth and prevent circular reference)
-  const validateParent = (parent: number | null): string | undefined => {
-    if (!space) return undefined;
-    if (parent === null) return undefined;
-
-    // Prevent setting parent to itself
-    if (parent === space.id) {
-      return 'Cannot set a space as its own parent';
-    }
-
-    // Prevent circular reference - check if parent is a descendant of current space
-    const isDescendant = (spaceId: number, potentialAncestorId: number): boolean => {
-      const s = spaces.value.find((sp) => sp.id === spaceId);
-      if (!s || s.parent_id === null) return false;
-      if (s.parent_id === potentialAncestorId) return true;
-      return isDescendant(s.parent_id, potentialAncestorId);
-    };
-
-    if (isDescendant(parent, space.id)) {
-      return 'Cannot set a descendant space as parent (would create circular reference)';
-    }
-
-    const parentSpace = spaces.value.find((s) => s.id === parent);
-    if (!parentSpace) return 'Invalid parent space';
-
-    // Check depth constraint
-    if (parentSpace.parent_id !== null) {
-      const grandparent = spaces.value.find((s) => s.id === parentSpace.parent_id);
-      if (grandparent && grandparent.parent_id !== null) {
-        return 'Cannot move space: maximum depth (2 levels) would be exceeded';
-      }
-    }
-
-    return undefined;
-  };
-
   // Validate form
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
+    // Validate name
     const nameError = validateName(name);
     if (nameError) {
       newErrors.name = nameError;
     } else {
-      const duplicateError = checkDuplicateSlug(name, parentId);
-      if (duplicateError) {
-        newErrors.name = duplicateError;
+      // Check for duplicate slug
+      const duplicateCheck = checkDuplicateSlug(name, parentId, initialData?.space_id);
+      if (duplicateCheck.isDuplicate && duplicateCheck.conflictingSpace) {
+        newErrors.name = `A space with this name already exists at this level (conflicts with "${duplicateCheck.conflictingSpace.name}")`;
       }
     }
 
-    const parentError = validateParent(parentId);
-    if (parentError) {
-      newErrors.parent = parentError;
+    // Validate parent
+    const parentValidation = validateParentSpace(parentId, initialData?.space_id);
+    if (!parentValidation.isValid) {
+      newErrors.parent = parentValidation.error;
     }
 
     setErrors(newErrors);
@@ -172,53 +159,59 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
   useEffect(() => {
     if (name) {
       const nameError = validateName(name);
-      const duplicateError = nameError ? undefined : checkDuplicateSlug(name, parentId);
-      setErrors((prev) => ({
-        ...prev,
-        name: nameError || duplicateError,
-      }));
+      if (nameError) {
+        setErrors((prev) => ({ ...prev, name: nameError }));
+      } else {
+        const duplicateCheck = checkDuplicateSlug(name, parentId, initialData?.space_id);
+        if (duplicateCheck.isDuplicate && duplicateCheck.conflictingSpace) {
+          setErrors((prev) => ({
+            ...prev,
+            name: `A space with this name already exists at this level (conflicts with "${duplicateCheck.conflictingSpace.name}")`,
+          }));
+        } else {
+          setErrors((prev) => ({ ...prev, name: undefined }));
+        }
+      }
     } else {
       setErrors((prev) => ({ ...prev, name: undefined }));
     }
-  }, [name, parentId]);
+  }, [name, parentId, initialData?.space_id]);
 
   // Real-time validation on parent change
   useEffect(() => {
-    const parentError = validateParent(parentId);
-    const duplicateError = name ? checkDuplicateSlug(name, parentId) : undefined;
+    const parentValidation = validateParentSpace(parentId, initialData?.space_id);
+    const duplicateCheck = name ? checkDuplicateSlug(name, parentId, initialData?.space_id) : null;
 
     setErrors((prev) => ({
       ...prev,
-      parent: parentError,
-      name: duplicateError || (prev.name && !prev.name.includes('conflicts with') ? prev.name : undefined),
+      parent: parentValidation.isValid ? undefined : parentValidation.error,
+      name:
+        duplicateCheck?.isDuplicate && duplicateCheck.conflictingSpace
+          ? `A space with this name already exists at this level (conflicts with "${duplicateCheck.conflictingSpace.name}")`
+          : prev.name && !prev.name.includes('conflicts with')
+            ? prev.name
+            : undefined,
     }));
-  }, [parentId]);
+  }, [parentId, name, initialData?.space_id]);
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
 
-    if (!space || !validateForm()) {
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      await updateSpaceAction({
-        spaceId: space.id,
-        payload: {
-          name: name.trim(),
-          description: description.trim(),
-          parent_id: parentId,
-        },
-        onSuccess: () => {
-          onSuccess();
-          onClose();
-        },
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim(),
+        parent_id: parentId,
       });
+      onClose();
     } catch (error) {
-      // Error handling is done in the action
-      console.error('Update space action failed:', error);
+      console.error('Form submission failed:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -250,7 +243,7 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
         onClick={handleSubmit}
         disabled={!isFormValid || isSubmitting}
       >
-        {isSubmitting ? 'Updating...' : 'Update space'}
+        {isSubmitting ? submittingText : submitText}
       </Button>
     </>
   );
@@ -274,7 +267,7 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} onOverlayClick={handleClose} title="Update Space" footer={footer} size="medium">
+    <Modal isOpen={isOpen} onClose={handleClose} onOverlayClick={handleClose} title={title} footer={footer} size="medium">
       <form onSubmit={handleSubmit}>
         <FormGroup>
           <Label>
@@ -305,7 +298,7 @@ export function UpdateSpaceModal({ isOpen, onClose, onSuccess, space }: UpdateSp
             placeholder="None (Root Space)"
             error={!!errors.parent}
             disabled={isSubmitting}
-            excludeSpaceId={space?.id}
+            excludeSpaceId={initialData?.space_id}
           />
           {errors.parent && <Error>{errors.parent}</Error>}
           {!errors.parent && <Hint>Select a parent space or leave as root level</Hint>}
