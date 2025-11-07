@@ -10,6 +10,16 @@ export const activity = {
    * Maximum number of periods to show in activity navigation
    */
   maxPeriods: 7,
+
+  /**
+   * Number of months to display in the heatmap
+   */
+  periodMonths: 4,
+
+  /**
+   * Number of cells (days) per line in the heatmap
+   */
+  cellsPerLine: 15,
 } as const;
 
 /**

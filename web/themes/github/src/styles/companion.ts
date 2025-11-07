@@ -164,4 +164,53 @@ export const companionStyles = {
     line-height: 1.5;
     transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   `,
+
+  statsCard: styled('div')`
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+  `,
+
+  statItem: styled('div')`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+  `,
+
+  statIcon: styled('div')`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    color: var(--text-secondary);
+  `,
+
+  statLabel: styled('span')`
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+  `,
+
+  statValue: styled('span')<{ isRecursive?: boolean }>`
+    font-weight: 600;
+    font-size: 16px;
+    color: ${({ isRecursive }) => isRecursive ? 'var(--recursive-text)' : 'var(--text-primary)'};
+    display: flex;
+    align-items: baseline;
+  `,
 };

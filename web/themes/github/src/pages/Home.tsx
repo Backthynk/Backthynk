@@ -136,7 +136,6 @@ export function Home() {
               gap: '1rem'
             }}>
               <SpacesContainer currentSpace={currentSpace} />
-              <ActivityTracker currentSpace={currentSpace} />
               <FooterLinks />
             </div>
           </LeftPanel>
@@ -149,7 +148,16 @@ export function Home() {
           </Main>
 
           <Companion>
-            <CompanionPanel space={currentSpace} />
+            <div style={{
+              position: 'sticky',
+              top: '1rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              <CompanionPanel space={currentSpace} />
+              <ActivityTracker currentSpace={currentSpace} />
+            </div>
           </Companion>
         </Grid>
       </Container>

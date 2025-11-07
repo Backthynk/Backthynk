@@ -7,8 +7,6 @@ import {
   activityRecursiveMode,
   canNavigatePrev,
   canNavigateNext,
-  activityPeriodMonths,
-  shouldShowActivity,
   isRecursiveMode,
   recursiveSpaces,
 } from '@core/state';
@@ -17,9 +15,9 @@ import { clientConfig } from '@core/state';
 import { fetchActivityDataCached } from '@core/cache/activityCache';
 import type { Space } from '@core/api';
 import { activityStyles } from '../../styles/activity';
-import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
 import { Heatmap } from './Heatmap';
 import { formatPeriodLabel } from './utils';
+import { activity as activityConfig } from '../../config';
 
 const Container = activityStyles.container;
 const PeriodNav = activityStyles.periodNav;
@@ -42,8 +40,8 @@ interface ActivityTrackerProps {
 export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   const config = clientConfig.value;
 
-  // Don't render if activity is disabled or window too small
-  if (!config.activity || !shouldShowActivity.value) {
+  // Don't render if activity is disabled
+  if (!config.activity) {
     return null;
   }
 
@@ -53,7 +51,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   // Load activity data when space, recursive mode, or period changes
   useEffect(() => {
     loadActivityData();
-  }, [currentSpace?.id, isRecursive, currentActivityPeriod.value, activityPeriodMonths.value, recursiveSpaces.value]);
+  }, [currentSpace?.id, isRecursive, currentActivityPeriod.value, recursiveSpaces.value]);
 
   // Update activity state when space or recursive mode changes
   useEffect(() => {
@@ -84,7 +82,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
     try {
       const spaceId = currentSpace?.id || 0;
       const recursive = isRecursive;
-      const periodMonths = activityPeriodMonths.value;
+      const periodMonths = activityConfig.periodMonths;
 
       const result = await fetchActivityDataCached(
         spaceId,
@@ -137,13 +135,6 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
 
   return (
     <Container>
-      {/* Space Breadcrumb */}
-      <div style={{ marginBottom: '12px' }}>
-        <TitleBreadcrumb
-          spaceId={activitySpaceId.value}
-          size="small"
-        />
-      </div>
 
       {/* Period Navigation */}
       <PeriodNav>
@@ -174,7 +165,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
           </div>
 
           {/* Legend */}
-          <Footer style={{ marginTop: '2rem' }}>
+          <Footer style={{ marginTop: '1rem' }}>
             <Legend>
               <LegendLabel>Less</LegendLabel>
               <LegendSquare intensity={0} />
@@ -190,11 +181,11 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
         <>
           {/* Skeleton Heatmap Placeholder */}
           <SkeletonHeatmap>
-            {Array.from({ length: activityPeriodMonths.value * 10 }).map((_, rowIndex) => (
+            {Array.from({ length: activityConfig.periodMonths * activityConfig.cellsPerLine }).map((_, rowIndex) => (
               <SkeletonRow key={rowIndex}>
-                {rowIndex % 10 === 0 && <SkeletonMonthLabel />}
+                {rowIndex % activityConfig.cellsPerLine === 0 && <SkeletonMonthLabel />}
                 <SkeletonSquares>
-                  {Array.from({ length: 10 }).map((_, squareIndex) => (
+                  {Array.from({ length: activityConfig.cellsPerLine }).map((_, squareIndex) => (
                     <SkeletonSquare
                       key={squareIndex}
                       style={{ '--index': squareIndex } as any}
@@ -206,7 +197,7 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
           </SkeletonHeatmap>
 
           {/* Legend (visible during loading) */}
-          <Footer style={{ marginTop: '2rem' }}>
+          <Footer style={{ marginTop: '1rem' }}>
             <Legend>
               <LegendLabel>Less</LegendLabel>
               <LegendSquare intensity={0} />

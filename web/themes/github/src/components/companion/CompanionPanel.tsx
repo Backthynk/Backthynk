@@ -2,6 +2,7 @@ import type { Space } from '@core/api';
 import { companionStyles } from '../../styles/companion';
 import { SearchSection } from './SearchSection';
 import { SpaceHeaderCard } from './SpaceHeaderCard';
+import { StatsCard } from './StatsCard';
 
 const Container = companionStyles.container;
 
@@ -14,6 +15,7 @@ export function CompanionPanel({ space }: CompanionPanelProps) {
     <Container>
       <SearchSection />
       <SpaceHeaderCard space={space} />
+      <StatsCard space={space} />
     </Container>
   );
 }

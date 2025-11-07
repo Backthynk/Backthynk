@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'preact/hooks';
 import { activityStyles } from '../../styles/activity';
 import { generateCalendarDays, generateMonthLabels, formatDayLabel } from './utils';
 import type { ActivityData } from '@core/api';
-import { Tooltip, useTooltip } from '@core/components';
+import { useTooltip } from '@core/components';
+import { activity as activityConfig } from '../../config';
 
 const HeatmapWrapper = activityStyles.heatmapWrapper;
 const HeatmapGrid = activityStyles.heatmapGrid;
@@ -15,10 +17,26 @@ interface HeatmapProps {
   activityData: ActivityData;
 }
 
-const SQUARES_PER_ROW = 10;
+const useResponsiveCellsPerLine = () => {
+  const [cellsPerLine, setCellsPerLine] = useState(
+    window.innerWidth >= 1260 ? activityConfig.cellsPerLine : 10
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setCellsPerLine(window.innerWidth >= 1260 ? activityConfig.cellsPerLine : 10);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return cellsPerLine;
+};
 
 export function Heatmap({ activityData }: HeatmapProps) {
    const { show, hide, TooltipPortal } = useTooltip();
+   const SQUARES_PER_ROW = useResponsiveCellsPerLine();
 
   // Convert activity days array to map for O(1) lookups
   const activityMap: Record<string, number> = {};

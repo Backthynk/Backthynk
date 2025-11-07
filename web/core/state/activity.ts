@@ -1,6 +1,5 @@
 import { signal, computed } from '@preact/signals';
 import type { ActivityData } from '../api';
-import { windowSize } from './ui';
 
 // Current activity period (0 = current, -1 = previous period, etc.)
 export const currentActivityPeriod = signal<number>(0);
@@ -31,23 +30,6 @@ export const canNavigateNext = computed(() => {
   return currentActivityPeriod.value < 0;
 });
 
-// Computed: Number of months to display based on window height
-export const activityPeriodMonths = computed(() => {
-  const height = windowSize.value.height;
-  if (height >= 1000) return 4;
-  if (height >= 875) return 3;
-  return 2;
-});
-
-export const activityContainerHeightRem = computed(() => {
-  const height = windowSize.value.height;
-  if (height >= 1000) return 22;
-  if (height >= 875) return 18;
-  return 15;
-});
-
-// Computed: Whether to show activity tracker based on window height
-export const shouldShowActivity = computed(() => windowSize.value.height >= 750);
 
 // Reset activity state (useful when switching spaces)
 export function resetActivityState(): void {

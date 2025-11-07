@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState } from 'preact/hooks';
 import { computed } from '@preact/signals';
-import { spaces as spacesSignal, isRecursiveMode, isEligibleForRecursive, getTotalPostCount, getSpacePostCount, getEarliestSpaceCreationDate, getOrFetchSpaceStats, getSpaceStats, isLoadingStats } from '@core/state';
+import { spaces as spacesSignal, isEligibleForRecursive, getEarliestSpaceCreationDate } from '@core/state';
 import type { Space } from '@core/api';
-import { formatFileSize } from '@core/utils';
 import { formatFullDateTime } from '@core/utils/date';
-import { clientConfig } from '@core/state/settings';
 import { useTooltip } from '@core/components';
 import { deleteSpaceAction, toggleRecursiveMode } from '@core/actions/spaceActions';
 import { companionStyles } from '../../styles/companion';
@@ -56,65 +54,6 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { show, hide, TooltipPortal } = useTooltip();
-
-  // Fetch space stats when space changes or recursive mode changes
-  useEffect(() => {
-    const spaceStatsEnabled = clientConfig.value.space_stats;
-
-    if (!spaceStatsEnabled) {
-      return;
-    }
-
-    if (!space) {
-      // Fetch global stats (id=0)
-      getOrFetchSpaceStats(0, false);
-    } else {
-      const recursive = isRecursiveMode(space.id);
-      getOrFetchSpaceStats(space.id, recursive);
-    }
-  }, [space?.id, space && isRecursiveMode(space.id)]);
-
-  // Calculate stats
-  const stats = computed(() => {
-    const spaceStatsData = !space
-      ? getSpaceStats(0, false)
-      : getSpaceStats(space.id, isRecursiveMode(space.id));
-
-    if (!space) {
-      // "All Spaces" - sum everything
-      const totalPosts = getTotalPostCount();
-      return {
-        posts: totalPosts,
-        files: spaceStatsData?.file_count || 0,
-        size: spaceStatsData?.total_size || 0,
-      };
-    }
-
-    // Individual space
-    const posts = getSpacePostCount(space);
-
-    return {
-      posts,
-      files: spaceStatsData?.file_count || 0,
-      size: spaceStatsData?.total_size || 0,
-    };
-  });
-
-  // Calculate individual stat values
-  const postCount = computed(() => {
-    if (!space) {
-      return getTotalPostCount();
-    }
-    return getSpacePostCount(space);
-  });
-
-  const fileStats = computed(() => {
-    const s = stats.value;
-    return {
-      count: s.files,
-      size: s.size,
-    };
-  });
 
   // Get creation date - either from selected space or earliest space
   const creationDate = computed(() => {
@@ -219,48 +158,6 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
 
         <HeaderContent style={{ marginBottom: space?.description?.trim() ? '8px' : '0' }}>
           <TitleSection>
-            {/* Post Count and File Stats Line */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              marginBottom: '8px',
-              fontSize: '13px',
-              color: space && isRecursiveMode(space.id) ? 'var(--recursive-text)' : 'var(--text-secondary)',
-            }}>
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                style={{ flexShrink: 0, opacity: 0.7 }}
-              >
-                <path d="M1.5 1.75V13.5h13.75a.75.75 0 0 1 0 1.5H.75a.75.75 0 0 1-.75-.75V1.75a.75.75 0 0 1 1.5 0Zm14.28 2.53-5.25 5.25a.75.75 0 0 1-1.06 0L7 7.06 4.28 9.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.25-3.25a.75.75 0 0 1 1.06 0L10 7.94l4.72-4.72a.751.751 0 0 1 1.042.018.751.751 0 0 1 .018 1.042Z"></path>
-              </svg>
-              <span>{postCount.value} post{postCount.value !== 1 ? 's' : ''}</span>
-
-              {/* File stats inline - only show if loading or has files */}
-              {clientConfig.value.space_stats && (isLoadingStats(space?.id || 0, !space ? false : isRecursiveMode(space.id)) || fileStats.value.count > 0) && (
-                <>
-                  <span style={{ fontSize: '11px', opacity: 0.7, marginLeft: 2 }}>
-                    {isLoadingStats(space?.id || 0, !space ? false : isRecursiveMode(space.id)) ? (
-                      ''
-                    ) : (
-                      `(${fileStats.value.count} file${fileStats.value.count !== 1 ? 's' : ''}`
-                    )}
-                  </span>
-                  {!isLoadingStats(space?.id || 0, !space ? false : isRecursiveMode(space.id)) && fileStats.value.count > 0 && (
-                    <>
-                      <span style={{ opacity: 0.5 }}>/</span>
-                      <span style={{ fontSize: '11px', opacity: 0.7 }}>
-                        {formatFileSize(fileStats.value.size)})
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-            </div>
-
             {/* Creation Date Line */}
             {formattedCreationDate && (
               <div

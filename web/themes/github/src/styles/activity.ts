@@ -5,7 +5,9 @@ export const ActivityContainer = styled('div')`
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
   border-radius: 6px;
-  padding: 16px;
+  padding-top: 14px;
+  padding-left: 16px;
+  padding-right: 16px;
   transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
   @media (max-width: 1024px) {
@@ -145,10 +147,11 @@ export const HeatmapSquare = styled('div')<{ intensity: number }>`
 // Legend and Summary
 export const Footer = styled('div')`
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-end;
+  justify-content: flex-end;
   font-size: 11px;
-  margin-top: 12px;
+  padding-top: 8px;
+  margin-bottom: 8px;
 `;
 
 export const Legend = styled('div')`

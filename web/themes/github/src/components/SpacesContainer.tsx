@@ -3,8 +3,6 @@ import { spacesContainerStyles } from '../styles/spaces-container';
 import { SpaceContainer } from './spaces-container/SpaceContainer';
 import { SortControls, type SortField, type SortPreference } from './spaces-container/SortControls';
 import { CreateSpaceModal } from './spaces-container/CreateSpaceModal';
-import { clientConfig } from '@core/state';
-import { activityContainerHeightRem, shouldShowActivity } from '@core/state/activity';
 import type { Space } from '@core/api';
 
 const Container = spacesContainerStyles.container;
@@ -44,16 +42,8 @@ export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
     }));
   };
 
-  // Calculate max height based on whether activity is enabled
-  const config = clientConfig.value;
-  const activityEnabled = config.activity ?? false;
-
-  // Calculate total height to subtract from viewport
-  let subtractHeight = PADDING + FOOTER_HEIGHT + GAP; // Base: padding + footer + 1 gap
-  if (activityEnabled) {
-    subtractHeight += (shouldShowActivity.value ? activityContainerHeightRem.value : 0) + GAP; // Add activity height + another gap
-  }
-
+  // Calculate max height
+  const subtractHeight = PADDING + FOOTER_HEIGHT + GAP; // padding + footer + 1 gap
   const calculatedMaxHeight = `calc(100vh - ${subtractHeight}rem)`;
   const maxHeight = `min(${calculatedMaxHeight}, 800px)`;
 
