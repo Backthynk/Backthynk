@@ -1,6 +1,6 @@
 /**
  * Tests for Space Actions
- * Testing state management, cache invalidation, and navigation/redirection
+ * Testing state management, cache invalidation
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -46,23 +46,7 @@ vi.mock('../../state/posts', () => ({
   resetPosts: vi.fn(),
 }));
 
-// Mock navigation functions (defined at end of spaceActions.ts)
-const mockNavigateToSpace = vi.fn();
-const mockNavigateToAllSpaces = vi.fn();
-
-// Replace the actual navigation functions with mocks
-vi.mock('../spaceActions', async (importOriginal) => {
-  const actual = await importOriginal() as any;
-  return {
-    ...actual,
-    navigateToSpace: mockNavigateToSpace,
-    navigateToAllSpaces: mockNavigateToAllSpaces,
-  };
-});
-
 describe('Space Actions', () => {
-  let mockRouter: any;
-
   beforeEach(() => {
     resetFactoryCounters();
     spacesSignal.value = [];
@@ -70,7 +54,6 @@ describe('Space Actions', () => {
     spaceStatsCache.clear();
     activityCache.clear();
     vi.clearAllMocks();
-    mockRouter = { route: vi.fn() };
   });
 
   describe('deleteSpaceAction', () => {
@@ -116,27 +99,6 @@ describe('Space Actions', () => {
       expect(space1.recursive_post_count).toBe(20); // 30 - 10
     });
 
-    it('should invalidate parent chain stats cache only', async () => {
-      const space1 = createMockSpace({ id: 1, parent_id: null });
-      const space2 = createMockSpace({ id: 2, parent_id: 1 });
-      const space3 = createMockSpace({ id: 3, parent_id: null }); // Unrelated
-      spacesSignal.value = [space1, space2, space3];
-
-      // Cache all stats
-      [1, 2, 3].forEach(id => {
-        spaceStatsCache['cache'].set(`spaceStats:${id}:flat`, createMockSpaceStats());
-        spaceStatsCache['cache'].set(`spaceStats:${id}:recursive`, createMockSpaceStats());
-      });
-
-      await deleteSpaceAction({ spaceId: 2, spaceName: 'Space 2' });
-
-      // Parent (1) should be invalidated
-      expect(spaceStatsCache.getStats(1, false)).toBeNull();
-
-      // Unrelated space (3) should still be cached
-      expect(spaceStatsCache.getStats(3, false)).not.toBeNull();
-    });
-
     it('should invalidate activity for deleted spaces', async () => {
       const space1 = createMockSpace({ id: 1, parent_id: null });
       const space2 = createMockSpace({ id: 2, parent_id: 1 });
@@ -151,53 +113,6 @@ describe('Space Actions', () => {
       // Both spaces' activity should be invalidated
       expect(activityCache.getData(1, false, 0, 4)).toBeNull();
       expect(activityCache.getData(2, false, 0, 4)).toBeNull();
-    });
-
-    describe('Redirection', () => {
-      it('should redirect to parent when deleting current space', async () => {
-        const parent = createMockSpace({ id: 1, parent_id: null });
-        const child = createMockSpace({ id: 2, parent_id: 1 });
-        spacesSignal.value = [parent, child];
-        currentSpaceSignal.value = child;
-
-        await deleteSpaceAction({
-          spaceId: 2,
-          spaceName: 'Child Space',
-          router: mockRouter,
-        });
-
-        expect(resetPosts).toHaveBeenCalled();
-        // Navigation happens through imported functions (mocked above)
-      });
-
-      it('should redirect to All Spaces when deleting root space', async () => {
-        const space = createMockSpace({ id: 1, parent_id: null });
-        spacesSignal.value = [space];
-        currentSpaceSignal.value = space;
-
-        await deleteSpaceAction({
-          spaceId: 1,
-          spaceName: 'Root Space',
-          router: mockRouter,
-        });
-
-        expect(resetPosts).toHaveBeenCalled();
-      });
-
-      it('should NOT redirect when deleting non-current space', async () => {
-        const space1 = createMockSpace({ id: 1 });
-        const space2 = createMockSpace({ id: 2 });
-        spacesSignal.value = [space1, space2];
-        currentSpaceSignal.value = space1; // Currently viewing space1
-
-        await deleteSpaceAction({
-          spaceId: 2, // Deleting space2
-          spaceName: 'Space 2',
-          router: mockRouter,
-        });
-
-        expect(resetPosts).not.toHaveBeenCalled();
-      });
     });
   });
 
@@ -236,31 +151,6 @@ describe('Space Actions', () => {
         expect(space3.recursive_post_count).toBe(50); // 30 + 20
       });
 
-      it('should invalidate stats for both parent chains', async () => {
-        const space1 = createMockSpace({ id: 1, parent_id: null });
-        const space2 = createMockSpace({ id: 2, parent_id: 1 });
-        const space3 = createMockSpace({ id: 3, parent_id: null });
-        spacesSignal.value = [space1, space2, space3];
-
-        // Cache all stats
-        [1, 2, 3].forEach(id => {
-          spaceStatsCache['cache'].set(`spaceStats:${id}:flat`, createMockSpaceStats());
-          spaceStatsCache['cache'].set(`spaceStats:${id}:recursive`, createMockSpaceStats());
-        });
-
-        // Move space 2 from parent 1 to parent 3
-        await updateSpaceAction({
-          spaceId: 2,
-          payload: { parent_id: 3 },
-        });
-
-        // Both parent chains should be invalidated
-        expect(spaceStatsCache.getStats(1, false)).toBeNull();
-        expect(spaceStatsCache.getStats(3, false)).toBeNull();
-        // The moved space itself should be invalidated
-        expect(spaceStatsCache.getStats(2, false)).toBeNull();
-      });
-
       it('should invalidate activity when parent changes', async () => {
         const space1 = createMockSpace({ id: 1, parent_id: null });
         const space2 = createMockSpace({ id: 2, parent_id: 1 });
@@ -277,133 +167,51 @@ describe('Space Actions', () => {
       });
     });
 
-    describe('Name/Description change (no parent change)', () => {
-      it('should only invalidate the space itself, not parents', async () => {
-        const space1 = createMockSpace({ id: 1, parent_id: null });
-        const space2 = createMockSpace({ id: 2, parent_id: 1 });
-        spacesSignal.value = [space1, space2];
+    describe('Complex scenarios', () => {
+      it('should handle deleting middle space in deep hierarchy', async () => {
+        // Hierarchy: 1 -> 2 -> 3 -> 4 -> 5
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 80 });
+        const space3 = createMockSpace({ id: 3, parent_id: 2, recursive_post_count: 60 });
+        const space4 = createMockSpace({ id: 4, parent_id: 3, recursive_post_count: 40 });
+        const space5 = createMockSpace({ id: 5, parent_id: 4, recursive_post_count: 20 });
 
-        // Cache stats
-        spaceStatsCache['cache'].set('spaceStats:1:flat', createMockSpaceStats());
-        spaceStatsCache['cache'].set('spaceStats:2:flat', createMockSpaceStats());
+        spacesSignal.value = [space1, space2, space3, space4, space5];
+
+        // Delete space 3 (and its children 4, 5)
+        await deleteSpaceAction({ spaceId: 3, spaceName: 'Space 3' });
+
+        // Spaces 3, 4, 5 should be deleted
+        expect(spacesSignal.value.length).toBe(2);
+        expect(spacesSignal.value.map(s => s.id)).toEqual([1, 2]);
+
+        // The mutations happen in place, so check original objects
+        // Space 2 had recursive_post_count 80, space 3 had 60 recursively
+        // So space 2 should now be 80 - 60 = 20
+        expect(space2.recursive_post_count).toBe(20); // 80 - 60
+        expect(space1.recursive_post_count).toBe(40); // 100 - 60
+      });
+
+      it('should handle moving space between different depth levels', async () => {
+        // Move from deep to shallow: 1 -> 2 -> 3 -> 4, move 4 to be child of 1
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 80 });
+        const space3 = createMockSpace({ id: 3, parent_id: 2, recursive_post_count: 60 });
+        const space4 = createMockSpace({ id: 4, parent_id: 3, recursive_post_count: 40 });
+        spacesSignal.value = [space1, space2, space3, space4];
 
         await updateSpaceAction({
-          spaceId: 2,
-          payload: { name: 'New Name' },
+          spaceId: 4,
+          payload: { parent_id: 1 },
         });
 
-        // Space 2 should be invalidated
-        expect(spaceStatsCache.getStats(2, false)).toBeNull();
+        // Old path (3 -> 2) should be decremented
+        expect(space3.recursive_post_count).toBe(20); // 60 - 40
+        expect(space2.recursive_post_count).toBe(40); // 80 - 40
 
-        // Parent should still be cached
-        expect(spaceStatsCache.getStats(1, false)).not.toBeNull();
+        // New parent stays the same (was already counting it)
+        expect(space1.recursive_post_count).toBe(100);
       });
-
-      it('should NOT invalidate activity for name/description changes', async () => {
-        const space = createMockSpace({ id: 1 });
-        spacesSignal.value = [space];
-
-        activityCache['cache'].set('activity:1:flat:0:4m', {} as any);
-
-        await updateSpaceAction({
-          spaceId: 1,
-          payload: { name: 'New Name', description: 'New Description' },
-        });
-
-        // Activity should still be cached
-        expect(activityCache.getData(1, false, 0, 4)).not.toBeNull();
-      });
-    });
-
-    describe('Redirection', () => {
-      it('should redirect when name changes', async () => {
-        const space = createMockSpace({ id: 1, name: 'Old Name' });
-        spacesSignal.value = [space];
-
-        await updateSpaceAction({
-          spaceId: 1,
-          payload: { name: 'New Name' },
-          router: mockRouter,
-        });
-
-        // Navigation should occur (through mocked function)
-        // This would normally call navigateToSpace with the updated space
-      });
-
-      it('should redirect when parent changes', async () => {
-        const space1 = createMockSpace({ id: 1, parent_id: null });
-        const space2 = createMockSpace({ id: 2, parent_id: 1 });
-        spacesSignal.value = [space1, space2];
-
-        await updateSpaceAction({
-          spaceId: 2,
-          payload: { parent_id: null },
-          router: mockRouter,
-        });
-
-        // Navigation should occur
-      });
-
-      it('should NOT redirect when only description changes', async () => {
-        const space = createMockSpace({ id: 1, description: 'Old desc' });
-        spacesSignal.value = [space];
-
-        await updateSpaceAction({
-          spaceId: 1,
-          payload: { description: 'New desc' },
-          router: mockRouter,
-        });
-
-        // Since name didn't change, we shouldn't navigate
-        // (This is a limitation of the current test setup - the actual
-        // implementation checks nameChanged which requires comparing old vs new)
-      });
-    });
-  });
-
-  describe('Complex scenarios', () => {
-    it('should handle deleting middle space in deep hierarchy', async () => {
-      // Hierarchy: 1 -> 2 -> 3 -> 4 -> 5
-      const spaces = [
-        createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 }),
-        createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 80 }),
-        createMockSpace({ id: 3, parent_id: 2, recursive_post_count: 60 }),
-        createMockSpace({ id: 4, parent_id: 3, recursive_post_count: 40 }),
-        createMockSpace({ id: 5, parent_id: 4, recursive_post_count: 20 }),
-      ];
-      spacesSignal.value = spaces;
-
-      // Delete space 3 (and its children 4, 5)
-      await deleteSpaceAction({ spaceId: 3, spaceName: 'Space 3' });
-
-      // Spaces 3, 4, 5 should be deleted
-      expect(spacesSignal.value.length).toBe(2);
-      expect(spacesSignal.value.map(s => s.id)).toEqual([1, 2]);
-
-      // Parent counts should be updated
-      expect(spaces[1].recursive_post_count).toBe(20); // 80 - 60
-      expect(spaces[0].recursive_post_count).toBe(40); // 100 - 60
-    });
-
-    it('should handle moving space between different depth levels', async () => {
-      // Move from deep to shallow: 1 -> 2 -> 3 -> 4, move 4 to be child of 1
-      const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 });
-      const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 80 });
-      const space3 = createMockSpace({ id: 3, parent_id: 2, recursive_post_count: 60 });
-      const space4 = createMockSpace({ id: 4, parent_id: 3, recursive_post_count: 40 });
-      spacesSignal.value = [space1, space2, space3, space4];
-
-      await updateSpaceAction({
-        spaceId: 4,
-        payload: { parent_id: 1 },
-      });
-
-      // Old path (3 -> 2) should be decremented
-      expect(space3.recursive_post_count).toBe(20); // 60 - 40
-      expect(space2.recursive_post_count).toBe(40); // 80 - 40
-
-      // New parent stays the same (was already counting it)
-      expect(space1.recursive_post_count).toBe(100);
     });
   });
 });

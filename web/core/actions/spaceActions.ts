@@ -119,14 +119,11 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
       await apiDeleteSpace(spaceId);
     },
     onSuccess: async () => {
-      // Calculate total posts being deleted (this space + all descendants)
+      // The deleted space's recursive_post_count already includes all descendants
+      // So we only need to use the top-level deleted space's count
       let totalRecursivePostsDeleted = 0;
-
-      for (const id of allDeletedSpaceIds) {
-        const deletedSpace = getSpaceById(id);
-        if (deletedSpace) {
-          totalRecursivePostsDeleted += deletedSpace.recursive_post_count;
-        }
+      if (space) {
+        totalRecursivePostsDeleted = space.recursive_post_count;
       }
 
       // Update parent spaces' recursive counts

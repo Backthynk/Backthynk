@@ -89,9 +89,11 @@ describe('Post Actions', () => {
         const space = createMockSpace({ id: 1, post_count: 10, recursive_post_count: 10 });
         spacesSignal.value = [space];
 
-        // Cache some stats
+        // Cache some stats in both cache and state
         const stats = createMockSpaceStats({ total_files: 5 });
+        const { setSpaceStats } = await import('../../state/spaceStats');
         spaceStatsCache['cache'].set('spaceStats:1:flat', stats);
+        setSpaceStats(1, false, stats);
 
         const post = createMockPost({ id: 1, space_id: 1 });
         posts.value = [post];
@@ -112,10 +114,20 @@ describe('Post Actions', () => {
         const todayTimestamp = Math.floor(today.getTime() / 1000);
 
         const activityData = createMockActivityData(120);
-        const todayIndex = activityData.days.findIndex(d => d.date === todayStr);
-        if (todayIndex !== -1) {
+
+        // Ensure today exists in the activity data
+        let todayIndex = activityData.days.findIndex(d => d.date === todayStr);
+        if (todayIndex === -1) {
+          // Add today if not present
+          activityData.days.push({ date: todayStr, count: 5 });
+          todayIndex = activityData.days.length - 1;
+        } else {
           activityData.days[todayIndex].count = 5;
         }
+
+        // Recalculate stats
+        activityData.stats.total_posts = activityData.days.reduce((sum, d) => sum + d.count, 0);
+
         activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityData)));
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
@@ -178,10 +190,17 @@ describe('Post Actions', () => {
         const todayTimestamp = Math.floor(today.getTime() / 1000);
 
         const activityData = createMockActivityData(120);
-        const todayIndex = activityData.days.findIndex(d => d.date === todayStr);
-        if (todayIndex !== -1) {
+
+        // Ensure today exists
+        let todayIndex = activityData.days.findIndex(d => d.date === todayStr);
+        if (todayIndex === -1) {
+          activityData.days.push({ date: todayStr, count: 5 });
+        } else {
           activityData.days[todayIndex].count = 5;
         }
+
+        activityData.stats.total_posts = activityData.days.reduce((sum, d) => sum + d.count, 0);
+
         activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityData)));
 
         const post = createMockPostWithFiles(1, { id: 1, space_id: 1, created: todayTimestamp });
@@ -254,9 +273,14 @@ describe('Post Actions', () => {
         const space2 = createMockSpace({ id: 2, post_count: 5 });
         spacesSignal.value = [space1, space2];
 
-        // Cache stats
-        spaceStatsCache['cache'].set('spaceStats:1:flat', createMockSpaceStats());
-        spaceStatsCache['cache'].set('spaceStats:2:flat', createMockSpaceStats());
+        // Cache stats in both cache and state
+        const { setSpaceStats } = await import('../../state/spaceStats');
+        const stats1 = createMockSpaceStats();
+        const stats2 = createMockSpaceStats();
+        spaceStatsCache['cache'].set('spaceStats:1:flat', stats1);
+        setSpaceStats(1, false, stats1);
+        spaceStatsCache['cache'].set('spaceStats:2:flat', stats2);
+        setSpaceStats(2, false, stats2);
 
         const post = createMockPost({ id: 1, space_id: 1 });
         posts.value = [post];
@@ -280,10 +304,21 @@ describe('Post Actions', () => {
         // Setup activity for both spaces
         const activity1 = createMockActivityData(120);
         const activity2 = createMockActivityData(120);
-        const todayIndex1 = activity1.days.findIndex(d => d.date === todayStr);
-        const todayIndex2 = activity2.days.findIndex(d => d.date === todayStr);
-        if (todayIndex1 !== -1) activity1.days[todayIndex1].count = 5;
-        if (todayIndex2 !== -1) activity2.days[todayIndex2].count = 3;
+
+        // Ensure today exists in both
+        let todayIndex1 = activity1.days.findIndex(d => d.date === todayStr);
+        if (todayIndex1 === -1) {
+          activity1.days.push({ date: todayStr, count: 5 });
+        } else {
+          activity1.days[todayIndex1].count = 5;
+        }
+
+        let todayIndex2 = activity2.days.findIndex(d => d.date === todayStr);
+        if (todayIndex2 === -1) {
+          activity2.days.push({ date: todayStr, count: 3 });
+        } else {
+          activity2.days[todayIndex2].count = 3;
+        }
 
         activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activity1)));
         activityCache['cache'].set('activity:2:flat:0:4m', JSON.parse(JSON.stringify(activity2)));

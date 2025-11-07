@@ -27,12 +27,15 @@ describe('Space Stats Cache', () => {
   describe('Basic Cache Operations', () => {
     it('should store and retrieve stats', async () => {
       const stats = createMockSpaceStats({ total_files: 10 });
-      const cacheKey = 'spaceStats:1:flat';
 
-      // Manually set in cache
-      spaceStatsCache['cache'].set(cacheKey, stats);
+      // Import state setter
+      const { setSpaceStats } = await import('../../state/spaceStats');
 
-      // Should retrieve from cache
+      // Manually set in both cache and state
+      spaceStatsCache['cache'].set('spaceStats:1:flat', stats);
+      setSpaceStats(1, false, stats);
+
+      // Should retrieve from state
       const retrieved = spaceStatsCache.getStats(1, false);
       expect(retrieved).toEqual(stats);
     });
@@ -46,8 +49,13 @@ describe('Space Stats Cache', () => {
       const flatStats = createMockSpaceStats({ total_files: 5 });
       const recursiveStats = createMockSpaceStats({ total_files: 15 });
 
+      const { setSpaceStats } = await import('../../state/spaceStats');
+
+      // Set in both cache and state
       spaceStatsCache['cache'].set('spaceStats:1:flat', flatStats);
+      setSpaceStats(1, false, flatStats);
       spaceStatsCache['cache'].set('spaceStats:1:recursive', recursiveStats);
+      setSpaceStats(1, true, recursiveStats);
 
       expect(spaceStatsCache.getStats(1, false)).toEqual(flatStats);
       expect(spaceStatsCache.getStats(1, true)).toEqual(recursiveStats);
@@ -55,12 +63,23 @@ describe('Space Stats Cache', () => {
   });
 
   describe('Invalidation', () => {
-    beforeEach(() => {
-      // Setup some cached data
-      spaceStatsCache['cache'].set('spaceStats:1:flat', createMockSpaceStats({ total_files: 5 }));
-      spaceStatsCache['cache'].set('spaceStats:1:recursive', createMockSpaceStats({ total_files: 10 }));
-      spaceStatsCache['cache'].set('spaceStats:2:flat', createMockSpaceStats({ total_files: 3 }));
-      spaceStatsCache['cache'].set('spaceStats:2:recursive', createMockSpaceStats({ total_files: 7 }));
+    beforeEach(async () => {
+      const { setSpaceStats } = await import('../../state/spaceStats');
+
+      // Setup some cached data in both cache and state
+      const stats1flat = createMockSpaceStats({ total_files: 5 });
+      const stats1rec = createMockSpaceStats({ total_files: 10 });
+      const stats2flat = createMockSpaceStats({ total_files: 3 });
+      const stats2rec = createMockSpaceStats({ total_files: 7 });
+
+      spaceStatsCache['cache'].set('spaceStats:1:flat', stats1flat);
+      setSpaceStats(1, false, stats1flat);
+      spaceStatsCache['cache'].set('spaceStats:1:recursive', stats1rec);
+      setSpaceStats(1, true, stats1rec);
+      spaceStatsCache['cache'].set('spaceStats:2:flat', stats2flat);
+      setSpaceStats(2, false, stats2flat);
+      spaceStatsCache['cache'].set('spaceStats:2:recursive', stats2rec);
+      setSpaceStats(2, true, stats2rec);
     });
 
     it('should invalidate both flat and recursive views', () => {
@@ -89,7 +108,9 @@ describe('Space Stats Cache', () => {
   });
 
   describe('invalidateSpaceStatsForParentChain', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+      const { setSpaceStats } = await import('../../state/spaceStats');
+
       // Create a space hierarchy: 1 -> 2 -> 3 -> 4
       const space1 = createMockSpace({ id: 1, parent_id: null });
       const space2 = createMockSpace({ id: 2, parent_id: 1 });
@@ -98,10 +119,14 @@ describe('Space Stats Cache', () => {
 
       spacesSignal.value = [space1, space2, space3, space4];
 
-      // Cache stats for all spaces
+      // Cache stats for all spaces in both cache and state
       [1, 2, 3, 4].forEach(id => {
-        spaceStatsCache['cache'].set(`spaceStats:${id}:flat`, createMockSpaceStats());
-        spaceStatsCache['cache'].set(`spaceStats:${id}:recursive`, createMockSpaceStats());
+        const flatStats = createMockSpaceStats();
+        const recStats = createMockSpaceStats();
+        spaceStatsCache['cache'].set(`spaceStats:${id}:flat`, flatStats);
+        setSpaceStats(id, false, flatStats);
+        spaceStatsCache['cache'].set(`spaceStats:${id}:recursive`, recStats);
+        setSpaceStats(id, true, recStats);
       });
     });
 
