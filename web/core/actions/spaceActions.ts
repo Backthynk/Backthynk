@@ -22,21 +22,26 @@ import {
   currentSpace as currentSpaceSignal,
 } from '../state/spaces';
 import { invalidateSpaceStats, prefetchSpaceStats } from '../cache/spaceStatsCache';
-import { invalidateActivityForSpace, invalidateCurrentActivityPeriod } from '../cache/activityCache';
+import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
+import { invalidateActivityForSpace } from '../cache/activityCache';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
-import { posts, resetPosts } from '../state/posts';
+import { resetPosts } from '../state/posts';
 import { generateSlug } from '../utils';
 
 export interface DeleteSpaceOptions {
   spaceId: number;
   spaceName: string;
+  /** Router instance for navigation after deletion */
+  router?: any;
   onSuccess?: () => void;
 }
 
 export interface UpdateSpaceOptions {
   spaceId: number;
   payload: UpdateSpacePayload;
+  /** Router instance for navigation after update (name/parent change) */
+  router?: any;
   onSuccess?: (updatedSpace: Space) => void;
 }
 
@@ -92,15 +97,16 @@ export async function addSpaceAction(options: AddSpaceOptions): Promise<void> {
 }
 
 /**
- * Delete a space with confirmation, cache invalidation, and cascading updates
+ * Delete a space with confirmation, cache invalidation, cascading updates, and redirection
  */
 export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<void> {
-  const { spaceId, spaceName, onSuccess } = options;
+  const { spaceId, spaceName, router, onSuccess } = options;
 
   // Get space data before deletion for proper cleanup
   const space = getSpaceById(spaceId);
   const descendantIds = space ? getDescendantSpaceIds(spaceId) : [];
   const allDeletedSpaceIds = [spaceId, ...descendantIds];
+  const parentId = space?.parent_id;
 
   await executeAction({
     confirmation: {
@@ -113,17 +119,12 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
       await apiDeleteSpace(spaceId);
     },
     onSuccess: async () => {
-      // Get parent before deletion for recursive count updates
-      const parentId = space?.parent_id;
-
       // Calculate total posts being deleted (this space + all descendants)
-      let totalPostsDeleted = 0;
       let totalRecursivePostsDeleted = 0;
 
       for (const id of allDeletedSpaceIds) {
         const deletedSpace = getSpaceById(id);
         if (deletedSpace) {
-          totalPostsDeleted += deletedSpace.post_count;
           totalRecursivePostsDeleted += deletedSpace.recursive_post_count;
         }
       }
@@ -149,16 +150,35 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
         (s) => !allDeletedSpaceIds.includes(s.id)
       );
 
-      // If currently viewing any of the deleted spaces, clear the timeline
-      const currentlyViewedSpaceId = posts.value[0]?.space_id;
-      if (currentlyViewedSpaceId && allDeletedSpaceIds.includes(currentlyViewedSpaceId)) {
-        resetPosts();
+      // Smart cache invalidation: only invalidate parent chain stats
+      if (parentId !== null && parentId !== undefined) {
+        invalidateSpaceStatsForParentChain(parentId, getSpaceById);
       }
 
       // Invalidate activity cache for all deleted spaces
       allDeletedSpaceIds.forEach(id => invalidateActivityForSpace(id));
-      // Also invalidate current period since post counts changed
-      invalidateCurrentActivityPeriod();
+
+      // Handle redirection if currently viewing any of the deleted spaces
+      const currentlyViewingDeletedSpace =
+        currentSpaceSignal.value && allDeletedSpaceIds.includes(currentSpaceSignal.value.id);
+
+      if (currentlyViewingDeletedSpace) {
+        resetPosts();
+
+        if (router) {
+          // Redirect to parent space if exists, otherwise to "All Spaces"
+          if (parentId !== null && parentId !== undefined) {
+            const parentSpace = getSpaceById(parentId);
+            if (parentSpace) {
+              navigateToSpace(parentSpace, router);
+            } else {
+              navigateToAllSpaces(router);
+            }
+          } else {
+            navigateToAllSpaces(router);
+          }
+        }
+      }
 
       showSuccess(`Space "${spaceName}" deleted successfully!`);
 
@@ -176,15 +196,20 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
 }
 
 /**
- * Update a space with automatic state updates and cache invalidation
+ * Update a space with automatic state updates, smart cache invalidation, and redirection
  */
 export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<void> {
-  const { spaceId, payload, onSuccess } = options;
+  const { spaceId, payload, router, onSuccess } = options;
 
   // Get old space data for comparison
   const oldSpace = getSpaceById(spaceId);
   const oldParentId = oldSpace?.parent_id;
+  const oldName = oldSpace?.name;
   const newParentId = payload.parent_id;
+  const nameChanged = payload.name !== undefined && payload.name !== oldName;
+
+  // Check if parent changed (outside of executeAction to use in cacheInvalidation)
+  const parentChanged = oldParentId !== newParentId && newParentId !== undefined;
 
   await executeAction<Space | null>({
     execute: async () => {
@@ -192,9 +217,6 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
     },
     onSuccess: async (updatedSpace) => {
       if (!updatedSpace) return;
-
-      // Handle parent change (space moved in hierarchy)
-      const parentChanged = oldParentId !== newParentId;
 
       if (parentChanged && oldSpace) {
         // Moving space in hierarchy - update recursive counts
@@ -228,6 +250,14 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
             }
           }
         }
+
+        // Smart cache invalidation: only invalidate recursive views for affected parent chains
+        if (oldParentId !== null && oldParentId !== undefined) {
+          invalidateSpaceStatsForParentChain(oldParentId, getSpaceById);
+        }
+        if (newParentId !== null && newParentId !== undefined) {
+          invalidateSpaceStatsForParentChain(newParentId, getSpaceById);
+        }
       }
 
       // Update the space in state
@@ -235,14 +265,21 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
         s.id === spaceId ? updatedSpace : s
       );
 
-      // Invalidate and refetch stats for the updated space
+      // Invalidate and refetch stats for the updated space itself
       invalidateSpaceStats(spaceId);
       prefetchSpaceStats(spaceId);
 
-      // Invalidate activity cache for this space if it changed
-      invalidateActivityForSpace(spaceId);
+      // Invalidate activity cache for this space if parent changed (affects recursive views)
+      if (parentChanged) {
+        invalidateActivityForSpace(spaceId);
+      }
 
       showSuccess('Space updated successfully!');
+
+      // Redirect to updated space if name/description/parent changed and router provided
+      if (router && (nameChanged || parentChanged)) {
+        navigateToSpace(updatedSpace, router);
+      }
 
       if (onSuccess) {
         onSuccess(updatedSpace);
@@ -253,7 +290,7 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
       showError('Failed to update space. Please try again.');
     },
     // Invalidate cache if parent changed (affects recursive views)
-    cacheInvalidation: oldParentId !== newParentId
+    cacheInvalidation: parentChanged
       ? { type: 'all' }
       : { type: 'none' },
   });

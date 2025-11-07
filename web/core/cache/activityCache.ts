@@ -291,3 +291,62 @@ export function invalidateAllActivity(): void {
 export function invalidateCurrentActivityPeriod(): void {
   activityCache.invalidateCurrentPeriod();
 }
+
+/**
+ * Update activity count for a specific day directly in cache
+ * Used when deleting/moving posts to avoid full cache invalidation
+ *
+ * @param postCreatedTimestamp - Unix timestamp of the post creation
+ * @param countDelta - Change in count (usually -1 for deletion, can be -1/+1 for moves)
+ * @param spaceId - Space ID to update activity for
+ * @param recursive - Whether to update recursive view
+ */
+export function updateActivityDayCount(
+  postCreatedTimestamp: number,
+  countDelta: number,
+  spaceId: number,
+  recursive: boolean
+): void {
+  // Convert timestamp to date string (YYYY-MM-DD format)
+  const postDate = new Date(postCreatedTimestamp * 1000);
+  const dateString = postDate.toISOString().split('T')[0];
+
+  // Only update period 0 (current period) cache entries
+  const period = 0;
+
+  // Try to find and update the cached data for this space/recursive/period combination
+  // We need to check multiple period_months values (typically 4, 6, 12)
+  const periodMonthsValues = [4, 6, 12];
+
+  for (const periodMonths of periodMonthsValues) {
+    const cacheKey = `activity:${spaceId}:${recursive ? 'recursive' : 'flat'}:${period}:${periodMonths}m`;
+    const cachedData = activityCache.getData(spaceId, recursive, period, periodMonths);
+
+    if (cachedData) {
+      // Find the day in the activity data
+      const dayIndex = cachedData.days.findIndex(day => day.date === dateString);
+
+      if (dayIndex !== -1) {
+        // Update the day's count
+        const newCount = Math.max(0, cachedData.days[dayIndex].count + countDelta);
+        cachedData.days[dayIndex].count = newCount;
+
+        // Update total_posts in stats
+        cachedData.stats.total_posts = Math.max(0, cachedData.stats.total_posts + countDelta);
+
+        // Update max_day_activity if needed
+        cachedData.stats.max_day_activity = Math.max(...cachedData.days.map(d => d.count));
+
+        // Update active_days if count went to/from 0
+        if (newCount === 0 && countDelta < 0) {
+          cachedData.stats.active_days = Math.max(0, cachedData.stats.active_days - 1);
+        } else if (cachedData.days[dayIndex].count - countDelta === 0 && countDelta > 0) {
+          cachedData.stats.active_days += 1;
+        }
+
+        // Re-store the updated data in cache
+        activityCache['cache'].set(cacheKey, cachedData);
+      }
+    }
+  }
+}

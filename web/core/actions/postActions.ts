@@ -7,11 +7,12 @@
 import { deletePost as apiDeletePost, movePost as apiMovePost, type Post } from '../api/posts';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
-import { posts, isLoadingPosts, currentOffset } from '../state/posts';
+import { posts, isLoadingPosts, currentOffset, postHasRichContent } from '../state/posts';
 import { spaces, getSpaceById } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
-import { invalidateCurrentActivityPeriod } from '../cache/activityCache';
+import { updateActivityDayCount } from '../cache/activityCache';
+import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
 
 export interface DeletePostOptions {
   postId: number;
@@ -33,6 +34,11 @@ export interface MovePostOptions {
  */
 export async function deletePostAction(options: DeletePostOptions): Promise<void> {
   const { postId, spaceId, recursive = false } = options;
+
+  // Get post data before deletion to check if it has rich content
+  const post = posts.value.find((p) => p.id === postId);
+  const hasRichContent = post ? postHasRichContent(post) : false;
+  const postCreatedTimestamp = post?.created || 0;
 
   await executeAction({
     confirmation: {
@@ -69,6 +75,13 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
 
           // Trigger spaces signal update
           spaces.value = [...spaces.value];
+
+          // Smart cache invalidation: only invalidate space stats if post has rich content
+          if (hasRichContent) {
+            // Post has attachments/links - invalidate space stats for parent chain
+            invalidateSpaceStatsForParentChain(spaceId, getSpaceById);
+          }
+          // Otherwise, the in-memory state updates above are sufficient
         }
       }
 
@@ -115,8 +128,25 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
         }
       }
 
-      // Invalidate activity cache for current period (since post count changed)
-      invalidateCurrentActivityPeriod();
+      // Smart activity cache update: update the day count directly instead of invalidating
+      if (postCreatedTimestamp && spaceId !== null && spaceId !== undefined) {
+        // Update activity for the space (flat view)
+        updateActivityDayCount(postCreatedTimestamp, -1, spaceId, false);
+
+        // Also update for all parent spaces if in recursive mode
+        if (recursive) {
+          let currentSpace = getSpaceById(spaceId);
+          while (currentSpace && currentSpace.parent_id !== null) {
+            const parentSpace = getSpaceById(currentSpace.parent_id);
+            if (parentSpace) {
+              updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, true);
+              currentSpace = parentSpace;
+            } else {
+              break;
+            }
+          }
+        }
+      }
 
       showSuccess('Post deleted successfully');
     },
@@ -134,6 +164,11 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
  */
 export async function movePostAction(options: MovePostOptions): Promise<void> {
   const { postId, newSpaceId, currentSpaceId, recursive = false } = options;
+
+  // Get post data before moving to check if it has rich content
+  const post = posts.value.find((p) => p.id === postId);
+  const hasRichContent = post ? postHasRichContent(post) : false;
+  const postCreatedTimestamp = post?.created || 0;
 
   await executeAction<Post | null>({
     execute: async () => {
@@ -183,6 +218,16 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
 
         // Trigger spaces signal update
         spaces.value = [...spaces.value];
+
+        // Smart cache invalidation: only invalidate space stats if post has rich content
+        if (hasRichContent) {
+          // Post has attachments/links - invalidate both old and new parent chains
+          if (oldSpaceId !== undefined) {
+            invalidateSpaceStatsForParentChain(oldSpaceId, getSpaceById);
+          }
+          invalidateSpaceStatsForParentChain(newSpaceId, getSpaceById);
+        }
+        // Otherwise, the in-memory state updates above are sufficient
       }
 
       // Check if post should be removed from current view
@@ -244,8 +289,34 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
         );
       }
 
-      // Invalidate activity cache for current period (space counts may have changed)
-      invalidateCurrentActivityPeriod();
+      // Smart activity cache update: moving = remove from old space + add to new space
+      if (postCreatedTimestamp && oldSpaceId !== undefined && oldSpaceId !== newSpaceId) {
+        // Decrement activity for old space and its parents
+        updateActivityDayCount(postCreatedTimestamp, -1, oldSpaceId, false);
+        let currentSpace = getSpaceById(oldSpaceId);
+        while (currentSpace && currentSpace.parent_id !== null) {
+          const parentSpace = getSpaceById(currentSpace.parent_id);
+          if (parentSpace) {
+            updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, true);
+            currentSpace = parentSpace;
+          } else {
+            break;
+          }
+        }
+
+        // Increment activity for new space and its parents
+        updateActivityDayCount(postCreatedTimestamp, 1, newSpaceId, false);
+        currentSpace = getSpaceById(newSpaceId);
+        while (currentSpace && currentSpace.parent_id !== null) {
+          const parentSpace = getSpaceById(currentSpace.parent_id);
+          if (parentSpace) {
+            updateActivityDayCount(postCreatedTimestamp, 1, parentSpace.id, true);
+            currentSpace = parentSpace;
+          } else {
+            break;
+          }
+        }
+      }
 
       showSuccess('Post moved successfully');
     },

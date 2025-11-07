@@ -22,3 +22,15 @@ export const appendPosts = (newPosts: Post[]) => {
   posts.value = [...posts.value, ...postsToAppend];
   currentOffset.value += postsToAppend.length;
 };
+
+/**
+ * Check if a post has rich content (files, attachments, or link previews)
+ * Posts with rich content require full cache invalidation for space stats
+ */
+export function postHasRichContent(post: Post): boolean {
+  return !!(
+    (post.files && post.files.length > 0) ||
+    (post.attachments && post.attachments.length > 0) ||
+    (post.link_previews && post.link_previews.length > 0)
+  );
+}

@@ -13,6 +13,14 @@ import { fetchSpaceStats as apiFetchSpaceStats, type SpaceStats } from '../api/s
 import { cache as cacheConfig } from '../config';
 import { clientConfig } from '../state/settings';
 import { isRecursiveMode } from '../state/spaces';
+import {
+  setSpaceStats as setSpaceStatsState,
+  setStatsLoading,
+  clearAllSpaceStats as clearAllSpaceStatsState,
+  clearSpaceStats as clearSpaceStatsState,
+  getSpaceStats as getSpaceStatsFromState,
+  isLoadingStats as isLoadingStatsFromState,
+} from '../state/spaceStats';
 
 export interface SpaceStatsCacheKey {
   spaceId: number;
@@ -50,23 +58,23 @@ class SpaceStatsCacheManager {
   }
 
   /**
-   * Get space stats from cache
+   * Get space stats from cache (reads from reactive state)
    */
   getStats(spaceId: number, recursive: boolean): SpaceStats | null {
     if (!this.enabled) {
       return null;
     }
 
-    const cacheKey = generateCacheKey({ spaceId, recursive });
-    return this.cache.get(cacheKey);
+    // Read from reactive state instead of cache directly
+    return getSpaceStatsFromState(spaceId, recursive);
   }
 
   /**
-   * Check if stats are currently loading
+   * Check if stats are currently loading (reads from reactive state)
    */
   isLoadingStats(spaceId: number, recursive: boolean): boolean {
-    const cacheKey = generateCacheKey({ spaceId, recursive });
-    return this.loadingKeys.has(cacheKey);
+    // Read from reactive state instead of Set directly
+    return isLoadingStatsFromState(spaceId, recursive);
   }
 
   /**
@@ -87,6 +95,8 @@ class SpaceStatsCacheManager {
     if (this.enabled) {
       const cached = this.cache.get(cacheKey);
       if (cached) {
+        // Sync to reactive state
+        setSpaceStatsState(spaceId, recursive, cached);
         return { stats: cached, fromCache: true };
       }
     }
@@ -97,16 +107,18 @@ class SpaceStatsCacheManager {
       return { stats: null, fromCache: false };
     }
 
-    // Mark as loading
+    // Mark as loading in both cache and state
     this.loadingKeys.add(cacheKey);
+    setStatsLoading(spaceId, recursive, true);
 
     try {
       // Cache miss - fetch from API
       const stats = await apiFetchSpaceStats(spaceId, recursive);
 
-      // Store in cache
+      // Store in cache and reactive state
       if (stats && this.enabled) {
         this.cache.set(cacheKey, stats);
+        setSpaceStatsState(spaceId, recursive, stats);
       }
 
       return { stats, fromCache: false };
@@ -114,8 +126,9 @@ class SpaceStatsCacheManager {
       console.error(`Failed to fetch space stats for space ${spaceId}:`, err);
       return { stats: null, fromCache: false };
     } finally {
-      // Remove from loading
+      // Remove from loading in both cache and state
       this.loadingKeys.delete(cacheKey);
+      setStatsLoading(spaceId, recursive, false);
     }
   }
 
@@ -146,6 +159,9 @@ class SpaceStatsCacheManager {
       // Only invalidate flat view
       this.cache.invalidate(`spaceStats:${spaceId}:flat`);
     }
+
+    // Also clear from reactive state
+    clearSpaceStatsState(spaceId, includeRecursive);
   }
 
   /**
@@ -161,6 +177,8 @@ class SpaceStatsCacheManager {
    */
   invalidateAll(): void {
     this.cache.invalidate('spaceStats:*');
+    // Also clear from reactive state
+    clearAllSpaceStatsState();
   }
 
   /**
@@ -169,6 +187,8 @@ class SpaceStatsCacheManager {
   clear(): void {
     this.cache.clear();
     this.loadingKeys.clear();
+    // Also clear reactive state
+    clearAllSpaceStatsState();
   }
 
   /**

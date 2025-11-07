@@ -5,11 +5,10 @@ export * from './settings';
 export * from './theme';
 export * from './activity';
 export * from './ui';
+export * from './spaceStats';
 
 // Re-export cache functions (for backwards compatibility)
 export {
-  getSpaceStats,
-  isLoadingStats,
   getOrFetchSpaceStats,
   invalidateSpaceStats,
   invalidateAllStats,

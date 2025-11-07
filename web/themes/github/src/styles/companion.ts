@@ -168,13 +168,11 @@ export const companionStyles = {
   statsCard: styled('div')`
     background: var(--bg-secondary);
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    padding: 12px 16px;
+    border-radius: 6px;
+    padding: 0;
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
+    overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   `,
@@ -183,34 +181,49 @@ export const companionStyles = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
+    padding: 14px 16px;
     flex: 1;
+    min-width: 0;
+    position: relative;
+
+    &:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 25%;
+      height: 50%;
+      width: 1px;
+      background: var(--border-primary);
+      transition: background-color 0.2s ease-in-out;
+    }
   `,
 
   statIcon: styled('div')`
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
-    opacity: 0.7;
     color: var(--text-secondary);
+    transition: color 0.2s ease-in-out;
   `,
 
   statLabel: styled('span')`
-    font-weight: 500;
     font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--text-secondary);
+    font-weight: 400;
+    transition: color 0.2s ease-in-out;
   `,
 
   statValue: styled('span')<{ isRecursive?: boolean }>`
     font-weight: 600;
-    font-size: 16px;
+    font-size: 20px;
     color: ${({ isRecursive }) => isRecursive ? 'var(--recursive-text)' : 'var(--text-primary)'};
     display: flex;
     align-items: baseline;
+    white-space: nowrap;
+    transition: color 0.2s ease-in-out;
   `,
 };

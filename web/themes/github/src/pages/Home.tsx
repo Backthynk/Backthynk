@@ -1,7 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
 import { spaces, loadExpandedSpaces, loadRecursiveModes, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal } from '@core/state';
-import { fetchSpaces as fetchSpacesApi } from '@core/api';
 import { generateSlug } from '@core/utils';
 import { expandParentSpaces, toggleRecursiveMode, selectSpace } from '@core/actions/spaceActions';
 import { Layout } from '../components/Layout';
@@ -20,63 +19,61 @@ const LeftPanel = layoutStyles.leftPanel;
 const Main = layoutStyles.main;
 const Companion = layoutStyles.companion;
 
+// Helper function to find space from URL path
+const findSpaceByPath = (path: string, spacesList: Space[]): Space | null => {
+  if (path === '/') return null;
+
+  const pathSegments = path.split('/').filter(Boolean);
+
+  let foundSpace: Space | null = null;
+  let currentParentId: number | null = null;
+
+  for (const segment of pathSegments) {
+    const found = spacesList.find(s =>
+      generateSlug(s.name) === segment &&
+      s.parent_id === currentParentId
+    );
+
+    if (!found) return null;
+
+    foundSpace = found;
+    currentParentId = found.id;
+  }
+
+  return foundSpace;
+};
+
 export function Home() {
   const route = useRoute();
 
+  // Set initial space from URL on first render (before child components mount)
+  // This prevents unnecessary fetches for spaceId=0
+  if (currentSpaceSignal.value === null && spaces.value.length > 0) {
+    const spaceFromUrl = findSpaceByPath(route.path, spaces.value);
+    if (spaceFromUrl) {
+      currentSpaceSignal.value = spaceFromUrl;
+    }
+  }
+
+  useEffect(() => {
+    // Load expanded spaces from localStorage
+    loadExpandedSpaces();
+    // Load recursive modes
+    loadRecursiveModes();
+  }, []);
+
   // Sync URL with currentSpace state
   useEffect(() => {
-    // Find space from URL path
-    const findSpaceByPath = (path: string): Space | null => {
-      if (path === '/') return null;
-
-      const pathSegments = path.split('/').filter(Boolean);
-      const spacesList = spaces.value;
-
-      let foundSpace: Space | null = null;
-      let currentParentId: number | null = null;
-
-      for (const segment of pathSegments) {
-        const found = spacesList.find(s =>
-          generateSlug(s.name) === segment &&
-          s.parent_id === currentParentId
-        );
-
-        if (!found) return null;
-
-        foundSpace = found;
-        currentParentId = found.id;
-      }
-
-      return foundSpace;
-    };
-
-    const spaceFromUrl = findSpaceByPath(route.path);
+    const spaceFromUrl = findSpaceByPath(route.path, spaces.value);
 
     // Update state to match URL
     if (spaceFromUrl?.id !== currentSpaceSignal.value?.id) {
       selectSpace(spaceFromUrl);
     }
-  }, [route.path, spaces.value]);
+  }, [route.path]);
 
   // Use the signal value, not URL-derived value
   const currentSpace = currentSpaceSignal.value;
-
-  useEffect(() => {
-    // Load expanded spaces from localStorage
-    loadExpandedSpaces();
-
-    // Only fetch spaces if not already hydrated from SSR
-    if (spaces.value.length === 0) {
-      fetchSpacesApi().then((fetchedSpaces) => {
-        spaces.value = fetchedSpaces;
-        // Load recursive modes after spaces are loaded
-        loadRecursiveModes();
-      });
-    } else {
-      // Load recursive modes if spaces are already loaded
-      loadRecursiveModes();
-    }
-  }, []);
 
   // Auto-expand and scroll when currentSpace changes
   useEffect(() => {
