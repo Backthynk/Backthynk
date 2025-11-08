@@ -47,47 +47,17 @@ export function Heatmap({ activityData }: HeatmapProps) {
   }
 
   // Generate calendar days
-  let days = generateCalendarDays(
+  const days = generateCalendarDays(
     activityData.start_date,
     activityData.end_date,
     activityMap
   );
 
   // Generate month labels
-  let monthLabels = generateMonthLabels(
+  const monthLabels = generateMonthLabels(
     activityData.start_date,
     activityData.end_date
   );
-
-  // If no days generated (empty date range), create placeholder grid to maintain height
-  if (days.length === 0 && activityData.start_date && activityData.end_date) {
-    // Calculate actual number of days between start and end date
-    try {
-      const start = new Date(activityData.start_date + 'T00:00:00Z');
-      const end = new Date(activityData.end_date + 'T00:00:00Z');
-
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        const current = new Date(start);
-        const tempDays = [];
-
-        while (current <= end) {
-          const dateKey = current.toISOString().split('T')[0];
-          tempDays.push({
-            date: dateKey,
-            count: 0,
-            intensity: 0,
-            month: current.getUTCMonth(),
-            day: current.getUTCDate(),
-          });
-          current.setUTCDate(current.getUTCDate() + 1);
-        }
-
-        days = tempDays;
-      }
-    } catch (error) {
-      console.error('Error generating placeholder days:', error);
-    }
-  }
 
   // Calculate rows
   const rows = Math.ceil(days.length / SQUARES_PER_ROW);

@@ -102,7 +102,8 @@ class SpaceStatsCacheManager {
     }
 
     // Check if already loading
-    if (this.loadingKeys.has(cacheKey)) {
+    const alreadyLoading = this.loadingKeys.has(cacheKey);
+    if (alreadyLoading) {
       // Return null while loading, caller can check isLoadingStats
       return { stats: null, fromCache: false };
     }
@@ -127,8 +128,11 @@ class SpaceStatsCacheManager {
       return { stats: null, fromCache: false };
     } finally {
       // Remove from loading in both cache and state
-      this.loadingKeys.delete(cacheKey);
-      setStatsLoading(spaceId, recursive, false);
+      // Only clean up if WE set the loading state (not if it was already loading when we started)
+      if (!alreadyLoading) {
+        this.loadingKeys.delete(cacheKey);
+        setStatsLoading(spaceId, recursive, false);
+      }
     }
   }
 
@@ -139,13 +143,59 @@ class SpaceStatsCacheManager {
     spaceId: number,
     recursive: boolean
   ): Promise<SpaceStats | null> {
+    // Don't fetch if stats are disabled
+    if (!clientConfig.value.space_stats) {
+      return null;
+    }
+
+    const cacheKey = generateCacheKey({ spaceId, recursive });
+
+    // Check reactive state first
     const cached = this.getStats(spaceId, recursive);
     if (cached) {
       return cached;
     }
 
-    const result = await this.fetchStats(spaceId, recursive);
-    return result.stats;
+    // Check if already loading from another call
+    if (this.loadingKeys.has(cacheKey)) {
+      // Another call is already fetching, just return null
+      // The caller can check isLoadingStats to show loading UI
+      return null;
+    }
+
+    // Set loading state SYNCHRONOUSLY before the async fetch
+    // This prevents UI from showing incomplete data during transitions
+    this.loadingKeys.add(cacheKey);
+    setStatsLoading(spaceId, recursive, true);
+
+    try {
+      // Try to get from cache
+      if (this.enabled) {
+        const cachedData = this.cache.get(cacheKey);
+        if (cachedData) {
+          setSpaceStatsState(spaceId, recursive, cachedData);
+          return cachedData;
+        }
+      }
+
+      // Cache miss - fetch from API
+      const stats = await apiFetchSpaceStats(spaceId, recursive);
+
+      // Store in cache and reactive state
+      if (stats && this.enabled) {
+        this.cache.set(cacheKey, stats);
+        setSpaceStatsState(spaceId, recursive, stats);
+      }
+
+      return stats;
+    } catch (err) {
+      console.error(`Failed to fetch space stats for space ${spaceId}:`, err);
+      return null;
+    } finally {
+      // Clean up loading state
+      this.loadingKeys.delete(cacheKey);
+      setStatsLoading(spaceId, recursive, false);
+    }
   }
 
   /**
@@ -256,6 +306,7 @@ export function invalidateAllStats(): void {
 export function prefetchSpaceStats(spaceId: number): void {
   // Determine recursive mode automatically
   const recursive = isRecursiveMode(spaceId);
-  // Fire and forget
-  spaceStatsCache.fetchStats(spaceId, recursive);
+  // Use getOrFetchStats to trigger synchronous loading state before async fetch
+  // Fire and forget (don't await)
+  spaceStatsCache.getOrFetchStats(spaceId, recursive);
 }

@@ -63,15 +63,6 @@ const spin = keyframes`
   }
 `;
 
-const fadeIn = keyframes`
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-`;
-
 export const companionStyles = {
   container: styled('div')`
     position: sticky;
@@ -244,7 +235,6 @@ export const companionStyles = {
     display: flex;
     align-items: baseline;
     white-space: nowrap;
-    transition: color 0.2s ease-in-out;
   `,
 
   loadingOverlay: styled('div')<{ minHeight: number }>`
@@ -255,7 +245,6 @@ export const companionStyles = {
     justify-content: center;
     background: var(--bg-secondary);
     z-index: 10;
-    animation: ${fadeIn} 0.2s ease-in-out;
     min-height: ${({ minHeight }) => minHeight}px;
   `,
 

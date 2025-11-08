@@ -380,8 +380,20 @@ export function disableAllRecursiveModes(): void {
 /**
  * Select a space (sets it as the current space)
  * Pass null to unselect (show all spaces)
+ *
+ * Pre-fetches stats for the space to avoid showing incomplete data during transitions
  */
 export function selectSpace(space: Space | null): void {
+  // Pre-fetch stats BEFORE changing the current space
+  // This sets loading state immediately, preventing the "blink" of incomplete data
+  if (space) {
+    prefetchSpaceStats(space.id);
+  } else {
+    // For "All Spaces" view, prefetch global stats (spaceId = 0)
+    prefetchSpaceStats(0);
+  }
+
+  // Now update the current space
   currentSpaceSignal.value = space;
   if (space) {
     localStorage.setItem('lastSpace', String(space.id));

@@ -79,17 +79,6 @@ export const HeatmapLoadingOverlay = styled('div')`
   background: var(--bg-secondary);
   z-index: 10;
   min-height: 64px;
-
-  @keyframes fadeIn {
-    0% {
-      opacity: 0;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-
-  animation: fadeIn 0.2s ease-in-out;
 `;
 
 export const HeatmapSpinner = styled('div')`
