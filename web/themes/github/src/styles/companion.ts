@@ -54,6 +54,24 @@ const badgeDisappear = keyframes`
   }
 `;
 
+const spin = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+`;
+
+const fadeIn = keyframes`
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+`;
+
 export const companionStyles = {
   container: styled('div')`
     position: sticky;
@@ -175,12 +193,14 @@ export const companionStyles = {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    position: relative;
   `,
 
   statItem: styled('div')`
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 4px;
     padding: 14px 16px;
     flex: 1;
@@ -225,5 +245,33 @@ export const companionStyles = {
     align-items: baseline;
     white-space: nowrap;
     transition: color 0.2s ease-in-out;
+  `,
+
+  loadingOverlay: styled('div')<{ minHeight: number }>`
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    z-index: 10;
+    animation: ${fadeIn} 0.2s ease-in-out;
+    min-height: ${({ minHeight }) => minHeight}px;
+  `,
+
+  spinner: styled('div')`
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border-primary);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: ${spin} 0.8s linear infinite;
+  `,
+
+  statsContent: styled('div')<{ minHeight: number }>`
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    min-height: ${({ minHeight }) => minHeight}px;
   `,
 };
