@@ -1,4 +1,89 @@
-// Date formatting utilities adapted from _oldweb
+// Date formatting utilities
+
+/**
+ * Format a date string to locale format (e.g., "Jan 2025" or "Jan 1, 2025")
+ */
+export function formatMonthYear(dateStr: string): string {
+  try {
+    const date = new Date(dateStr + 'T00:00:00Z');
+    if (isNaN(date.getTime())) return dateStr;
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Format a date string to full locale format (e.g., "Monday, January 1, 2025")
+ */
+export function formatFullDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr + 'T00:00:00Z');
+    if (isNaN(date.getTime())) return dateStr;
+
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+/**
+ * Calculate date range for activity periods
+ * @param period - Period offset (0 = current, negative = past)
+ * @param periodMonths - Number of months per period
+ * @returns Object with start_date and end_date in YYYY-MM-DD format
+ */
+export function calculateActivityPeriodDates(period: number, periodMonths: number): { start_date: string; end_date: string } {
+  const now = new Date();
+
+  if (period === 0) {
+    // Current period: end is today, start is first day of (periodMonths - 1) months ago
+    const end = now;
+    const start = new Date(Date.UTC(
+      now.getFullYear(),
+      now.getMonth() - (periodMonths - 1),
+      1
+    ));
+
+    return {
+      start_date: start.toISOString().split('T')[0],
+      end_date: end.toISOString().split('T')[0]
+    };
+  }
+
+  // Past periods
+  const currentPeriodStart = new Date(Date.UTC(
+    now.getFullYear(),
+    now.getMonth() - (periodMonths - 1),
+    1
+  ));
+  const periodStart = new Date(Date.UTC(
+    currentPeriodStart.getUTCFullYear(),
+    currentPeriodStart.getUTCMonth() + (periodMonths * period),
+    1
+  ));
+  const periodEnd = new Date(Date.UTC(
+    periodStart.getUTCFullYear(),
+    periodStart.getUTCMonth() + periodMonths,
+    0 // Last day of the previous month
+  ));
+
+  return {
+    start_date: periodStart.toISOString().split('T')[0],
+    end_date: periodEnd.toISOString().split('T')[0]
+  };
+}
 
 export function formatRelativeDate(timestamp: number): string {
   if (!timestamp || isNaN(timestamp)) return 'Unknown date';

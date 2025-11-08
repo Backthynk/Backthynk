@@ -13,25 +13,22 @@ import {
 
 import { clientConfig } from '@core/state';
 import { fetchActivityDataCached } from '@core/cache/activityCache';
+import { formatPeriodLabel, calculateActivityPeriodDates } from '@core/utils';
 import type { Space } from '@core/api';
 import { activityStyles } from '../../styles/activity';
 import { Heatmap } from './Heatmap';
-import { formatPeriodLabel } from './utils';
 import { activity as activityConfig } from '../../config';
 
 const Container = activityStyles.container;
 const PeriodNav = activityStyles.periodNav;
 const NavButton = activityStyles.navButton;
 const PeriodLabel = activityStyles.periodLabel;
+const HeatmapLoadingOverlay = activityStyles.heatmapLoadingOverlay;
+const HeatmapSpinner = activityStyles.heatmapSpinner;
 const Footer = activityStyles.footer;
 const Legend = activityStyles.legend;
 const LegendSquare = activityStyles.legendSquare;
 const LegendLabel = activityStyles.legendLabel;
-const SkeletonHeatmap = activityStyles.skeletonHeatmap;
-const SkeletonRow = activityStyles.skeletonRow;
-const SkeletonMonthLabel = activityStyles.skeletonMonthLabel;
-const SkeletonSquares = activityStyles.skeletonSquares;
-const SkeletonSquare = activityStyles.skeletonSquare;
 
 interface ActivityTrackerProps {
   currentSpace: Space | null;
@@ -133,87 +130,73 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
   const cache = activityCache.value;
   const loading = isLoadingActivity.value;
 
+  // Use cache dates if available, otherwise calculate expected dates
+  const dateRange = cache
+    ? { start_date: cache.start_date, end_date: cache.end_date }
+    : calculateActivityPeriodDates(currentActivityPeriod.value, activityConfig.periodMonths);
+
+  // Create empty activity data for initial loading state
+  const emptyActivityData: any = {
+    days: [],
+    start_date: dateRange.start_date,
+    end_date: dateRange.end_date,
+    stats: {
+      total_posts: 0,
+      active_days: 0,
+      max_day_activity: 0
+    },
+    max_periods: 0
+  };
+
   return (
     <Container>
-
-      {/* Period Navigation */}
+      {/* Period Navigation - Always visible */}
       <PeriodNav>
         <NavButton
           onClick={() => handleNavigatePeriod(-1)}
-          disabled={!canNavigatePrev.value}
+          disabled={!canNavigatePrev.value || loading}
         >
           <i class="fas fa-chevron-left" />
         </NavButton>
         <PeriodLabel>
-          {cache
-            ? formatPeriodLabel(cache.start_date, cache.end_date)
-            : 'Loading...'}
+          {formatPeriodLabel(dateRange.start_date, dateRange.end_date)}
         </PeriodLabel>
         <NavButton
           onClick={() => handleNavigatePeriod(1)}
-          disabled={!canNavigateNext.value}
+          disabled={!canNavigateNext.value || loading}
         >
           <i class="fas fa-chevron-right" />
         </NavButton>
       </PeriodNav>
 
-      {/* Heatmap or Loading */}
-      {cache ? (
-        <>
-          <div style={{ position: 'relative', opacity: loading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
-            <Heatmap activityData={cache} />
-          </div>
+      {/* Heatmap with loading overlay */}
+      <div style={{ position: 'relative' }}>
+        {cache ? (
+          <Heatmap activityData={cache} />
+        ) : (
+          <Heatmap activityData={emptyActivityData} />
+        )}
 
-          {/* Legend */}
-          <Footer style={{ marginTop: '1rem' }}>
-            <Legend>
-              <LegendLabel>Less</LegendLabel>
-              <LegendSquare intensity={0} />
-              <LegendSquare intensity={1} />
-              <LegendSquare intensity={2} />
-              <LegendSquare intensity={3} />
-              <LegendSquare intensity={4} />
-              <LegendLabel>More</LegendLabel>
-            </Legend>
-          </Footer>
-        </>
-      ) : loading ? (
-        <>
-          {/* Skeleton Heatmap Placeholder */}
-          <SkeletonHeatmap>
-            {Array.from({ length: activityConfig.periodMonths * activityConfig.cellsPerLine }).map((_, rowIndex) => (
-              <SkeletonRow key={rowIndex}>
-                {rowIndex % activityConfig.cellsPerLine === 0 && <SkeletonMonthLabel />}
-                <SkeletonSquares>
-                  {Array.from({ length: activityConfig.cellsPerLine }).map((_, squareIndex) => (
-                    <SkeletonSquare
-                      key={squareIndex}
-                      style={{ '--index': squareIndex } as any}
-                    />
-                  ))}
-                </SkeletonSquares>
-              </SkeletonRow>
-            ))}
-          </SkeletonHeatmap>
+        {/* Loading overlay on top */}
+        {loading && (
+          <HeatmapLoadingOverlay>
+            <HeatmapSpinner />
+          </HeatmapLoadingOverlay>
+        )}
+      </div>
 
-          {/* Legend (visible during loading) */}
-          <Footer style={{ marginTop: '1rem' }}>
-            <Legend>
-              <LegendLabel>Less</LegendLabel>
-              <LegendSquare intensity={0} />
-              <LegendSquare intensity={1} />
-              <LegendSquare intensity={2} />
-              <LegendSquare intensity={3} />
-              <LegendSquare intensity={4} />
-              <LegendLabel>More</LegendLabel>
-            </Legend>
-          </Footer>
-        </>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-tertiary)' }}>
-          <p>No activity data available</p>
-        </div>
-      )}
+      {/* Legend - Always visible */}
+      <Footer style={{ marginTop: '1rem' }}>
+        <Legend>
+          <LegendLabel>Less</LegendLabel>
+          <LegendSquare intensity={0} />
+          <LegendSquare intensity={1} />
+          <LegendSquare intensity={2} />
+          <LegendSquare intensity={3} />
+          <LegendSquare intensity={4} />
+          <LegendLabel>More</LegendLabel>
+        </Legend>
+      </Footer>
     </Container>
   );
 }

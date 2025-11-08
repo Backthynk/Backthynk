@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { activityStyles } from '../../styles/activity';
-import { generateCalendarDays, generateMonthLabels, formatDayLabel } from './utils';
+import { generateCalendarDays, generateMonthLabels, formatFullDate } from '@core/utils';
 import type { ActivityData } from '@core/api';
 import { useTooltip } from '@core/components';
 import { activity as activityConfig } from '../../config';
@@ -47,26 +47,46 @@ export function Heatmap({ activityData }: HeatmapProps) {
   }
 
   // Generate calendar days
-  const days = generateCalendarDays(
+  let days = generateCalendarDays(
     activityData.start_date,
     activityData.end_date,
     activityMap
   );
 
   // Generate month labels
-  const monthLabels = generateMonthLabels(
+  let monthLabels = generateMonthLabels(
     activityData.start_date,
     activityData.end_date
   );
 
-  if (days.length === 0) {
-    return (
-      <HeatmapWrapper>
-        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-tertiary)' }}>
-          <p>No activity data available</p>
-        </div>
-      </HeatmapWrapper>
-    );
+  // If no days generated (empty date range), create placeholder grid to maintain height
+  if (days.length === 0 && activityData.start_date && activityData.end_date) {
+    // Calculate actual number of days between start and end date
+    try {
+      const start = new Date(activityData.start_date + 'T00:00:00Z');
+      const end = new Date(activityData.end_date + 'T00:00:00Z');
+
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const current = new Date(start);
+        const tempDays = [];
+
+        while (current <= end) {
+          const dateKey = current.toISOString().split('T')[0];
+          tempDays.push({
+            date: dateKey,
+            count: 0,
+            intensity: 0,
+            month: current.getUTCMonth(),
+            day: current.getUTCDate(),
+          });
+          current.setUTCDate(current.getUTCDate() + 1);
+        }
+
+        days = tempDays;
+      }
+    } catch (error) {
+      console.error('Error generating placeholder days:', error);
+    }
   }
 
   // Calculate rows
@@ -76,7 +96,7 @@ export function Heatmap({ activityData }: HeatmapProps) {
   const handleMouseEnter = (e: MouseEvent, day: any) => {
     show(e.currentTarget as HTMLElement, {
       title: `${day.count} ${day.count === 1 ? 'post' : 'posts'}`,
-      lines: [formatDayLabel(day.date)]
+      lines: [formatFullDate(day.date)]
     });
   };
 

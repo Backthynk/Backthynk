@@ -3,3 +3,4 @@ export * from './format';
 export * from './slug';
 export * from './date';
 export * from './files';
+export * from './activity';

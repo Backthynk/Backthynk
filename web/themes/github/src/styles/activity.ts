@@ -63,10 +63,52 @@ export const HeatmapWrapper = styled('div')`
 export const HeatmapGrid = styled('div')`
   display: flex;
   justify-content: center;
+  position: relative;
 `;
 
 export const HeatmapContent = styled('div')`
   min-height: 64px;
+`;
+
+export const HeatmapLoadingOverlay = styled('div')`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  z-index: 10;
+  min-height: 64px;
+
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  animation: fadeIn 0.2s ease-in-out;
+`;
+
+export const HeatmapSpinner = styled('div')`
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-primary);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  animation: spin 0.8s linear infinite;
 `;
 
 export const HeatmapRow = styled('div')`
@@ -310,6 +352,8 @@ export const activityStyles = {
   heatmapWrapper: HeatmapWrapper,
   heatmapGrid: HeatmapGrid,
   heatmapContent: HeatmapContent,
+  heatmapLoadingOverlay: HeatmapLoadingOverlay,
+  heatmapSpinner: HeatmapSpinner,
   heatmapRow: HeatmapRow,
   monthLabel: MonthLabel,
   squaresContainer: SquaresContainer,

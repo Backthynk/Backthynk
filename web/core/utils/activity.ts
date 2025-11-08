@@ -1,6 +1,6 @@
-/**
- * Activity tracker utility functions
- */
+// Activity-specific utilities
+
+import { formatMonthYear } from './date';
 
 // Activity level thresholds
 export const ACTIVITY_THRESHOLDS = {
@@ -9,7 +9,9 @@ export const ACTIVITY_THRESHOLDS = {
   high: 5,
 };
 
-// Get intensity level from post count
+/**
+ * Get intensity level from post count
+ */
 export function getIntensityLevel(count: number): number {
   if (count === 0) return 0;
   if (count === ACTIVITY_THRESHOLDS.low) return 1;
@@ -18,56 +20,24 @@ export function getIntensityLevel(count: number): number {
   return 4; // Very high
 }
 
-// Format period label (e.g., "Jul 2025 – Oct 2025")
+/**
+ * Format period label for date range (e.g., "Jul 2025 – Oct 2025")
+ */
 export function formatPeriodLabel(startDate: string, endDate: string): string {
   if (!startDate || !endDate) {
     return 'No activity period';
   }
 
-  try {
-    const start = new Date(startDate + 'T00:00:00Z');
-    const end = new Date(endDate + 'T00:00:00Z');
+  const startLabel = formatMonthYear(startDate);
+  const endLabel = formatMonthYear(endDate);
 
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return 'No activity period';
-    }
-
-    const startMonth = start.toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
-    });
-    const endMonth = end.toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric',
-      timeZone: 'UTC',
-    });
-
-    return `${startMonth} – ${endMonth}`;
-  } catch (error) {
+  if (startLabel === startDate || endLabel === endDate) {
     return 'No activity period';
   }
+
+  return `${startLabel} – ${endLabel}`;
 }
 
-// Format day for tooltip
-export function formatDayLabel(date: string): string {
-  try {
-    const d = new Date(date + 'T00:00:00Z');
-    if (isNaN(d.getTime())) return date;
-
-    return d.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-      timeZone: 'UTC',
-    });
-  } catch (error) {
-    return date;
-  }
-}
-
-// Generate calendar days for the heatmap
 export interface CalendarDay {
   date: string;
   count: number;
@@ -76,6 +46,9 @@ export interface CalendarDay {
   day: number;
 }
 
+/**
+ * Generate calendar days for the heatmap
+ */
 export function generateCalendarDays(
   startDate: string,
   endDate: string,
@@ -118,7 +91,9 @@ export function generateCalendarDays(
   }
 }
 
-// Generate unique month labels for the period
+/**
+ * Generate unique month labels for the period
+ */
 export function generateMonthLabels(startDate: string, endDate: string): string[] {
   const monthsSet = new Set<string>();
 

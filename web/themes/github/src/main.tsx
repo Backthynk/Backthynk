@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { App } from './App';
 import './styles/global';
-import { MIN_LOADING_TIME, MAX_LOADING_TIME } from '@core/constants';
+import { loading } from '@core/config'
 import { spaces, clientConfig } from '@core/state';
 
 if (window.__INITIAL_DATA__?.spaces) {
@@ -38,4 +38,4 @@ setTimeout(() => {
     appEl.classList.remove('hidden');
     appEl.style.opacity = '1';
   }
-}, Math.min(MAX_LOADING_TIME - startTime, MIN_LOADING_TIME));
+}, Math.min(loading.maxTime - startTime, loading.minTime));
