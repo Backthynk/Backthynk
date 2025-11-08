@@ -30,7 +30,7 @@ func NewRouter(
 	// Middleware
 	r.Use(middleware.CORS)
 	r.Use(middleware.Logging)
-	
+
 	// Initialize preview service if enabled
 	uploadPath := filepath.Join(serviceConfig.Files.StoragePath, serviceConfig.Files.UploadsSubdir)
 	previewService := preview.NewService(uploadPath, dispatcher, opts)
@@ -47,6 +47,10 @@ func NewRouter(
 	// API routes
 	api := r.PathPrefix("/api").Subrouter()
 	
+	if (config.GetAppMode() == config.APP_MODE_DEV) {
+		api.Use(middleware.DevMiddleware)
+	}
+
 	// Spaces
 	api.HandleFunc("/spaces", spaceHandler.GetSpaces).Methods("GET")
 	api.HandleFunc("/spaces", spaceHandler.CreateSpace).Methods("POST")
@@ -86,7 +90,12 @@ func NewRouter(
 	}
 	
 	// Uploads
-	r.HandleFunc("/uploads/{filename}", uploadHandler.ServeFile).Methods("GET")
+	uploads := api.PathPrefix("/uploads").Subrouter()
+	uploads.HandleFunc("/{filename}", uploadHandler.ServeFile).Methods("GET")
+
+	if (config.GetAppMode() == config.APP_MODE_DEV) {
+		uploads.Use(middleware.DevMiddleware)
+	}
 
 	// SPA - catch all routes and serve theme-based frontend
 	r.PathPrefix("/").Handler(spaHandler).Methods("GET")

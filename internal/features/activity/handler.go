@@ -1,6 +1,7 @@
 package activity
 
 import (
+	"backthynk/internal/api/middleware"
 	"backthynk/internal/config"
 	"encoding/json"
 	"net/http"
@@ -23,6 +24,10 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	}
 	
 	api := router.PathPrefix("/api").Subrouter()
+	if (config.GetAppMode() == config.APP_MODE_DEV) {
+		api.Use(middleware.DevMiddleware)
+	}
+
 	api.HandleFunc("/activity/{id}", h.GetActivityPeriod).Methods("GET")
 }
 

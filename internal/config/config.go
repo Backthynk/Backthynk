@@ -9,7 +9,7 @@ import (
 )
 
 const VERSION = "0.2.0"
-
+const DEV_LATENCY = 1500 * time.Millisecond
 const (
 	APP_MODE_DEV        = "development"   //back-end && front-end in dev mode
 	APP_MODE_PRE_PROD   = "pre-production" //front-end used is the built one && back-end in dev-mode

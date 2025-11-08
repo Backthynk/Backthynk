@@ -141,7 +141,6 @@ export const HeatmapSquare = styled('div')<{ intensity: number }>`
   height: 11px;
   border-radius: 2px;
   cursor: pointer;
-  transition: all 0.2s;
 
   ${({ intensity }) => {
     switch (intensity) {
