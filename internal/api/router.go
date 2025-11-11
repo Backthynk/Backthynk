@@ -89,8 +89,8 @@ func NewRouter(
 		activityHandler.RegisterRoutes(r)
 	}
 	
-	// Uploads
-	uploads := api.PathPrefix("/uploads").Subrouter()
+	// Uploads (served at root level, not under /api)
+	uploads := r.PathPrefix("/uploads").Subrouter()
 	uploads.HandleFunc("/{filename}", uploadHandler.ServeFile).Methods("GET")
 
 	if (config.GetAppMode() == config.APP_MODE_DEV) {
