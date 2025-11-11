@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
-import { spaces, loadExpandedSpaces, loadRecursiveModes, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal } from '@core/state';
+import { spaces, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { expandParentSpaces, toggleRecursiveMode, selectSpace } from '@core/actions/spaceActions';
 import { Layout } from '../components/Layout';
@@ -55,12 +55,7 @@ export function Home() {
     }
   }
 
-  useEffect(() => {
-    // Load expanded spaces from localStorage
-    loadExpandedSpaces();
-    // Load recursive modes
-    loadRecursiveModes();
-  }, []);
+  // Persisted state is now loaded in App.tsx, so we don't need to load it here anymore
 
   // Sync URL with currentSpace state
   useEffect(() => {

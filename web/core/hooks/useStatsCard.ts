@@ -23,7 +23,8 @@ import {
   isRecursiveMode,
   getChildSpaces,
   getDescendantSpaceIds,
-  rootSpaces
+  rootSpaces,
+  getSpaceById
 } from '../state';
 import { clientConfig } from '../state/settings';
 
@@ -57,7 +58,12 @@ export function useStatsCard(space: Space | null): StatsCardData {
     if (!space) {
       return getTotalPostCount();
     }
-    return getSpacePostCount(space);
+    // Always get the latest space object from the signal to ensure we have updated counts
+    const currentSpace = getSpaceById(space.id);
+    if (!currentSpace) {
+      return 0;
+    }
+    return getSpacePostCount(currentSpace);
   });
 
   // Calculate subspace count

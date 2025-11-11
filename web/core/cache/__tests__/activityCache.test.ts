@@ -79,7 +79,7 @@ describe('Activity Cache', () => {
     let activityData: ActivityData;
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
-    const todayTimestamp = Math.floor(today.getTime() / 1000);
+    const todayTimestamp = today.getTime();
 
     beforeEach(() => {
       // Create activity data with today having 5 posts

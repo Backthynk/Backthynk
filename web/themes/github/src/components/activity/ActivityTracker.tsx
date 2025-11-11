@@ -90,11 +90,6 @@ export function ActivityTracker({ currentSpace }: ActivityTrackerProps) {
 
       if (result.data) {
         activityCache.value = result.data;
-
-        // Log cache hit/miss for debugging
-        if (result.fromCache) {
-          console.log('[ActivityTracker] Loaded from cache');
-        }
       } else {
         // If fetch failed, set empty cache
         activityCache.value = null;

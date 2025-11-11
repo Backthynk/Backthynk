@@ -5,6 +5,7 @@
  */
 
 import { deletePost as apiDeletePost, movePost as apiMovePost, type Post } from '../api/posts';
+import { type Space } from '../api/spaces';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
 import { posts, isLoadingPosts, currentOffset, postHasRichContent } from '../state/posts';
@@ -13,6 +14,7 @@ import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
 import { updateActivityDayCount } from '../cache/activityCache';
 import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
+import { activityCache as activitySignal, activitySpaceId, activityRecursiveMode } from '../state/activity';
 
 export interface DeletePostOptions {
   postId: number;
@@ -39,6 +41,7 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
   const post = posts.value.find((p) => p.id === postId);
   const hasRichContent = post ? postHasRichContent(post) : false;
   const postCreatedTimestamp = post?.created || 0;
+  const actualSpaceId = post?.space_id; // The actual space the post belongs to
 
   await executeAction({
     confirmation: {
@@ -56,33 +59,55 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
       posts.value = posts.value.filter((p) => p.id !== postId);
 
       // Update space post counts in global state
-      if (spaceId !== null && spaceId !== undefined) {
-        const space = getSpaceById(spaceId);
-        if (space) {
-          // Decrement post count for this space
-          space.post_count = Math.max(0, space.post_count - 1);
+      // Create a map of updated spaces (immutable updates)
+      const updatedSpaces = new Map<number, Space>();
 
-          // Decrement recursive count for this space and all parents
-          let currentSpace: typeof space | undefined = space;
-          while (currentSpace) {
-            currentSpace.recursive_post_count = Math.max(0, currentSpace.recursive_post_count - 1);
-            if (currentSpace.parent_id !== null) {
-              currentSpace = getSpaceById(currentSpace.parent_id);
-            } else {
-              break;
+      // ALWAYS update the space where the post actually belongs (actualSpaceId)
+      if (actualSpaceId !== null && actualSpaceId !== undefined) {
+        const actualSpace = getSpaceById(actualSpaceId);
+        if (actualSpace) {
+          // Decrement both flat and recursive counts for the post's actual space
+          updatedSpaces.set(actualSpaceId, {
+            ...actualSpace,
+            post_count: Math.max(0, actualSpace.post_count - 1),
+            recursive_post_count: Math.max(0, actualSpace.recursive_post_count - 1)
+          });
+
+          // Decrement recursive count for all parent spaces of the actual space
+          let currentSpace: Space | undefined = actualSpace;
+          while (currentSpace && currentSpace.parent_id !== null) {
+            currentSpace = getSpaceById(currentSpace.parent_id);
+            if (currentSpace) {
+              // If already updated, get from map, otherwise clone from current state
+              const existing = updatedSpaces.get(currentSpace.id) || currentSpace;
+              updatedSpaces.set(currentSpace.id, {
+                ...existing,
+                recursive_post_count: Math.max(0, existing.recursive_post_count - 1)
+              });
             }
           }
-
-          // Trigger spaces signal update
-          spaces.value = [...spaces.value];
 
           // Smart cache invalidation: only invalidate space stats if post has rich content
           if (hasRichContent) {
             // Post has attachments/links - invalidate space stats for parent chain
-            invalidateSpaceStatsForParentChain(spaceId, getSpaceById);
+            invalidateSpaceStatsForParentChain(actualSpaceId, getSpaceById);
           }
-          // Otherwise, the in-memory state updates above are sufficient
         }
+      }
+
+      // Always update space 0 (All Spaces) when deleting a post, regardless of current view
+      const allSpacesSpace = getSpaceById(0);
+      if (allSpacesSpace) {
+        updatedSpaces.set(0, {
+          ...allSpacesSpace,
+          post_count: Math.max(0, allSpacesSpace.post_count - 1),
+          recursive_post_count: Math.max(0, allSpacesSpace.recursive_post_count - 1)
+        });
+      }
+
+      // Update the spaces array with new space objects (creates new reference for signal)
+      if (updatedSpaces.size > 0) {
+        spaces.value = spaces.value.map(s => updatedSpaces.get(s.id) || s);
       }
 
       // Smart refetch logic: check if we should fetch more posts
@@ -129,22 +154,49 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
       }
 
       // Smart activity cache update: update the day count directly instead of invalidating
-      if (postCreatedTimestamp && spaceId !== null && spaceId !== undefined) {
-        // Update activity for the space (flat view)
-        updateActivityDayCount(postCreatedTimestamp, -1, spaceId, false);
+      if (postCreatedTimestamp && actualSpaceId !== null && actualSpaceId !== undefined) {
+        // Update activity for the space where the post actually belongs (flat view)
+        const updatedFlatData = updateActivityDayCount(postCreatedTimestamp, -1, actualSpaceId, false);
 
-        // Also update for all parent spaces if in recursive mode
-        if (recursive) {
-          let currentSpace = getSpaceById(spaceId);
-          while (currentSpace && currentSpace.parent_id !== null) {
-            const parentSpace = getSpaceById(currentSpace.parent_id);
-            if (parentSpace) {
-              updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, true);
-              currentSpace = parentSpace;
-            } else {
-              break;
-            }
+        // Update activity for the space (recursive view)
+        const updatedRecursiveData = updateActivityDayCount(postCreatedTimestamp, -1, actualSpaceId, true);
+
+        // If we're currently viewing this space's activity, update the signal to trigger re-render
+        if (activitySpaceId.value === actualSpaceId) {
+          if (activityRecursiveMode.value && updatedRecursiveData) {
+            activitySignal.value = updatedRecursiveData;
+          } else if (!activityRecursiveMode.value && updatedFlatData) {
+            activitySignal.value = updatedFlatData;
           }
+        }
+
+        // Update for all parent spaces (both flat and recursive views)
+        let currentSpace = getSpaceById(actualSpaceId);
+        while (currentSpace && currentSpace.parent_id !== null) {
+          const parentSpace = getSpaceById(currentSpace.parent_id);
+          if (parentSpace) {
+            const parentFlatData = updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, false);
+            const parentRecursiveData = updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, true);
+
+            // If we're currently viewing this parent space's activity, update the signal
+            if (activitySpaceId.value === parentSpace.id) {
+              if (activityRecursiveMode.value && parentRecursiveData) {
+                activitySignal.value = parentRecursiveData;
+              } else if (!activityRecursiveMode.value && parentFlatData) {
+                activitySignal.value = parentFlatData;
+              }
+            }
+
+            currentSpace = parentSpace;
+          } else {
+            break;
+          }
+        }
+
+        // Always update space 0 (All Spaces) activity, regardless of current view
+        const allSpacesFlatData = updateActivityDayCount(postCreatedTimestamp, -1, 0, false);
+        if (activitySpaceId.value === 0 && !activityRecursiveMode.value && allSpacesFlatData) {
+          activitySignal.value = allSpacesFlatData;
         }
       }
 
@@ -182,19 +234,28 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
       const newSpaceId = updatedPost.space_id;
 
       if (oldSpaceId !== undefined && oldSpaceId !== newSpaceId) {
+        const updatedSpaces = new Map<number, Space>();
+
         // Decrement from old space
         const oldSpace = getSpaceById(oldSpaceId);
         if (oldSpace) {
-          oldSpace.post_count = Math.max(0, oldSpace.post_count - 1);
+          updatedSpaces.set(oldSpaceId, {
+            ...oldSpace,
+            post_count: Math.max(0, oldSpace.post_count - 1),
+            recursive_post_count: Math.max(0, oldSpace.recursive_post_count - 1)
+          });
 
-          // Decrement recursive count for old space and all parents
-          let currentSpace: typeof oldSpace | undefined = oldSpace;
-          while (currentSpace) {
-            currentSpace.recursive_post_count = Math.max(0, currentSpace.recursive_post_count - 1);
-            if (currentSpace.parent_id !== null) {
-              currentSpace = getSpaceById(currentSpace.parent_id);
-            } else {
-              break;
+          // Decrement recursive count for old space's parents
+          let currentSpace: Space | undefined = oldSpace;
+          while (currentSpace && currentSpace.parent_id !== null) {
+            currentSpace = getSpaceById(currentSpace.parent_id);
+            if (currentSpace) {
+              // If already updated, get from map, otherwise clone from current state
+              const existing = updatedSpaces.get(currentSpace.id) || currentSpace;
+              updatedSpaces.set(currentSpace.id, {
+                ...existing,
+                recursive_post_count: Math.max(0, existing.recursive_post_count - 1)
+              });
             }
           }
         }
@@ -202,22 +263,33 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
         // Increment in new space
         const newSpace = getSpaceById(newSpaceId);
         if (newSpace) {
-          newSpace.post_count += 1;
+          // If already updated from old space chain, get from map
+          const existing = updatedSpaces.get(newSpaceId) || newSpace;
+          updatedSpaces.set(newSpaceId, {
+            ...existing,
+            post_count: existing.post_count + 1,
+            recursive_post_count: existing.recursive_post_count + 1
+          });
 
-          // Increment recursive count for new space and all parents
-          let currentSpace: typeof newSpace | undefined = newSpace;
-          while (currentSpace) {
-            currentSpace.recursive_post_count += 1;
-            if (currentSpace.parent_id !== null) {
-              currentSpace = getSpaceById(currentSpace.parent_id);
-            } else {
-              break;
+          // Increment recursive count for new space's parents
+          let currentSpace: Space | undefined = newSpace;
+          while (currentSpace && currentSpace.parent_id !== null) {
+            currentSpace = getSpaceById(currentSpace.parent_id);
+            if (currentSpace) {
+              const existing = updatedSpaces.get(currentSpace.id) || currentSpace;
+              updatedSpaces.set(currentSpace.id, {
+                ...existing,
+                recursive_post_count: existing.recursive_post_count + 1
+              });
             }
           }
         }
 
-        // Trigger spaces signal update
-        spaces.value = [...spaces.value];
+        // Space 0 (All Spaces) counts don't change on move (post stays in system)
+        // No need to update space 0 for moves, only for add/delete operations
+
+        // Update the spaces array with new space objects (creates new reference for signal)
+        spaces.value = spaces.value.map(s => updatedSpaces.get(s.id) || s);
 
         // Smart cache invalidation: only invalidate space stats if post has rich content
         if (hasRichContent) {
@@ -291,31 +363,78 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
 
       // Smart activity cache update: moving = remove from old space + add to new space
       if (postCreatedTimestamp && oldSpaceId !== undefined && oldSpaceId !== newSpaceId) {
-        // Decrement activity for old space and its parents
-        updateActivityDayCount(postCreatedTimestamp, -1, oldSpaceId, false);
+        // Decrement activity for old space (both flat and recursive)
+        const oldFlatData = updateActivityDayCount(postCreatedTimestamp, -1, oldSpaceId, false);
+        const oldRecursiveData = updateActivityDayCount(postCreatedTimestamp, -1, oldSpaceId, true);
+
+        // Update signal if viewing old space
+        if (activitySpaceId.value === oldSpaceId) {
+          if (activityRecursiveMode.value && oldRecursiveData) {
+            activitySignal.value = oldRecursiveData;
+          } else if (!activityRecursiveMode.value && oldFlatData) {
+            activitySignal.value = oldFlatData;
+          }
+        }
+
+        // Decrement for old space's parents
         let currentSpace = getSpaceById(oldSpaceId);
         while (currentSpace && currentSpace.parent_id !== null) {
           const parentSpace = getSpaceById(currentSpace.parent_id);
           if (parentSpace) {
-            updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, true);
+            const parentFlatData = updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, false);
+            const parentRecursiveData = updateActivityDayCount(postCreatedTimestamp, -1, parentSpace.id, true);
+
+            if (activitySpaceId.value === parentSpace.id) {
+              if (activityRecursiveMode.value && parentRecursiveData) {
+                activitySignal.value = parentRecursiveData;
+              } else if (!activityRecursiveMode.value && parentFlatData) {
+                activitySignal.value = parentFlatData;
+              }
+            }
+
             currentSpace = parentSpace;
           } else {
             break;
           }
         }
 
-        // Increment activity for new space and its parents
-        updateActivityDayCount(postCreatedTimestamp, 1, newSpaceId, false);
+        // Increment activity for new space (both flat and recursive)
+        const newFlatData = updateActivityDayCount(postCreatedTimestamp, 1, newSpaceId, false);
+        const newRecursiveData = updateActivityDayCount(postCreatedTimestamp, 1, newSpaceId, true);
+
+        // Update signal if viewing new space
+        if (activitySpaceId.value === newSpaceId) {
+          if (activityRecursiveMode.value && newRecursiveData) {
+            activitySignal.value = newRecursiveData;
+          } else if (!activityRecursiveMode.value && newFlatData) {
+            activitySignal.value = newFlatData;
+          }
+        }
+
+        // Increment for new space's parents
         currentSpace = getSpaceById(newSpaceId);
         while (currentSpace && currentSpace.parent_id !== null) {
           const parentSpace = getSpaceById(currentSpace.parent_id);
           if (parentSpace) {
-            updateActivityDayCount(postCreatedTimestamp, 1, parentSpace.id, true);
+            const parentFlatData = updateActivityDayCount(postCreatedTimestamp, 1, parentSpace.id, false);
+            const parentRecursiveData = updateActivityDayCount(postCreatedTimestamp, 1, parentSpace.id, true);
+
+            if (activitySpaceId.value === parentSpace.id) {
+              if (activityRecursiveMode.value && parentRecursiveData) {
+                activitySignal.value = parentRecursiveData;
+              } else if (!activityRecursiveMode.value && parentFlatData) {
+                activitySignal.value = parentFlatData;
+              }
+            }
+
             currentSpace = parentSpace;
           } else {
             break;
           }
         }
+
+        // Note: Space 0 (All Spaces) activity doesn't change on move since the post
+        // creation timestamp stays the same and the post remains in the system
       }
 
       showSuccess('Post moved successfully');

@@ -101,7 +101,13 @@ class ActivityCacheManager {
     if (this.enabled) {
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        return { data: cached, fromCache: true };
+        // Return a deep copy to prevent external mutations and ensure fresh references for signals
+        const cachedCopy: ActivityData = {
+          ...cached,
+          days: cached.days.map(d => ({ ...d })),
+          stats: { ...cached.stats }
+        };
+        return { data: cachedCopy, fromCache: true };
       }
     }
 
@@ -300,15 +306,17 @@ export function invalidateCurrentActivityPeriod(): void {
  * @param countDelta - Change in count (usually -1 for deletion, can be -1/+1 for moves)
  * @param spaceId - Space ID to update activity for
  * @param recursive - Whether to update recursive view
+ * @returns The updated ActivityData if the update was successful and matches the current view
  */
 export function updateActivityDayCount(
   postCreatedTimestamp: number,
   countDelta: number,
   spaceId: number,
   recursive: boolean
-): void {
+): ActivityData | null {
   // Convert timestamp to date string (YYYY-MM-DD format)
-  const postDate = new Date(postCreatedTimestamp * 1000);
+  // Timestamps from the backend are in milliseconds
+  const postDate = new Date(postCreatedTimestamp);
   const dateString = postDate.toISOString().split('T')[0];
 
   // Only update period 0 (current period) cache entries
@@ -317,6 +325,8 @@ export function updateActivityDayCount(
   // Try to find and update the cached data for this space/recursive/period combination
   // We need to check multiple period_months values (typically 4, 6, 12)
   const periodMonthsValues = [4, 6, 12];
+
+  let updatedData: ActivityData | null = null;
 
   for (const periodMonths of periodMonthsValues) {
     const cacheKey = `activity:${spaceId}:${recursive ? 'recursive' : 'flat'}:${period}:${periodMonths}m`;
@@ -327,26 +337,41 @@ export function updateActivityDayCount(
       const dayIndex = cachedData.days.findIndex(day => day.date === dateString);
 
       if (dayIndex !== -1) {
+        // Create a deep copy to avoid mutating the cached object
+        // This ensures that when we assign to the signal, it's a new reference
+        const updatedCachedData: ActivityData = {
+          ...cachedData,
+          days: cachedData.days.map(d => ({ ...d })),
+          stats: { ...cachedData.stats }
+        };
+
         // Update the day's count
-        const newCount = Math.max(0, cachedData.days[dayIndex].count + countDelta);
-        cachedData.days[dayIndex].count = newCount;
+        const newCount = Math.max(0, updatedCachedData.days[dayIndex].count + countDelta);
+        updatedCachedData.days[dayIndex].count = newCount;
 
         // Update total_posts in stats
-        cachedData.stats.total_posts = Math.max(0, cachedData.stats.total_posts + countDelta);
+        updatedCachedData.stats.total_posts = Math.max(0, updatedCachedData.stats.total_posts + countDelta);
 
         // Update max_day_activity if needed
-        cachedData.stats.max_day_activity = Math.max(...cachedData.days.map(d => d.count));
+        updatedCachedData.stats.max_day_activity = Math.max(...updatedCachedData.days.map(d => d.count));
 
         // Update active_days if count went to/from 0
         if (newCount === 0 && countDelta < 0) {
-          cachedData.stats.active_days = Math.max(0, cachedData.stats.active_days - 1);
-        } else if (cachedData.days[dayIndex].count - countDelta === 0 && countDelta > 0) {
-          cachedData.stats.active_days += 1;
+          updatedCachedData.stats.active_days = Math.max(0, updatedCachedData.stats.active_days - 1);
+        } else if (cachedData.days[dayIndex].count === 0 && countDelta > 0) {
+          updatedCachedData.stats.active_days += 1;
         }
 
-        // Re-store the updated data in cache
-        activityCache['cache'].set(cacheKey, cachedData);
+        // Re-store the updated data in cache (new reference)
+        activityCache['cache'].set(cacheKey, updatedCachedData);
+
+        // Return the first updated data (for the default period months of 4)
+        if (periodMonths === 4 && updatedData === null) {
+          updatedData = updatedCachedData;
+        }
       }
     }
   }
+
+  return updatedData;
 }

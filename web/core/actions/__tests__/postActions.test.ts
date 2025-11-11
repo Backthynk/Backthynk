@@ -75,11 +75,15 @@ describe('Post Actions', () => {
 
         await deletePostAction({ postId: 1, spaceId: 3 });
 
-        // Check counts were decremented
-        expect(space3.post_count).toBe(4);
-        expect(space3.recursive_post_count).toBe(4);
-        expect(space2.recursive_post_count).toBe(19);
-        expect(space1.recursive_post_count).toBe(29);
+        // Check counts were decremented - read from signal, not old references
+        const updatedSpace3 = spacesSignal.value.find(s => s.id === 3)!;
+        const updatedSpace2 = spacesSignal.value.find(s => s.id === 2)!;
+        const updatedSpace1 = spacesSignal.value.find(s => s.id === 1)!;
+
+        expect(updatedSpace3.post_count).toBe(4);
+        expect(updatedSpace3.recursive_post_count).toBe(4);
+        expect(updatedSpace2.recursive_post_count).toBe(19);
+        expect(updatedSpace1.recursive_post_count).toBe(29);
 
         // Post should be removed from state
         expect(posts.value.length).toBe(0);
@@ -111,7 +115,7 @@ describe('Post Actions', () => {
         // Create activity cache with today having 5 posts
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        const todayTimestamp = Math.floor(today.getTime() / 1000);
+        const todayTimestamp = today.getTime();
 
         const activityData = createMockActivityData(120);
 
@@ -187,7 +191,7 @@ describe('Post Actions', () => {
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        const todayTimestamp = Math.floor(today.getTime() / 1000);
+        const todayTimestamp = today.getTime();
 
         const activityData = createMockActivityData(120);
 
@@ -231,12 +235,252 @@ describe('Post Actions', () => {
 
         await deletePostAction({ postId: 1, spaceId: 5 });
 
-        // All ancestors should have recursive_post_count decremented
-        expect(spaces[4].recursive_post_count).toBe(19); // Space 5
-        expect(spaces[3].recursive_post_count).toBe(39); // Space 4
-        expect(spaces[2].recursive_post_count).toBe(59); // Space 3
-        expect(spaces[1].recursive_post_count).toBe(79); // Space 2
-        expect(spaces[0].recursive_post_count).toBe(99); // Space 1
+        // All ancestors should have recursive_post_count decremented - read from signal
+        const updated = spacesSignal.value;
+        expect(updated.find(s => s.id === 5)!.recursive_post_count).toBe(19); // Space 5
+        expect(updated.find(s => s.id === 4)!.recursive_post_count).toBe(39); // Space 4
+        expect(updated.find(s => s.id === 3)!.recursive_post_count).toBe(59); // Space 3
+        expect(updated.find(s => s.id === 2)!.recursive_post_count).toBe(79); // Space 2
+        expect(updated.find(s => s.id === 1)!.recursive_post_count).toBe(99); // Space 1
+      });
+
+      it('should update child space when deleting from parent in recursive mode', async () => {
+        // Scenario: viewing /backthynk in recursive mode, delete post from /backthynk/ideas
+        // Both backthynk AND ideas should be updated
+        const backthynk = createMockSpace({ id: 1, parent_id: null, post_count: 10, recursive_post_count: 30 });
+        const ideas = createMockSpace({ id: 2, parent_id: 1, post_count: 20, recursive_post_count: 20 });
+        spacesSignal.value = [backthynk, ideas];
+
+        // Post belongs to ideas (child space)
+        const post = createMockPost({ id: 1, space_id: 2 });
+        posts.value = [post];
+
+        // Delete while viewing backthynk (parent) with recursive mode
+        // NOTE: spaceId is the viewing context (backthynk), but post is in ideas
+        await deletePostAction({ postId: 1, spaceId: 1, recursive: true });
+
+        const updated = spacesSignal.value;
+        const updatedBackthynk = updated.find(s => s.id === 1)!;
+        const updatedIdeas = updated.find(s => s.id === 2)!;
+
+        // Child space (ideas) should be updated - this is the key fix!
+        expect(updatedIdeas.post_count).toBe(19); // 20 - 1
+        expect(updatedIdeas.recursive_post_count).toBe(19); // 20 - 1
+
+        // Parent space (backthynk) should also be updated
+        expect(updatedBackthynk.recursive_post_count).toBe(29); // 30 - 1
+      });
+
+      it('should update child space activity when deleting from parent in recursive mode', async () => {
+        const backthynk = createMockSpace({ id: 1, parent_id: null, post_count: 10, recursive_post_count: 30 });
+        const ideas = createMockSpace({ id: 2, parent_id: 1, post_count: 20, recursive_post_count: 20 });
+        spacesSignal.value = [backthynk, ideas];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Create activity for both spaces
+        const activityBackthynk = createMockActivityData(120);
+        const activityIdeas = createMockActivityData(120);
+
+        let todayIndex1 = activityBackthynk.days.findIndex(d => d.date === todayStr);
+        if (todayIndex1 === -1) {
+          activityBackthynk.days.push({ date: todayStr, count: 10 });
+        } else {
+          activityBackthynk.days[todayIndex1].count = 10;
+        }
+        activityBackthynk.stats.total_posts = activityBackthynk.days.reduce((sum, d) => sum + d.count, 0);
+
+        let todayIndex2 = activityIdeas.days.findIndex(d => d.date === todayStr);
+        if (todayIndex2 === -1) {
+          activityIdeas.days.push({ date: todayStr, count: 20 });
+        } else {
+          activityIdeas.days[todayIndex2].count = 20;
+        }
+        activityIdeas.stats.total_posts = activityIdeas.days.reduce((sum, d) => sum + d.count, 0);
+
+        activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityBackthynk)));
+        activityCache['cache'].set('activity:1:recursive:0:4m', JSON.parse(JSON.stringify(activityBackthynk)));
+        activityCache['cache'].set('activity:2:flat:0:4m', JSON.parse(JSON.stringify(activityIdeas)));
+        activityCache['cache'].set('activity:2:recursive:0:4m', JSON.parse(JSON.stringify(activityIdeas)));
+
+        // Post belongs to ideas
+        const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
+        posts.value = [post];
+
+        // Delete while viewing backthynk in recursive mode
+        await deletePostAction({ postId: 1, spaceId: 1, recursive: true });
+
+        // Child space (ideas) activity should be updated
+        const updatedIdeasActivity = activityCache.getData(2, false, 0, 4);
+        expect(updatedIdeasActivity).not.toBeNull();
+        const updatedIdeasToday = updatedIdeasActivity!.days.find(d => d.date === todayStr);
+        expect(updatedIdeasToday?.count).toBe(19); // 20 - 1
+
+        // Parent space (backthynk) recursive activity should also be updated
+        const updatedBackthynkRecursiveActivity = activityCache.getData(1, true, 0, 4);
+        expect(updatedBackthynkRecursiveActivity).not.toBeNull();
+        const updatedBackthynkToday = updatedBackthynkRecursiveActivity!.days.find(d => d.date === todayStr);
+        expect(updatedBackthynkToday?.count).toBe(9); // 10 - 1
+      });
+    });
+
+    describe('Space 0 (All Spaces) updates', () => {
+      it('should update space 0 post counts when deleting a post from a specific space', async () => {
+        const space0 = createMockSpace({ id: 0, parent_id: null, post_count: 100, recursive_post_count: 100 });
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 50, recursive_post_count: 50 });
+        const space2 = createMockSpace({ id: 2, parent_id: null, post_count: 50, recursive_post_count: 50 });
+        spacesSignal.value = [space0, space1, space2];
+
+        const post = createMockPost({ id: 1, space_id: 1 });
+        posts.value = [post];
+
+        await deletePostAction({ postId: 1, spaceId: 1 });
+
+        const updated = spacesSignal.value;
+        const updatedSpace0 = updated.find(s => s.id === 0)!;
+        const updatedSpace1 = updated.find(s => s.id === 1)!;
+
+        // Space 0 should be decremented
+        expect(updatedSpace0.post_count).toBe(99);
+        expect(updatedSpace0.recursive_post_count).toBe(99);
+
+        // Space 1 should also be decremented
+        expect(updatedSpace1.post_count).toBe(49);
+        expect(updatedSpace1.recursive_post_count).toBe(49);
+      });
+
+      it('should update space 0 activity when deleting a post from a specific space', async () => {
+        const space0 = createMockSpace({ id: 0, parent_id: null, post_count: 100, recursive_post_count: 100 });
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 50, recursive_post_count: 50 });
+        spacesSignal.value = [space0, space1];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Create activity data for space 0
+        const activityData = createMockActivityData(120);
+        let todayIndex = activityData.days.findIndex(d => d.date === todayStr);
+        if (todayIndex === -1) {
+          activityData.days.push({ date: todayStr, count: 100 });
+        } else {
+          activityData.days[todayIndex].count = 100;
+        }
+        activityData.stats.total_posts = activityData.days.reduce((sum, d) => sum + d.count, 0);
+
+        activityCache['cache'].set('activity:0:flat:0:4m', JSON.parse(JSON.stringify(activityData)));
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        await deletePostAction({ postId: 1, spaceId: 1 });
+
+        // Space 0 activity should be decremented
+        const updatedActivity = activityCache.getData(0, false, 0, 4);
+        expect(updatedActivity).not.toBeNull();
+        const updatedToday = updatedActivity!.days.find(d => d.date === todayStr);
+        expect(updatedToday?.count).toBe(99); // 100 - 1
+      });
+
+      it('should update space 0 when deleting in All Spaces mode (spaceId null)', async () => {
+        const space0 = createMockSpace({ id: 0, parent_id: null, post_count: 100, recursive_post_count: 100 });
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 50, recursive_post_count: 50 });
+        spacesSignal.value = [space0, space1];
+
+        const post = createMockPost({ id: 1, space_id: 1 });
+        posts.value = [post];
+
+        // Delete with spaceId = null (All Spaces view)
+        await deletePostAction({ postId: 1, spaceId: null });
+
+        const updated = spacesSignal.value;
+        const updatedSpace0 = updated.find(s => s.id === 0)!;
+        const updatedSpace1 = updated.find(s => s.id === 1)!;
+
+        // Space 0 should be decremented even when spaceId is null
+        expect(updatedSpace0.post_count).toBe(99);
+        expect(updatedSpace0.recursive_post_count).toBe(99);
+
+        // Space 1 (where the post actually belongs) should also be decremented
+        expect(updatedSpace1.post_count).toBe(49);
+        expect(updatedSpace1.recursive_post_count).toBe(49);
+      });
+
+      it('should update space 0 activity when deleting in All Spaces mode (spaceId null)', async () => {
+        const space0 = createMockSpace({ id: 0, parent_id: null, post_count: 100, recursive_post_count: 100 });
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 50, recursive_post_count: 50 });
+        spacesSignal.value = [space0, space1];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Create activity for both space 0 and space 1
+        const activityData0 = createMockActivityData(120);
+        const activityData1 = createMockActivityData(120);
+
+        let todayIndex0 = activityData0.days.findIndex(d => d.date === todayStr);
+        if (todayIndex0 === -1) {
+          activityData0.days.push({ date: todayStr, count: 100 });
+        } else {
+          activityData0.days[todayIndex0].count = 100;
+        }
+        activityData0.stats.total_posts = activityData0.days.reduce((sum, d) => sum + d.count, 0);
+
+        let todayIndex1 = activityData1.days.findIndex(d => d.date === todayStr);
+        if (todayIndex1 === -1) {
+          activityData1.days.push({ date: todayStr, count: 50 });
+        } else {
+          activityData1.days[todayIndex1].count = 50;
+        }
+        activityData1.stats.total_posts = activityData1.days.reduce((sum, d) => sum + d.count, 0);
+
+        activityCache['cache'].set('activity:0:flat:0:4m', JSON.parse(JSON.stringify(activityData0)));
+        activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityData1)));
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        // Delete with spaceId = null (All Spaces view)
+        await deletePostAction({ postId: 1, spaceId: null });
+
+        // Space 0 activity should be decremented
+        const updatedActivity0 = activityCache.getData(0, false, 0, 4);
+        expect(updatedActivity0).not.toBeNull();
+        const updatedToday0 = updatedActivity0!.days.find(d => d.date === todayStr);
+        expect(updatedToday0?.count).toBe(99); // 100 - 1
+
+        // Space 1 activity should also be decremented
+        const updatedActivity1 = activityCache.getData(1, false, 0, 4);
+        expect(updatedActivity1).not.toBeNull();
+        const updatedToday1 = updatedActivity1!.days.find(d => d.date === todayStr);
+        expect(updatedToday1?.count).toBe(49); // 50 - 1
+      });
+
+      it('should update space 0 when deleting in All Spaces mode (spaceId undefined)', async () => {
+        const space0 = createMockSpace({ id: 0, parent_id: null, post_count: 100, recursive_post_count: 100 });
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 50, recursive_post_count: 50 });
+        spacesSignal.value = [space0, space1];
+
+        const post = createMockPost({ id: 1, space_id: 1 });
+        posts.value = [post];
+
+        // Delete with spaceId = undefined (All Spaces view)
+        await deletePostAction({ postId: 1, spaceId: undefined });
+
+        const updated = spacesSignal.value;
+        const updatedSpace0 = updated.find(s => s.id === 0)!;
+        const updatedSpace1 = updated.find(s => s.id === 1)!;
+
+        // Space 0 should be decremented even when spaceId is undefined
+        expect(updatedSpace0.post_count).toBe(99);
+        expect(updatedSpace0.recursive_post_count).toBe(99);
+
+        // Space 1 (where the post actually belongs) should also be decremented
+        expect(updatedSpace1.post_count).toBe(49);
+        expect(updatedSpace1.recursive_post_count).toBe(49);
       });
     });
   });
@@ -257,15 +501,22 @@ describe('Post Actions', () => {
         // Move from space 2 to space 4
         await movePostAction({ postId: 1, newSpaceId: 4, currentSpaceId: 2 });
 
+        // Read updated spaces from signal
+        const updated = spacesSignal.value;
+        const updatedSpace1 = updated.find(s => s.id === 1)!;
+        const updatedSpace2 = updated.find(s => s.id === 2)!;
+        const updatedSpace3 = updated.find(s => s.id === 3)!;
+        const updatedSpace4 = updated.find(s => s.id === 4)!;
+
         // Old chain (1, 2) should be decremented
-        expect(space2.post_count).toBe(9);
-        expect(space2.recursive_post_count).toBe(9);
-        expect(space1.recursive_post_count).toBe(19);
+        expect(updatedSpace2.post_count).toBe(9);
+        expect(updatedSpace2.recursive_post_count).toBe(9);
+        expect(updatedSpace1.recursive_post_count).toBe(19);
 
         // New chain (3, 4) should be incremented
-        expect(space4.post_count).toBe(6);
-        expect(space4.recursive_post_count).toBe(6);
-        expect(space3.recursive_post_count).toBe(16);
+        expect(updatedSpace4.post_count).toBe(6);
+        expect(updatedSpace4.recursive_post_count).toBe(6);
+        expect(updatedSpace3.recursive_post_count).toBe(16);
       });
 
       it('should NOT invalidate stats cache for text-only posts', async () => {
@@ -299,7 +550,7 @@ describe('Post Actions', () => {
 
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
-        const todayTimestamp = Math.floor(today.getTime() / 1000);
+        const todayTimestamp = today.getTime();
 
         // Setup activity for both spaces
         const activity1 = createMockActivityData(120);
