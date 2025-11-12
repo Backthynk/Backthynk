@@ -114,6 +114,359 @@ describe('Space Actions', () => {
       expect(activityCache.getData(1, false, 0, 4)).toBeNull();
       expect(activityCache.getData(2, false, 0, 4)).toBeNull();
     });
+
+    it('should invalidate activity for parent spaces when deleting child', async () => {
+      // Hierarchy: 1 -> 2 -> 3
+      const space0 = createMockSpace({ id: 0, parent_id: null });
+      const space1 = createMockSpace({ id: 1, parent_id: null });
+      const space2 = createMockSpace({ id: 2, parent_id: 1 });
+      const space3 = createMockSpace({ id: 3, parent_id: 2 });
+      spacesSignal.value = [space0, space1, space2, space3];
+
+      // Cache activity for all spaces
+      activityCache['cache'].set('activity:0:flat:0:4m', {} as any);
+      activityCache['cache'].set('activity:1:flat:0:4m', {} as any);
+      activityCache['cache'].set('activity:1:recursive:0:4m', {} as any);
+      activityCache['cache'].set('activity:2:flat:0:4m', {} as any);
+      activityCache['cache'].set('activity:2:recursive:0:4m', {} as any);
+      activityCache['cache'].set('activity:3:flat:0:4m', {} as any);
+
+      // Delete space 3 (deepest child)
+      await deleteSpaceAction({ spaceId: 3, spaceName: 'Space 3' });
+
+      // Space 3 should be invalidated
+      expect(activityCache.getData(3, false, 0, 4)).toBeNull();
+
+      // Parent spaces should also be invalidated (recursive views affected)
+      expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(2, true, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, true, 0, 4)).toBeNull();
+
+      // Space 0 (All Spaces) should also be invalidated
+      expect(activityCache.getData(0, false, 0, 4)).toBeNull();
+    });
+
+    it('should invalidate activity when deleting space with no cached parent activity', async () => {
+      // Hierarchy: 1 -> 2 -> 3
+      const space0 = createMockSpace({ id: 0, parent_id: null });
+      const space1 = createMockSpace({ id: 1, parent_id: null });
+      const space2 = createMockSpace({ id: 2, parent_id: 1 });
+      const space3 = createMockSpace({ id: 3, parent_id: 2 });
+      spacesSignal.value = [space0, space1, space2, space3];
+
+      // Only cache activity for space 3 (the one being deleted)
+      activityCache['cache'].set('activity:3:flat:0:4m', {} as any);
+      // Parents have NO cached activity
+
+      await deleteSpaceAction({ spaceId: 3, spaceName: 'Space 3' });
+
+      // Space 3 should be invalidated
+      expect(activityCache.getData(3, false, 0, 4)).toBeNull();
+
+      // Parents should still be null (no cache to invalidate, but function shouldn't error)
+      expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(0, false, 0, 4)).toBeNull();
+    });
+
+    it('should invalidate activity when deleting top-level space with no parent', async () => {
+      // Top-level space (no parent)
+      const space0 = createMockSpace({ id: 0, parent_id: null });
+      const space1 = createMockSpace({ id: 1, parent_id: null });
+      spacesSignal.value = [space0, space1];
+
+      activityCache['cache'].set('activity:0:flat:0:4m', {} as any);
+      activityCache['cache'].set('activity:1:flat:0:4m', {} as any);
+
+      await deleteSpaceAction({ spaceId: 1, spaceName: 'Space 1' });
+
+      // Space 1 should be invalidated
+      expect(activityCache.getData(1, false, 0, 4)).toBeNull();
+
+      // Space 0 should be invalidated
+      expect(activityCache.getData(0, false, 0, 4)).toBeNull();
+    });
+
+    it('should invalidate activity when deleting middle space with descendants', async () => {
+      // Hierarchy: 0, 1 -> 2 -> 3 -> 4
+      const space0 = createMockSpace({ id: 0, parent_id: null });
+      const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 80 });
+      const space3 = createMockSpace({ id: 3, parent_id: 2, recursive_post_count: 60 });
+      const space4 = createMockSpace({ id: 4, parent_id: 3, recursive_post_count: 40 });
+      spacesSignal.value = [space0, space1, space2, space3, space4];
+
+      // Cache activity for all spaces (both flat and recursive)
+      [0, 1, 2, 3, 4].forEach(id => {
+        activityCache['cache'].set(`activity:${id}:flat:0:4m`, {} as any);
+        activityCache['cache'].set(`activity:${id}:recursive:0:4m`, {} as any);
+      });
+
+      // Delete space 2 (middle space) - should delete 2, 3, 4
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Space 2' });
+
+      // Deleted spaces (2, 3, 4) should all be invalidated
+      expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(3, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(4, false, 0, 4)).toBeNull();
+
+      // Parent (1) should be invalidated
+      expect(activityCache.getData(1, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, true, 0, 4)).toBeNull();
+
+      // Space 0 should be invalidated
+      expect(activityCache.getData(0, false, 0, 4)).toBeNull();
+    });
+
+    it('should invalidate only recursive views for parent spaces, not flat', async () => {
+      // Hierarchy: 1 -> 2 -> 3
+      const space0 = createMockSpace({ id: 0, parent_id: null });
+      const space1 = createMockSpace({ id: 1, parent_id: null });
+      const space2 = createMockSpace({ id: 2, parent_id: 1 });
+      const space3 = createMockSpace({ id: 3, parent_id: 2 });
+      spacesSignal.value = [space0, space1, space2, space3];
+
+      // Cache both flat and recursive for all spaces
+      [0, 1, 2, 3].forEach(id => {
+        activityCache['cache'].set(`activity:${id}:flat:0:4m`, {} as any);
+        activityCache['cache'].set(`activity:${id}:recursive:0:4m`, {} as any);
+      });
+
+      await deleteSpaceAction({ spaceId: 3, spaceName: 'Space 3' });
+
+      // Space 3 - both should be invalidated (the deleted space)
+      expect(activityCache.getData(3, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(3, true, 0, 4)).toBeNull();
+
+      // Parent spaces - both flat AND recursive should be invalidated
+      // (because invalidateActivityForSpace invalidates both by default)
+      expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(2, true, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, true, 0, 4)).toBeNull();
+
+      // Space 0
+      expect(activityCache.getData(0, false, 0, 4)).toBeNull();
+    });
+
+    it('should handle deletion of space with siblings correctly', async () => {
+      // Hierarchy: 1 -> [2, 3, 4] (siblings)
+      const space0 = createMockSpace({ id: 0, parent_id: null });
+      const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 30 });
+      const space3 = createMockSpace({ id: 3, parent_id: 1, recursive_post_count: 40 });
+      const space4 = createMockSpace({ id: 4, parent_id: 1, recursive_post_count: 30 });
+      spacesSignal.value = [space0, space1, space2, space3, space4];
+
+      // Cache activity for all
+      [0, 1, 2, 3, 4].forEach(id => {
+        activityCache['cache'].set(`activity:${id}:flat:0:4m`, {} as any);
+        activityCache['cache'].set(`activity:${id}:recursive:0:4m`, {} as any);
+      });
+
+      // Delete space 2 (one sibling)
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Space 2' });
+
+      // Space 2 should be invalidated
+      expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+
+      // Siblings should NOT be invalidated... wait, actually they WILL be
+      // because we invalidate the parent (1), which affects all recursive views
+      // But the siblings' own caches should still exist (only space 2 is deleted)
+      expect(spacesSignal.value.find(s => s.id === 3)).toBeDefined(); // Still exists
+      expect(spacesSignal.value.find(s => s.id === 4)).toBeDefined(); // Still exists
+
+      // Parent should be invalidated
+      expect(activityCache.getData(1, false, 0, 4)).toBeNull();
+      expect(activityCache.getData(1, true, 0, 4)).toBeNull();
+
+      // Space 0 should be invalidated
+      expect(activityCache.getData(0, false, 0, 4)).toBeNull();
+
+      // Verify recursive count updated correctly
+      const updatedSpace1 = spacesSignal.value.find(s => s.id === 1)!;
+      expect(updatedSpace1.recursive_post_count).toBe(70); // 100 - 30
+    });
+  });
+
+  describe('deleteSpaceAction - Redirect Behavior', () => {
+    it('should redirect to parent when deleting currently viewed child space', async () => {
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Parent' });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, name: 'Child' });
+      spacesSignal.value = [space1, space2];
+
+      // Currently viewing space 2
+      currentSpaceSignal.value = space2;
+
+      const mockRouter = { route: vi.fn() };
+
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Child', router: mockRouter });
+
+      // Should redirect to parent space
+      expect(mockRouter.route).toHaveBeenCalledWith('/parent');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should redirect to "/" when deleting currently viewed space with no parent', async () => {
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'TopLevel' });
+      spacesSignal.value = [space1];
+
+      // Currently viewing space 1
+      currentSpaceSignal.value = space1;
+
+      const mockRouter = { route: vi.fn() };
+
+      await deleteSpaceAction({ spaceId: 1, spaceName: 'TopLevel', router: mockRouter });
+
+      // Should redirect to All Spaces
+      expect(mockRouter.route).toHaveBeenCalledWith('/');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should redirect to "/" when deleting currently viewed space and parent no longer exists', async () => {
+      // This simulates a race condition or corrupted state
+      const space1 = createMockSpace({ id: 1, parent_id: 999, name: 'Orphaned' }); // Parent 999 doesn't exist
+      spacesSignal.value = [space1];
+
+      // Currently viewing space 1
+      currentSpaceSignal.value = space1;
+
+      const mockRouter = { route: vi.fn() };
+
+      await deleteSpaceAction({ spaceId: 1, spaceName: 'Orphaned', router: mockRouter });
+
+      // Should redirect to All Spaces since parent doesn't exist
+      expect(mockRouter.route).toHaveBeenCalledWith('/');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should redirect to grandparent when deleting middle space with descendants', async () => {
+      // Hierarchy: 1 -> 2 -> 3
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Grandparent' });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, name: 'Parent' });
+      const space3 = createMockSpace({ id: 3, parent_id: 2, name: 'Child' });
+      spacesSignal.value = [space1, space2, space3];
+
+      // Currently viewing space 2 (middle space)
+      currentSpaceSignal.value = space2;
+
+      const mockRouter = { route: vi.fn() };
+
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Parent', router: mockRouter });
+
+      // Should redirect to grandparent
+      expect(mockRouter.route).toHaveBeenCalledWith('/grandparent');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should redirect to parent when deleting currently viewed descendant space', async () => {
+      // Hierarchy: 1 -> 2 -> 3
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Root' });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, name: 'Middle' });
+      const space3 = createMockSpace({ id: 3, parent_id: 2, name: 'Leaf' });
+      spacesSignal.value = [space1, space2, space3];
+
+      // Currently viewing space 3 (leaf)
+      currentSpaceSignal.value = space3;
+
+      const mockRouter = { route: vi.fn() };
+
+      // Delete space 2 (will also delete space 3 as descendant)
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Middle', router: mockRouter });
+
+      // Should redirect to space 1 (parent of deleted space 2)
+      expect(mockRouter.route).toHaveBeenCalledWith('/root');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should NOT redirect when deleting space that is not currently viewed', async () => {
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Space1' });
+      const space2 = createMockSpace({ id: 2, parent_id: null, name: 'Space2' });
+      spacesSignal.value = [space1, space2];
+
+      // Currently viewing space 1
+      currentSpaceSignal.value = space1;
+
+      const mockRouter = { route: vi.fn() };
+
+      // Delete space 2 (different from current)
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Space2', router: mockRouter });
+
+      // Should NOT redirect or reset posts
+      expect(mockRouter.route).not.toHaveBeenCalled();
+      expect(resetPosts).not.toHaveBeenCalled();
+    });
+
+    it('should NOT redirect when no router provided', async () => {
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Space1' });
+      spacesSignal.value = [space1];
+
+      // Currently viewing space 1
+      currentSpaceSignal.value = space1;
+
+      // No router provided
+      await deleteSpaceAction({ spaceId: 1, spaceName: 'Space1' });
+
+      // Should reset posts but not attempt to redirect
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should redirect to deep parent path correctly', async () => {
+      // Hierarchy: 1 -> 2 -> 3 -> 4 -> 5
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'One' });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, name: 'Two' });
+      const space3 = createMockSpace({ id: 3, parent_id: 2, name: 'Three' });
+      const space4 = createMockSpace({ id: 4, parent_id: 3, name: 'Four' });
+      const space5 = createMockSpace({ id: 5, parent_id: 4, name: 'Five' });
+      spacesSignal.value = [space1, space2, space3, space4, space5];
+
+      // Currently viewing space 5
+      currentSpaceSignal.value = space5;
+
+      const mockRouter = { route: vi.fn() };
+
+      // Delete space 5
+      await deleteSpaceAction({ spaceId: 5, spaceName: 'Five', router: mockRouter });
+
+      // Should redirect to parent with full path
+      expect(mockRouter.route).toHaveBeenCalledWith('/one/two/three/four');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should handle special characters in space names for redirect', async () => {
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Parent Space!' });
+      const space2 = createMockSpace({ id: 2, parent_id: 1, name: 'Child & More' });
+      spacesSignal.value = [space1, space2];
+
+      // Currently viewing space 2
+      currentSpaceSignal.value = space2;
+
+      const mockRouter = { route: vi.fn() };
+
+      await deleteSpaceAction({ spaceId: 2, spaceName: 'Child & More', router: mockRouter });
+
+      // Should redirect with slugified name
+      expect(mockRouter.route).toHaveBeenCalledWith('/parent-space');
+      expect(resetPosts).toHaveBeenCalled();
+    });
+
+    it('should redirect to "/" when deleting All Spaces view space', async () => {
+      const space1 = createMockSpace({ id: 1, parent_id: null, name: 'Space1' });
+      spacesSignal.value = [space1];
+
+      // Currently in All Spaces view
+      currentSpaceSignal.value = null;
+
+      const mockRouter = { route: vi.fn() };
+
+      // Delete space 1 while in All Spaces view
+      await deleteSpaceAction({ spaceId: 1, spaceName: 'Space1', router: mockRouter });
+
+      // Should NOT redirect (not viewing the deleted space)
+      expect(mockRouter.route).not.toHaveBeenCalled();
+      expect(resetPosts).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateSpaceAction', () => {

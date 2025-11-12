@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import { computed } from '@preact/signals';
+import { useLocation } from 'preact-iso';
 import { spaces as spacesSignal, isEligibleForRecursive, getEarliestSpaceCreationDate } from '@core/state';
 import type { Space } from '@core/api';
 import { formatFullDateTime } from '@core/utils/date';
@@ -49,6 +50,7 @@ interface SpaceHeaderCardProps {
 }
 
 export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
+  const location = useLocation();
   const [isHovering, setIsHovering] = useState(false);
   const [isCardHovering, setIsCardHovering] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
@@ -112,6 +114,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
     await deleteSpaceAction({
       spaceId: space.id,
       spaceName: space.name,
+      router: location,
     });
   };
 

@@ -587,6 +587,375 @@ describe('Post Actions', () => {
         const updated2 = activityCache.getData(2, false, 0, 4);
         expect(updated2!.days.find(d => d.date === todayStr)?.count).toBe(4);
       });
+
+      it('should invalidate activity for destination space when cache does not exist', async () => {
+        const space1 = createMockSpace({ id: 1, post_count: 10 });
+        const space2 = createMockSpace({ id: 2, post_count: 5 });
+        spacesSignal.value = [space1, space2];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Only cache activity for space 1 (source), not space 2 (destination)
+        const activity1 = createMockActivityData(120);
+        let todayIndex1 = activity1.days.findIndex(d => d.date === todayStr);
+        if (todayIndex1 === -1) {
+          activity1.days.push({ date: todayStr, count: 5 });
+        } else {
+          activity1.days[todayIndex1].count = 5;
+        }
+        activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activity1)));
+
+        // Space 2 has NO cached activity
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
+
+        // Space 1 should be decremented
+        const updated1 = activityCache.getData(1, false, 0, 4);
+        expect(updated1!.days.find(d => d.date === todayStr)?.count).toBe(4);
+
+        // Space 2 should still be null (invalidated, will fetch fresh on next view)
+        const updated2 = activityCache.getData(2, false, 0, 4);
+        expect(updated2).toBeNull();
+      });
+
+      it('should update activity for parent chains when moving between hierarchies', async () => {
+        // Two hierarchies: 1 -> 2 and 3 -> 4
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 20 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, post_count: 10, recursive_post_count: 10 });
+        const space3 = createMockSpace({ id: 3, parent_id: null, recursive_post_count: 15 });
+        const space4 = createMockSpace({ id: 4, parent_id: 3, post_count: 5, recursive_post_count: 5 });
+        spacesSignal.value = [space1, space2, space3, space4];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Setup activity for all spaces
+        [1, 2, 3, 4].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 5 });
+          } else {
+            activity.days[todayIndex].count = 5;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+          activityCache['cache'].set(`activity:${id}:recursive:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
+        posts.value = [post];
+
+        // Move post from space 2 (under 1) to space 4 (under 3)
+        await movePostAction({ postId: 1, newSpaceId: 4, currentSpaceId: 2 });
+
+        // Old hierarchy (1, 2) should be decremented
+        const updated1Flat = activityCache.getData(1, false, 0, 4);
+        const updated1Recursive = activityCache.getData(1, true, 0, 4);
+        const updated2Flat = activityCache.getData(2, false, 0, 4);
+
+        expect(updated2Flat!.days.find(d => d.date === todayStr)?.count).toBe(4); // 5 - 1
+        expect(updated1Flat!.days.find(d => d.date === todayStr)?.count).toBe(4); // parent flat view decremented
+        expect(updated1Recursive!.days.find(d => d.date === todayStr)?.count).toBe(4); // parent recursive decremented
+
+        // New hierarchy (3, 4) should be incremented
+        const updated3Flat = activityCache.getData(3, false, 0, 4);
+        const updated3Recursive = activityCache.getData(3, true, 0, 4);
+        const updated4Flat = activityCache.getData(4, false, 0, 4);
+
+        expect(updated4Flat!.days.find(d => d.date === todayStr)?.count).toBe(6); // 5 + 1
+        expect(updated3Flat!.days.find(d => d.date === todayStr)?.count).toBe(6); // parent flat view incremented
+        expect(updated3Recursive!.days.find(d => d.date === todayStr)?.count).toBe(6); // parent recursive incremented
+      });
+
+      it('should invalidate destination when only source has cached activity', async () => {
+        // Only source space has cached activity, destination does not
+        const space1 = createMockSpace({ id: 1, post_count: 10 });
+        const space2 = createMockSpace({ id: 2, post_count: 5 });
+        spacesSignal.value = [space1, space2];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Only cache activity for space 1
+        const activity1 = createMockActivityData(120);
+        let todayIndex1 = activity1.days.findIndex(d => d.date === todayStr);
+        if (todayIndex1 === -1) {
+          activity1.days.push({ date: todayStr, count: 5 });
+        } else {
+          activity1.days[todayIndex1].count = 5;
+        }
+        activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activity1)));
+        activityCache['cache'].set('activity:1:recursive:0:4m', JSON.parse(JSON.stringify(activity1)));
+
+        // Space 2 has NO cached activity
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
+
+        // Source should be updated
+        const updated1 = activityCache.getData(1, false, 0, 4);
+        expect(updated1!.days.find(d => d.date === todayStr)?.count).toBe(4);
+
+        // Destination should be null (was invalidated because no cache existed)
+        const updated2 = activityCache.getData(2, false, 0, 4);
+        expect(updated2).toBeNull();
+      });
+
+      it('should invalidate destination parent when parent has no cached activity', async () => {
+        // Destination has activity, but its parent does not
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 10 });
+        const space2 = createMockSpace({ id: 2, parent_id: null, post_count: 5 });
+        const space3 = createMockSpace({ id: 3, parent_id: 2, post_count: 3 });
+        spacesSignal.value = [space1, space2, space3];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Cache activity for spaces 1 and 3, but NOT space 2 (parent of 3)
+        [1, 3].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 5 });
+          } else {
+            activity.days[todayIndex].count = 5;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+          activityCache['cache'].set(`activity:${id}:recursive:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        // Move from 1 to 3 (which has parent 2)
+        await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 1 });
+
+        // Source should be updated
+        const updated1 = activityCache.getData(1, false, 0, 4);
+        expect(updated1!.days.find(d => d.date === todayStr)?.count).toBe(4);
+
+        // Destination should be updated
+        const updated3 = activityCache.getData(3, false, 0, 4);
+        expect(updated3!.days.find(d => d.date === todayStr)?.count).toBe(6);
+
+        // Parent (2) should be null (was invalidated because no cache existed)
+        const updated2 = activityCache.getData(2, false, 0, 4);
+        expect(updated2).toBeNull();
+      });
+
+      it('should handle moving between deep hierarchies with partial cache', async () => {
+        // Deep hierarchies: 1 -> 2 -> 3 and 4 -> 5 -> 6
+        // Only some spaces have cached activity
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 30 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 20 });
+        const space3 = createMockSpace({ id: 3, parent_id: 2, post_count: 10, recursive_post_count: 10 });
+        const space4 = createMockSpace({ id: 4, parent_id: null, recursive_post_count: 30 });
+        const space5 = createMockSpace({ id: 5, parent_id: 4, recursive_post_count: 20 });
+        const space6 = createMockSpace({ id: 6, parent_id: 5, post_count: 10, recursive_post_count: 10 });
+        spacesSignal.value = [space1, space2, space3, space4, space5, space6];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Only cache activity for spaces 1, 2, 3 (source chain), not 4, 5, 6 (destination chain)
+        [1, 2, 3].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 10 });
+          } else {
+            activity.days[todayIndex].count = 10;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+          activityCache['cache'].set(`activity:${id}:recursive:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 3, created: todayTimestamp });
+        posts.value = [post];
+
+        // Move from 3 to 6 (different deep hierarchies)
+        await movePostAction({ postId: 1, newSpaceId: 6, currentSpaceId: 3 });
+
+        // Source chain should be updated
+        expect(activityCache.getData(3, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+        expect(activityCache.getData(2, true, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+        expect(activityCache.getData(1, true, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+
+        // Destination chain should be null (invalidated because no cache)
+        expect(activityCache.getData(6, false, 0, 4)).toBeNull();
+        expect(activityCache.getData(5, true, 0, 4)).toBeNull();
+        expect(activityCache.getData(4, true, 0, 4)).toBeNull();
+      });
+
+      it('should handle moving within same parent (between siblings)', async () => {
+        // Siblings: 1 -> [2, 3]
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 30 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, post_count: 10, recursive_post_count: 10 });
+        const space3 = createMockSpace({ id: 3, parent_id: 1, post_count: 10, recursive_post_count: 10 });
+        spacesSignal.value = [space1, space2, space3];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Cache activity for all
+        [1, 2, 3].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 10 });
+          } else {
+            activity.days[todayIndex].count = 10;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+          activityCache['cache'].set(`activity:${id}:recursive:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
+        posts.value = [post];
+
+        // Move from sibling 2 to sibling 3
+        await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 2 });
+
+        // Source sibling should be decremented
+        expect(activityCache.getData(2, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+
+        // Destination sibling should be incremented
+        expect(activityCache.getData(3, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(11);
+
+        // Parent flat view should NOT change (post never belonged to parent directly)
+        const updated1Flat = activityCache.getData(1, false, 0, 4)!.days.find(d => d.date === todayStr)?.count;
+        expect(updated1Flat).toBe(10); // Unchanged - post was in child, not parent
+
+        // Parent recursive view gets both -1 and +1, but they happen sequentially
+        // So it ends up being decremented first, then incremented, resulting in net 0 change
+        // But since operations are sequential: 10 - 1 = 9, then 9 + 1 = 10
+        const updated1Recursive = activityCache.getData(1, true, 0, 4)!.days.find(d => d.date === todayStr)?.count;
+        expect(updated1Recursive).toBe(10); // Back to original after -1 +1
+      });
+
+      it('should handle moving to top-level space (no parent)', async () => {
+        // 1 -> 2 and 3 (top-level)
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 20 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, post_count: 10, recursive_post_count: 10 });
+        const space3 = createMockSpace({ id: 3, parent_id: null, post_count: 5, recursive_post_count: 5 });
+        spacesSignal.value = [space1, space2, space3];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Cache activity for all
+        [1, 2, 3].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 10 });
+          } else {
+            activity.days[todayIndex].count = 10;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+          activityCache['cache'].set(`activity:${id}:recursive:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
+        posts.value = [post];
+
+        // Move from child (2) to top-level (3)
+        await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 2 });
+
+        // Source and its parent should be decremented
+        expect(activityCache.getData(2, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+        expect(activityCache.getData(1, true, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+
+        // Destination (top-level, no parent to update) should be incremented
+        expect(activityCache.getData(3, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(11);
+      });
+
+      it('should handle moving from top-level to nested space', async () => {
+        // 1 (top-level) and 2 -> 3
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 10, recursive_post_count: 10 });
+        const space2 = createMockSpace({ id: 2, parent_id: null, recursive_post_count: 20 });
+        const space3 = createMockSpace({ id: 3, parent_id: 2, post_count: 10, recursive_post_count: 10 });
+        spacesSignal.value = [space1, space2, space3];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Cache activity for all
+        [1, 2, 3].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 10 });
+          } else {
+            activity.days[todayIndex].count = 10;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+          activityCache['cache'].set(`activity:${id}:recursive:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        // Move from top-level (1) to nested (3)
+        await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 1 });
+
+        // Source (top-level, no parent) should be decremented
+        expect(activityCache.getData(1, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(9);
+
+        // Destination and its parent should be incremented
+        expect(activityCache.getData(3, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(11);
+        expect(activityCache.getData(2, true, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(11);
+      });
+
+      it('should not update space 0 activity when moving (same timestamp)', async () => {
+        // Space 0 should not change because post stays in system with same timestamp
+        const space0 = createMockSpace({ id: 0, parent_id: null, post_count: 100, recursive_post_count: 100 });
+        const space1 = createMockSpace({ id: 1, parent_id: null, post_count: 50 });
+        const space2 = createMockSpace({ id: 2, parent_id: null, post_count: 50 });
+        spacesSignal.value = [space0, space1, space2];
+
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const todayTimestamp = today.getTime();
+
+        // Cache activity for all including space 0
+        [0, 1, 2].forEach(id => {
+          const activity = createMockActivityData(120);
+          let todayIndex = activity.days.findIndex(d => d.date === todayStr);
+          if (todayIndex === -1) {
+            activity.days.push({ date: todayStr, count: 100 });
+          } else {
+            activity.days[todayIndex].count = 100;
+          }
+          activityCache['cache'].set(`activity:${id}:flat:0:4m`, JSON.parse(JSON.stringify(activity)));
+        });
+
+        const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
+        posts.value = [post];
+
+        await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
+
+        // Space 0 should remain unchanged (post still in system with same date)
+        expect(activityCache.getData(0, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(100);
+
+        // Individual spaces should be updated
+        expect(activityCache.getData(1, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(99);
+        expect(activityCache.getData(2, false, 0, 4)!.days.find(d => d.date === todayStr)?.count).toBe(101);
+      });
     });
 
     describe('Posts with rich content', () => {

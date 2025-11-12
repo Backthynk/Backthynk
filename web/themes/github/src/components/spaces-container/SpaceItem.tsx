@@ -116,6 +116,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
     await deleteSpaceAction({
       spaceId: space.id,
       spaceName: space.name,
+      router: location,
     });
   };
 

@@ -12,7 +12,7 @@ import { posts, isLoadingPosts, currentOffset, postHasRichContent } from '../sta
 import { spaces, getSpaceById } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
-import { updateActivityDayCount } from '../cache/activityCache';
+import { updateActivityDayCount, invalidateActivityForSpace } from '../cache/activityCache';
 import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
 import { activityCache as activitySignal, activitySpaceId, activityRecursiveMode } from '../state/activity';
 
@@ -376,7 +376,7 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
           }
         }
 
-        // Decrement for old space's parents
+        // Decrement for old space's parents (both flat and recursive)
         let currentSpace = getSpaceById(oldSpaceId);
         while (currentSpace && currentSpace.parent_id !== null) {
           const parentSpace = getSpaceById(currentSpace.parent_id);
@@ -402,6 +402,11 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
         const newFlatData = updateActivityDayCount(postCreatedTimestamp, 1, newSpaceId, false);
         const newRecursiveData = updateActivityDayCount(postCreatedTimestamp, 1, newSpaceId, true);
 
+        // If cache doesn't exist for new space, invalidate to ensure fresh data on next view
+        if (!newFlatData && !newRecursiveData) {
+          invalidateActivityForSpace(newSpaceId);
+        }
+
         // Update signal if viewing new space
         if (activitySpaceId.value === newSpaceId) {
           if (activityRecursiveMode.value && newRecursiveData) {
@@ -411,13 +416,18 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
           }
         }
 
-        // Increment for new space's parents
+        // Increment for new space's parents (both flat and recursive)
         currentSpace = getSpaceById(newSpaceId);
         while (currentSpace && currentSpace.parent_id !== null) {
           const parentSpace = getSpaceById(currentSpace.parent_id);
           if (parentSpace) {
             const parentFlatData = updateActivityDayCount(postCreatedTimestamp, 1, parentSpace.id, false);
             const parentRecursiveData = updateActivityDayCount(postCreatedTimestamp, 1, parentSpace.id, true);
+
+            // If cache doesn't exist for parent, invalidate it
+            if (!parentFlatData && !parentRecursiveData) {
+              invalidateActivityForSpace(parentSpace.id);
+            }
 
             if (activitySpaceId.value === parentSpace.id) {
               if (activityRecursiveMode.value && parentRecursiveData) {

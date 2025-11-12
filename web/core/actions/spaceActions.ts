@@ -126,6 +126,11 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
         totalRecursivePostsDeleted = space.recursive_post_count;
       }
 
+      // Cache parent space reference before deletion (for redirect logic)
+      const parentSpaceForRedirect = parentId !== null && parentId !== undefined
+        ? getSpaceById(parentId)
+        : null;
+
       // Update parent spaces' recursive counts
       if (parentId !== null && parentId !== undefined) {
         let currentParent = getSpaceById(parentId);
@@ -155,6 +160,22 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
       // Invalidate activity cache for all deleted spaces
       allDeletedSpaceIds.forEach(id => invalidateActivityForSpace(id));
 
+      // Invalidate activity cache for all parent spaces (recursive views affected)
+      if (parentId !== null && parentId !== undefined) {
+        let currentParent = getSpaceById(parentId);
+        while (currentParent) {
+          invalidateActivityForSpace(currentParent.id);
+          if (currentParent.parent_id !== null) {
+            currentParent = getSpaceById(currentParent.parent_id);
+          } else {
+            break;
+          }
+        }
+      }
+
+      // Invalidate activity for space 0 (All Spaces) since total count changed
+      invalidateActivityForSpace(0);
+
       // Handle redirection if currently viewing any of the deleted spaces
       const currentlyViewingDeletedSpace =
         currentSpaceSignal.value && allDeletedSpaceIds.includes(currentSpaceSignal.value.id);
@@ -164,13 +185,8 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
 
         if (router) {
           // Redirect to parent space if exists, otherwise to "All Spaces"
-          if (parentId !== null && parentId !== undefined) {
-            const parentSpace = getSpaceById(parentId);
-            if (parentSpace) {
-              navigateToSpace(parentSpace, router);
-            } else {
-              navigateToAllSpaces(router);
-            }
+          if (parentSpaceForRedirect) {
+            navigateToSpace(parentSpaceForRedirect, router);
           } else {
             navigateToAllSpaces(router);
           }
