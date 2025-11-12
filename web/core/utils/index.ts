@@ -4,3 +4,4 @@ export * from './slug';
 export * from './date';
 export * from './files';
 export * from './activity';
+export * from './linkify';

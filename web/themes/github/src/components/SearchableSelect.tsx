@@ -13,7 +13,7 @@ const Option = formStyles.option;
 export interface SelectOption {
   value: string | number | null;
   label: string;
-  indent?: boolean;
+  depth?: number;
 }
 
 interface SearchableSelectProps {
@@ -131,7 +131,8 @@ export function SearchableSelect({
           filteredOptions.map((option) => (
             <Option
               key={String(option.value)}
-              className={`${option.value === value ? 'selected' : ''} ${option.indent ? 'indent' : ''}`}
+              className={`${option.value === value ? 'selected' : ''} ${option.depth ? 'indent' : ''}`}
+              style={option.depth ? { paddingLeft: `${option.depth * 16}px` } : undefined}
               onClick={() => handleOptionClick(option.value)}
             >
               {option.label}

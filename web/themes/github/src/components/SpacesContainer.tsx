@@ -8,6 +8,7 @@ disabled for now : 11.11.2025
 import { ProfileHeader, profileData } from './profile';
 */
 import type { Space } from '@core/api';
+import { spaces } from '@core/state';
 
 const Container = spacesContainerStyles.container;
 const Header = spacesContainerStyles.header;
@@ -78,7 +79,7 @@ export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
           </AddButton>
         </Header>
         <SpaceContainer sortPref={sortPref} />
-        <SortControls sortPref={sortPref} onSort={handleSort} />
+        {spaces.value.length >= 3 && <SortControls sortPref={sortPref} onSort={handleSort} />}
       </Container>
 
       <CreateSpaceModal

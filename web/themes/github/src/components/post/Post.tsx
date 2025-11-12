@@ -8,8 +8,7 @@ import { ImageGallery } from './ImageGallery';
 import { PostActionMenu } from './PostActionMenu';
 import { MovePostModal } from './MovePostModal';
 import { postStyles } from '../../styles/post';
-import { linkifyText, extractUrls } from '../../utils/linkify';
-import { canRenderAsImage } from '@core/utils/files';
+import { linkifyText, extractUrls, canRenderAsImage } from '@core/utils';
 import { clientConfig } from '@core/state/settings';
 import { useTooltip } from '@core/components';
 import type { TimelineContext } from '../Timeline';
@@ -101,8 +100,8 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
       }
     }
 
-    // Linkify the content (excluding URLs that are in previews)
-    return linkifyText(content, { excludeUrls: previewUrls });
+    // Linkify the content (don't exclude preview URLs - let them be clickable)
+    return linkifyText(content);
   }, [post.content, hasLinkPreviews, post.link_previews, contentUrls, previewUrls]);
 
   // Handle right-click to show context menu
