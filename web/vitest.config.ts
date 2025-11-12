@@ -21,6 +21,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': '/core',
+      '@core': '/core',
+      react: 'preact/compat',
+      'react-dom': 'preact/compat',
     },
   },
 });
