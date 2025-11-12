@@ -222,6 +222,7 @@ export function SpaceHeaderCard({ space }: SpaceHeaderCardProps) {
           isOpen={showUpdateModal}
           onClose={() => setShowUpdateModal(false)}
           space={space}
+          router={location}
         />
       )}
     </>

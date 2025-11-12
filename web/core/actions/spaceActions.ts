@@ -21,13 +21,24 @@ import {
   recursiveSpaces,
   currentSpace as currentSpaceSignal,
 } from '../state/spaces';
-import { invalidateSpaceStats, prefetchSpaceStats } from '../cache/spaceStatsCache';
+import { invalidateSpaceStats, prefetchSpaceStats, getOrFetchSpaceStats } from '../cache/spaceStatsCache';
 import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
 import { invalidateActivityForSpace } from '../cache/activityCache';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
 import { resetPosts } from '../state/posts';
 import { generateSlug } from '../utils';
+import {
+  detectSpaceChanges,
+  hasChange,
+  hasAnyChange,
+  SpaceChangeFlags,
+  describeChanges,
+} from './spaceUpdateFlags';
+import {
+  mergeSpaceStatsOnMove,
+  invalidateActivityOnMove,
+} from '../cache/cacheMergeUtils';
 
 export interface DeleteSpaceOptions {
   spaceId: number;
@@ -108,12 +119,37 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
   const allDeletedSpaceIds = [spaceId, ...descendantIds];
   const parentId = space?.parent_id;
 
+  // Calculate recursive post count and space count for warning message
+  const totalPostsToDelete = space?.recursive_post_count || 0;
+  const totalSpacesToDelete = descendantIds.length;
+
+  // Build a detailed warning message
+  let warningMessage = `<p>Are you sure you want to delete <strong style="font-size: 1.1em; color: var(--text-primary);">"${spaceName}"</strong>?</p>`;
+
+  if (totalSpacesToDelete > 0 || totalPostsToDelete > 0) {
+    warningMessage += '<p style="margin-top: 12px;">This will delete:</p>';
+    warningMessage += '<ul style="margin: 8px 0; padding-left: 20px;">';
+
+    if (totalSpacesToDelete > 0) {
+      warningMessage += `<li><strong>${totalSpacesToDelete}</strong> child space${totalSpacesToDelete === 1 ? '' : 's'}</li>`;
+    }
+
+    if (totalPostsToDelete > 0) {
+      warningMessage += `<li><strong>${totalPostsToDelete}</strong> post${totalPostsToDelete === 1 ? '' : 's'} (including nested posts)</li>`;
+    }
+
+    warningMessage += '</ul>';
+  }
+
+  warningMessage += '<p style="margin-top: 12px; color: var(--text-danger);"><strong>This action cannot be undone.</strong></p>';
+
   await executeAction({
     confirmation: {
       title: 'Delete Space',
-      message: `Are you sure you want to delete "${spaceName}"? This will also delete all child spaces and their posts. This action cannot be undone.`,
+      message: warningMessage,
       confirmText: 'Delete',
       variant: 'danger',
+      richContent: true,
     },
     execute: async () => {
       await apiDeleteSpace(spaceId);
@@ -209,20 +245,41 @@ export async function deleteSpaceAction(options: DeleteSpaceOptions): Promise<vo
 }
 
 /**
- * Update a space with automatic state updates, smart cache invalidation, and redirection
+ * Update a space with automatic state updates, smart cache merging, and redirection
+ *
+ * Uses bitwise flags for precise change detection and intelligent cache handling:
+ * - DESCRIPTION only: No cache invalidation (metadata update)
+ * - NAME only: No cache invalidation, just URL update
+ * - PARENT: Smart cache merging instead of invalidation
  */
 export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<void> {
   const { spaceId, payload, router, onSuccess } = options;
 
   // Get old space data for comparison
   const oldSpace = getSpaceById(spaceId);
-  const oldParentId = oldSpace?.parent_id;
-  const oldName = oldSpace?.name;
-  const newParentId = payload.parent_id;
-  const nameChanged = payload.name !== undefined && payload.name !== oldName;
+  if (!oldSpace) {
+    showError('Space not found');
+    return;
+  }
 
-  // Check if parent changed (outside of executeAction to use in cacheInvalidation)
-  const parentChanged = oldParentId !== newParentId && newParentId !== undefined;
+  // Detect what changed using bitwise flags
+  const changeFlags = detectSpaceChanges(oldSpace, payload);
+
+  // Early exit if nothing changed
+  if (changeFlags === SpaceChangeFlags.NONE) {
+    showSuccess('No changes to save');
+    if (onSuccess) {
+      onSuccess(oldSpace);
+    }
+    return;
+  }
+
+  // Log changes for debugging
+  console.log('[updateSpaceAction] Changes detected:', describeChanges(changeFlags));
+
+  // Capture old values before update
+  const oldParentId = oldSpace.parent_id;
+  const spaceRecursiveCount = oldSpace.recursive_post_count;
 
   await executeAction<Space | null>({
     execute: async () => {
@@ -231,10 +288,11 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
     onSuccess: async (updatedSpace) => {
       if (!updatedSpace) return;
 
-      if (parentChanged && oldSpace) {
-        // Moving space in hierarchy - update recursive counts
-        const spaceRecursiveCount = oldSpace.recursive_post_count;
+      // Handle parent change - update recursive counts and merge caches
+      if (hasChange(changeFlags, SpaceChangeFlags.PARENT)) {
+        const newParentId = updatedSpace.parent_id;
 
+        // Update recursive post counts in parent chains
         // Decrement from old parent chain
         if (oldParentId !== null && oldParentId !== undefined) {
           let currentParent = getSpaceById(oldParentId);
@@ -264,13 +322,36 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
           }
         }
 
-        // Smart cache invalidation: only invalidate recursive views for affected parent chains
-        if (oldParentId !== null && oldParentId !== undefined) {
-          invalidateSpaceStatsForParentChain(oldParentId, getSpaceById);
+        // Merge space stats caches instead of invalidating
+        // Try to get the moved space's current stats (recursive=false for its own stats)
+        const movedSpaceStats = await getOrFetchSpaceStats(spaceId, false);
+
+        if (movedSpaceStats) {
+          mergeSpaceStatsOnMove(
+            spaceId,
+            oldParentId,
+            newParentId,
+            {
+              file_count: movedSpaceStats.file_count,
+              total_size: movedSpaceStats.total_size,
+            },
+            getSpaceById
+          );
+        } else {
+          // Fallback: If we couldn't get stats, invalidate parent chains
+          if (oldParentId !== null && oldParentId !== undefined) {
+            invalidateSpaceStatsForParentChain(oldParentId, getSpaceById);
+          }
+          if (newParentId !== null && newParentId !== undefined) {
+            invalidateSpaceStatsForParentChain(newParentId, getSpaceById);
+          }
         }
-        if (newParentId !== null && newParentId !== undefined) {
-          invalidateSpaceStatsForParentChain(newParentId, getSpaceById);
-        }
+
+        // For activity cache, we invalidate instead of merge (too complex to merge reliably)
+        invalidateActivityOnMove(oldParentId, newParentId, getSpaceById);
+
+        // Invalidate activity cache for the moved space itself (affects recursive views)
+        invalidateActivityForSpace(spaceId);
       }
 
       // Update the space in state
@@ -278,19 +359,24 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
         s.id === spaceId ? updatedSpace : s
       );
 
-      // Invalidate and refetch stats for the updated space itself
-      invalidateSpaceStats(spaceId);
-      prefetchSpaceStats(spaceId);
+      // CRITICAL: Update currentSpace if we're viewing the updated space
+      // This fixes the "description not live-updating" issue
+      if (currentSpaceSignal.value && currentSpaceSignal.value.id === spaceId) {
+        currentSpaceSignal.value = updatedSpace;
+      }
 
-      // Invalidate activity cache for this space if parent changed (affects recursive views)
-      if (parentChanged) {
-        invalidateActivityForSpace(spaceId);
+      // Only invalidate/refetch space's own stats if parent changed
+      // (metadata-only changes don't affect stats)
+      if (hasChange(changeFlags, SpaceChangeFlags.PARENT)) {
+        invalidateSpaceStats(spaceId);
+        prefetchSpaceStats(spaceId);
       }
 
       showSuccess('Space updated successfully!');
 
-      // Redirect to updated space if name/description/parent changed and router provided
-      if (router && (nameChanged || parentChanged)) {
+      // Redirect to updated space if name or parent changed and router provided
+      // PATH_CHANGE affects the URL (name changes slug, parent changes path)
+      if (router && hasAnyChange(changeFlags, SpaceChangeFlags.NAME, SpaceChangeFlags.PARENT)) {
         navigateToSpace(updatedSpace, router);
       }
 
@@ -302,8 +388,9 @@ export async function updateSpaceAction(options: UpdateSpaceOptions): Promise<vo
       console.error('Failed to update space:', error);
       showError('Failed to update space. Please try again.');
     },
-    // Invalidate cache if parent changed (affects recursive views)
-    cacheInvalidation: parentChanged
+    // Only invalidate post cache if parent changed (affects recursive views and filtering)
+    // Metadata-only updates don't affect post visibility
+    cacheInvalidation: hasChange(changeFlags, SpaceChangeFlags.PARENT)
       ? { type: 'all' }
       : { type: 'none' },
   });

@@ -17,6 +17,7 @@ export interface ConfirmationConfig {
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'primary';
+  richContent?: boolean;
 }
 
 export type CacheInvalidationStrategy =

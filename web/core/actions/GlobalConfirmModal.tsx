@@ -25,6 +25,7 @@ export function GlobalConfirmModal() {
       confirmText={state.config.confirmText}
       cancelText={state.config.cancelText}
       variant={state.config.variant}
+      richContent={state.config.richContent}
     />
   );
 }

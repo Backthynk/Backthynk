@@ -482,6 +482,136 @@ describe('Space Actions', () => {
       expect(spacesSignal.value[0].name).toBe('New Name');
     });
 
+    it('should update currentSpace when updating the currently viewed space', async () => {
+      const space = createMockSpace({ id: 1, name: 'Old Name', description: 'Old Description' });
+      spacesSignal.value = [space];
+      currentSpaceSignal.value = space;
+
+      await updateSpaceAction({
+        spaceId: 1,
+        payload: { description: 'New Description' },
+      });
+
+      // currentSpace should be updated with the new data
+      expect(currentSpaceSignal.value).not.toBeNull();
+      expect(currentSpaceSignal.value!.description).toBe('New Description');
+      expect(currentSpaceSignal.value!.name).toBe('Old Name');
+    });
+
+    it('should NOT update currentSpace when updating a different space', async () => {
+      const space1 = createMockSpace({ id: 1, name: 'Space 1' });
+      const space2 = createMockSpace({ id: 2, name: 'Space 2', description: 'Old' });
+      spacesSignal.value = [space1, space2];
+      currentSpaceSignal.value = space1;
+
+      await updateSpaceAction({
+        spaceId: 2,
+        payload: { description: 'New' },
+      });
+
+      // currentSpace should remain pointing to space 1
+      expect(currentSpaceSignal.value).toBe(space1);
+      expect(currentSpaceSignal.value!.id).toBe(1);
+    });
+
+    describe('Description updates', () => {
+      it('should update description and refresh currentSpace', async () => {
+        const space = createMockSpace({ id: 1, name: 'Test', description: 'Old' });
+        spacesSignal.value = [space];
+        currentSpaceSignal.value = space;
+
+        await updateSpaceAction({
+          spaceId: 1,
+          payload: { description: 'New description text' },
+        });
+
+        expect(spacesSignal.value[0].description).toBe('New description text');
+        expect(currentSpaceSignal.value!.description).toBe('New description text');
+      });
+
+      it('should invalidate stats cache but NOT activity for description-only updates', async () => {
+        const space = createMockSpace({ id: 1, description: 'Old' });
+        spacesSignal.value = [space];
+
+        spaceStatsCache['cache'].set('spaceStats:1:flat', createMockSpaceStats());
+        activityCache['cache'].set('activity:1:flat:0:4m', {} as any);
+
+        await updateSpaceAction({
+          spaceId: 1,
+          payload: { description: 'New' },
+        });
+
+        // Stats cache is always invalidated on update (to refresh any server-side changes)
+        expect(spaceStatsCache.getStats(1, false)).toBeNull();
+        // Activity cache should remain valid for description changes
+        expect(activityCache.getData(1, false, 0, 4)).not.toBeNull();
+      });
+    });
+
+    describe('Name updates', () => {
+      it('should update name and redirect to new URL', async () => {
+        const space = createMockSpace({ id: 1, name: 'Old Name', parent_id: null });
+        spacesSignal.value = [space];
+        currentSpaceSignal.value = space;
+
+        const mockRouter = { route: vi.fn() };
+
+        await updateSpaceAction({
+          spaceId: 1,
+          payload: { name: 'New Name' },
+          router: mockRouter,
+        });
+
+        expect(spacesSignal.value[0].name).toBe('New Name');
+        expect(mockRouter.route).toHaveBeenCalledWith('/new-name');
+      });
+
+      it('should redirect to full path when renaming nested space', async () => {
+        const space1 = createMockSpace({ id: 1, name: 'Parent', parent_id: null });
+        const space2 = createMockSpace({ id: 2, name: 'Old Child', parent_id: 1 });
+        spacesSignal.value = [space1, space2];
+        currentSpaceSignal.value = space2;
+
+        const mockRouter = { route: vi.fn() };
+
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { name: 'New Child' },
+          router: mockRouter,
+        });
+
+        expect(mockRouter.route).toHaveBeenCalledWith('/parent/new-child');
+      });
+
+      it('should NOT redirect when no router provided', async () => {
+        const space = createMockSpace({ id: 1, name: 'Old' });
+        spacesSignal.value = [space];
+
+        await updateSpaceAction({
+          spaceId: 1,
+          payload: { name: 'New' },
+        });
+
+        // Should still update the name
+        expect(spacesSignal.value[0].name).toBe('New');
+      });
+
+      it('should handle special characters in new name', async () => {
+        const space = createMockSpace({ id: 1, name: 'Old', parent_id: null });
+        spacesSignal.value = [space];
+
+        const mockRouter = { route: vi.fn() };
+
+        await updateSpaceAction({
+          spaceId: 1,
+          payload: { name: 'New & Special! Name' },
+          router: mockRouter,
+        });
+
+        expect(mockRouter.route).toHaveBeenCalledWith('/new-special-name');
+      });
+    });
+
     describe('Parent change (moving space)', () => {
       it('should update recursive counts in old and new parent chains', async () => {
         // Two chains: 1 -> 2 and 3 -> 4
@@ -504,6 +634,60 @@ describe('Space Actions', () => {
         expect(space3.recursive_post_count).toBe(50); // 30 + 20
       });
 
+      it('should redirect to new path when moving space', async () => {
+        const space1 = createMockSpace({ id: 1, name: 'Parent1', parent_id: null });
+        const space2 = createMockSpace({ id: 2, name: 'Child', parent_id: 1 });
+        const space3 = createMockSpace({ id: 3, name: 'Parent2', parent_id: null });
+        spacesSignal.value = [space1, space2, space3];
+        currentSpaceSignal.value = space2;
+
+        const mockRouter = { route: vi.fn() };
+
+        // Move space 2 from parent1 to parent2
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { parent_id: 3 },
+          router: mockRouter,
+        });
+
+        // Should redirect to new path
+        expect(mockRouter.route).toHaveBeenCalledWith('/parent2/child');
+      });
+
+      it('should redirect when moving top-level space to be a child', async () => {
+        const space1 = createMockSpace({ id: 1, name: 'Parent', parent_id: null });
+        const space2 = createMockSpace({ id: 2, name: 'TopLevel', parent_id: null });
+        spacesSignal.value = [space1, space2];
+
+        const mockRouter = { route: vi.fn() };
+
+        // Move space 2 from top-level to child of space 1
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { parent_id: 1 },
+          router: mockRouter,
+        });
+
+        expect(mockRouter.route).toHaveBeenCalledWith('/parent/toplevel');
+      });
+
+      it('should redirect when moving child to top-level', async () => {
+        const space1 = createMockSpace({ id: 1, name: 'Parent', parent_id: null });
+        const space2 = createMockSpace({ id: 2, name: 'Child', parent_id: 1 });
+        spacesSignal.value = [space1, space2];
+
+        const mockRouter = { route: vi.fn() };
+
+        // Move space 2 from child to top-level
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { parent_id: null },
+          router: mockRouter,
+        });
+
+        expect(mockRouter.route).toHaveBeenCalledWith('/child');
+      });
+
       it('should invalidate activity when parent changes', async () => {
         const space1 = createMockSpace({ id: 1, parent_id: null });
         const space2 = createMockSpace({ id: 2, parent_id: 1 });
@@ -517,6 +701,82 @@ describe('Space Actions', () => {
         });
 
         expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+      });
+
+      it('should invalidate parent chain stats when moving space', async () => {
+        const space1 = createMockSpace({ id: 1, parent_id: null });
+        const space2 = createMockSpace({ id: 2, parent_id: 1 });
+        const space3 = createMockSpace({ id: 3, parent_id: null });
+        spacesSignal.value = [space1, space2, space3];
+
+        // Cache stats for both parent chains
+        spaceStatsCache['cache'].set('spaceStats:1:flat', createMockSpaceStats());
+        spaceStatsCache['cache'].set('spaceStats:1:recursive', createMockSpaceStats());
+        spaceStatsCache['cache'].set('spaceStats:3:flat', createMockSpaceStats());
+        spaceStatsCache['cache'].set('spaceStats:3:recursive', createMockSpaceStats());
+
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { parent_id: 3 },
+        });
+
+        // Both old and new parent chains should be invalidated
+        expect(spaceStatsCache.getStats(1, false)).toBeNull();
+        expect(spaceStatsCache.getStats(1, true)).toBeNull();
+        expect(spaceStatsCache.getStats(3, false)).toBeNull();
+        expect(spaceStatsCache.getStats(3, true)).toBeNull();
+      });
+
+      it('should invalidate activity for old and new parent chains', async () => {
+        const space1 = createMockSpace({ id: 1, parent_id: null });
+        const space2 = createMockSpace({ id: 2, parent_id: 1 });
+        const space3 = createMockSpace({ id: 3, parent_id: null });
+        spacesSignal.value = [space1, space2, space3];
+
+        // Cache activity for parent spaces
+        activityCache['cache'].set('activity:1:flat:0:4m', {} as any);
+        activityCache['cache'].set('activity:1:recursive:0:4m', {} as any);
+        activityCache['cache'].set('activity:2:flat:0:4m', {} as any);
+        activityCache['cache'].set('activity:3:flat:0:4m', {} as any);
+        activityCache['cache'].set('activity:3:recursive:0:4m', {} as any);
+
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { parent_id: 3 },
+        });
+
+        // Old parent chain recursive views should be invalidated (flat views unchanged)
+        expect(activityCache.getData(1, false, 0, 4)).not.toBeNull(); // Flat view unchanged
+        expect(activityCache.getData(1, true, 0, 4)).toBeNull(); // Recursive view invalidated
+
+        // New parent chain recursive views should be invalidated (flat views unchanged)
+        expect(activityCache.getData(3, false, 0, 4)).not.toBeNull(); // Flat view unchanged
+        expect(activityCache.getData(3, true, 0, 4)).toBeNull(); // Recursive view invalidated
+
+        // Moved space should be invalidated
+        expect(activityCache.getData(2, false, 0, 4)).toBeNull();
+      });
+
+      it('should handle moving space with descendants', async () => {
+        // Hierarchy: 1 -> 2 -> [3, 4] and separate space 5
+        const space1 = createMockSpace({ id: 1, parent_id: null, recursive_post_count: 100 });
+        const space2 = createMockSpace({ id: 2, parent_id: 1, recursive_post_count: 60 });
+        const space3 = createMockSpace({ id: 3, parent_id: 2, recursive_post_count: 30 });
+        const space4 = createMockSpace({ id: 4, parent_id: 2, recursive_post_count: 30 });
+        const space5 = createMockSpace({ id: 5, parent_id: null, recursive_post_count: 50 });
+        spacesSignal.value = [space1, space2, space3, space4, space5];
+
+        // Move space 2 (with its children) to be child of space 5
+        await updateSpaceAction({
+          spaceId: 2,
+          payload: { parent_id: 5 },
+        });
+
+        // Old parent chain should be decremented by space 2's recursive count (60)
+        expect(space1.recursive_post_count).toBe(40); // 100 - 60
+
+        // New parent chain should be incremented by space 2's recursive count (60)
+        expect(space5.recursive_post_count).toBe(110); // 50 + 60
       });
     });
 

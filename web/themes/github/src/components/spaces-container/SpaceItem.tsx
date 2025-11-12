@@ -201,6 +201,7 @@ export function SpaceItem({ space, depth = 0, sortedChildren, renderSpace, showP
           isOpen={showUpdateModal}
           onClose={() => setShowUpdateModal(false)}
           space={space}
+          router={location}
         />
       )}
     </StyledSpaceItem>

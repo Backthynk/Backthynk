@@ -18,7 +18,7 @@ export interface CreateSpacePayload {
 }
 
 export interface UpdateSpacePayload {
-  name: string;
+  name?: string;
   description?: string;
   parent_id?: number | null;
 }
@@ -43,13 +43,36 @@ export async function updateSpace(
   spaceId: number,
   payload: UpdateSpacePayload
 ): Promise<Space | null> {
+  // The backend requires all fields, so we need to get the current space first
+  // if any fields are missing from the payload
+  let body: Record<string, any> = {};
+
+  // If we have all required fields, use them directly
+  if (payload.name !== undefined && payload.description !== undefined && payload.parent_id !== undefined) {
+    body = {
+      name: payload.name,
+      description: payload.description,
+      parent_id: payload.parent_id !== null ? parseInt(String(payload.parent_id)) : null,
+    };
+  } else {
+    // Otherwise, fetch the current space and merge with the payload
+    const currentSpace = await apiRequest<Space>(`/spaces/${spaceId}`);
+    if (!currentSpace) {
+      throw new Error('Space not found');
+    }
+
+    body = {
+      name: payload.name !== undefined ? payload.name : currentSpace.name,
+      description: payload.description !== undefined ? payload.description : currentSpace.description,
+      parent_id: payload.parent_id !== undefined
+        ? (payload.parent_id !== null ? parseInt(String(payload.parent_id)) : null)
+        : currentSpace.parent_id,
+    };
+  }
+
   return apiRequest<Space>(`/spaces/${spaceId}`, {
     method: 'PUT',
-    body: JSON.stringify({
-      name: payload.name,
-      description: payload.description || '',
-      parent_id: payload.parent_id ? parseInt(String(payload.parent_id)) : null,
-    }),
+    body: JSON.stringify(body),
   });
 }
 
