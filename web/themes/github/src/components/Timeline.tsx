@@ -1,11 +1,10 @@
-import { useEffect, useState, useRef } from 'preact/hooks';
-import { posts, resetPosts, appendPosts, isLoadingPosts, getSpaceById, getSpaceBreadcrumb } from '@core/state';
-import { fetchPostsCached } from '@core/cache/postsCache';
+import { useRef } from 'preact/hooks';
+import { useTimeline } from '@core/hooks/useTimeline';
+import { getSpaceById, getSpaceBreadcrumb } from '@core/state';
 import { Post } from './post';
 import { VirtualScroller } from '@core/components/VirtualScroller';
 import { styled, keyframes } from 'goober';
 import { useLocation } from 'preact-iso';
-import { posts as postsConfig } from '@core/config';
 import { navigateToSpace } from '@core/actions/spaceActions';
 
 const fadeSlideIn = keyframes`
@@ -92,76 +91,16 @@ export interface TimelineContext {
 const VIRTUAL_SCROLL_THRESHOLD = 999999; // Disabled - posts have variable heights
 
 export function Timeline({ spaceId, recursive = false }: TimelineProps) {
-  const [offset, setOffset] = useState(0);
   const containerRef = useRef<HTMLElement>(null);
   const location = useLocation();
-  const prevRecursive = useRef(recursive);
 
-  useEffect(() => {
-    prevRecursive.current = recursive;
-
-    resetPosts();
-    isLoadingPosts.value = true;
-    setOffset(0);
-
-    // Fetch posts with caching
-    fetchPostsCached(spaceId, postsConfig.postsPerPage, 0, true, recursive)
-      .then((result) => {
-        appendPosts(result.posts);
-        setOffset(result.posts.length);
-
-        // Log cache hit/miss for debugging
-        if (result.fromCache) {
-          console.log('[Timeline] Loaded from cache');
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to fetch posts:', error);
-      })
-      .finally(() => {
-        isLoadingPosts.value = false;
-      });
-  }, [spaceId, recursive]);
-
-  const postsList = posts.value;
-  const loading = isLoadingPosts.value;
-
-  // Determine if there are more posts using space post counts
-  const hasMore = (() => {
-    if (spaceId === null) {
-      // "All Spaces" view - check if total posts loaded is less than sum of all space posts
-      return false; // For now, disable pagination in "All Spaces" view
-    }
-
-    const space = getSpaceById(spaceId);
-    if (!space) return false;
-
-    const totalPostsInSpace = recursive ? space.recursive_post_count : space.post_count;
-    return postsList.length < totalPostsInSpace;
-  })();
+  // Use the centralized timeline hook for all state management and data fetching
+  const { posts: postsList, isLoading: loading, hasMore, loadMore } = useTimeline(spaceId, recursive);
 
   // Timeline context to pass to child components
   const timelineContext: TimelineContext = {
     spaceId,
     recursive,
-  };
-
-  const loadMore = () => {
-    if (loading || !hasMore) return;
-
-    isLoadingPosts.value = true;
-    fetchPostsCached(spaceId, postsConfig.postsPerPage, offset, true, recursive)
-      .then((result) => {
-        appendPosts(result.posts);
-        setOffset(offset + result.posts.length);
-
-        if (result.fromCache) {
-          console.log('[Timeline] Loaded more from cache');
-        }
-      })
-      .finally(() => {
-        isLoadingPosts.value = false;
-      });
   };
 
 
