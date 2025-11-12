@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { spaceStatsCache } from '../spaceStatsCache';
-import { invalidateSpaceStatsForParentChain } from '../../utils/cacheHelpers';
+import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
 import { createMockSpaceStats, createMockSpace, resetFactoryCounters } from '../../__tests__/factories';
 import { spaces as spacesSignal } from '../../state/spaces';
 

@@ -7,8 +7,7 @@ import { NotFound } from './pages/NotFound';
 
 // Core state initialization
 import { initializeTheme, loadExpandedSpaces, loadRecursiveModes } from '@core/state';
-import { DropdownAlert } from '@core/components';
-import { GlobalConfirmModal } from '@core/actions/GlobalConfirmModal';
+import { DropdownAlert, GlobalConfirmModal } from '@core/components';
 
 export function App() {
   useEffect(() => {

@@ -6,11 +6,11 @@
  * from the old parent chain into the new parent chain.
  */
 
-import { spaceStatsCache } from './spaceStatsCache';
-import { activityCache } from './activityCache';
-import type { SpaceStats } from '../api/spaces';
-import type { ActivityData } from '../api/activity';
-import { setSpaceStats } from '../state/spaceStats';
+import { spaceStatsCache } from '../spaceStatsCache';
+import { activityCache } from '../activityCache';
+import type { SpaceStats } from '../../api/spaces';
+import type { ActivityData } from '../../api/activity';
+import { setSpaceStats } from '../../state/spaceStats';
 
 /**
  * Merge space stats when a space moves from one parent to another

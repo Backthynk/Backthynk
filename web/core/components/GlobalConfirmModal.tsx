@@ -5,7 +5,7 @@
  * It listens to the global confirmation state and displays modals as needed.
  */
 
-import { confirmationState } from './index';
+import { confirmationState } from '../actions';
 import { ConfirmModal } from '../../themes/github/src/components/modal/ConfirmModal';
 
 export function GlobalConfirmModal() {

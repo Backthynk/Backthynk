@@ -22,7 +22,7 @@ import {
   currentSpace as currentSpaceSignal,
 } from '../state/spaces';
 import { invalidateSpaceStats, prefetchSpaceStats, getOrFetchSpaceStats } from '../cache/spaceStatsCache';
-import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
+import { invalidateSpaceStatsForParentChain } from '../cache/utils/cacheHelpers';
 import { invalidateActivityForSpace } from '../cache/activityCache';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
@@ -34,11 +34,11 @@ import {
   hasAnyChange,
   SpaceChangeFlags,
   describeChanges,
-} from './spaceUpdateFlags';
+} from '../models/space/updateFlags';
 import {
   mergeSpaceStatsOnMove,
   invalidateActivityOnMove,
-} from '../cache/cacheMergeUtils';
+} from '../cache/utils/cacheMergeUtils';
 
 export interface DeleteSpaceOptions {
   spaceId: number;

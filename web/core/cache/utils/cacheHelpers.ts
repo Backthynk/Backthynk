@@ -4,8 +4,8 @@
  * These helpers are separated to avoid circular dependencies between cache and state modules
  */
 
-import type { Space } from '../api/spaces';
-import { spaceStatsCache } from '../cache/spaceStatsCache';
+import type { Space } from '../../api/spaces';
+import { spaceStatsCache } from '../spaceStatsCache';
 
 /**
  * Invalidate space stats for an entire parent chain (space + all ancestors)

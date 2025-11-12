@@ -13,7 +13,7 @@ import { spaces, getSpaceById } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
 import { updateActivityDayCount, invalidateActivityForSpace } from '../cache/activityCache';
-import { invalidateSpaceStatsForParentChain } from '../utils/cacheHelpers';
+import { invalidateSpaceStatsForParentChain } from '../cache/utils/cacheHelpers';
 import { activityCache as activitySignal, activitySpaceId, activityRecursiveMode } from '../state/activity';
 
 export interface DeletePostOptions {

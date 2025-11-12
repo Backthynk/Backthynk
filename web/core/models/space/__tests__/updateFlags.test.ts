@@ -6,7 +6,7 @@ import {
   hasAnyChange,
   hasAllChanges,
   describeChanges,
-} from '../spaceUpdateFlags';
+} from '../updateFlags';
 
 describe('spaceUpdateFlags', () => {
   const mockOldSpace = {

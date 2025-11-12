@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mergeSpaceStatsOnMove, invalidateActivityOnMove } from '../cacheMergeUtils';
-import { spaceStatsCache } from '../spaceStatsCache';
-import { activityCache } from '../activityCache';
-import type { SpaceStats } from '../../api/spaces';
+import { spaceStatsCache } from '../../spaceStatsCache';
+import { activityCache } from '../../activityCache';
+import type { SpaceStats } from '../../../api/spaces';
 
 // Mock the state module with all required exports
-vi.mock('../../state/spaceStats', () => ({
+vi.mock('../../../state/spaceStats', () => ({
   setSpaceStats: vi.fn(),
   clearAllSpaceStats: vi.fn(),
   clearSpaceStats: vi.fn(),

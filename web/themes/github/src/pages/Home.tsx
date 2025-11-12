@@ -131,7 +131,6 @@ export function Home() {
               <FooterLinks />
             </div>
           </LeftPanel>
-
           <Main>
             <Timeline
               spaceId={currentSpace?.id || null}
