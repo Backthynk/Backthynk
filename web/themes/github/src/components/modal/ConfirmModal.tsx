@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { Modal } from './Modal';
-import { formStyles } from './styles';
+import { formStyles } from '../../styles/modal';
 
 const Button = formStyles.button;
 

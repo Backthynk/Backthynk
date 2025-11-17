@@ -8,7 +8,7 @@ import { useTooltip } from '@core/components';
 import { deleteSpaceAction, toggleRecursiveMode } from '@core/actions/spaceActions';
 import { companionStyles } from '../../styles/companion';
 import { TitleBreadcrumb } from '../shared/TitleBreadcrumb';
-import { SpaceActionMenu } from './SpaceActionMenu';
+import { SpaceActionMenu } from '../spaces-container/SpaceActionMenu';
 import { UpdateSpaceModal } from '../spaces-container/UpdateSpaceModal';
 import { styled } from 'goober';
 

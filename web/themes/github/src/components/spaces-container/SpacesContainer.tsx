@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'preact/hooks';
-import { spacesContainerStyles } from '../styles/spaces-container';
-import { SpaceContainer } from './spaces-container/SpaceContainer';
-import { SortControls, type SortField, type SortPreference } from './spaces-container/SortControls';
-import { CreateSpaceModal } from './spaces-container/CreateSpaceModal';
+import { spacesContainerStyles } from '../../styles/spaces-container';
+import { SpaceContainer } from './SpaceContainer';
+import { SortControls, type SortField, type SortPreference } from './SortControls';
+import { CreateSpaceModal } from './CreateSpaceModal';
 /*
 disabled for now : 11.11.2025
 import { ProfileHeader, profileData } from './profile';

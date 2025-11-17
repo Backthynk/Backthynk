@@ -21,7 +21,7 @@ import {
   appendPosts,
   isLoadingPosts,
 } from '../state/posts';
-import { getSpaceById } from '../state/spaces';
+import { getSpaceById, getTotalPostCount } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig } from '../config';
 
@@ -120,8 +120,9 @@ export function useTimeline(
    */
   const hasMore = (() => {
     if (spaceId === null) {
-      // "All Spaces" view - disable pagination for now
-      return false;
+      // "All Spaces" view - use total post count across all spaces
+      const totalPosts = getTotalPostCount();
+      return posts.value.length < totalPosts;
     }
 
     const space = getSpaceById(spaceId);

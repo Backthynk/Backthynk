@@ -5,7 +5,7 @@ import { getFileIcon, isImageFile, supportsPreview } from '@core/utils/files';
 import { ImageViewer } from '@core/components/ImageViewer';
 import { LazyImage } from '@core/components';
 import { clientConfig } from '@core/state/settings';
-import { postStyles } from '../../styles/post';
+import { postStyles } from '../../../styles/post';
 
 const Section = postStyles.attachmentsSection;
 const Header = postStyles.attachmentsHeader;
@@ -154,10 +154,14 @@ export function FileAttachments({ files }: FileAttachmentsProps) {
 
             // Show preview thumbnail for images and preview-supported files
             if (isImage || hasPreview) {
+              // Check if file_path is valid (not empty and exists)
+              const hasValidPath = file.file_path && file.file_path.trim() !== '';
+
               return (
                 <Attachment
                   key={file.id}
                   onClick={() => {
+                    if (!hasValidPath) return; // Don't allow clicking if no valid path
                     if (isImage) {
                       openImageGallery(idx);
                     } else {
@@ -167,11 +171,18 @@ export function FileAttachments({ files }: FileAttachmentsProps) {
                   }}
                   title={tooltipText}
                 >
-                  <LazyImage
-                    src={`/uploads/${file.file_path}`}
-                    alt={file.filename}
-                    previewSize="small"
-                  />
+                  {hasValidPath ? (
+                    <LazyImage
+                      src={`/uploads/${file.file_path}`}
+                      alt={file.filename}
+                      previewSize="small"
+                    />
+                  ) : (
+                    <FilePreview>
+                      <i class={`fas ${getFileIcon(fileExtension)}`} />
+                      <span>{fileExtension.toUpperCase()}</span>
+                    </FilePreview>
+                  )}
                   <FileOverlay>
                     <p>{file.filename}</p>
                     <p class="size">{fileSizeText}</p>

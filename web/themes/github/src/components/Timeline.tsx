@@ -7,20 +7,9 @@ import { styled, keyframes } from 'goober';
 import { useLocation } from 'preact-iso';
 import { navigateToSpace } from '@core/actions/spaceActions';
 
-const fadeSlideIn = keyframes`
-  0% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-`;
 
 const Container = styled('main')`
   min-height: 400px;
-
 `;
 
 const EmptyState = styled('div')`

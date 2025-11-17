@@ -1,7 +1,7 @@
 import { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
-import { modalStyles } from './styles';
+import { modalStyles } from '../../styles/modal';
 
 const Overlay = modalStyles.overlay;
 const Container = modalStyles.container;

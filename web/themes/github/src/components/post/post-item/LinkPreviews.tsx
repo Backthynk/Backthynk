@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { LinkPreview } from '@core/api';
 import { LazyImage } from '@core/components';
-import { postStyles } from '../../styles/post';
+import { postStyles } from '../../../styles/post';
 
 const Section = postStyles.attachmentsSection;
 const Header = postStyles.attachmentsHeader;

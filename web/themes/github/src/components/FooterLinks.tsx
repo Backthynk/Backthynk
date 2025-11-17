@@ -1,6 +1,6 @@
 import { theme, toggleTheme } from '@core/state';
 import { app } from '@core/config';
-import { spacesContainerStyles } from '../../styles/spaces-container';
+import { spacesContainerStyles } from '../styles/spaces-container';
 
 const FooterContainer = spacesContainerStyles.footerLinks;
 const ActionsCard = spacesContainerStyles.footerActionsCard;

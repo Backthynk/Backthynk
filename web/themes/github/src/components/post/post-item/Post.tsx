@@ -6,12 +6,12 @@ import { FileAttachments } from './FileAttachments';
 import { LinkPreviews } from './LinkPreviews';
 import { ImageGallery } from './ImageGallery';
 import { PostActionMenu } from './PostActionMenu';
-import { MovePostModal } from './MovePostModal';
-import { postStyles } from '../../styles/post';
+import { MovePostModal } from '../modals/MovePostModal';
+import { postStyles } from '../../../styles/post';
 import { linkifyText, extractUrls, canRenderAsImage } from '@core/utils';
 import { clientConfig } from '@core/state/settings';
 import { useTooltip } from '@core/components';
-import type { TimelineContext } from '../Timeline';
+import type { TimelineContext } from '../../Timeline';
 
 const Article = postStyles.article;
 const Header = postStyles.header;

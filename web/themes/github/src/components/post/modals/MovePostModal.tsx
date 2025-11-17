@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'preact/hooks';
-import { Modal, formStyles } from '../modal';
-import { SpaceSelector } from '../SpaceSelector';
+import { Modal, formStyles } from '../../modal';
+import { SpaceSelector } from '../../spaces-container/SpaceSelector';
 import { type Post } from '@core/api';
 import { getSpaceBreadcrumb } from '@core/state';
 import { showError } from '@core/components';
 import { movePostAction } from '@core/actions/postActions';
-import type { TimelineContext } from '../Timeline';
+import type { TimelineContext } from '../../Timeline';
 
 const FormGroup = formStyles.formGroup;
 const Label = formStyles.label;

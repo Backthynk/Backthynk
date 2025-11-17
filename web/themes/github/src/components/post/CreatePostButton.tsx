@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { spacesContainerStyles } from '../../styles/spaces-container';
-import { PostCreationModal } from './PostCreationModal';
+import { PostCreationModal } from './modals/post-creation';
 import type { Space } from '@core/api';
 
 const ButtonContainer = spacesContainerStyles.createPostButtonContainer;

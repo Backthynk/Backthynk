@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { Modal, formStyles } from '../modal';
-import { SpaceSelector } from '../SpaceSelector';
+import { SpaceSelector } from './SpaceSelector';
 import { type Space } from '@core/api';
 import { spaces, checkDuplicateSlug, validateParentSpace, canBeParent } from '@core/state';
 import { generateSlug } from '@core/utils';

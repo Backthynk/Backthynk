@@ -1,23 +1,6 @@
 import { useState, useEffect, useRef, useLayoutEffect } from 'preact/hooks';
-import { Modal } from '../modal';
-import { SpaceSelector } from '../SpaceSelector';
-import { type Space, type Post as PostType } from '@core/api';
-import { postCreationModalStyles } from '../../styles/post-creation-modal';
-import { formatFileSize } from '@core/utils/format';
+import { type Space } from '@core/api';
 import { clientConfig } from '@core/state/settings';
-import { Post } from './Post';
-
-const Container = postCreationModalStyles.container;
-const Header = postCreationModalStyles.header;
-const SpaceSelectorWrapper = postCreationModalStyles.spaceSelectorWrapper;
-const ContentArea = postCreationModalStyles.contentArea;
-const Textarea = postCreationModalStyles.textarea;
-const AttachmentsGrid = postCreationModalStyles.attachmentsGrid;
-const AttachmentItem = postCreationModalStyles.attachmentItem;
-const AttachmentPreview = postCreationModalStyles.attachmentPreview;
-const RemoveButton = postCreationModalStyles.removeButton;
-const ToolbarButton = postCreationModalStyles.toolbarButton;
-const Button = postCreationModalStyles.button;
 
 // Configuration constants
 const MAX_MODAL_HEIGHT_PERCENT = 0.75; // 75% of viewport height
@@ -25,13 +8,7 @@ const HEADER_HEIGHT = 65; // Approximate header height
 const FOOTER_HEIGHT = 52; // Approximate footer height
 const CONTENT_PADDING = 40; // Total vertical padding for content area
 
-interface PostCreationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  currentSpace: Space | null;
-}
-
-export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreationModalProps) {
+export function usePostCreation(isOpen: boolean, currentSpace: Space | null) {
   const [selectedSpaceId, setSelectedSpaceId] = useState<number | null>(null);
   const [content, setContent] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -39,7 +16,10 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
   const [error, setError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const [modalHeight, setModalHeight] = useState<number | 'auto'>('auto');
-  
+  const [savedTextareaHeight, setSavedTextareaHeight] = useState<number | null>(null);
+  const [savedCursorPosition, setSavedCursorPosition] = useState<number | null>(null);
+  const [savedScrollTop, setSavedScrollTop] = useState<number | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,6 +32,7 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
   const maxFilesPerPost = clientConfig.value.file_upload?.max_files_per_post || 50;
   const maxFileSizeMB = clientConfig.value.file_upload?.max_file_size_mb || 100;
   const allowedExtensions = clientConfig.value.file_upload?.allowed_extensions || [];
+  const maxContentLength = clientConfig.value.core?.max_content_length || 5000;
 
   // Calculate and update modal height based on content
   const updateModalHeight = () => {
@@ -68,13 +49,13 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
     if (textarea) {
       contentHeight += textarea.scrollHeight;
     }
-    
+
     // Add attachments grid height if present
     if (attachments.length > 0 && attachmentGridRef.current) {
       const gridElement = attachmentGridRef.current;
       contentHeight += gridElement.scrollHeight + 16; // Add gap
     }
-    
+
     // Add some buffer for margins and unexpected elements
     contentHeight += 20;
 
@@ -102,11 +83,11 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
   // Handle window resize
   useEffect(() => {
     if (!isOpen) return;
-    
+
     const handleResize = () => {
       updateModalHeight();
     };
-    
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [isOpen]);
@@ -144,16 +125,36 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
     const textarea = textareaRef.current;
     if (!textarea || !(textarea instanceof HTMLTextAreaElement)) return;
 
-    // Reset height to auto to get accurate scrollHeight
-    textarea.style.height = 'auto';
+    // If returning from preview mode and we have saved state, restore it
+    if (!showPreview && savedTextareaHeight !== null) {
+      textarea.style.height = `${savedTextareaHeight}px`;
 
-    // Set height to scrollHeight to remove scrollbar
-    const newHeight = textarea.scrollHeight;
-    textarea.style.height = `${newHeight}px`;
+      // Restore cursor position
+      if (savedCursorPosition !== null) {
+        textarea.setSelectionRange(savedCursorPosition, savedCursorPosition);
+      }
+
+      // Restore scroll position
+      if (savedScrollTop !== null) {
+        textarea.scrollTop = savedScrollTop;
+      }
+
+      // Clear saved state after restoring
+      setSavedTextareaHeight(null);
+      setSavedCursorPosition(null);
+      setSavedScrollTop(null);
+    } else {
+      // Reset height to auto to get accurate scrollHeight
+      textarea.style.height = 'auto';
+
+      // Set height to scrollHeight to remove scrollbar
+      const newHeight = textarea.scrollHeight;
+      textarea.style.height = `${newHeight}px`;
+    }
 
     // Trigger modal height update
     updateModalHeight();
-  }, [content]);
+  }, [content, showPreview, savedTextareaHeight, savedCursorPosition, savedScrollTop]);
 
   // Auto-focus textarea when modal opens
   useEffect(() => {
@@ -313,29 +314,25 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
     setError(''); // Clear error when removing files
   };
 
-  // Create a preview post object for the Post component
-  const previewPost: PostType = {
-    id: 0,
-    space_id: selectedSpaceId || 0,
-    content: content,
-    created: Date.now() / 1000, // Unix timestamp in seconds
-    files: attachments.map((file, index) => ({
-      id: index,
-      filename: file.name,
-      file_type: file.type,
-      file_size: file.size,
-      file_path: previewUrls.get(file) || '',
-      created: Date.now() / 1000,
-    })),
-    link_previews: [],
+  const handleTogglePreview = () => {
+    // Save current textarea state before switching to preview
+    if (!showPreview && textareaRef.current) {
+      const textarea = textareaRef.current;
+      setSavedTextareaHeight(textarea.scrollHeight);
+      setSavedCursorPosition(textarea.selectionStart);
+      setSavedScrollTop(textarea.scrollTop);
+    }
+    setShowPreview(!showPreview);
   };
 
-  // Get character limit from config (fallback to 5000)
-  const maxContentLength = clientConfig.value.core?.max_content_length || 5000;
-  const contentLength = content.length;
-  const isOverLimit = contentLength > maxContentLength;
+  const handleSpaceChange = (value: number | null) => {
+    setSelectedSpaceId(value);
+    if (error && error.includes('space')) {
+      setError('');
+    }
+  };
 
-  const handlePublish = () => {
+  const handlePublish = (onClose: () => void) => {
     setError('');
 
     // Validation only on publish
@@ -349,6 +346,7 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
       return;
     }
 
+    const isOverLimit = content.length > maxContentLength;
     if (isOverLimit) {
       setError(`Content exceeds maximum length of ${maxContentLength} characters`);
       return;
@@ -359,160 +357,35 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
     onClose();
   };
 
-  const footer = (
-    <>
-      <ToolbarButton onClick={() => fileInputRef.current?.click()} title="Add images or files">
-        <i class="fas fa-image" />
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
-      </ToolbarButton>
-      <div style={{ flex: 1 }} />
-      {contentLength > 0 && (
-        <span style={{
-          fontSize: '13px',
-          color: isOverLimit ? '#f44336' : 'var(--text-tertiary)',
-          marginRight: '12px'
-        }}>
-          {contentLength} / {maxContentLength}
-        </span>
-      )}
-      <Button type="button" className="publish" onClick={handlePublish} disabled={isOverLimit}>
-        Publish
-      </Button>
-    </>
-  );
+  return {
+    // State
+    selectedSpaceId,
+    content,
+    attachments,
+    previewUrls,
+    error,
+    showPreview,
+    modalHeight,
+    maxContentLength,
 
-  return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title=""
-      footer={footer}
-      size="timeline"
-      modalContainerRef={modalContainerRef}
-      modalHeight={modalHeight}
-    >
-      <Header>
-        <SpaceSelectorWrapper>
-          <label>Publish to:</label>
-          <SpaceSelector
-            value={selectedSpaceId}
-            onChange={(value) => {
-              setSelectedSpaceId(value);
-              if (error && error.includes('space')) {
-                setError('');
-              }
-            }}
-            placeholder={error && error.includes('space') ? error : "Select a space..."}
-            error={!!(error && error.includes('space'))}
-            showAllDepths={true}
-          />
-        </SpaceSelectorWrapper>
-        <ToolbarButton
-          onClick={() => setShowPreview(!showPreview)}
-          title={showPreview ? "Hide preview" : "Show preview"}
-          className={showPreview ? 'active' : ''}
-        >
-          <i class={showPreview ? "fas fa-edit" : "fas fa-eye"} />
-        </ToolbarButton>
-      </Header>
+    // Refs
+    textareaRef,
+    fileInputRef,
+    containerRef,
+    contentAreaRef,
+    attachmentGridRef,
+    modalContainerRef,
 
-      <ContentArea ref={contentAreaRef}>
-        {!showPreview ? (
-          <Container
-            ref={containerRef}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
-            <Textarea
-              ref={textareaRef}
-              value={content}
-              onInput={(e) => setContent((e.target as HTMLTextAreaElement).value)}
-              placeholder="What's on your mind?"
-              rows={3}
-              style={{ minHeight: '100px' }}
-            />
-
-            {attachments.length > 0 && (
-              <AttachmentsGrid ref={attachmentGridRef}>
-                {attachments.map((file, index) => {
-                  const isImage = file.type.startsWith('image/');
-                  const previewUrl = previewUrls.get(file);
-
-                  return (
-                    <AttachmentItem key={index}>
-                      <AttachmentPreview>
-                        {isImage && previewUrl ? (
-                          <img src={previewUrl} alt={file.name} />
-                        ) : (
-                          <div class="file-icon">
-                            <i class="fas fa-file" />
-                            <span>{file.name.split('.').pop()?.toUpperCase()}</span>
-                          </div>
-                        )}
-                      </AttachmentPreview>
-                      <RemoveButton onClick={() => handleRemoveAttachment(index)}>
-                        <i class="fas fa-times" />
-                      </RemoveButton>
-                      {!isImage && (
-                        <div class="file-info">
-                          <span class="filename">{file.name}</span>
-                          <span class="filesize">{formatFileSize(file.size)}</span>
-                        </div>
-                      )}
-                    </AttachmentItem>
-                  );
-                })}
-              </AttachmentsGrid>
-            )}
-            
-            {error && (
-              <div style={{
-                padding: '8px 12px',
-                background: 'rgba(244, 67, 54, 0.1)',
-                border: '1px solid rgba(244, 67, 54, 0.3)',
-                borderRadius: '6px',
-                color: '#f44336',
-                fontSize: '13px',
-                marginTop: '8px'
-              }}>
-                {error}
-              </div>
-            )}
-          </Container>
-        ) : (
-          <div style={{ marginTop: '1rem' }}>
-            {content.trim() || attachments.length > 0 ? (
-              <Post post={previewPost} />
-            ) : (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '3rem',
-                color: 'var(--text-tertiary)',
-                gap: '0.75rem'
-              }}>
-                <i class="fas fa-eye-slash" style={{ fontSize: '3rem' }} />
-                <p style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                  Nothing to preview yet
-                </p>
-                <span style={{ fontSize: '13px', textAlign: 'center', maxWidth: '300px' }}>
-                  Start writing to see how your post will look
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </ContentArea>
-    </Modal>
-  );
+    // Handlers
+    setContent,
+    handleFileSelect,
+    handleRemoveAttachment,
+    handleDragEnter,
+    handleDragLeave,
+    handleDragOver,
+    handleDrop,
+    handleTogglePreview,
+    handleSpaceChange,
+    handlePublish,
+  };
 }

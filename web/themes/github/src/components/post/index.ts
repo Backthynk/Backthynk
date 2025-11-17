@@ -1,6 +1,3 @@
-export { Post } from './Post';
-export { FileAttachments } from './FileAttachments';
-export { LinkPreviews } from './LinkPreviews';
-export { PostActionMenu } from './PostActionMenu';
+export { Post, FileAttachments, LinkPreviews, ImageGallery, PostActionMenu } from './post-item';
+export { MovePostModal, PostCreationModal } from './modals';
 export { CreatePostButton } from './CreatePostButton';
-export { PostCreationModal } from './PostCreationModal';

@@ -4,7 +4,7 @@ import { expandedSpaces, hasChildren, isRecursiveMode, isEligibleForRecursive, s
 import { spacesContainerStyles } from '../../styles/spaces-container';
 import type { Space } from '@core/api';
 import { deleteSpaceAction, toggleSpaceExpanded, toggleRecursiveMode, navigateToSpace, navigateToAllSpaces } from '@core/actions/spaceActions';
-import { SpaceActionMenu } from '../companion/SpaceActionMenu';
+import { SpaceActionMenu } from './SpaceActionMenu';
 import { UpdateSpaceModal } from './UpdateSpaceModal';
 
 const SpaceRow = spacesContainerStyles.spaceRow;

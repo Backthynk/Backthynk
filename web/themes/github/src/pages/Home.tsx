@@ -4,7 +4,7 @@ import { spaces, isRecursiveMode, isEligibleForRecursive, currentSpace as curren
 import { generateSlug } from '@core/utils';
 import { expandParentSpaces, toggleRecursiveMode, selectSpace } from '@core/actions/spaceActions';
 import { Layout } from '../components/Layout';
-import { SpacesContainer } from '../components/SpacesContainer';
+import { SpacesContainer } from '../components/spaces-container/SpacesContainer';
 import { FooterLinks, useContainerHeight } from '../components/spaces-container';
 import { CreatePostButton } from '../components/post';
 import { ActivityTracker } from '../components/activity';

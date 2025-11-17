@@ -17,6 +17,7 @@ export const modalStyles = {
     padding: 3rem 1rem 1rem 1rem;
     backdrop-filter: blur(2px);
     overflow-y: auto;
+    overscroll-behavior: contain;
   `,
 
   container: styled('div', forwardRef)`
