@@ -70,6 +70,26 @@ export const posts = {
    * Number of posts to load per page/batch
    */
   postsPerPage: 20,
+
+  /**
+   * File upload constraints
+   */
+  fileUpload: {
+    /**
+     * Maximum number of files per post
+     */
+    maxFilesPerPost: 50,
+
+    /**
+     * Maximum file size in MB
+     */
+    maxFileSizeMB: 100,
+
+    /**
+     * Allowed file extensions (empty array = all allowed)
+     */
+    allowedExtensions: [] as string[],
+  },
 } as const;
 
 /**

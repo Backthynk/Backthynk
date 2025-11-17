@@ -32,8 +32,17 @@ export default defineConfig({
     minify: process.env.NODE_ENV === 'production',
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['preact', '@preact/signals', 'preact-iso'],
+        manualChunks: (id) => {
+          // Vendor chunk: All node_modules dependencies
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+          // Core chunk: Shared core utilities/state
+          if (id.includes('/core/')) {
+            return 'core';
+          }
+          // Theme chunk: Everything else (theme-specific components)
+          return 'theme';
         },
       },
     },

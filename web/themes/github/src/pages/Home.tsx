@@ -1,11 +1,12 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useRef } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
 import { spaces, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { expandParentSpaces, toggleRecursiveMode, selectSpace } from '@core/actions/spaceActions';
 import { Layout } from '../components/Layout';
 import { SpacesContainer } from '../components/SpacesContainer';
-import { FooterLinks } from '../components/spaces-container';
+import { FooterLinks, useContainerHeight } from '../components/spaces-container';
+import { CreatePostButton } from '../components/post';
 import { ActivityTracker } from '../components/activity';
 import { Timeline } from '../components/Timeline';
 import { CompanionPanel } from '../components/companion';
@@ -45,6 +46,14 @@ const findSpaceByPath = (path: string, spacesList: Space[]): Space | null => {
 
 export function Home() {
   const route = useRoute();
+  const footerRef = useRef<HTMLDivElement>(null);
+  const createPostButtonRef = useRef<HTMLDivElement>(null);
+
+  // Calculate max height for spaces container
+  const spacesMaxHeight = useContainerHeight(
+    [footerRef, createPostButtonRef],
+    { gaps: 3, padding: 2, maxHeight: 1000 }
+  );
 
   // Set initial space from URL on first render (before child components mount)
   // This prevents unnecessary fetches for spaceId=0
@@ -127,8 +136,13 @@ export function Home() {
               flexDirection: 'column',
               gap: '1rem'
             }}>
-              <SpacesContainer currentSpace={currentSpace} />
-              <FooterLinks />
+              <SpacesContainer currentSpace={currentSpace} maxHeight={spacesMaxHeight} />
+              <div ref={createPostButtonRef}>
+                <CreatePostButton currentSpace={currentSpace} />
+              </div>
+              <div ref={footerRef}>
+                <FooterLinks />
+              </div>
             </div>
           </LeftPanel>
           <Main>

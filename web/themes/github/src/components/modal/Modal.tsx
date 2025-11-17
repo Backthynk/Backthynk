@@ -1,4 +1,4 @@
-import { ComponentChildren } from 'preact';
+import { ComponentChildren, RefObject } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
 import { modalStyles } from './styles';
@@ -14,15 +14,31 @@ const Footer = modalStyles.footer;
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   children: ComponentChildren;
   footer?: ComponentChildren;
-  size?: 'small' | 'medium' | 'large';
+  size?: 'small' | 'medium' | 'timeline' | 'large';
   onOverlayClick?: () => void; // Custom handler for overlay/backdrop clicks
+  modalContainerRef?: RefObject<HTMLDivElement>; // Ref to modal container for external control
+  modalHeight?: number | 'auto'; // Dynamic height control
 }
 
-export function Modal({ isOpen, onClose, title, children, footer, size = 'medium', onOverlayClick }: ModalProps) {
+export function Modal({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children, 
+  footer, 
+  size = 'medium', 
+  onOverlayClick,
+  modalContainerRef,
+  modalHeight = 'auto'
+}: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const internalContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Use external ref if provided, otherwise use internal
+  const containerRef = modalContainerRef || internalContainerRef;
 
   // Close on escape key
   useEffect(() => {
@@ -50,6 +66,19 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'medium
     };
   }, [isOpen]);
 
+  // Apply dynamic height if provided
+  useEffect(() => {
+    if (containerRef.current) {
+      if (modalHeight === 'auto') {
+        containerRef.current.style.height = 'auto';
+        containerRef.current.style.maxHeight = 'calc(100vh - 8rem)';
+      } else if (typeof modalHeight === 'number') {
+        containerRef.current.style.height = `${modalHeight}px`;
+        containerRef.current.style.maxHeight = 'none';
+      }
+    }
+  }, [modalHeight, containerRef]);
+
   if (!isOpen) return null;
 
   const handleOverlayClickEvent = (e: any) => {
@@ -66,13 +95,15 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'medium
 
   return createPortal(
     <Overlay ref={overlayRef} onClick={handleOverlayClickEvent}>
-      <Container className={size}>
-        <Header>
-          <Title>{title}</Title>
-          <CloseButton onClick={onClose}>
-            <i class="fas fa-times" />
-          </CloseButton>
-        </Header>
+      <Container ref={containerRef} className={size}>
+        {title && (
+          <Header>
+            <Title>{title}</Title>
+            <CloseButton onClick={onClose}>
+              <i class="fas fa-times" />
+            </CloseButton>
+          </Header>
+        )}
         <Content>{children}</Content>
         {footer && <Footer>{footer}</Footer>}
       </Container>

@@ -353,4 +353,51 @@ expandButton: styled('button')`
     gap: 4px;
     transition: color 0.2s ease-in-out;
   `,
+
+  createPostButtonContainer: styled('div')`
+    width: 100%;
+  `,
+
+  createPostButton: styled('button')`
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 16px;
+    background: #1f883d;
+    color: #ffffff;
+    border: 1px solid rgba(31, 136, 61, 0.1);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s cubic-bezier(0.3, 0, 0.5, 1);
+    line-height: 20px;
+
+    &:hover {
+      background: #1a7f37;
+    }
+
+    &:active {
+      background: #197f37;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      background: #238636;
+      border-color: rgba(240, 246, 252, 0.1);
+
+      &:hover {
+        background: #2ea043;
+      }
+
+      &:active {
+        background: #2ea043;
+      }
+    }
+
+    i {
+      font-size: 14px;
+    }
+  `,
 };

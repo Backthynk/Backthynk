@@ -1,8 +1,9 @@
 import { styled } from 'goober';
+import { forwardRef } from 'preact/compat';
 import { zIndex } from '@core/styles/zIndex';
 
 export const modalStyles = {
-  overlay: styled('div')`
+  overlay: styled('div', forwardRef)`
     position: fixed;
     top: 0;
     left: 0;
@@ -10,24 +11,26 @@ export const modalStyles = {
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: ${zIndex.modalOverlay};
-    padding: 1rem;
+    padding: 3rem 1rem 1rem 1rem;
     backdrop-filter: blur(2px);
+    overflow-y: auto;
   `,
 
-  container: styled('div')`
+  container: styled('div', forwardRef)`
     background: var(--bg-primary);
     border: 1px solid var(--border-primary);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     max-width: 90vw;
-    max-height: 90vh;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: height;
+    position: relative;
     overflow: hidden;
-    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 
     &.small {
       width: 400px;
@@ -37,8 +40,14 @@ export const modalStyles = {
       width: 500px;
     }
 
+    &.timeline {
+      width: 600px;
+      max-width: 90vw;
+    }
+
     &.large {
-      width: 700px;
+      width: 1200px;
+      max-width: 95vw;
     }
   `,
 
@@ -89,7 +98,8 @@ export const modalStyles = {
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1;
-    min-height: 0;
+    min-height: 0; /* Important for flex children */
+    transition: all 0.3s ease;
 
     /* Custom scrollbar styling */
     &::-webkit-scrollbar {
@@ -116,10 +126,11 @@ export const modalStyles = {
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
-    padding: 16px 20px;
+    padding: 12px 16px;
     border-top: 1px solid var(--border-primary);
     flex-shrink: 0;
     background: var(--bg-secondary);
+    border-radius: 0 0 8px 8px;
     transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
   `,
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'preact/hooks';
+import { useState, useEffect } from 'preact/hooks';
 import { spacesContainerStyles } from '../styles/spaces-container';
 import { SpaceContainer } from './spaces-container/SpaceContainer';
 import { SortControls, type SortField, type SortPreference } from './spaces-container/SortControls';
@@ -22,9 +22,10 @@ const PADDING = 2; // 2rem total padding (1rem top + 1rem bottom)
 
 interface SpacesContainerProps {
   currentSpace: Space | null;
+  maxHeight?: string;
 }
 
-export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
+export function SpacesContainer({ currentSpace, maxHeight }: SpacesContainerProps) {
   // Load sort preference from localStorage
   const loadSortPreference = (): SortPreference => {
     const stored = localStorage.getItem(SORT_STORAGE_KEY);
@@ -33,24 +34,11 @@ export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
 
   const [sortPref, setSortPref] = useState<SortPreference>(loadSortPreference());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [profileHeight, setProfileHeight] = useState(0);
-  const profileRef = useRef<HTMLDivElement>(null);
 
   // Save sort preference to localStorage
   useEffect(() => {
     localStorage.setItem(SORT_STORAGE_KEY, JSON.stringify(sortPref));
   }, [sortPref]);
-
-  // Measure profile height dynamically
-  useEffect(() => {
-    /* disabled for now : 11.11.2025
-    if (profileRef.current) {
-      const height = profileRef.current.offsetHeight;
-      // Convert px to rem (assuming 16px = 1rem)
-      setProfileHeight(height / 16);
-    }
-    */
-  }, []);
 
   const handleSort = (field: SortField) => {
     setSortPref(prev => ({
@@ -58,11 +46,6 @@ export function SpacesContainer({ currentSpace }: SpacesContainerProps) {
       ascending: prev.field === field ? !prev.ascending : true
     }));
   };
-
-  // Calculate max height based on dynamic profile height
-  const subtractHeight = PADDING + profileHeight + GAP * 3;
-  const calculatedMaxHeight = `calc(100vh - ${subtractHeight}rem)`;
-  const maxHeight = `min(${calculatedMaxHeight}, 800px)`;
 
   return (
     <>
