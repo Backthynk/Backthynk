@@ -2,14 +2,12 @@ import { useState, useMemo } from 'preact/hooks';
 import type { Post as PostType } from '@core/api';
 import { deletePostAction } from '@core/actions/postActions';
 import { formatRelativeDate, formatFullDateTime } from '@core/utils/date';
-import { FileAttachments } from './FileAttachments';
 import { LinkPreviews } from './LinkPreviews';
 import { ImageGallery } from './ImageGallery';
 import { PostActionMenu } from './PostActionMenu';
 import { MovePostModal } from '../modals/MovePostModal';
 import { postStyles } from '../../../styles/post';
-import { linkifyText, extractUrls, canRenderAsImage } from '@core/utils';
-import { clientConfig } from '@core/state/settings';
+import { linkifyText, extractUrls } from '@core/utils';
 import { useTooltip } from '@core/components';
 import type { TimelineContext } from '../../Timeline';
 
@@ -40,20 +38,6 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
   const hasAttachments = files.length > 0;
   const hasLinkPreviews = post.link_previews && post.link_previews.length > 0;
   const isTextOnly = !hasAttachments && !hasLinkPreviews;
-
-  // Get preview supported formats from config
-  const previewFormats = clientConfig.value.preview?.supported_formats || [];
-
-  // Separate files that can render as images (native images + preview-supported files like PDFs)
-  const images = useMemo(
-    () => files.filter(f => canRenderAsImage(f.file_type, f.filename, previewFormats)),
-    [files, previewFormats]
-  );
-  const otherFiles = useMemo(
-    () => files.filter(f => !canRenderAsImage(f.file_type, f.filename, previewFormats)),
-    [files, previewFormats]
-  );
-  const hasOnlyImages = hasAttachments && images.length > 0 && otherFiles.length === 0;
 
   // Extract URLs from content
   const contentUrls = useMemo(() => extractUrls(post.content), [post.content]);
@@ -176,11 +160,8 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
         />
       )}
 
-      {/* Image Gallery (for image-only posts) */}
-      {hasOnlyImages && <ImageGallery images={images} />}
-
-      {/* File Attachments (for mixed or non-image files) */}
-      {hasAttachments && !hasOnlyImages && <FileAttachments files={files} />}
+      {/* Image Gallery (unified attachment display) */}
+      {hasAttachments && <ImageGallery files={files} />}
 
       {/* Tooltip */}
       {TooltipPortal}

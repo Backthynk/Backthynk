@@ -2,9 +2,11 @@ import { useState } from 'preact/hooks';
 import type { PostFile } from '@core/api';
 import { ImageViewer } from '@core/components/ImageViewer';
 import { LazyImage } from '@core/components';
-import { isImageFile } from '@core/utils/files';
+import { isImageFile, getFileIcon, supportsPreview } from '@core/utils/files';
 import { formatFileSize } from '@core/utils/format';
+import { clientConfig } from '@core/state/settings';
 import { styled } from 'goober';
+import { SectionHeader } from './SectionHeader';
 
 const GalleryContainer = styled('div')`
   border-radius: 12px;
@@ -96,19 +98,6 @@ const FourImagesGrid = styled('div')`
   }
 `;
 
-const MoreOverlay = styled('div')`
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-`;
-
 const ImageContainer = styled('div')`
   position: relative;
   overflow: hidden;
@@ -158,162 +147,376 @@ const FileOverlay = styled('div')`
   }
 `;
 
+const FilePlaceholder = styled('div')`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-secondary);
+  min-height: 200px;
+
+  i {
+    font-size: 3rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+  }
+
+  .file-type {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-transform: uppercase;
+  }
+`;
+
+const FilePlaceholderFooter = styled('div')`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .size {
+    opacity: 0.8;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+`;
+
+const RemoveButton = styled('button')`
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 10;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.9);
+    transform: scale(1.1);
+  }
+
+  ${ImageContainer}:hover & {
+    opacity: 1;
+  }
+`;
+
 interface ImageGalleryProps {
-  images: PostFile[];
+  files: PostFile[] | File[];
+  previewUrls?: Map<File, string>; // For create post modal
+  onRemove?: (index: number) => void; // For create post modal
 }
 
-export function ImageGallery({ images }: ImageGalleryProps) {
+export function ImageGallery({ files, previewUrls, onRemove }: ImageGalleryProps) {
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [imageViewerIndex, setImageViewerIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
 
-  if (!images || images.length === 0) return null;
+  if (!files || files.length === 0) return null;
 
-  // Separate true images from preview-supported files (like PDFs)
-  const trueImages = images.filter(img => isImageFile(img.file_type));
-  const previewFiles = images.filter(img => !isImageFile(img.file_type));
+  const isCreatePostMode = !!previewUrls;
+  const ITEMS_PER_PAGE = 4;
 
-  const handleImageClick = (index: number) => {
-    const img = images[index];
+  // Get preview supported formats from config
+  const previewFormats = clientConfig.value.preview?.supported_formats || [];
 
-    // If it's not a true image (e.g., PDF), open it directly
-    if (!isImageFile(img.file_type)) {
-      window.open(`/uploads/${img.file_path}`, '_blank');
+  // Calculate pagination
+  const totalPages = Math.ceil(files.length / ITEMS_PER_PAGE);
+  const startIndex = currentPage * ITEMS_PER_PAGE;
+  const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, files.length);
+  const currentFiles = files.slice(startIndex, endIndex);
+  const currentCount = currentFiles.length;
+
+  // Navigate pages
+  const navigatePage = (direction: number) => {
+    const newPage = currentPage + direction;
+    if (newPage >= 0 && newPage < totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
+  // Helper to check if file is an image
+  const checkIsImage = (file: PostFile | File): boolean => {
+    if ('file_type' in file) {
+      return isImageFile(file.file_type);
+    }
+    return file.type.startsWith('image/');
+  };
+
+  // Helper to check if file supports preview
+  const checkSupportsPreview = (file: PostFile | File): boolean => {
+    if ('file_type' in file && 'filename' in file) {
+      return supportsPreview(file.filename, previewFormats);
+    }
+    return false;
+  };
+
+  // Helper to get file extension
+  const getFileExtension = (file: PostFile | File): string => {
+    const name = 'filename' in file ? file.filename : file.name;
+    return name.split('.').pop()?.toLowerCase() || 'FILE';
+  };
+
+  // Helper to get file size
+  const getFileSize = (file: PostFile | File): string => {
+    const size = 'file_size' in file ? file.file_size : file.size;
+    return formatFileSize(size);
+  };
+
+  // Helper to get file name
+  const getFileName = (file: PostFile | File): string => {
+    return 'filename' in file ? file.filename : file.name;
+  };
+
+  // Get image URL for PostFile or File
+  const getImageUrl = (file: PostFile | File): string => {
+    if (isCreatePostMode && file instanceof File) {
+      return previewUrls?.get(file) || '';
+    }
+    if ('file_path' in file) {
+      return `/uploads/${file.file_path}`;
+    }
+    return '';
+  };
+
+  // Handle file click
+  const handleFileClick = (index: number) => {
+    const actualIndex = startIndex + index;
+    const file = files[actualIndex];
+    const isImage = checkIsImage(file);
+
+    if (isCreatePostMode) {
+      return; // Don't open viewer in create mode
+    }
+
+    if (!isImage) {
+      // For non-images, open directly
+      if ('file_path' in file) {
+        window.open(`/uploads/${file.file_path}`, '_blank');
+      }
       return;
     }
 
-    // For true images, find the index in the trueImages array for the viewer
-    const trueImageIndex = trueImages.findIndex(ti => ti.id === img.id);
+    // For images, open viewer
+    const trueImages = files.filter(checkIsImage);
+    const trueImageIndex = trueImages.findIndex((img) => {
+      if ('id' in img && 'id' in file) {
+        return img.id === file.id;
+      }
+      return img === file;
+    });
+
     if (trueImageIndex !== -1) {
       setImageViewerIndex(trueImageIndex);
       setShowImageViewer(true);
     }
   };
 
-  // Only include true images in the viewer
-  const imageData = trueImages.map((img) => ({
-    url: `/uploads/${img.file_path}`,
-    filename: img.filename,
-  }));
+  // Prepare image data for viewer (only true images)
+  const imageData = files
+    .filter(checkIsImage)
+    .map((img) => ({
+      url: 'file_path' in img ? `/uploads/${img.file_path}` : '',
+      filename: getFileName(img),
+    }));
 
-  // Single image
-  if (images.length === 1) {
-    const file = images[0];
-    const isImage = isImageFile(file.file_type);
+  // Render remove button for create post mode
+  const renderRemoveButton = (index: number) => {
+    if (!isCreatePostMode || !onRemove) return null;
 
+    const actualIndex = startIndex + index;
     return (
-      <>
-        <GalleryContainer>
-          <ImageContainer onClick={() => handleImageClick(0)}>
-            <LazyImage
-              src={`/uploads/${file.file_path}`}
-              alt={file.filename}
-              previewSize="large"
-            />
+      <RemoveButton
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(actualIndex);
+        }}
+      >
+        <i class="fas fa-times" />
+      </RemoveButton>
+    );
+  };
 
-              <FileOverlay className="file-overlay">
-                {!isImage && <p>{file.filename}</p>}
-                {!isImage && <p className="size">{formatFileSize(file.file_size)}</p>}
+  // Render file preview (image or placeholder)
+  const renderFilePreview = (file: PostFile | File, index: number) => {
+    const isImage = checkIsImage(file);
+    const hasPreview = checkSupportsPreview(file);
+    const url = getImageUrl(file);
+    const fileName = getFileName(file);
+    const fileSize = getFileSize(file);
+    const fileExtension = getFileExtension(file);
+
+    // Try to render image first
+    if (isImage || hasPreview) {
+      if (url) {
+        // In create post mode, use regular img tag for blob URLs
+        if (isCreatePostMode) {
+          return (
+            <>
+              <img src={url} alt={fileName} style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+              {!isImage && (
+                <FileOverlay class="file-overlay">
+                  <p>{fileName}</p>
+                  <p class="size">{fileSize}</p>
+                </FileOverlay>
+              )}
+            </>
+          );
+        }
+
+        // For post view mode, use LazyImage with preview sizes
+        return (
+          <>
+            <LazyImage
+              src={url}
+              alt={fileName}
+              previewSize={currentCount === 1 ? 'large' : currentCount === 3 && index === 0 ? 'large' : 'medium'}
+              onError={(e: any) => {
+                // If image fails to load, show placeholder
+                e.target.style.display = 'none';
+                e.target.nextElementSibling?.classList.remove('hidden');
+              }}
+            />
+            <FilePlaceholder class="hidden" style="display: none;">
+              <i class={`fas ${getFileIcon(fileExtension)}`} />
+              <span class="file-type">{fileExtension}</span>
+              <FilePlaceholderFooter>
+                <p>{fileName}</p>
+                <p class="size">{fileSize}</p>
+              </FilePlaceholderFooter>
+            </FilePlaceholder>
+            {!isImage && (
+              <FileOverlay class="file-overlay">
+                <p>{fileName}</p>
+                <p class="size">{fileSize}</p>
               </FileOverlay>
-            
+            )}
+          </>
+        );
+      }
+    }
+
+    // Show placeholder for non-images or when no URL
+    return (
+      <FilePlaceholder>
+        <i class={`fas ${getFileIcon(fileExtension)}`} />
+        <span class="file-type">{fileExtension}</span>
+        <FilePlaceholderFooter>
+          <p>{fileName}</p>
+          <p class="size">{fileSize}</p>
+        </FilePlaceholderFooter>
+      </FilePlaceholder>
+    );
+  };
+
+  // Render based on count for first page, always 2x2 for page 2+
+  const renderGrid = () => {
+    const displayCount = currentPage === 0 ? currentCount : 4;
+
+    // Single file
+    if (displayCount === 1) {
+      return (
+        <GalleryContainer>
+          <ImageContainer onClick={() => handleFileClick(0)}>
+            {renderFilePreview(currentFiles[0], 0)}
+            {renderRemoveButton(0)}
           </ImageContainer>
         </GalleryContainer>
-        {showImageViewer && imageData.length > 0 && (
-          <ImageViewer images={imageData} startIndex={imageViewerIndex} onClose={() => setShowImageViewer(false)} />
-        )}
-      </>
-    );
-  }
+      );
+    }
 
-  // Two images
-  if (images.length === 2) {
-    return (
-      <>
+    // Two files
+    if (displayCount === 2) {
+      return (
         <GalleryContainer>
           <TwoImagesGrid>
-            {images.map((img, idx) => {
-              const isImage = isImageFile(img.file_type);
-              return (
-                <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
-                  <LazyImage
-                    src={`/uploads/${img.file_path}`}
-                    alt={img.filename}
-                    previewSize="large"
-                  />
-                  <FileOverlay className="file-overlay">
-                    {!isImage && <p>{img.filename}</p>}
-                    {!isImage && <p className="size">{formatFileSize(img.file_size)}</p>}
-                  </FileOverlay>
-                </ImageContainer>
-              );
-            })}
+            {currentFiles.map((file, idx) => (
+              <ImageContainer key={idx} onClick={() => handleFileClick(idx)}>
+                {renderFilePreview(file, idx)}
+                {renderRemoveButton(idx)}
+              </ImageContainer>
+            ))}
           </TwoImagesGrid>
         </GalleryContainer>
-        {showImageViewer && imageData.length > 0 && (
-          <ImageViewer images={imageData} startIndex={imageViewerIndex} onClose={() => setShowImageViewer(false)} />
-        )}
-      </>
-    );
-  }
+      );
+    }
 
-  // Three images
-  if (images.length === 3) {
-    return (
-      <>
+    // Three files
+    if (displayCount === 3) {
+      return (
         <GalleryContainer>
           <ThreeImagesGrid>
-            {images.map((img, idx) => {
-              const isImage = isImageFile(img.file_type);
-              const previewSize = idx === 0 ? 'large' : 'medium';
-              return (
-                <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
-                  <LazyImage
-                    src={`/uploads/${img.file_path}`}
-                    alt={img.filename}
-                    previewSize={previewSize}
-                  />
-                  <FileOverlay className="file-overlay">
-                    {!isImage && <p>{img.filename}</p>}
-                    {!isImage && <p className="size">{formatFileSize(img.file_size)}</p>}
-                  </FileOverlay>
-                </ImageContainer>
-              );
-            })}
+            {currentFiles.map((file, idx) => (
+              <ImageContainer key={idx} onClick={() => handleFileClick(idx)}>
+                {renderFilePreview(file, idx)}
+                {renderRemoveButton(idx)}
+              </ImageContainer>
+            ))}
           </ThreeImagesGrid>
         </GalleryContainer>
-        {showImageViewer && imageData.length > 0 && (
-          <ImageViewer images={imageData} startIndex={imageViewerIndex} onClose={() => setShowImageViewer(false)} />
-        )}
-      </>
-    );
-  }
+      );
+    }
 
-  // Four or more images
-  const displayImages = images.slice(0, 4);
-  const remainingCount = images.length - 4;
-
-  return (
-    <>
+    // Four files (or placeholder grid for pages 2+)
+    return (
       <GalleryContainer>
         <FourImagesGrid>
-          {displayImages.map((img, idx) => {
-            const isImage = isImageFile(img.file_type);
+          {Array.from({ length: 4 }).map((_, idx) => {
+            const file = currentFiles[idx];
+            if (!file) {
+              return <ImageContainer key={idx} style="opacity: 0; pointer-events: none;" />;
+            }
             return (
-              <ImageContainer key={img.id} onClick={() => handleImageClick(idx)}>
-                <LazyImage
-                  src={`/uploads/${img.file_path}`}
-                  alt={img.filename}
-                  previewSize="medium"
-                />
-                <FileOverlay className="file-overlay">
-                  {!isImage && <p>{img.filename}</p>}
-                  {!isImage && <p className="size">{formatFileSize(img.file_size)}</p>}
-                </FileOverlay>
-                {idx === 3 && remainingCount > 0 && <MoreOverlay>+{remainingCount}</MoreOverlay>}
+              <ImageContainer key={idx} onClick={() => handleFileClick(idx)}>
+                {renderFilePreview(file, idx)}
+                {renderRemoveButton(idx)}
               </ImageContainer>
             );
           })}
         </FourImagesGrid>
       </GalleryContainer>
+    );
+  };
+
+  return (
+    <>
+      {files.length > 4 && (
+        <SectionHeader
+          title="Attachments"
+          currentCount={endIndex}
+          totalCount={files.length}
+          onNavigate={navigatePage}
+          canNavigateBack={currentPage > 0}
+          canNavigateForward={currentPage < totalPages - 1}
+        />
+      )}
+
+      {renderGrid()}
+
       {showImageViewer && imageData.length > 0 && (
         <ImageViewer images={imageData} startIndex={imageViewerIndex} onClose={() => setShowImageViewer(false)} />
       )}

@@ -2,13 +2,9 @@ import { useState } from 'preact/hooks';
 import type { LinkPreview } from '@core/api';
 import { LazyImage } from '@core/components';
 import { postStyles } from '../../../styles/post';
+import { SectionHeader } from './SectionHeader';
 
 const Section = postStyles.attachmentsSection;
-const Header = postStyles.attachmentsHeader;
-const Title = postStyles.attachmentsTitle;
-const NavControls = postStyles.navControls;
-const NavButton = postStyles.navButton;
-const NavCounter = postStyles.navCounter;
 const Container = postStyles.attachmentsContainer;
 const List = postStyles.attachmentsList;
 const Card = postStyles.linkPreviewCard;
@@ -70,20 +66,14 @@ export function LinkPreviews({ previews, postId, standalone = false }: LinkPrevi
   return (
     <Section style={previews.length === 1 ? { borderTop: 'none', paddingTop: '0', marginTop: '0.75rem' } : {}}>
       {previews.length > 1 && (
-        <Header>
-          <Title>Link Previews</Title>
-          <NavControls>
-            <NavButton disabled={previews.length <= 1} onClick={() => navigatePreview(-1)}>
-              <i class="fas fa-chevron-left" />
-            </NavButton>
-            <NavCounter>
-              {currentIndex + 1} / {previews.length}
-            </NavCounter>
-            <NavButton disabled={previews.length <= 1} onClick={() => navigatePreview(1)}>
-              <i class="fas fa-chevron-right" />
-            </NavButton>
-          </NavControls>
-        </Header>
+        <SectionHeader
+          title="Link Previews"
+          currentCount={currentIndex + 1}
+          totalCount={previews.length}
+          onNavigate={navigatePreview}
+          canNavigateBack={currentIndex > 0}
+          canNavigateForward={currentIndex < previews.length - 1}
+        />
       )}
 
       <Container>

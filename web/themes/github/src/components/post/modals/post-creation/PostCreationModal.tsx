@@ -3,7 +3,7 @@ import { Modal } from '../../../modal';
 import { postCreationModalStyles } from '../../../../styles/post-creation-modal';
 import { PostCreationHeader } from './PostCreationHeader';
 import { PostCreationEditor } from './PostCreationEditor';
-import { AttachmentList } from './AttachmentList';
+import { ImageGallery } from '../../post-item/ImageGallery';
 import { PostPreview } from './PostPreview';
 import { usePostCreation } from './usePostCreation';
 
@@ -125,9 +125,8 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
               onDrop={handleDrop}
             />
 
-            <AttachmentList
-              attachmentGridRef={attachmentGridRef}
-              attachments={attachments}
+            <ImageGallery
+              files={attachments}
               previewUrls={previewUrls}
               onRemove={handleRemoveAttachment}
             />
