@@ -1,87 +1,60 @@
-import { useState } from 'preact/hooks';
-import { Modal } from './Modal';
-import { formStyles } from '../../styles/modal';
+import { BaseConfirmModal, BaseConfirmModalProps, ConfirmModalButtonProps } from '@core/components/modal/BaseConfirmModal';
+import { formStyles, modalStyles } from '../../styles/modal';
+import { styled } from 'goober';
 
-const Button = formStyles.button;
+const StyledButton = formStyles.button;
 
-interface ConfirmModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void | Promise<void>;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  variant?: 'danger' | 'primary';
-  richContent?: boolean;
-}
+// Re-export the same props interface from core
+export type ConfirmModalProps = Omit<BaseConfirmModalProps, 'components'>;
 
-export function ConfirmModal({
-  isOpen,
-  onClose,
-  onConfirm,
-  title,
-  message,
-  confirmText = 'Confirm',
-  cancelText = 'Cancel',
-  variant = 'danger',
-  richContent = false,
-}: ConfirmModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
+// Button wrapper that converts variant prop to className
+const Button = ({ variant = 'primary', ...props }: ConfirmModalButtonProps) => (
+  <StyledButton className={variant} {...props} />
+);
 
-  const handleConfirm = async () => {
-    setIsLoading(true);
-    try {
-      await onConfirm();
-      onClose();
-    } catch (error) {
-      // If there's an error, keep the modal open and reset loading
-      setIsLoading(false);
-    }
-  };
+// Button group for footer
+const ButtonGroup = styled('div')`
+  display: contents;
+`;
 
-  const handleClose = () => {
-    if (!isLoading) {
-      onClose();
-    }
-  };
+// Loading icon component
+const LoadingIcon = () => (
+  <i class="fas fa-spinner fa-spin" style={{ marginRight: '8px' }} />
+);
 
-  const footer = (
-    <>
-      <Button className="secondary" onClick={handleClose} disabled={isLoading}>
-        {cancelText}
-      </Button>
-      <Button className={variant} onClick={handleConfirm} disabled={isLoading}>
-        {isLoading ? (
-          <>
-            <i class="fas fa-spinner fa-spin" style={{ marginRight: '8px' }} />
-            {confirmText}
-          </>
-        ) : (
-          confirmText
-        )}
-      </Button>
-    </>
-  );
+// Message container
+const MessageContainer = styled('div')`
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.5;
 
+  p {
+    margin: 0;
+  }
+`;
+
+/**
+ * GitHub Theme Confirm Modal
+ *
+ * This wraps the core BaseConfirmModal with GitHub-specific styling.
+ */
+export function ConfirmModal(props: ConfirmModalProps) {
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title={title}
-      footer={footer}
-      size="small"
-    >
-      {richContent ? (
-        <div
-          style={{ margin: 0, color: 'var(--text-primary)', lineHeight: '1.5' }}
-          dangerouslySetInnerHTML={{ __html: message }}
-        />
-      ) : (
-        <p style={{ margin: 0, color: 'var(--text-primary)', lineHeight: '1.5' }}>
-          {message}
-        </p>
-      )}
-    </Modal>
+    <BaseConfirmModal
+      {...props}
+      components={{
+        Overlay: modalStyles.overlay,
+        Container: modalStyles.container,
+        Header: modalStyles.header,
+        Title: modalStyles.title,
+        CloseButton: modalStyles.closeButton,
+        Content: modalStyles.content,
+        Footer: modalStyles.footer,
+        Button,
+        ButtonGroup,
+        LoadingIcon,
+        MessageContainer,
+      }}
+    />
   );
 }

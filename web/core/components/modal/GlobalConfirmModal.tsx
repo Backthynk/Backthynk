@@ -5,10 +5,18 @@
  * It listens to the global confirmation state and displays modals as needed.
  */
 
-import { confirmationState } from '../actions';
-import { ConfirmModal } from '../../themes/github/src/components/modal/ConfirmModal';
+import { ComponentType } from 'preact';
+import { confirmationState } from '../../actions';
+import { BaseConfirmModalProps } from './BaseConfirmModal';
 
-export function GlobalConfirmModal() {
+export interface GlobalConfirmModalProps {
+  /**
+   * The ConfirmModal component to use (should be provided by the theme)
+   */
+  ConfirmModalComponent: ComponentType<Omit<BaseConfirmModalProps, 'components'>>;
+}
+
+export function GlobalConfirmModal({ ConfirmModalComponent }: GlobalConfirmModalProps) {
   const state = confirmationState.value;
 
   if (!state.isOpen || !state.config) {
@@ -16,7 +24,7 @@ export function GlobalConfirmModal() {
   }
 
   return (
-    <ConfirmModal
+    <ConfirmModalComponent
       isOpen={state.isOpen}
       onClose={() => state.onCancel?.()}
       onConfirm={() => state.onConfirm?.()}
