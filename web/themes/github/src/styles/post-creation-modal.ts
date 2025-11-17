@@ -115,32 +115,91 @@ export const postCreationModalStyles = {
     }
   `,
 
+  attachmentsSection: styled('div')`
+    margin-top: 1rem;
+  `,
+
+  attachmentsHeader: styled('div')`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  `,
+
+  attachmentsTitle: styled('h4')`
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 0;
+  `,
+
+  navControls: styled('div')`
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  `,
+
+  navButton: styled('button')`
+    padding: 0.25rem;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+
+    &:hover:not(:disabled) {
+      color: var(--text-secondary);
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    i {
+      font-size: 0.75rem;
+    }
+  `,
+
+  navCounter: styled('span')`
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  `,
+
   attachmentsGrid: styled('div', forwardRef)`
     display: grid;
     gap: 0.75rem;
-    max-height: 400px;
-    overflow-y: auto;
 
-    /* Consistent responsive grid - always use auto-fit for flexibility */
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    /* Default: 2x2 grid for 4 items */
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
 
-    /* Custom scrollbar */
-    &::-webkit-scrollbar {
-      width: 6px;
+    /* Single item: full width and height */
+    &[data-count='1'] {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
     }
 
-    &::-webkit-scrollbar-track {
-      background: transparent;
+    /* Two items: side by side, equal height */
+    &[data-count='2'] {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: 1fr;
     }
 
-    &::-webkit-scrollbar-thumb {
-      background: var(--bg-tertiary);
-      border-radius: 3px;
-      transition: background-color 0.2s ease-in-out;
+    /* Three items: left takes full height, right stacked in 2 rows */
+    &[data-count='3'] {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+
+      > :nth-child(1) {
+        grid-row: 1 / -1;
+      }
     }
 
-    &::-webkit-scrollbar-thumb:hover {
-      background: var(--border-secondary);
+    /* Four items: 2x2 grid */
+    &[data-count='4'] {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
     }
   `,
 
@@ -153,20 +212,29 @@ export const postCreationModalStyles = {
     transition: all 0.2s ease-in-out;
     display: flex;
     flex-direction: column;
+    min-height: 0;
 
     &:hover {
       border-color: var(--border-secondary);
     }
 
+    /* Images take full height without footer */
+    &[data-is-image='true'] {
+      .file-info {
+        display: none;
+      }
+    }
+
     .file-info {
-      padding: 0.625rem;
+      padding: 0.5rem;
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.125rem;
       background: var(--bg-secondary);
+      border-top: 1px solid var(--border-primary);
 
       .filename {
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 500;
         color: var(--text-primary);
         white-space: nowrap;
@@ -176,7 +244,7 @@ export const postCreationModalStyles = {
       }
 
       .filesize {
-        font-size: 11px;
+        font-size: 10px;
         color: var(--text-secondary);
         line-height: 1.3;
       }
@@ -185,13 +253,13 @@ export const postCreationModalStyles = {
 
   attachmentPreview: styled('div')`
     width: 100%;
-    aspect-ratio: 4 / 3;
+    flex: 1;
     background: var(--bg-tertiary);
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    flex-shrink: 0;
+    min-height: 0;
 
     img {
       width: 100%;
@@ -210,13 +278,13 @@ export const postCreationModalStyles = {
       padding: 0.5rem;
 
       i {
-        font-size: clamp(1.75rem, 8cqw, 3rem);
+        font-size: 2rem;
         color: var(--text-secondary);
         transition: color 0.2s ease-in-out;
       }
 
       span {
-        font-size: clamp(9px, 2.5cqw, 12px);
+        font-size: 10px;
         font-weight: 700;
         color: var(--text-tertiary);
         text-transform: uppercase;
