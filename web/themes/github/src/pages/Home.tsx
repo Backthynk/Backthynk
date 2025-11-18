@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { useRoute } from 'preact-iso';
-import { spaces, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal } from '@core/state';
+import { spaces, isRecursiveMode, isEligibleForRecursive, currentSpace as currentSpaceSignal, imageViewerState, closeImageViewer } from '@core/state';
 import { generateSlug } from '@core/utils';
 import { expandParentSpaces, toggleRecursiveMode, selectSpace } from '@core/actions/spaceActions';
 import { Layout } from '../components/Layout';
@@ -10,6 +10,7 @@ import { CreatePostButton } from '../components/post';
 import { ActivityTracker } from '../components/activity';
 import { Timeline } from '../components/Timeline';
 import { CompanionPanel } from '../components/companion';
+import { ImageViewer } from '@core/components/ImageViewer';
 import { layoutStyles } from '../styles/layout';
 import { keyboard } from '../config';
 import type { Space } from '@core/api';
@@ -166,6 +167,14 @@ export function Home() {
           </Companion>
         </Grid>
       </Container>
+
+      {imageViewerState.value.isOpen && (
+        <ImageViewer
+          images={imageViewerState.value.images}
+          startIndex={imageViewerState.value.startIndex}
+          onClose={closeImageViewer}
+        />
+      )}
     </Layout>
   );
 }

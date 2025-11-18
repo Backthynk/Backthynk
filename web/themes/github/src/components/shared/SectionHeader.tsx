@@ -1,4 +1,4 @@
-import { postStyles } from '../../../styles/post';
+import { postStyles } from '../../styles/post';
 
 const Header = postStyles.attachmentsHeader;
 const Title = postStyles.attachmentsTitle;

@@ -1,8 +1,8 @@
 import { useState } from 'preact/hooks';
 import type { LinkPreview } from '@core/api';
-import { LazyImage } from '@core/components';
 import { postStyles } from '../../../styles/post';
-import { SectionHeader } from './SectionHeader';
+import { SectionHeader } from '../../shared/SectionHeader';
+import { LazyImage } from '../../shared/LazyImage';
 
 const Section = postStyles.attachmentsSection;
 const Container = postStyles.attachmentsContainer;

@@ -3,7 +3,7 @@ import type { Post as PostType } from '@core/api';
 import { deletePostAction } from '@core/actions/postActions';
 import { formatRelativeDate, formatFullDateTime } from '@core/utils/date';
 import { LinkPreviews } from './LinkPreviews';
-import { ImageGallery } from './ImageGallery';
+import { ImageGallery } from './image-gallery';
 import { PostActionMenu } from './PostActionMenu';
 import { MovePostModal } from '../modals/MovePostModal';
 import { postStyles } from '../../../styles/post';

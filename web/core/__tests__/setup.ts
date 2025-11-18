@@ -4,6 +4,11 @@
  */
 
 import { vi } from 'vitest';
+import { setup } from 'goober';
+import { h } from 'preact';
+
+// Setup goober for Preact
+setup(h);
 
 // Mock fetch globally
 global.fetch = vi.fn();

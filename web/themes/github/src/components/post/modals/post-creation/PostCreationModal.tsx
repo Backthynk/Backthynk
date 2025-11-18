@@ -3,7 +3,7 @@ import { Modal } from '../../../modal';
 import { postCreationModalStyles } from '../../../../styles/post-creation-modal';
 import { PostCreationHeader } from './PostCreationHeader';
 import { PostCreationEditor } from './PostCreationEditor';
-import { ImageGallery } from '../../post-item/ImageGallery';
+import { ImageGallery } from '../../post-item/image-gallery';
 import { PostPreview } from './PostPreview';
 import { usePostCreation } from './usePostCreation';
 

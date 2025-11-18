@@ -1,5 +1,5 @@
 export { Post } from './Post';
 export { LinkPreviews } from './LinkPreviews';
-export { ImageGallery } from './ImageGallery';
+export { ImageGallery } from './image-gallery';
 export { PostActionMenu } from './PostActionMenu';
-export { SectionHeader } from './SectionHeader';
+export { SectionHeader } from '../../shared/SectionHeader';

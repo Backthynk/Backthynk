@@ -172,15 +172,13 @@ export function usePostCreation(isOpen: boolean, currentSpace: Space | null) {
     return () => clearTimeout(timer);
   }, [isOpen, showPreview]);
 
-  // Create preview URLs for images
+  // Create preview URLs for all attachments
   useEffect(() => {
     const newPreviewUrls = new Map<File, string>();
 
     attachments.forEach(file => {
-      if (file.type.startsWith('image/')) {
-        const url = URL.createObjectURL(file);
-        newPreviewUrls.set(file, url);
-      }
+      const url = URL.createObjectURL(file);
+      newPreviewUrls.set(file, url);
     });
 
     // Cleanup old URLs
