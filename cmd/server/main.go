@@ -12,6 +12,7 @@ import (
 	"backthynk/internal/storage"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -104,8 +105,16 @@ func main() {
 	// Display startup info with features summary and RAM usage
 	config.PrintStartupInfo(serviceConfig.Server.Port, opts)
 
-	// Start server
-	if err := http.ListenAndServe(":"+serviceConfig.Server.Port, apiRouter); err != nil {
+	// Start server with timeout configuration
+	server := &http.Server{
+		Addr:         ":" + serviceConfig.Server.Port,
+		Handler:      apiRouter,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal("Server failed:", err)
 	}
 }
