@@ -1,10 +1,11 @@
 import { useState } from 'preact/hooks';
 import type { PostFile } from '@core/api';
-import { openImageViewer } from '@core/state';
+import { isTabletMobile, openImageViewer } from '@core/state';
 import { isImageFile } from '@core/utils/files';
 import { formatFileSize } from '@core/utils/format';
+import { ui } from '../../../../config';
 import { SectionHeader } from '../../../shared/SectionHeader';
-import { LazyImage } from '../../../shared/LazyImage';
+import { LazyImage, OverlayVisibility } from '../../../shared/LazyImage';
 import {
   GalleryContainer,
   TwoImagesGrid,
@@ -118,16 +119,31 @@ export function ImageGallery({ files, previewUrls, onRemove }: ImageGalleryProps
 
     if (!url) return null;
 
+    let bgOverlay = 'never' as OverlayVisibility;
+    if (isCreatePostMode || isTabletMobile()){
+      bgOverlay = isImage ? 'never' : 'always';
+    } else {
+      bgOverlay = 'hover';
+    }
+
+    let fileDescriptionVisibility = 'never' as OverlayVisibility;
+    if (isCreatePostMode || isTabletMobile()) {
+      fileDescriptionVisibility = isImage ? 'never' : 'always';
+    } else {
+      fileDescriptionVisibility = isImage ? 'never' : 'hover';
+    }
+
     return (
       <LazyImage
         src={url}
+        ext={isCreatePostMode && file instanceof File ? file.name.split('.').pop() : undefined}
         alt={fileName}
         preview={{
           size: currentCount === 1 ? 'large' : currentCount === 3 && index === 0 ? 'large' : 'medium',
         }}
-        bgOverlay={isImage ? 'hover' : 'never'}
+        bgOverlay={bgOverlay}
         fileDescription={!isImage ? { filename: fileName, fileSize } : undefined}
-        fileDescriptionVisibility={!isImage ? 'hover' : 'never'}
+        fileDescriptionVisibility={fileDescriptionVisibility}
       />
     );
   };
@@ -135,10 +151,12 @@ export function ImageGallery({ files, previewUrls, onRemove }: ImageGalleryProps
   const renderGrid = () => {
     const displayCount = currentPage === 0 ? currentCount : 4;
 
+    const { maxHeight, gap } = ui.imageGallery;
+
     if (displayCount === 1) {
       return (
         <GalleryContainer>
-          <ImageContainer onClick={() => handleFileClick(0)}>
+          <ImageContainer singleImage maxHeight={maxHeight} onClick={() => handleFileClick(0)}>
             {renderFile(currentFiles[0], 0)}
             {renderRemoveButton(0)}
           </ImageContainer>
@@ -149,9 +167,9 @@ export function ImageGallery({ files, previewUrls, onRemove }: ImageGalleryProps
     if (displayCount === 2) {
       return (
         <GalleryContainer>
-          <TwoImagesGrid>
+          <TwoImagesGrid maxHeight={maxHeight} gap={gap}>
             {currentFiles.map((file, idx) => (
-              <ImageContainer key={idx} onClick={() => handleFileClick(idx)}>
+              <ImageContainer maxHeight={maxHeight} key={idx} onClick={() => handleFileClick(idx)}>
                 {renderFile(file, idx)}
                 {renderRemoveButton(idx)}
               </ImageContainer>
@@ -164,9 +182,9 @@ export function ImageGallery({ files, previewUrls, onRemove }: ImageGalleryProps
     if (displayCount === 3) {
       return (
         <GalleryContainer>
-          <ThreeImagesGrid>
+          <ThreeImagesGrid maxHeight={maxHeight} gap={gap}>
             {currentFiles.map((file, idx) => (
-              <ImageContainer key={idx} onClick={() => handleFileClick(idx)}>
+              <ImageContainer maxHeight={maxHeight} key={idx} onClick={() => handleFileClick(idx)}>
                 {renderFile(file, idx)}
                 {renderRemoveButton(idx)}
               </ImageContainer>
@@ -178,11 +196,12 @@ export function ImageGallery({ files, previewUrls, onRemove }: ImageGalleryProps
 
     return (
       <GalleryContainer>
-        <FourImagesGrid>
+        <FourImagesGrid maxHeight={maxHeight} gap={gap}>
           {Array.from({ length: 4 }).map((_, idx) => {
             const file = currentFiles[idx];
             return (
               <ImageContainer
+                maxHeight={maxHeight}
                 key={idx}
                 onClick={() => file && handleFileClick(idx)}
                 style={!file ? "opacity: 0; pointer-events: none;" : ""}

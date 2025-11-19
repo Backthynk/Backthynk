@@ -18,6 +18,8 @@ if (typeof window !== 'undefined') {
   window.addEventListener('resize', handleResize);
 }
 
+export const isTabletMobile = () => windowSize.value.width <= 1024;
+
 // ImageViewer state
 export interface ImageViewerData {
   url: string;

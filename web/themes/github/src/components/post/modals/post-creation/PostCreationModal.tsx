@@ -125,11 +125,13 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
               onDrop={handleDrop}
             />
 
-            <ImageGallery
-              files={attachments}
-              previewUrls={previewUrls}
-              onRemove={handleRemoveAttachment}
-            />
+            <div style={{ minHeight: attachments.length > 0 ? '200px' : '0' }}>
+              <ImageGallery
+                files={attachments}
+                previewUrls={previewUrls}
+                onRemove={handleRemoveAttachment}
+              />
+            </div>
 
             {error && (
               <div style={{

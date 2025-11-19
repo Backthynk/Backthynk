@@ -33,6 +33,19 @@ export const ui = {
     modalTransition: 200,
     dropdownTransition: 150,
   },
+  /**
+   * Image gallery display settings
+   */
+  imageGallery: {
+    /**
+     * Maximum height for galleries with 1-2 images (in pixels)
+     */
+    maxHeight: 350,
+    /**
+     * Gap between images in grid layouts (in pixels)
+     */
+    gap: 3,
+  },
 } as const;
 
 /**

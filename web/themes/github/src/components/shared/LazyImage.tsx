@@ -8,6 +8,11 @@ const ImageContainer = styled('div')`
   background: var(--bg-secondary, #f6f8fa);
   width: 100%;
   height: 100%;
+  pointer-events: none;
+
+  img, button, a, & > * {
+    pointer-events: auto;
+  }
 `;
 
 const StyledImage = styled('img')<{ loaded: boolean }>`
@@ -68,12 +73,11 @@ const FilePlaceholder = styled('div')<{ bgColor?: string; frontColor?: string }>
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: ${(props) => props.bgColor || 'rgba(0, 0, 0, 0.015)'};
+  background: ${(props) => props.bgColor || 'rgba(0, 0, 0, 0.08)'};
   color: ${(props) => props.frontColor || 'var(--text-secondary)'};
-  min-height: 200px;
 
   .dark & {
-    background: ${(props) => props.bgColor || 'rgba(255, 255, 255, 0.015)'};
+    background: ${(props) => props.bgColor || 'rgba(255, 255, 255, 0.08)'};
   }
 
   i {
@@ -145,7 +149,7 @@ const FileDescriptionOverlay = styled('div')<{ visibility: 'hover' | 'always' | 
   }
 `;
 
-type OverlayVisibility = 'hover' | 'always' | 'never';
+export type OverlayVisibility = 'hover' | 'always' | 'never';
 
 interface PreviewConfig {
   size: 'small' | 'medium' | 'large';
@@ -160,6 +164,7 @@ interface FileDescription {
 
 interface LazyImageProps extends Omit<JSX.HTMLAttributes<HTMLImageElement>, 'loading'> {
   src: string;
+  ext?: string;
   alt: string;
   className?: string;
   style?: any;
@@ -189,7 +194,6 @@ export function LazyImage({
   const [error, setError] = useState(false);
   const [showPlaceholder, setShowPlaceholder] = useState(false);
 
-  console.log(src);
   // Get file extension from src for placeholder icon
   const getFileExtension = (url: string): string => {
     try {
@@ -208,14 +212,14 @@ export function LazyImage({
     setError(false);
     setShowPlaceholder(false);
 
-    if (preview) {
+    if (preview && !props.ext) {
       // Try with preview size first
       setCurrentSrc(`${src}?size=${preview.size}`);
     } else {
       // No preview - use original src
       setCurrentSrc(src);
     }
-  }, [src, preview]);
+  }, [src, preview?.size, props.ext]);
 
   const handleLoad = () => {
     setLoaded(true);
@@ -228,7 +232,7 @@ export function LazyImage({
     }
 
     // If preview is set and we failed with preview size, try original
-    if (preview && currentSrc.includes('?size=')) {
+    if (preview && currentSrc.includes('?size=') && !props.ext) {
       // Try to load original image
       setCurrentSrc(src);
       setError(false);
@@ -236,7 +240,7 @@ export function LazyImage({
     }
 
     // Check if this is an image by trying to detect from extension
-    const ext = getFileExtension(src);
+    const ext = props.ext ? props.ext : getFileExtension(src);
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
     const isImage = imageExtensions.includes(ext);
 
@@ -267,7 +271,7 @@ export function LazyImage({
 
   // Show file placeholder for non-images
   if (showPlaceholder) {
-    const fileExtension = getFileExtension(src);
+    const fileExtension = props.ext ? props.ext : getFileExtension(src);
     return (
       <ImageContainer className={className} style={style}>
         <FilePlaceholder bgColor={preview?.bgColor} frontColor={preview?.frontColor}>
