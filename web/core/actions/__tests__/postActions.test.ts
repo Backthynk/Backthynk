@@ -5,7 +5,12 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { deletePostAction, movePostAction } from '../postActions';
-import { posts, resetPosts } from '../../state/posts';
+import {
+  type PostsQuery,
+  getPostsForQuery,
+  setPostsForQuery,
+  postsByQuery,
+} from '../../state/posts';
 import { spaces as spacesSignal } from '../../state/spaces';
 import { spaceStatsCache } from '../../cache/spaceStatsCache';
 import { activityCache } from '../../cache/activityCache';
@@ -23,9 +28,12 @@ import {
 vi.mock('../../api/posts', () => ({
   deletePost: vi.fn(() => Promise.resolve()),
   movePost: vi.fn((postId: number, newSpaceId: number) => {
-    const post = posts.value.find(p => p.id === postId);
-    if (post) {
-      return Promise.resolve({ ...post, space_id: newSpaceId });
+    // Search through all queries to find the post
+    for (const posts of postsByQuery.value.values()) {
+      const post = posts.find(p => p.id === postId);
+      if (post) {
+        return Promise.resolve({ ...post, space_id: newSpaceId });
+      }
     }
     return Promise.resolve(null);
   }),
@@ -52,7 +60,7 @@ vi.mock('../../cache/postsCache', () => ({
 
 describe('Post Actions', () => {
   beforeEach(() => {
-    resetPosts();
+    postsByQuery.value = new Map();
     resetFactoryCounters();
     spacesSignal.value = [];
     spaceStatsCache.clear();
@@ -71,7 +79,8 @@ describe('Post Actions', () => {
 
         // Create a text-only post in space 3
         const post = createMockPost({ id: 1, space_id: 3, content: 'Text only' });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 3, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 3 });
 
@@ -86,7 +95,7 @@ describe('Post Actions', () => {
         expect(updatedSpace1.recursive_post_count).toBe(29);
 
         // Post should be removed from state
-        expect(posts.value.length).toBe(0);
+        expect(getPostsForQuery(query).length).toBe(0);
       });
 
       it('should NOT invalidate space stats cache for text-only posts', async () => {
@@ -100,7 +109,8 @@ describe('Post Actions', () => {
         setSpaceStats(1, false, stats);
 
         const post = createMockPost({ id: 1, space_id: 1 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -135,7 +145,8 @@ describe('Post Actions', () => {
         activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityData)));
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -160,7 +171,8 @@ describe('Post Actions', () => {
         spaceStatsCache['cache'].set('spaceStats:2:recursive', createMockSpaceStats());
 
         const post = createMockPostWithFiles(2, { id: 1, space_id: 2 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 2, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 2 });
 
@@ -178,7 +190,8 @@ describe('Post Actions', () => {
         spaceStatsCache['cache'].set('spaceStats:1:flat', createMockSpaceStats());
 
         const post = createMockPostWithLinks(1, { id: 1, space_id: 1 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -208,7 +221,8 @@ describe('Post Actions', () => {
         activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityData)));
 
         const post = createMockPostWithFiles(1, { id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -231,7 +245,8 @@ describe('Post Actions', () => {
         spacesSignal.value = spaces;
 
         const post = createMockPost({ id: 1, space_id: 5 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 5, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 5 });
 
@@ -253,7 +268,8 @@ describe('Post Actions', () => {
 
         // Post belongs to ideas (child space)
         const post = createMockPost({ id: 1, space_id: 2 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: true };
+        setPostsForQuery(query, [post]);
 
         // Delete while viewing backthynk (parent) with recursive mode
         // NOTE: spaceId is the viewing context (backthynk), but post is in ideas
@@ -307,7 +323,8 @@ describe('Post Actions', () => {
 
         // Post belongs to ideas
         const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: true };
+        setPostsForQuery(query, [post]);
 
         // Delete while viewing backthynk in recursive mode
         await deletePostAction({ postId: 1, spaceId: 1, recursive: true });
@@ -334,7 +351,8 @@ describe('Post Actions', () => {
         spacesSignal.value = [space0, space1, space2];
 
         const post = createMockPost({ id: 1, space_id: 1 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -373,7 +391,8 @@ describe('Post Actions', () => {
         activityCache['cache'].set('activity:0:flat:0:4m', JSON.parse(JSON.stringify(activityData)));
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -390,7 +409,8 @@ describe('Post Actions', () => {
         spacesSignal.value = [space0, space1];
 
         const post = createMockPost({ id: 1, space_id: 1 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: null, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Delete with spaceId = null (All Spaces view)
         await deletePostAction({ postId: 1, spaceId: null });
@@ -441,7 +461,8 @@ describe('Post Actions', () => {
         activityCache['cache'].set('activity:1:flat:0:4m', JSON.parse(JSON.stringify(activityData1)));
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: null, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Delete with spaceId = null (All Spaces view)
         await deletePostAction({ postId: 1, spaceId: null });
@@ -465,7 +486,8 @@ describe('Post Actions', () => {
         spacesSignal.value = [space0, space1];
 
         const post = createMockPost({ id: 1, space_id: 1 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: undefined, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Delete with spaceId = undefined (All Spaces view)
         await deletePostAction({ postId: 1, spaceId: undefined });
@@ -496,7 +518,8 @@ describe('Post Actions', () => {
         spacesSignal.value = [space1, space2, space3, space4];
 
         const post = createMockPost({ id: 1, space_id: 2 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 2, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move from space 2 to space 4
         await movePostAction({ postId: 1, newSpaceId: 4, currentSpaceId: 2 });
@@ -534,7 +557,8 @@ describe('Post Actions', () => {
         setSpaceStats(2, false, stats2);
 
         const post = createMockPost({ id: 1, space_id: 1 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -575,7 +599,8 @@ describe('Post Actions', () => {
         activityCache['cache'].set('activity:2:flat:0:4m', JSON.parse(JSON.stringify(activity2)));
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -610,7 +635,8 @@ describe('Post Actions', () => {
         // Space 2 has NO cached activity
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -649,7 +675,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 2, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move post from space 2 (under 1) to space 4 (under 3)
         await movePostAction({ postId: 1, newSpaceId: 4, currentSpaceId: 2 });
@@ -697,7 +724,8 @@ describe('Post Actions', () => {
         // Space 2 has NO cached activity
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -735,7 +763,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move from 1 to 3 (which has parent 2)
         await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 1 });
@@ -782,7 +811,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 3, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 3, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move from 3 to 6 (different deep hierarchies)
         await movePostAction({ postId: 1, newSpaceId: 6, currentSpaceId: 3 });
@@ -823,7 +853,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 2, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move from sibling 2 to sibling 3
         await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 2 });
@@ -870,7 +901,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 2, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 2, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move from child (2) to top-level (3)
         await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 2 });
@@ -908,7 +940,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         // Move from top-level (1) to nested (3)
         await movePostAction({ postId: 1, newSpaceId: 3, currentSpaceId: 1 });
@@ -945,7 +978,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 1, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -973,7 +1007,8 @@ describe('Post Actions', () => {
         });
 
         const post = createMockPostWithFiles(1, { id: 1, space_id: 2 });
-        posts.value = [post];
+        const query: PostsQuery = { spaceId: 2, recursive: false };
+        setPostsForQuery(query, [post]);
 
         await movePostAction({ postId: 1, newSpaceId: 4, currentSpaceId: 2 });
 

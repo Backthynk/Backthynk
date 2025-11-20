@@ -17,6 +17,9 @@ export interface PostsCacheKey {
   recursive: boolean;
   offset: number;
   limit: number;
+  // FUTURE: Uncomment when implementing filtered queries
+  // hasLinks?: boolean;
+  // hasAttachments?: boolean;
 }
 
 export interface CachedPostsResult extends PostsResponse {
@@ -25,9 +28,14 @@ export interface CachedPostsResult extends PostsResponse {
 
 /**
  * Generate a cache key from query parameters
+ * Cache includes pagination (offset/limit) unlike state keys
  */
 function generateCacheKey(params: PostsCacheKey): string {
   const { spaceId, recursive, offset, limit } = params;
+  // FUTURE: When adding hasLinks/hasAttachments, update the key:
+  // const linkFilter = hasLinks ? ':links' : '';
+  // const attachFilter = hasAttachments ? ':attach' : '';
+  // return `posts:${spaceId ?? 'all'}:${recursive ? 'recursive' : 'flat'}${linkFilter}${attachFilter}:${offset}:${limit}`;
   return `posts:${spaceId ?? 'all'}:${recursive ? 'recursive' : 'flat'}:${offset}:${limit}`;
 }
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'preact/hooks';
+import type { JSX } from 'preact';
 import type { Post as PostType } from '@core/api';
 import { deletePostAction } from '@core/actions/postActions';
 import { formatRelativeDate, formatFullDateTime } from '@core/utils/date';
@@ -26,9 +27,10 @@ interface PostProps {
   spaceBreadcrumb?: string;
   onBreadcrumbClick?: (spaceId: number) => void;
   timelineContext?: TimelineContext;
+  customImageGallery?: JSX.Element;
 }
 
-export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbClick, timelineContext }: PostProps) {
+export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbClick, timelineContext, customImageGallery }: PostProps) {
   const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const { show, hide, TooltipPortal } = useTooltip();
@@ -161,7 +163,7 @@ export function Post({ post, showSpaceBreadcrumb, spaceBreadcrumb, onBreadcrumbC
       )}
 
       {/* Image Gallery (unified attachment display) */}
-      {hasAttachments && <ImageGallery files={files} />}
+      {hasAttachments && (customImageGallery || <ImageGallery files={files} />)}
 
       {/* Tooltip */}
       {TooltipPortal}

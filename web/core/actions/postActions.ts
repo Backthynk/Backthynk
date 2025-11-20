@@ -8,7 +8,18 @@ import { deletePost as apiDeletePost, movePost as apiMovePost, type Post } from 
 import { type Space } from '../api/spaces';
 import { showSuccess, showError } from '../components';
 import { executeAction } from './index';
-import { posts, isLoadingPosts, currentOffset, postHasRichContent } from '../state/posts';
+import {
+  type PostsQuery,
+  removePostFromAllQueries,
+  updatePostInAllQueries,
+  getPostsForQuery,
+  setPostsForQuery,
+  isLoadingQuery,
+  setLoadingForQuery,
+  getOffsetForQuery,
+  appendPostsToQuery,
+  postHasRichContent,
+} from '../state/posts';
 import { spaces, getSpaceById } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
@@ -33,12 +44,18 @@ export interface MovePostOptions {
 
 /**
  * Delete a post with confirmation, state updates, and smart refetch
+ * FUTURE: When adding hasLinks/hasAttachments, update the query object construction
  */
 export async function deletePostAction(options: DeletePostOptions): Promise<void> {
   const { postId, spaceId, recursive = false } = options;
 
+  // Build query for the current view
+  // FUTURE: Add hasLinks and hasAttachments to query
+  const query: PostsQuery = { spaceId: spaceId ?? null, recursive };
+
   // Get post data before deletion to check if it has rich content
-  const post = posts.value.find((p) => p.id === postId);
+  const currentPosts = getPostsForQuery(query);
+  const post = currentPosts.find((p: Post) => p.id === postId);
   const hasRichContent = post ? postHasRichContent(post) : false;
   const postCreatedTimestamp = post?.created || 0;
   const actualSpaceId = post?.space_id; // The actual space the post belongs to
@@ -55,8 +72,8 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
       await apiDeletePost(postId);
     },
     onSuccess: async () => {
-      // Remove from local state
-      posts.value = posts.value.filter((p) => p.id !== postId);
+      // Remove from all query states (post might appear in multiple views)
+      removePostFromAllQueries(postId);
 
       // Update space post counts in global state
       // Create a map of updated spaces (immutable updates)
@@ -111,7 +128,7 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
       }
 
       // Smart refetch logic: check if we should fetch more posts
-      const remainingPosts = posts.value.length;
+      const remainingPosts = getPostsForQuery(query).length;
       const threshold = Math.floor(postsConfig.postsPerPage * cacheConfig.posts.smartRefetchThreshold);
 
       // Determine if more posts exist using space post counts
@@ -128,28 +145,28 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
       if (
         remainingPosts < threshold &&
         morePostsExist &&
-        !isLoadingPosts.value &&
+        !isLoadingQuery(query) &&
         spaceId !== undefined
       ) {
         console.log('[PostActions] Smart refetch triggered after deletion');
         console.log(`  Remaining: ${remainingPosts}, Threshold: ${threshold}, Total in space: ${totalPostsInView}`);
-        isLoadingPosts.value = true;
+        setLoadingForQuery(query, true);
 
         try {
+          const currentOffset = getOffsetForQuery(query);
           const result = await fetchPostsCached(
             spaceId,
             postsConfig.postsPerPage,
-            currentOffset.value,
+            currentOffset,
             true,
             recursive
           );
 
-          posts.value = [...posts.value, ...result.posts];
-          currentOffset.value += result.posts.length;
+          appendPostsToQuery(query, result.posts);
         } catch (error) {
           console.error('Failed to refetch posts:', error);
         } finally {
-          isLoadingPosts.value = false;
+          setLoadingForQuery(query, false);
         }
       }
 
@@ -213,12 +230,18 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
 
 /**
  * Move a post to a different space with automatic state updates and smart refetch
+ * FUTURE: When adding hasLinks/hasAttachments, update the query object construction
  */
 export async function movePostAction(options: MovePostOptions): Promise<void> {
   const { postId, newSpaceId, currentSpaceId, recursive = false } = options;
 
+  // Build query for the current view
+  // FUTURE: Add hasLinks and hasAttachments to query
+  const query: PostsQuery = { spaceId: currentSpaceId ?? null, recursive };
+
   // Get post data before moving to check if it has rich content
-  const post = posts.value.find((p) => p.id === postId);
+  const currentPosts = getPostsForQuery(query);
+  const post = currentPosts.find((p: Post) => p.id === postId);
   const hasRichContent = post ? postHasRichContent(post) : false;
   const postCreatedTimestamp = post?.created || 0;
 
@@ -230,7 +253,7 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
       if (!updatedPost) return;
 
       // Update space post counts in global state
-      const oldSpaceId = posts.value.find(p => p.id === updatedPost.id)?.space_id;
+      const oldSpaceId = post?.space_id;
       const newSpaceId = updatedPost.space_id;
 
       if (oldSpaceId !== undefined && oldSpaceId !== newSpaceId) {
@@ -310,11 +333,12 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
         updatedPost.space_id !== currentSpaceId;
 
       if (shouldRemoveFromView) {
-        // Remove from view
-        posts.value = posts.value.filter((p) => p.id !== updatedPost.id);
+        // Remove from current view
+        const updatedPosts = getPostsForQuery(query).filter((p: Post) => p.id !== updatedPost.id);
+        setPostsForQuery(query, updatedPosts);
 
         // Smart refetch logic with space post counts
-        const remainingPosts = posts.value.length;
+        const remainingPosts = updatedPosts.length;
         const threshold = Math.floor(postsConfig.postsPerPage * cacheConfig.posts.smartRefetchThreshold);
 
         // Determine if more posts exist using space post counts
@@ -331,34 +355,32 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
         if (
           remainingPosts < threshold &&
           morePostsExist &&
-          !isLoadingPosts.value
+          !isLoadingQuery(query)
         ) {
           console.log('[PostActions] Smart refetch triggered after move');
           console.log(`  Remaining: ${remainingPosts}, Threshold: ${threshold}, Total in space: ${totalPostsInView}`);
-          isLoadingPosts.value = true;
+          setLoadingForQuery(query, true);
 
           try {
+            const currentOffset = getOffsetForQuery(query);
             const result = await fetchPostsCached(
               currentSpaceId,
               postsConfig.postsPerPage,
-              currentOffset.value,
+              currentOffset,
               true,
               recursive
             );
 
-            posts.value = [...posts.value, ...result.posts];
-            currentOffset.value += result.posts.length;
+            appendPostsToQuery(query, result.posts);
           } catch (error) {
             console.error('Failed to refetch posts:', error);
           } finally {
-            isLoadingPosts.value = false;
+            setLoadingForQuery(query, false);
           }
         }
       } else {
-        // Update the post in place
-        posts.value = posts.value.map((p) =>
-          p.id === updatedPost.id ? updatedPost : p
-        );
+        // Update the post in place across all queries
+        updatePostInAllQueries(updatedPost);
       }
 
       // Smart activity cache update: moving = remove from old space + add to new space

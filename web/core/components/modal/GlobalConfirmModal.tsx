@@ -27,7 +27,11 @@ export function GlobalConfirmModal({ ConfirmModalComponent }: GlobalConfirmModal
     <ConfirmModalComponent
       isOpen={state.isOpen}
       onClose={() => state.onCancel?.()}
-      onConfirm={() => state.onConfirm?.()}
+      onConfirm={async () => {
+        if (state.onConfirm) {
+          await state.onConfirm();
+        }
+      }}
       title={state.config.title}
       message={state.config.message}
       confirmText={state.config.confirmText}

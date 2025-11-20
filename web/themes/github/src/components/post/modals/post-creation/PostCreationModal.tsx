@@ -152,6 +152,12 @@ export function PostCreationModal({ isOpen, onClose, currentSpace }: PostCreatio
             <PostPreview
               post={previewPost}
               hasContent={content.trim() !== '' || attachments.length > 0}
+              customImageGallery={
+                <ImageGallery
+                  files={attachments}
+                  previewUrls={previewUrls}
+                />
+              }
             />
           </div>
         )}

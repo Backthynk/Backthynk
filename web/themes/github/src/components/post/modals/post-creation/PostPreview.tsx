@@ -1,12 +1,14 @@
+import type { JSX } from 'preact';
 import { type Post as PostType } from '@core/api';
 import { Post } from '../../post-item/Post';
 
 interface PostPreviewProps {
   post: PostType;
   hasContent: boolean;
+  customImageGallery?: JSX.Element;
 }
 
-export function PostPreview({ post, hasContent }: PostPreviewProps) {
+export function PostPreview({ post, hasContent, customImageGallery }: PostPreviewProps) {
   if (!hasContent) {
     return (
       <div style={{
@@ -29,5 +31,5 @@ export function PostPreview({ post, hasContent }: PostPreviewProps) {
     );
   }
 
-  return <Post post={post} />;
+  return <Post post={post} customImageGallery={customImageGallery} />;
 }

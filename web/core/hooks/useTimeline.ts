@@ -13,13 +13,17 @@
  * Themes can use this hook to render timeline components without duplicating logic.
  */
 
-import { useEffect, useState } from 'preact/hooks';
-import type { Space, Post } from '../api';
+import { useEffect } from 'preact/hooks';
+import { useComputed } from '@preact/signals';
+import type { Post } from '../api';
 import {
-  posts,
-  resetPosts,
-  appendPosts,
-  isLoadingPosts,
+  type PostsQuery,
+  getPostsForQuery,
+  resetPostsForQuery,
+  appendPostsToQuery,
+  isLoadingQuery,
+  setLoadingForQuery,
+  getOffsetForQuery,
 } from '../state/posts';
 import { getSpaceById, getTotalPostCount } from '../state/spaces';
 import { fetchPostsCached } from '../cache/postsCache';
@@ -53,6 +57,9 @@ export interface UseTimelineOptions {
  * @param recursive - Whether to fetch posts recursively
  * @param options - Optional configuration
  * @returns Timeline data and controls
+ *
+ * FUTURE: When adding hasLinks/hasAttachments filters, add them as parameters here
+ * and include them in the query object
  */
 export function useTimeline(
   spaceId: number | null,
@@ -60,7 +67,21 @@ export function useTimeline(
   options: UseTimelineOptions = {}
 ): TimelineHookData {
   const limit = options.postsPerPage || postsConfig.postsPerPage;
-  const [offset, setOffset] = useState(0);
+
+  // Helper to get current query - always returns fresh query based on current props
+  // FUTURE: Add hasLinks and hasAttachments to this query object
+  const getQuery = (): PostsQuery => ({
+    spaceId,
+    recursive,
+    // FUTURE: Uncomment when implementing filters
+    // hasLinks: options.hasLinks,
+    // hasAttachments: options.hasAttachments,
+  });
+
+  // Use computed to reactively get posts for this specific query
+  const queryPosts = useComputed(() => getPostsForQuery(getQuery()));
+  const queryLoading = useComputed(() => isLoadingQuery(getQuery()));
+  const queryOffset = useComputed(() => getOffsetForQuery(getQuery()));
 
   // Load posts when space or recursive mode changes
   useEffect(() => {
@@ -71,14 +92,13 @@ export function useTimeline(
    * Load posts from beginning (reset state)
    */
   const loadPosts = async () => {
-    resetPosts();
-    isLoadingPosts.value = true;
-    setOffset(0);
+    const query = getQuery();
+    resetPostsForQuery(query);
+    setLoadingForQuery(query, true);
 
     try {
       const result = await fetchPostsCached(spaceId, limit, 0, true, recursive);
-      appendPosts(result.posts);
-      setOffset(result.posts.length);
+      appendPostsToQuery(query, result.posts);
 
       if (result.fromCache) {
         console.log('[useTimeline] Loaded from cache');
@@ -86,7 +106,7 @@ export function useTimeline(
     } catch (error) {
       console.error('[useTimeline] Failed to fetch posts:', error);
     } finally {
-      isLoadingPosts.value = false;
+      setLoadingForQuery(query, false);
     }
   };
 
@@ -94,14 +114,16 @@ export function useTimeline(
    * Load more posts (pagination)
    */
   const loadMore = () => {
-    if (isLoadingPosts.value) return;
+    const query = getQuery();
+    if (isLoadingQuery(query)) return;
 
-    isLoadingPosts.value = true;
+    setLoadingForQuery(query, true);
 
-    fetchPostsCached(spaceId, limit, offset, true, recursive)
+    const currentOffset = getOffsetForQuery(query);
+
+    fetchPostsCached(spaceId, limit, currentOffset, true, recursive)
       .then((result) => {
-        appendPosts(result.posts);
-        setOffset(offset + result.posts.length);
+        appendPostsToQuery(query, result.posts);
 
         if (result.fromCache) {
           console.log('[useTimeline] Loaded more from cache');
@@ -111,7 +133,7 @@ export function useTimeline(
         console.error('[useTimeline] Failed to fetch more posts:', error);
       })
       .finally(() => {
-        isLoadingPosts.value = false;
+        setLoadingForQuery(query, false);
       });
   };
 
@@ -119,24 +141,26 @@ export function useTimeline(
    * Determine if there are more posts using space post counts
    */
   const hasMore = (() => {
+    const currentPosts = getPostsForQuery(getQuery());
+
     if (spaceId === null) {
       // "All Spaces" view - use total post count across all spaces
       const totalPosts = getTotalPostCount();
-      return posts.value.length < totalPosts;
+      return currentPosts.length < totalPosts;
     }
 
     const space = getSpaceById(spaceId);
     if (!space) return false;
 
     const totalPostsInSpace = recursive ? space.recursive_post_count : space.post_count;
-    return posts.value.length < totalPostsInSpace;
+    return currentPosts.length < totalPostsInSpace;
   })();
 
   return {
-    posts: posts.value,
-    isLoading: isLoadingPosts.value,
+    posts: queryPosts.value,
+    isLoading: queryLoading.value,
     hasMore,
-    offset,
+    offset: queryOffset.value,
     isRecursive: recursive,
     loadMore,
     reload: loadPosts,
@@ -147,6 +171,8 @@ export function useTimeline(
  * Reset the timeline state to defaults
  * Useful when navigating away from timeline views
  */
-export function resetTimeline(): void {
-  resetPosts();
+export function resetTimeline(spaceId: number | null, recursive = false): void {
+  // FUTURE: When adding hasLinks/hasAttachments, pass them here too
+  const query: PostsQuery = { spaceId, recursive };
+  resetPostsForQuery(query);
 }

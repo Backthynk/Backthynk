@@ -5,7 +5,13 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { deletePostAction, movePostAction } from '../postActions';
-import { posts, resetPosts } from '../../state/posts';
+import {
+  type PostsQuery,
+  getPostsForQuery,
+  setPostsForQuery,
+  resetPostsForQuery,
+  postsByQuery,
+} from '../../state/posts';
 import { spaces as spacesSignal } from '../../state/spaces';
 import { activityCache as activitySignal, activitySpaceId, activityRecursiveMode } from '../../state/activity';
 import { activityCache } from '../../cache/activityCache';
@@ -20,9 +26,14 @@ import {
 vi.mock('../../api/posts', () => ({
   deletePost: vi.fn(() => Promise.resolve()),
   movePost: vi.fn((postId: number, newSpaceId: number) => {
-    const post = posts.value.find(p => p.id === postId);
-    if (post) {
-      return Promise.resolve({ ...post, space_id: newSpaceId });
+    // Search all queries for the post
+    let foundPost = null;
+    for (const posts of postsByQuery.value.values()) {
+      foundPost = posts.find(p => p.id === postId);
+      if (foundPost) break;
+    }
+    if (foundPost) {
+      return Promise.resolve({ ...foundPost, space_id: newSpaceId });
     }
     return Promise.resolve(null);
   }),
@@ -49,7 +60,8 @@ vi.mock('../../cache/postsCache', () => ({
 
 describe('Post Actions - Signal-level tests', () => {
   beforeEach(() => {
-    resetPosts();
+    // Reset all query-based state
+    postsByQuery.value = new Map();
     resetFactoryCounters();
     spacesSignal.value = [];
     activityCache.clear();
@@ -74,7 +86,8 @@ describe('Post Actions - Signal-level tests', () => {
       const originalSpacesArrayRef = spacesSignal.value;
 
       const post = createMockPost({ id: 1, space_id: 3, content: 'Text only' });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 3, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await deletePostAction({ postId: 1, spaceId: 3 });
 
@@ -106,7 +119,8 @@ describe('Post Actions - Signal-level tests', () => {
       const originalSpace1Ref = spacesSignal.value.find(s => s.id === 1);
 
       const post = createMockPost({ id: 1, space_id: 1 });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -148,7 +162,8 @@ describe('Post Actions - Signal-level tests', () => {
       activityRecursiveMode.value = false;
 
       const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post]);
 
       // Store original reference
       const originalActivityRef = activitySignal.value;
@@ -189,7 +204,8 @@ describe('Post Actions - Signal-level tests', () => {
       activityRecursiveMode.value = false;
 
       const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -216,7 +232,8 @@ describe('Post Actions - Signal-level tests', () => {
       activitySignal.value = null;
 
       const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await deletePostAction({ postId: 1, spaceId: 1 });
 
@@ -237,7 +254,8 @@ describe('Post Actions - Signal-level tests', () => {
       const originalSpace1Ref = spacesSignal.value.find(s => s.id === 1);
 
       const post = createMockPost({ id: 1, space_id: 1 });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: null, recursive: false };
+      setPostsForQuery(query, [post]);
 
       // Delete with spaceId = null (All Spaces view)
       await deletePostAction({ postId: 1, spaceId: null });
@@ -283,7 +301,8 @@ describe('Post Actions - Signal-level tests', () => {
       activityRecursiveMode.value = false;
 
       const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: null, recursive: false };
+      setPostsForQuery(query, [post]);
 
       // Delete with spaceId = null (All Spaces view)
       await deletePostAction({ postId: 1, spaceId: null });
@@ -322,7 +341,8 @@ describe('Post Actions - Signal-level tests', () => {
       }
 
       const post = createMockPost({ id: 1, space_id: 3, created: todayTimestamp });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 3, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await deletePostAction({ postId: 1, spaceId: 3 });
 
@@ -364,7 +384,8 @@ describe('Post Actions - Signal-level tests', () => {
       ]);
 
       const post = createMockPost({ id: 1, space_id: 2 });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 2, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await movePostAction({ postId: 1, newSpaceId: 4, currentSpaceId: 2 });
 
@@ -395,7 +416,8 @@ describe('Post Actions - Signal-level tests', () => {
       const originalSpace0Ref = spacesSignal.value.find(s => s.id === 0);
 
       const post = createMockPost({ id: 1, space_id: 1 });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -430,7 +452,8 @@ describe('Post Actions - Signal-level tests', () => {
       }
 
       const post = createMockPost({ id: 1, space_id: 1, created: todayTimestamp });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post]);
 
       await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1 });
 
@@ -450,16 +473,18 @@ describe('Post Actions - Signal-level tests', () => {
 
       const post1 = createMockPost({ id: 1, space_id: 1 });
       const post2 = createMockPost({ id: 2, space_id: 1 });
-      posts.value = [post1, post2];
+      const query: PostsQuery = { spaceId: 1, recursive: false };
+      setPostsForQuery(query, [post1, post2]);
 
-      const originalPostsRef = posts.value;
+      const originalPostsRef = getPostsForQuery(query);
 
       await deletePostAction({ postId: 1, spaceId: 1 });
 
       // Posts array should have new reference
-      expect(posts.value).not.toBe(originalPostsRef);
-      expect(posts.value.length).toBe(1);
-      expect(posts.value[0].id).toBe(2);
+      const updatedPosts = getPostsForQuery(query);
+      expect(updatedPosts).not.toBe(originalPostsRef);
+      expect(updatedPosts.length).toBe(1);
+      expect(updatedPosts[0].id).toBe(2);
     });
 
     it('should update post in signal on move', async () => {
@@ -468,15 +493,17 @@ describe('Post Actions - Signal-level tests', () => {
       spacesSignal.value = [space1, space2];
 
       const post = createMockPost({ id: 1, space_id: 1 });
-      posts.value = [post];
+      const query: PostsQuery = { spaceId: 1, recursive: true };
+      setPostsForQuery(query, [post]);
 
-      const originalPostRef = posts.value[0];
+      const originalPostRef = getPostsForQuery(query)[0];
 
       await movePostAction({ postId: 1, newSpaceId: 2, currentSpaceId: 1, recursive: true });
 
       // Post should have new reference with updated space_id
-      expect(posts.value[0]).not.toBe(originalPostRef);
-      expect(posts.value[0].space_id).toBe(2);
+      const updatedPosts = getPostsForQuery(query);
+      expect(updatedPosts[0]).not.toBe(originalPostRef);
+      expect(updatedPosts[0].space_id).toBe(2);
     });
   });
 });

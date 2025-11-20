@@ -40,7 +40,7 @@ export interface ActionContext<TResult = void> {
 interface ConfirmationState {
   isOpen: boolean;
   config: ConfirmationConfig | null;
-  onConfirm: (() => void) | null;
+  onConfirm: (() => void | Promise<void>) | null;
   onCancel: (() => void) | null;
 }
 
@@ -53,22 +53,36 @@ export const confirmationState = signal<ConfirmationState>({
 });
 
 /**
- * Show a confirmation modal and return a promise that resolves when confirmed
- * or rejects when cancelled
+ * Show a confirmation modal with an action to execute on confirmation
+ * Returns a promise that resolves when the action completes or rejects when cancelled
  */
-export function confirm(config: ConfirmationConfig): Promise<void> {
+export function confirm(
+  config: ConfirmationConfig,
+  onConfirmAction?: () => Promise<void>
+): Promise<void> {
   return new Promise((resolve, reject) => {
     confirmationState.value = {
       isOpen: true,
       config,
-      onConfirm: () => {
-        confirmationState.value = {
-          isOpen: false,
-          config: null,
-          onConfirm: null,
-          onCancel: null,
-        };
-        resolve();
+      onConfirm: async () => {
+        try {
+          // If an action is provided, execute it before closing
+          if (onConfirmAction) {
+            await onConfirmAction();
+          }
+
+          confirmationState.value = {
+            isOpen: false,
+            config: null,
+            onConfirm: null,
+            onCancel: null,
+          };
+          resolve();
+        } catch (error) {
+          // Don't close modal on error - let the button handle loading state
+          reject(error);
+          throw error;
+        }
       },
       onCancel: () => {
         confirmationState.value = {
@@ -113,25 +127,42 @@ export async function executeAction<TResult = void>(
   context: ActionContext<TResult>
 ): Promise<TResult | undefined> {
   try {
-    // Show confirmation if required
+    // Show confirmation if required, passing the execute function to be called on confirm
     if (context.confirmation) {
-      await confirm(context.confirmation);
+      let result: TResult | undefined;
+
+      await confirm(context.confirmation, async () => {
+        // Execute the action inside the confirmation callback
+        result = await context.execute();
+
+        // Execute success callback
+        if (context.onSuccess) {
+          await context.onSuccess(result as TResult);
+        }
+
+        // Apply cache invalidation if specified
+        if (context.cacheInvalidation) {
+          applyCacheInvalidation(context.cacheInvalidation);
+        }
+      });
+
+      return result;
+    } else {
+      // No confirmation needed - execute directly
+      const result = await context.execute();
+
+      // Execute success callback
+      if (context.onSuccess) {
+        await context.onSuccess(result);
+      }
+
+      // Apply cache invalidation if specified
+      if (context.cacheInvalidation) {
+        applyCacheInvalidation(context.cacheInvalidation);
+      }
+
+      return result;
     }
-
-    // Execute the action
-    const result = await context.execute();
-
-    // Execute success callback
-    if (context.onSuccess) {
-      await context.onSuccess(result);
-    }
-
-    // Apply cache invalidation if specified
-    if (context.cacheInvalidation) {
-      applyCacheInvalidation(context.cacheInvalidation);
-    }
-
-    return result;
   } catch (error) {
     // Don't handle error if it's a cancellation
     if (error instanceof Error && error.message === 'Action cancelled') {
