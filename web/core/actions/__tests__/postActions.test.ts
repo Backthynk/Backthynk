@@ -56,6 +56,11 @@ vi.mock('../index', () => ({
 // Mock cache functions
 vi.mock('../../cache/postsCache', () => ({
   fetchPostsCached: vi.fn(() => Promise.resolve({ posts: [] })),
+  postsCache: {
+    removePostFromCache: vi.fn(),
+    updatePostInCache: vi.fn(),
+    addPostToCache: vi.fn(),
+  },
 }));
 
 describe('Post Actions', () => {

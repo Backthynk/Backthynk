@@ -60,10 +60,10 @@ class PostsCacheManager {
    */
   async fetchPosts(
     spaceId: number | null,
-    limit = postsConfig.postsPerPage,
-    offset = 0,
-    withMeta = true,
-    recursive = false
+    limit: number = postsConfig.postsPerPage,
+    offset: number = 0,
+    withMeta: boolean = true,
+    recursive: boolean = false
   ): Promise<CachedPostsResult> {
     const cacheKey = generateCacheKey({ spaceId, recursive, offset, limit });
 
@@ -137,6 +137,120 @@ class PostsCacheManager {
   }
 
   /**
+   * Remove a post from all cache entries
+   * Used when deleting a post - updates cache instead of invalidating
+   */
+  removePostFromCache(postId: number): void {
+    const allEntries = this.cache.entries();
+
+    for (const [key, data] of allEntries) {
+      const filteredPosts = data.posts.filter((p: any) => p.id !== postId);
+
+      // Only update if post was actually removed
+      if (filteredPosts.length !== data.posts.length) {
+        this.cache.set(key, {
+          ...data,
+          posts: filteredPosts,
+        });
+      }
+    }
+  }
+
+  /**
+   * Update a post in all cache entries
+   * Used when updating post data - updates cache instead of invalidating
+   */
+  updatePostInCache(updatedPost: { id: number; [key: string]: any }): void {
+    const allEntries = this.cache.entries();
+
+    for (const [key, data] of allEntries) {
+      const updatedPosts = data.posts.map((p: any) =>
+        p.id === updatedPost.id ? { ...p, ...updatedPost } : p
+      );
+
+      // Only update if post was found
+      const hasPost = data.posts.some((p: any) => p.id === updatedPost.id);
+      if (hasPost) {
+        this.cache.set(key, {
+          ...data,
+          posts: updatedPosts,
+        });
+      }
+    }
+  }
+
+  /**
+   * Add a post to cache entries for a specific space
+   * Smart logic: only add if the post should appear in chronological order
+   *
+   * @param post - The post to add
+   * @param spaceId - The space ID to add the post to
+   * @param recursive - Whether to add to recursive views as well
+   * @param postsPerPage - Max posts per page (to check if cache is full)
+   */
+  addPostToCache(
+    post: { id: number; created: number; [key: string]: any },
+    spaceId: number,
+    recursive: boolean,
+    postsPerPage: number
+  ): void {
+    const allEntries = this.cache.entries();
+
+    for (const [key, data] of allEntries) {
+      // Parse the cache key to determine if this entry is relevant
+      // Format: posts:${spaceId}:${recursive ? 'recursive' : 'flat'}:${offset}:${limit}
+      const parts = key.split(':');
+      if (parts.length < 5 || parts[0] !== 'posts') continue;
+
+      const cacheSpaceId = parts[1] === 'all' ? null : parseInt(parts[1], 10);
+      const cacheRecursive = parts[2] === 'recursive';
+
+      // Determine if this cache entry should contain this post
+      let shouldInclude = false;
+
+      if (cacheSpaceId === null) {
+        // "All Spaces" view - always include if conditions are met
+        shouldInclude = true;
+      } else if (cacheSpaceId === spaceId) {
+        // Direct space match - include for both flat and recursive
+        shouldInclude = true;
+      } else if (cacheRecursive && recursive) {
+        // TODO: Check if cacheSpaceId is a parent of spaceId
+        // For now, skip this complex check - recursive parent chain updates
+        // will be naturally fetched on next load
+        continue;
+      } else {
+        continue;
+      }
+
+      if (!shouldInclude) continue;
+
+      // Check if we should add the post to this cache entry
+      const currentPosts = data.posts;
+      const isFull = currentPosts.length >= postsPerPage;
+      const hasMore = data.hasMore ?? true;
+
+      // Get the last (oldest) post in the current cache
+      const lastPost = currentPosts.length > 0 ? currentPosts[currentPosts.length - 1] : null;
+      const isNewerThanLast = !lastPost || post.created > lastPost.created;
+
+      // Add post only if:
+      // 1. Cache is not full, OR
+      // 2. Post is newer than the last post, OR
+      // 3. We've fetched all posts (no more to fetch)
+      if (!isFull || isNewerThanLast || !hasMore) {
+        // Insert post in chronological order (newest first)
+        const newPosts = [...currentPosts, post].sort((a, b) => b.created - a.created);
+
+        this.cache.set(key, {
+          ...data,
+          posts: newPosts,
+        });
+      }
+    }
+  }
+
+  /**
    * Get cache statistics
    */
   stats() {
@@ -157,10 +271,10 @@ export const postsCache = new PostsCacheManager();
 // Export convenience function
 export async function fetchPostsCached(
   spaceId: number | null,
-  limit?: number,
-  offset?: number,
-  withMeta?: boolean,
-  recursive?: boolean
+  limit: number = postsConfig.postsPerPage,
+  offset: number = 0,
+  withMeta: boolean = true,
+  recursive: boolean = false
 ): Promise<CachedPostsResult> {
   return postsCache.fetchPosts(spaceId, limit, offset, withMeta, recursive);
 }

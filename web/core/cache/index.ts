@@ -139,6 +139,21 @@ export class CacheManager<T = any> {
   }
 
   /**
+   * Get all cache entries (for iteration/updates)
+   */
+  entries(): IterableIterator<[string, T]> {
+    const entries: [string, T][] = [];
+    for (const [key, entry] of this.cache.entries()) {
+      // Check if expired
+      if (this.config.ttl > 0 && Date.now() - entry.timestamp > this.config.ttl) {
+        continue;
+      }
+      entries.push([key, entry.data]);
+    }
+    return entries[Symbol.iterator]();
+  }
+
+  /**
    * Get cache statistics
    */
   stats(): {

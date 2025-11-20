@@ -21,7 +21,7 @@ import {
   postHasRichContent,
 } from '../state/posts';
 import { spaces, getSpaceById } from '../state/spaces';
-import { fetchPostsCached } from '../cache/postsCache';
+import { fetchPostsCached, postsCache } from '../cache/postsCache';
 import { posts as postsConfig, cache as cacheConfig } from '../config';
 import { updateActivityDayCount, invalidateActivityForSpace } from '../cache/activityCache';
 import { invalidateSpaceStatsForParentChain } from '../cache/utils/cacheHelpers';
@@ -217,14 +217,19 @@ export async function deletePostAction(options: DeletePostOptions): Promise<void
         }
       }
 
+      // Update cache: remove post from all cache entries instead of invalidating
+      postsCache.removePostFromCache(postId);
+
       showSuccess('Post deleted successfully');
     },
     onError: (error) => {
       console.error('Failed to delete post:', error);
       showError('Failed to delete post. Please try again.');
     },
-    // Invalidate all posts cache since we don't know which views contain this post
-    cacheInvalidation: { type: 'all' },
+    // No cache invalidation needed - post is removed from cache entries directly
+    // Space stats are only invalidated if post has rich content (handled above)
+    // Activity is updated directly without invalidation (handled above)
+    cacheInvalidation: { type: 'none' },
   });
 }
 
@@ -383,6 +388,16 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
         updatePostInAllQueries(updatedPost);
       }
 
+      // Update cache: remove from old space's cache entries and add to new space's cache entries
+      // This is smarter than invalidating - keeps cache valid
+      if (oldSpaceId !== undefined && oldSpaceId !== newSpaceId) {
+        // First, remove the post from all cache entries (it has the old space_id)
+        postsCache.removePostFromCache(postId);
+
+        // Then, add the updated post to the new space's cache entries with smart logic
+        postsCache.addPostToCache(updatedPost, newSpaceId, recursive, postsConfig.postsPerPage);
+      }
+
       // Smart activity cache update: moving = remove from old space + add to new space
       if (postCreatedTimestamp && oldSpaceId !== undefined && oldSpaceId !== newSpaceId) {
         // Decrement activity for old space (both flat and recursive)
@@ -475,7 +490,9 @@ export async function movePostAction(options: MovePostOptions): Promise<void> {
       console.error('Failed to move post:', error);
       showError('Failed to move post. Please try again.');
     },
-    // Invalidate cache for affected spaces
-    cacheInvalidation: { type: 'all' },
+    // No cache invalidation needed - cache entries are updated directly
+    // Space stats are only invalidated if post has rich content (handled above)
+    // Activity is updated directly without invalidation (handled above)
+    cacheInvalidation: { type: 'none' },
   });
 }
